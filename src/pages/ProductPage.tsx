@@ -1,13 +1,14 @@
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { productsDetail } from '../data/details'
 import { Layout } from '../components/layout/Layout'
 import { Button } from '../components/ui/Button'
 import { ChevronLeft, Zap, ArrowRight, Shield } from 'lucide-react'
+import { useLanguage } from '../context/LanguageContext'
 
 export function ProductPage() {
     const { slug } = useParams<{ slug: string }>()
-    const product = productsDetail.find(p => p.slug === slug)
+    const { translatedState } = useLanguage()
+    const product = translatedState.products.find(p => p.slug === slug)
 
     if (!product) {
         return (

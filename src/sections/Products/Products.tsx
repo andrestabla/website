@@ -1,13 +1,17 @@
-import { content } from '../../data/content'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { LayoutGrid } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { productsDetail } from '../../data/details'
 import { cn } from '../../lib/utils'
+import { useLanguage } from '../../context/LanguageContext'
 
 export function Products() {
-    const { products } = content
+    const { translatedState } = useLanguage()
+    const products = {
+        title: "Performance Modules", // Fallback or handle via siteConfig if it's there
+        items: translatedState.products
+    }
 
     return (
         <section className="py-32 px-6 bg-white infra-grid">
@@ -31,7 +35,7 @@ export function Products() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                     {products.items.map((product, index) => {
-                        const Icon = product.icon
+                        const Icon = (product as any).icon
                         const detail = productsDetail[index]
                         const slug = detail ? detail.slug : 'diagnostico-md-ia'
 

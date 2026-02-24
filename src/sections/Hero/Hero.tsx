@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion'
-import { useCMS } from '../../admin/context/CMSContext'
 import { Button } from '../../components/ui/Button'
 import { ChevronRight } from 'lucide-react'
+import { useLanguage } from '../../context/LanguageContext'
 
 export function Hero() {
-    const { state } = useCMS()
-    const hero = state.hero
+    const { translatedState } = useLanguage()
+    const hero = translatedState.hero
 
     return (
         <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-24 pb-24 px-6 overflow-hidden bg-white infra-grid">

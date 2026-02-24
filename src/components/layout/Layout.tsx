@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { siteConfig } from '../../data/config'
+import { LanguageSelector } from './LanguageSelector'
 
 interface LayoutProps {
     children: ReactNode
@@ -17,6 +18,9 @@ export function Layout({ children }: LayoutProps) {
                     <Link to="/#servicios" className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 hover:text-brand-primary transition-colors">Servicios</Link>
                     <Link to="/#productos" className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 hover:text-brand-primary transition-colors">Productos</Link>
                     <Link to="/#contacto" className="text-xs font-black uppercase tracking-[0.3em] text-slate-400 hover:text-brand-primary transition-colors">Contacto</Link>
+                    <div className="pl-4 border-l border-slate-100">
+                        <LanguageSelector />
+                    </div>
                 </nav>
             </header>
 

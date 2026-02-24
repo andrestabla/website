@@ -25,6 +25,13 @@ export type ServiceItem = {
     seoTitle: string
     seoDescription: string
     features: string[]
+    icon?: any
+    outcomes?: string[]
+    variants?: Array<{
+        tone: string
+        titular: string
+        rationale?: string
+    }>
 }
 
 export type ProductItem = {
@@ -37,6 +44,11 @@ export type ProductItem = {
     ctaText: string
     seoTitle: string
     seoDescription: string
+    icon?: any
+    variants?: Array<{
+        tone: string
+        titular: string
+    }>
 }
 
 export type HeroContent = {
@@ -182,6 +194,9 @@ const staticServices: ServiceItem[] = servicesDetail.map(s => ({
     seoTitle: s.seoTitle ?? '',
     seoDescription: s.seoDescription ?? '',
     features: s.features,
+    icon: s.icon,
+    outcomes: (s as any).outcomes,
+    variants: (s as any).variants,
 }))
 
 const staticProducts: ProductItem[] = productsDetail.map(p => ({
@@ -194,6 +209,8 @@ const staticProducts: ProductItem[] = productsDetail.map(p => ({
     ctaText: p.ctaText ?? '',
     seoTitle: p.seoTitle ?? '',
     seoDescription: p.seoDescription ?? '',
+    icon: p.icon,
+    variants: (p as any).variants,
 }))
 
 const staticHero: HeroContent = { ...defaultContent.hero }

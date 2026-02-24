@@ -1,15 +1,16 @@
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { servicesDetail } from '../data/details'
 import { Layout } from '../components/layout/Layout'
 import { Button } from '../components/ui/Button'
 import { ContactForm } from '../components/forms/ContactForm'
 import { ChevronLeft, CheckCircle2, ArrowRight } from 'lucide-react'
 import { serviceVisuals } from '../components/service-visuals'
+import { useLanguage } from '../context/LanguageContext'
 
 export function ServicePage() {
     const { slug } = useParams<{ slug: string }>()
-    const service = servicesDetail.find(s => s.slug === slug)
+    const { translatedState } = useLanguage()
+    const service = translatedState.services.find(s => s.slug === slug)
 
     if (!service) {
         return (

@@ -1,13 +1,13 @@
-import { useCMS } from '../../admin/context/CMSContext'
 import { Card } from '../../components/ui/Card'
 import { CheckCircle2, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { servicesDetail } from '../../data/details'
+import { useLanguage } from '../../context/LanguageContext'
 
 export function Services() {
-    const { state } = useCMS()
+    const { translatedState } = useLanguage()
     // CMS services are a flat ServiceItem[]; icons live in servicesDetail (React components can't be stored)
-    const services = state.services
+    const services = translatedState.services
 
     return (
         <section className="py-32 px-6 bg-slate-50 border-y border-slate-200 relative overflow-hidden">
