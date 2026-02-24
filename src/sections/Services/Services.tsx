@@ -1,6 +1,8 @@
 import { content } from '../../data/content'
 import { Card } from '../../components/ui/Card'
 import { CheckCircle2, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { servicesDetail } from '../../data/details'
 
 export function Services() {
     const { services } = content
@@ -30,6 +32,10 @@ export function Services() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border-t border-l border-slate-200">
                     {services.items.map((service, index) => {
                         const Icon = service.icon
+                        // Match with unique slug from details
+                        const detail = servicesDetail[index]
+                        const slug = detail ? detail.slug : 'captura-adn' // Fallback for index safety
+
                         return (
                             <Card
                                 key={service.id}
@@ -65,10 +71,13 @@ export function Services() {
                                     ))}
                                 </div>
 
-                                <button className="flex items-center text-sm font-black uppercase tracking-[0.2em] text-brand-primary hover:text-slate-900 transition-colors group/btn">
+                                <Link
+                                    to={`/servicios/${slug}`}
+                                    className="flex items-center text-sm font-black uppercase tracking-[0.2em] text-brand-primary hover:text-slate-900 transition-colors group/btn"
+                                >
                                     {service.cta}
                                     <ArrowRight className="ml-3 w-5 h-5 group-hover/btn:translate-x-2 transition-transform" />
-                                </button>
+                                </Link>
                             </Card>
                         )
                     })}

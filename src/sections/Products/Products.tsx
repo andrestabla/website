@@ -2,6 +2,9 @@ import { content } from '../../data/content'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { LayoutGrid } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { productsDetail } from '../../data/details'
+import { cn } from '../../lib/utils'
 
 export function Products() {
     const { products } = content
@@ -29,6 +32,9 @@ export function Products() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                     {products.items.map((product, index) => {
                         const Icon = product.icon
+                        const detail = productsDetail[index]
+                        const slug = detail ? detail.slug : 'diagnostico-md-ia'
+
                         return (
                             <Card
                                 key={product.title}
@@ -63,12 +69,14 @@ export function Products() {
                                     <div className="text-2xl font-black mb-10 tracking-tight">
                                         {product.price}
                                     </div>
-                                    <Button
-                                        variant={index === 1 ? 'secondary' : 'primary'}
-                                        className="w-full"
-                                    >
-                                        Deploy Solution
-                                    </Button>
+                                    <Link to={`/productos/${slug}`}>
+                                        <Button
+                                            variant={index === 1 ? 'secondary' : 'primary'}
+                                            className="w-full"
+                                        >
+                                            Deploy Solution
+                                        </Button>
+                                    </Link>
                                 </div>
                             </Card>
                         )
@@ -78,4 +86,3 @@ export function Products() {
         </section>
     )
 }
-import { cn } from '../../lib/utils'

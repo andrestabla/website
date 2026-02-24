@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  adapter  = "pg"
 }
 
 datasource db {
@@ -7,43 +8,50 @@ datasource db {
 }
 
 model Hero {
-  id           String   @id @default(cuid())
+  id           String @id @default(cuid())
+  highlight    String
   title        String
   subtitle     String
-  highlight    String
   cta          String
   secondaryCta String
-  updatedAt    DateTime @updatedAt
 }
 
 model Service {
-  id          String   @id @default(cuid())
-  order       Int      @default(0)
-  title       String
-  description String
-  icon        String   // Lucide icon name
-  features    String[] // Array of strings
-  cta         String
-  updatedAt   DateTime @updatedAt
+  id              String  @id @default(cuid())
+  slug            String  @unique
+  title           String
+  highlight       String?
+  subtitle        String?
+  description     String
+  descriptionLong String?
+  ctaText         String?
+  seoTitle        String?
+  seoDescription  String?
+  iconName        String
+  features        String[]
+  active          Boolean @default(true)
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  order       Int      @default(0)
-  title       String
-  description String
-  price       String
-  icon        String   // Lucide icon name
-  updatedAt   DateTime @updatedAt
+  id              String  @id @default(cuid())
+  slug            String  @unique
+  title           String
+  description     String
+  descriptionLong String?
+  price           String
+  ctaText         String?
+  seoTitle        String?
+  seoDescription  String?
+  iconName        String
+  active          Boolean @default(true)
 }
 
 model SiteConfig {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   name        String
   description String
-  url         String
   email       String
   address     String
   linkedin    String
-  updatedAt   DateTime @updatedAt
+  twitter     String?
 }
