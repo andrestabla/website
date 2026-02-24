@@ -14,8 +14,11 @@ export function getAI() {
     const apiKey = integrations.gemini.config.apiKey || import.meta.env.VITE_GEMINI_API_KEY;
 
     if (!apiKey) {
+        if (import.meta.env.DEV) console.warn("Gemini API Key not found in store or env.");
         return null;
     }
+
+    if (import.meta.env.DEV) console.log("Gemini API Key initialized successfully");
 
     genAI = new GoogleGenerativeAI(apiKey);
     return genAI;
