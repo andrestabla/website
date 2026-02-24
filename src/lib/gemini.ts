@@ -66,10 +66,8 @@ export async function translateObject<T>(obj: T, targetLang: string): Promise<T>
 
     const ai = getAI();
     if (!ai) {
-        console.error("Gemini API key is MISSING or invalid");
         throw new Error("Gemini API key is not configured. Please add it in the Admin Integrations panel.");
     }
-    console.log("Gemini AI initialized with key, target:", targetLang);
 
     try {
         const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
@@ -82,9 +80,7 @@ export async function translateObject<T>(obj: T, targetLang: string): Promise<T>
         Object to translate:
         ${JSON.stringify(obj, null, 2)}`;
 
-        console.log("Sending request to Gemini model...");
         const result = await model.generateContent(prompt);
-        console.log("Gemini response metadata:", result.response.usageMetadata);
         const response = await result.response;
         const cleanedText = response.text().replace(/```json|```/g, "").trim();
         return JSON.parse(cleanedText) as T;

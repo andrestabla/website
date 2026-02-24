@@ -80,7 +80,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         }
 
         const hash = getCMSHash(baseState);
-        console.log("CMS Hash calculated:", hash);
         const cache = loadCache();
 
         if (cache[targetLang]?.[hash]) {
@@ -108,18 +107,27 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                 }
             };
 
-            console.log("Starting translation to:", targetLang);
             const translated = await translateObject(toTranslate, targetLang);
             console.log("Translation received successfully");
 
+            // Defensive merging: Merge ONLY text fields to preserve icons/functions
             const newState: CMSState = {
                 ...baseState,
-                hero: translated.hero,
-                services: translated.services,
-                products: translated.products,
+                hero: {
+                    ...baseState.hero,
+                    ...(translated as any)?.hero
+                },
+                services: baseState.services.map((service, idx) => {
+                    const trans = (translated as any)?.services?.[idx];
+                    return trans ? { ...service, ...trans, icon: service.icon } : service;
+                }),
+                products: baseState.products.map((product, idx) => {
+                    const trans = (translated as any)?.products?.[idx];
+                    return trans ? { ...product, ...trans, icon: product.icon } : product;
+                }),
                 site: {
                     ...baseState.site,
-                    ...translated.site
+                    ...((translated as any)?.site || {})
                 }
             };
 
