@@ -1,43 +1,35 @@
-import { motion } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Hero } from './sections/Hero/Hero'
+import { Services } from './sections/Services/Services'
+import { Products } from './sections/Products/Products'
+import { Frameworks } from './sections/Frameworks/Frameworks'
+import { Contact } from './sections/Contact/Contact'
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="text-center"
-      >
-        <div className="flex items-center justify-center mb-6">
-          <div className="p-3 bg-blue-500/10 rounded-2xl border border-blue-500/20">
-            <Sparkles className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
-
-        <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">
-          Andrés Tabla Rico
-        </h1>
-
-        <p className="text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto font-light leading-relaxed">
-          Líder en Transformación Educativa Digital
-        </p>
-
-        <motion.div
+    <div className="selection:bg-brand-500/30 selection:text-brand-100 min-h-screen bg-slate-950">
+      <AnimatePresence mode="wait">
+        <motion.main
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 1 }}
-          className="mt-12 text-sm text-slate-500 uppercase tracking-widest font-medium"
+          className="relative z-10"
         >
-          Próximamente
-        </motion.div>
-      </motion.div>
+          <Hero />
+          <Services />
+          <Products />
+          <Frameworks />
+          <Contact />
 
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-500/5 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-indigo-500/5 rounded-full blur-[120px]" />
-      </div>
+          <footer className="py-12 border-t border-slate-900 text-center text-slate-500 text-sm">
+            &copy; {new Date().getFullYear()} AlgoritmoT. Todos los derechos reservados. <br />
+            Construyendo el futuro de la Industria 5.0.
+          </footer>
+        </motion.main>
+      </AnimatePresence>
+
+      {/* Global Background Elements */}
+      <div className="fixed inset-0 -z-20 bg-slate-950" />
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/5 via-transparent to-transparent pointer-events-none" />
     </div>
   )
 }
