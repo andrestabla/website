@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Hero {
+  id           String   @id @default(cuid())
+  title        String
+  subtitle     String
+  highlight    String
+  cta          String
+  secondaryCta String
+  updatedAt    DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  order       Int      @default(0)
+  title       String
+  description String
+  icon        String   // Lucide icon name
+  features    String[] // Array of strings
+  cta         String
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  order       Int      @default(0)
+  title       String
+  description String
+  price       String
+  icon        String   // Lucide icon name
+  updatedAt   DateTime @updatedAt
+}
+
+model SiteConfig {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  url         String
+  email       String
+  address     String
+  linkedin    String
+  updatedAt   DateTime @updatedAt
+}

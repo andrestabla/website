@@ -1,59 +1,61 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: oklch(0.97 0.01 256.22);
-  --color-brand-100: oklch(0.93 0.03 256.22);
-  --color-brand-500: oklch(0.62 0.17 256.22);
-  --color-brand-600: oklch(0.55 0.17 256.22);
-  --color-brand-700: oklch(0.48 0.17 256.22);
+  --color-brand-primary: oklch(0.2 0.02 256);
+  /* Deep sophisticated charcoal */
+  --color-brand-accent: oklch(0.6 0.1 256);
+  /* Muted technical blue */
 
-  --color-accent-emerald: oklch(0.7 0.19 144.11);
-  --color-accent-cyan: oklch(0.7 0.12 192.11);
-
-  --font-inter: "Inter", sans-serif;
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
   :root {
-    --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+    --font-heading: var(--font-sans);
   }
 
   body {
     font-family: var(--font-sans);
-    @apply bg-slate-950 text-slate-200 antialiased;
+    @apply bg-white text-slate-900 antialiased selection:bg-slate-900 selection:text-white;
   }
 }
 
 @layer utilities {
-  .glass-card {
-    @apply bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 shadow-2xl;
+  .executive-grid {
+    background-size: 40px 40px;
+    background-image:
+      linear-gradient(to right, oklch(0.9 0 0 / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.9 0 0 / 0.05) 1px, transparent 1px);
   }
 
-  .text-glow {
-    text-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+  .border-executive {
+    @apply border-slate-200/60;
   }
 
-  .gradient-border {
-    position: relative;
-    border-radius: theme("borderRadius.2xl");
-    background: linear-gradient(to right, theme("colors.brand.500"), theme("colors.accent.emerald"));
-    padding: 1px;
+  .text-luxury {
+    @apply tracking-tight leading-[1.1] font-bold;
   }
 
-  .gradient-border-inner {
-    @apply bg-slate-950 rounded-[calc(theme(borderRadius.2xl)-1px)];
+  .section-padding {
+    @apply py-32 px-6;
   }
 }
 
-/* Custom Scrollbar */
+/* Scrollbar refinement */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-950;
+  @apply bg-slate-50;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-800 rounded-full hover:bg-slate-700 transition-colors;
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}
+
+/* Smooth transitions */
+* {
+  @apply transition-colors duration-300;
 }

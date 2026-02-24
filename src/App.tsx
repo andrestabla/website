@@ -7,7 +7,7 @@ import { Contact } from './sections/Contact/Contact'
 
 function App() {
   return (
-    <div className="selection:bg-brand-500/30 selection:text-brand-100 min-h-screen bg-slate-950">
+    <div className="selection:bg-slate-900 selection:text-white min-h-screen bg-white">
       <AnimatePresence mode="wait">
         <motion.main
           initial={{ opacity: 0 }}
@@ -20,16 +20,19 @@ function App() {
           <Frameworks />
           <Contact />
 
-          <footer className="py-12 border-t border-slate-900 text-center text-slate-500 text-sm">
-            &copy; {new Date().getFullYear()} AlgoritmoT. Todos los derechos reservados. <br />
-            Construyendo el futuro de la Industria 5.0.
+          <footer className="py-20 bg-white border-t border-slate-100 px-6">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+              <div className="text-2xl font-bold tracking-tighter text-slate-900">
+                ALGORITMOT
+              </div>
+              <div className="text-slate-400 text-sm font-light text-center md:text-right">
+                &copy; {new Date().getFullYear()} AlgoritmoT. Todos los derechos reservados. <br />
+                Digital Mastery & Industria 5.0.
+              </div>
+            </div>
           </footer>
         </motion.main>
       </AnimatePresence>
-
-      {/* Global Background Elements */}
-      <div className="fixed inset-0 -z-20 bg-slate-950" />
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-brand-500/5 via-transparent to-transparent pointer-events-none" />
     </div>
   )
 }

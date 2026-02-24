@@ -1,73 +1,54 @@
 import { motion } from 'framer-motion'
 import { content } from '../../data/content'
 import { Button } from '../../components/ui/Button'
-import { ChevronRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 
 export function Hero() {
     const { hero } = content
 
     return (
-        <section className="relative min-h-[90vh] flex flex-col items-center justify-center pt-20 pb-16 px-4 overflow-hidden">
-            {/* Background Orbs */}
-            <div className="absolute inset-0 -z-10 pointer-events-none">
-                <div className="absolute top-[10%] left-[10%] w-[45%] h-[45%] bg-brand-500/10 rounded-full blur-[140px] animate-pulse" />
-                <div className="absolute bottom-[10%] right-[10%] w-[45%] h-[45%] bg-accent-emerald/10 rounded-full blur-[140px] animate-pulse delay-1000" />
-            </div>
-
-            <div className="max-w-5xl mx-auto text-center">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="inline-flex items-center gap-2 px-3 py-1 mb-8 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-500 text-sm font-medium"
-                >
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-500 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-                    </span>
-                    {hero.highlight}
-                </motion.div>
-
-                <motion.h1
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                    className="text-5xl md:text-7xl lg:text-8xl font-bold mb-8 tracking-tighter leading-[1.1]"
-                >
-                    {hero.title.split(' ').map((word, i) => (
-                        <span key={i} className={i >= 3 ? 'text-brand-500 text-glow' : 'text-slate-50'}>
-                            {word}{' '}
-                        </span>
-                    ))}
-                </motion.h1>
-
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.4 }}
-                    className="text-xl md:text-2xl text-slate-400 mb-12 max-w-3xl mx-auto font-light leading-relaxed"
-                >
-                    {hero.subtitle}
-                </motion.p>
-
+        <section className="relative min-h-[85vh] flex flex-col items-center justify-center pt-32 pb-24 px-6 overflow-hidden bg-white executive-grid">
+            <div className="max-w-6xl mx-auto w-full">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.6 }}
-                    className="flex flex-col sm:flex-row items-center justify-center gap-4"
+                    transition={{ duration: 0.6 }}
+                    className="flex flex-col items-start text-left"
                 >
-                    <Button size="lg" className="group">
-                        {hero.cta}
-                        <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </Button>
-                    <Button variant="ghost" size="lg">
-                        {hero.secondaryCta}
-                    </Button>
+                    <div className="h-px w-24 bg-slate-900 mb-12" />
+
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-xs font-bold uppercase tracking-[0.3em] text-slate-500 mb-6"
+                    >
+                        {hero.highlight}
+                    </motion.div>
+
+                    <h1 className="text-6xl md:text-8xl font-bold mb-10 tracking-tighter leading-[0.9] text-slate-900 max-w-4xl">
+                        {hero.title}
+                    </h1>
+
+                    <p className="text-xl md:text-2xl text-slate-600 mb-16 max-w-2xl font-light leading-relaxed border-l-2 border-slate-100 pl-8">
+                        {hero.subtitle}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-6">
+                        <Button size="lg" className="rounded-none">
+                            {hero.cta}
+                            <ArrowRight className="ml-3 w-5 h-5" />
+                        </Button>
+                        <Button variant="ghost" size="lg" className="rounded-none border-b border-transparent hover:border-slate-900">
+                            {hero.secondaryCta}
+                        </Button>
+                    </div>
                 </motion.div>
             </div>
 
-            {/* Decorative Lines */}
-            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-slate-800 to-transparent" />
+            {/* Structural Decoration */}
+            <div className="absolute top-0 right-[10%] w-px h-full bg-slate-50" />
+            <div className="absolute top-1/2 left-0 w-full h-px bg-slate-50" />
         </section>
     )
 }
