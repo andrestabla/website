@@ -1,77 +1,74 @@
-import { motion } from 'framer-motion'
 import { content } from '../../data/content'
 import { Card } from '../../components/ui/Card'
-import { Button } from '../../components/ui/Button'
-import { ArrowUpRight } from 'lucide-react'
+import { CheckCircle2, ArrowRight } from 'lucide-react'
 
 export function Services() {
     const { services } = content
 
     return (
-        <section className="section-padding bg-slate-50/50 border-y border-slate-100">
+        <section className="py-32 px-6 bg-slate-50 border-y border-slate-200 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-24 text-[20rem] font-black text-slate-200/20 leading-none select-none -z-10 pointer-events-none">
+                01
+            </div>
+
             <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-24 gap-8">
-                    <div className="max-w-2xl">
-                        <div className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400 mb-6">
-                            Servicios Estratégicos
-                        </div>
-                        <motion.h2
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="text-4xl md:text-5xl font-bold text-slate-900"
-                        >
-                            {services.title}
-                        </motion.h2>
+                <div className="mb-32">
+                    <div className="flex items-center gap-4 mb-6">
+                        <span className="w-12 h-1 bg-brand-primary" />
+                        <span className="text-sm font-black uppercase tracking-[0.4em] text-brand-primary">
+                            Infrastructure & Operations
+                        </span>
                     </div>
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.1 }}
-                        className="text-slate-500 text-lg max-w-md md:text-right"
-                    >
+                    <h2 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 tracking-tighter">
+                        {services.title}
+                    </h2>
+                    <p className="text-2xl text-slate-500 font-light max-w-2xl border-l-2 border-slate-200 pl-8">
                         {services.subtitle}
-                    </motion.p>
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border-t border-l border-slate-200">
                     {services.items.map((service, index) => {
                         const Icon = service.icon
                         return (
                             <Card
                                 key={service.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
+                                initial={{ opacity: 0 }}
+                                whileInView={{ opacity: 1 }}
                                 viewport={{ once: true }}
-                                transition={{ delay: index * 0.1 }}
-                                className="group border border-transparent hover:bg-white hover:border-slate-200 rounded-none h-full flex flex-col p-12 transition-all duration-500"
+                                transition={{ delay: index * 0.05 }}
+                                className="group bg-white hover:bg-slate-50 border-r border-b border-slate-200 p-12 transition-all duration-500"
                             >
-                                <div className="mb-12 text-slate-300 group-hover:text-slate-900 transition-colors">
-                                    <Icon className="w-10 h-10 stroke-[1.5]" />
+                                <div className="flex items-start justify-between mb-16">
+                                    <div className="w-16 h-16 rounded-none bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-primary group-hover:text-white transition-all duration-500">
+                                        <Icon className="w-8 h-8 stroke-[1.5]" />
+                                    </div>
+                                    <span className="text-4xl font-black text-slate-50 group-hover:text-slate-100 transition-colors">
+                                        0{index + 1}
+                                    </span>
                                 </div>
 
-                                <h3 className="text-2xl font-bold mb-6 text-slate-900 tracking-tight">
+                                <h3 className="text-3xl font-black mb-8 text-slate-900 tracking-tighter leading-none">
                                     {service.title}
                                 </h3>
 
-                                <p className="text-slate-500 mb-10 leading-relaxed font-light">
+                                <p className="text-slate-500 mb-10 text-lg leading-relaxed font-light">
                                     {service.description}
                                 </p>
 
-                                <ul className="space-y-4 mb-12 flex-grow">
+                                <div className="space-y-4 mb-12">
                                     {service.features.map((feature, i) => (
-                                        <li key={i} className="flex items-center text-xs text-slate-400 font-medium uppercase tracking-wider">
-                                            <div className="w-1.5 h-1.5 bg-slate-200 mr-3" />
+                                        <div key={i} className="flex items-center text-sm text-slate-600 font-bold uppercase tracking-wider">
+                                            <CheckCircle2 className="w-4 h-4 text-brand-secondary mr-3 shrink-0" />
                                             {feature}
-                                        </li>
+                                        </div>
                                     ))}
-                                </ul>
+                                </div>
 
-                                <Button variant="ghost" size="sm" className="p-0 h-auto hover:bg-transparent text-slate-900 border-b border-slate-200 hover:border-slate-900 rounded-none w-fit transition-all group/btn">
+                                <button className="flex items-center text-sm font-black uppercase tracking-[0.2em] text-brand-primary hover:text-slate-900 transition-colors group/btn">
                                     {service.cta}
-                                    <ArrowUpRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                                </Button>
+                                    <ArrowRight className="ml-3 w-5 h-5 group-hover/btn:translate-x-2 transition-transform" />
+                                </button>
                             </Card>
                         )
                     })}

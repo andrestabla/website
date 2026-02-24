@@ -7,7 +7,7 @@ import { Contact } from './sections/Contact/Contact'
 
 function App() {
   return (
-    <div className="selection:bg-slate-900 selection:text-white min-h-screen bg-white">
+    <div className="selection:bg-brand-primary selection:text-white min-h-screen bg-white">
       <AnimatePresence mode="wait">
         <motion.main
           initial={{ opacity: 0 }}
@@ -20,14 +20,39 @@ function App() {
           <Frameworks />
           <Contact />
 
-          <footer className="py-20 bg-white border-t border-slate-100 px-6">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-              <div className="text-2xl font-bold tracking-tighter text-slate-900">
-                ALGORITMOT
+          <footer className="py-32 bg-slate-900 px-6 border-t border-white/5">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-24">
+                <div className="text-4xl font-black tracking-tighter text-white">
+                  ALGORITMO<span className="text-white/30">T</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-16">
+                  <div>
+                    <div className="text-xs font-black text-white/30 uppercase tracking-[0.4em] mb-8">Protocolos</div>
+                    <ul className="space-y-4 text-white/60 font-medium">
+                      <li>Ingeniería Humana</li>
+                      <li>Despliegue IA</li>
+                      <li>Madurez Organica</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="text-xs font-black text-white/30 uppercase tracking-[0.4em] mb-8">Conexión</div>
+                    <ul className="space-y-4 text-white/60 font-medium">
+                      <li>LinkedIn</li>
+                      <li>Terminal</li>
+                      <li>Relaciones</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
-              <div className="text-slate-400 text-sm font-light text-center md:text-right">
-                &copy; {new Date().getFullYear()} AlgoritmoT. Todos los derechos reservados. <br />
-                Digital Mastery & Industria 5.0.
+
+              <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="text-white/20 text-xs font-black uppercase tracking-[0.5em]">
+                  &copy; {new Date().getFullYear()} AlgoritmoT System. All Rights Reserved.
+                </div>
+                <div className="text-white/20 text-xs font-black uppercase tracking-[0.5em]">
+                  Digital Mastery & Infrastructure
+                </div>
               </div>
             </div>
           </footer>
