@@ -34,9 +34,9 @@ export function Layout({ children }: LayoutProps) {
                             <div>
                                 <div className="text-xs font-black text-white/30 uppercase tracking-[0.4em] mb-8">Protocolos</div>
                                 <ul className="space-y-4 text-white/60 font-medium text-sm">
-                                    <li>Ingeniería Humana</li>
-                                    <li>Despliegue IA</li>
-                                    <li>Madurez Orgánica</li>
+                                    <li><Link to="/protocolos/ingenieria-humana" className="hover:text-white transition-colors">Ingeniería Humana</Link></li>
+                                    <li><Link to="/protocolos/despliegue-ia" className="hover:text-white transition-colors">Despliegue IA</Link></li>
+                                    <li><Link to="/protocolos/madurez-organica" className="hover:text-white transition-colors">Madurez Orgánica</Link></li>
                                 </ul>
                             </div>
                             <div>

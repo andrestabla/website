@@ -1,6 +1,9 @@
 import { Home } from './pages/Home'
 import { ServicePage } from './pages/ServicePage'
 import { ProductPage } from './pages/ProductPage'
+import { IngenieriaHumana } from './pages/IngenieriaHumana'
+import { DespliegueIA } from './pages/DespliegueIA'
+import { MadurezOrganica } from './pages/MadurezOrganica'
 import { LoginPage } from './admin/pages/LoginPage'
 import { Dashboard } from './admin/pages/Dashboard'
 import { ManageHome } from './admin/pages/ManageHome'
@@ -31,6 +34,9 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/servicios/:slug" element={<ServicePage />} />
           <Route path="/productos/:slug" element={<ProductPage />} />
+          <Route path="/protocolos/ingenieria-humana" element={<IngenieriaHumana />} />
+          <Route path="/protocolos/despliegue-ia" element={<DespliegueIA />} />
+          <Route path="/protocolos/madurez-organica" element={<MadurezOrganica />} />
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<LoginPage />} />
