@@ -101,7 +101,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                 }
             };
 
+            console.log("Starting translation to:", targetLang);
             const translated = await translateObject(toTranslate, targetLang);
+            console.log("Translation received successfully");
 
             const newState: CMSState = {
                 ...baseState,
@@ -121,7 +123,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
             setTranslatedState(newState);
         } catch (error) {
-            console.error("Translation failed, falling back to ES:", error);
+            console.error("Translation error details:", error);
             setTranslatedState(baseState);
         } finally {
             setIsTranslating(false);
