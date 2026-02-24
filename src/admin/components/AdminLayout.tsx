@@ -14,7 +14,8 @@ import {
     Megaphone,
     BarChart2,
     Home,
-    Paintbrush
+    Paintbrush,
+    Plug
 } from 'lucide-react'
 
 
@@ -37,6 +38,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         { name: 'SEO Manager', href: '/admin/seo', icon: SearchCheck, group: 'growth' },
         { name: 'Marketing', href: '/admin/marketing', icon: Megaphone, group: 'growth' },
         { name: 'Analítica', href: '/admin/analytics', icon: BarChart2, group: 'growth' },
+        { name: 'Integraciones', href: '/admin/integrations', icon: Plug, group: 'infra' },
     ]
 
     const handleLogout = () => {
@@ -64,23 +66,37 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     </button>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                    {navigation.map((item) => {
-                        const isActive = location.pathname === item.href
+                <nav className="flex-1 p-4 overflow-y-auto">
+                    {(['cms', 'growth', 'infra'] as const).map(group => {
+                        const items = navigation.filter(n => n.group === group)
+                        if (!items.length) return null
+                        const groupLabel: Record<string, string> = { cms: 'Contenido', growth: 'Crecimiento', infra: 'Infraestructura' }
                         return (
-                            <Link
-                                key={item.name}
-                                to={item.href}
-                                className={`flex items-center gap-4 p-3 transition-all ${isActive
-                                    ? 'bg-brand-primary text-white'
-                                    : 'text-white/60 hover:bg-white/5 hover:text-white'
-                                    }`}
-                            >
-                                <item.icon className="w-5 h-5 shrink-0" />
-                                <span className={`font-medium transition-opacity ${!isSidebarOpen && 'opacity-0 w-0'}`}>
-                                    {item.name}
-                                </span>
-                            </Link>
+                            <div key={group} className="mb-4">
+                                {isSidebarOpen && (
+                                    <div className="text-[9px] font-black uppercase tracking-[0.4em] text-white/20 px-3 py-2">{groupLabel[group]}</div>
+                                )}
+                                <div className="space-y-0.5">
+                                    {items.map(item => {
+                                        const isActive = location.pathname === item.href
+                                        return (
+                                            <Link
+                                                key={item.name}
+                                                to={item.href}
+                                                className={`flex items-center gap-4 p-3 transition-all ${isActive
+                                                    ? 'bg-brand-primary text-white'
+                                                    : 'text-white/60 hover:bg-white/5 hover:text-white'
+                                                    }`}
+                                            >
+                                                <item.icon className="w-5 h-5 shrink-0" />
+                                                <span className={`font-medium transition-opacity ${!isSidebarOpen && 'opacity-0 w-0'}`}>
+                                                    {item.name}
+                                                </span>
+                                            </Link>
+                                        )
+                                    })}
+                                </div>
+                            </div>
                         )
                     })}
                 </nav>
