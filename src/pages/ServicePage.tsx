@@ -3,7 +3,8 @@ import { motion } from 'framer-motion'
 import { servicesDetail } from '../data/details'
 import { Layout } from '../components/layout/Layout'
 import { Button } from '../components/ui/Button'
-import { ChevronLeft, CheckCircle2, ArrowRight } from 'lucide-react'
+import { ContactForm } from '../components/forms/ContactForm'
+import { ChevronLeft, CheckCircle2 } from 'lucide-react'
 
 export function ServicePage() {
     const { slug } = useParams<{ slug: string }>()
@@ -80,15 +81,9 @@ export function ServicePage() {
                                     <Icon className="w-10 h-10 text-white" />
                                 </div>
 
-                                <h3 className="text-3xl font-black mb-6 tracking-tighter">¿Listo para el siguiente paso?</h3>
-                                <p className="text-white/60 mb-12 text-lg font-light leading-relaxed">
-                                    Nuestro equipo de expertos en Industria 5.0 está listo para acompañarte en este proceso estratégico.
-                                </p>
+                                <h3 className="text-3xl font-black mb-10 tracking-tighter">¿Listo para el siguiente paso?</h3>
 
-                                <Button variant="secondary" size="lg" className="w-full">
-                                    {service.ctaText}
-                                    <ArrowRight className="ml-3 w-5 h-5" />
-                                </Button>
+                                <ContactForm serviceSlug={service.slug} context="service" />
 
                                 <div className="mt-12 pt-12 border-t border-white/10">
                                     <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/30 mb-4">Metodología Aplicada</div>
@@ -113,7 +108,7 @@ export function ServicePage() {
                             <div key={i} className="bg-white p-10 border border-slate-200">
                                 <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-4">{v.tone}</div>
                                 <h4 className="text-xl font-bold mb-4 text-slate-900 leading-tight">"{v.titular}"</h4>
-                                <p className="text-sm text-slate-500 font-light">{v.rationale}</p>
+                                {'rationale' in v && <p className="text-sm text-slate-500 font-light">{v.rationale}</p>}
                             </div>
                         ))}
                     </div>

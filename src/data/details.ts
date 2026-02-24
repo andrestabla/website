@@ -10,6 +10,31 @@ import {
     Infinity
 } from 'lucide-react'
 
+export const formMicrocopy = {
+    submit: ["Enviar", "Enviar solicitud", "Contactar ahora"],
+    confirm: ["Aceptar", "¡Listo!", "Confirmar"],
+    placeholders: {
+        email: ["tu@correo.com", "email@ejemplo.com", "nombre@dominio.com"],
+        name: ["Tu nombre", "Nombre completo", "Nombre"]
+    },
+    success: [
+        "¡Gracias! Te contactaremos pronto.",
+        "Solicitud recibida, te avisamos.",
+        "¡Listo! Reviso tu mensaje.",
+        "Pronto recibirás una llamada.",
+        "Tu consulta fue enviada con éxito.",
+        "Hemos recibido tu solicitud."
+    ],
+    error: [
+        "Error al enviar. Intenta de nuevo.",
+        "No pudimos procesar tu solicitud.",
+        "Algo salió mal. Por favor reintenta.",
+        "Falta información. Completa todos los campos.",
+        "Verifica los datos ingresados.",
+        "Debes completar todos los campos."
+    ]
+}
+
 export const servicesDetail = [
     {
         slug: 'captura-adn',
@@ -18,17 +43,24 @@ export const servicesDetail = [
         subtitle: 'Entendemos tu modelo de negocio y procesos clave para diseñar soluciones digitales efectivas.',
         description: 'Una consultoría estratégica para mapear la esencia de la empresa antes de digitalizarla.',
         descriptionLong: 'Realizamos un diagnóstico completo de tu organización (propuesta de valor, segmentos, procesos y tecnología actual) para sentar las bases de tu transformación digital. Así garantizamos soluciones alineadas a tus objetivos y cultura, maximizando el valor desde el inicio.',
-        ctaText: 'Iniciar mapeo estratégico',
+        ctaPrimary: 'Solicita tu diagnóstico hoy',
+        ctaSecondary: 'Agendar asesoría gratuita',
+        tracking: '?utm_campaign=captura_adn&utm_medium=web&utm_source=landing',
         seoTitle: 'Captura del ADN Digital – Diagnóstico Estratégico',
         seoDescription: 'Mapeamos tu modelo de negocio y procesos esenciales para diseñar soluciones digitales personalizadas. ¡Comienza tu transformación digital hoy!',
         icon: Search,
         features: ['Value Proposition Canvas', 'Business Model Canvas', 'Identificación de Quick Wins'],
         variants: [
             { tone: 'Corporativo', titular: 'Descubrimos el ADN digital de tu empresa', rationale: 'Evoca profesionalismo y precisión.' },
-            { tone: 'Humano', titular: 'Conoce tu negocio en profundidad antes de digitalizar', rationale: 'Habla directamente al cliente, muestra cercanía.' },
-            { tone: 'Técnico', titular: 'Análisis integral del ADN empresarial para soluciones a medida', rationale: 'Resalta meticulosidad y enfoque a medida.' }
+            { tone: 'Humano', titular: 'Conoce tu negocio en profundidad antes de digitalizar', rationale: 'Habla directamente al cliente.' },
+            { tone: 'Técnico', titular: 'Análisis integral del ADN empresarial para soluciones a medida', rationale: 'Resalta meticulosidad.' }
         ],
-        abHypothesis: 'Probar “Descubrimos el ADN digital…” vs “Conoce tu negocio en profundidad…”: ¿Genera más clics la frase técnica vs la cercana?'
+        ctaVariants: [
+            { original: 'Solicitar diagnóstico', alt: ['Obtener mi informe estratégico', 'Agendar asesoría gratuita', 'Comienza tu análisis', 'Solicita tu diagnóstico hoy', 'Iniciar diagnóstico MD-IA', 'Evaluar mi madurez digital'] },
+            { original: '¡Entender mi negocio ahora!', alt: ['Descubre tu punto de partida', 'Evaluar mi empresa ahora', 'Mostrar mis brechas', 'Empezar diagnóstico rápido', 'Conocer mis oportunidades', 'Conectar mi negocio digital'] },
+            { original: 'Iniciar mapeo estratégico', alt: ['Mapear procesos clave', 'Comenzar workshop de procesos', 'Trazar mi roadmap digital', 'Explorar mis procesos', 'Planificar transformación', 'Organizar procesos ahora'] }
+        ],
+        abHypothesis: '“Solicita tu diagnóstico hoy” vs “Agendar asesoría gratuita”: Evaluar urgencia vs valor gratuito.'
     },
     {
         slug: 'mapeo-procesos',
@@ -37,17 +69,24 @@ export const servicesDetail = [
         subtitle: 'Diagramamos cada paso clave para eliminar cuellos de botella y automatizar con inteligencia.',
         description: 'Optimizamos tus flujos de trabajo para la era digital.',
         descriptionLong: 'Realizamos un mapeo detallado de tus procesos actuales (usando BPMN y Lean) para identificar ineficiencias y diseñar flujos optimizados. Con esta visibilidad, automatizamos tareas repetitivas y mejoramos tu productividad.',
-        ctaText: 'Agendar workshop',
+        ctaPrimary: 'Optimizar mis procesos',
+        ctaSecondary: 'Reservar sesión de mapeo',
+        tracking: '?utm_campaign=mapeo_procesos&utm_medium=web&utm_source=landing',
         seoTitle: 'Mapeo de Procesos BPMN – Optimización Digital',
-        seoDescription: 'Modelamos y optimizamos tus procesos clave para lograr flujos más rápidos y eficientes. Aumenta la productividad automatizando con inteligencia.',
+        seoDescription: 'Modelamos y optimizamos tus procesos clave para lograr flujos más rápidos y eficientes.',
         icon: Network,
         features: ['Diagramas BPMN 2.0', 'Value Stream Mapping', 'Matriz de KPIs'],
         variants: [
             { tone: 'Corporativo', titular: 'Modelamos tus procesos hacia la eficiencia', rationale: 'Enfatiza mejora de eficiencia.' },
-            { tone: 'Humano', titular: 'Transformamos cómo trabajas para que sea más simple', rationale: 'Lenguaje cercano, enfocado en beneficio personal.' },
-            { tone: 'Técnico', titular: 'Diseño y optimización de procesos con BPMN', rationale: 'Subraya uso de estándares y rigor.' }
+            { tone: 'Humano', titular: 'Transformamos cómo trabajas para que sea más simple', rationale: 'Focado en beneficio personal.' },
+            { tone: 'Técnico', titular: 'Diseño y optimización de procesos con BPMN', rationale: 'Subraya rigor.' }
         ],
-        abHypothesis: '¿Prefiere el público énfasis en eficiencia (resultado) o en el método (BPMN)?'
+        ctaVariants: [
+            { original: 'Ver ejemplos de mapeo', alt: ['Ver casos de éxito', 'Explorar estudios de caso', 'Ver infografías BPMN', 'Descubrir optimizaciones', 'Ejemplos de eficiencia', 'Galería de procesos'] },
+            { original: 'Optimizar mis procesos', alt: ['Hacer mi negocio más eficiente', 'Automatizar mi flujo de trabajo', 'Reducir tiempos ya', 'Acelerar mis procesos', 'Mejorar mi productividad', 'Simplificar mis tareas'] },
+            { original: 'Agendar workshop', alt: ['Programar taller estratégico', 'Reservar sesión de mapeo', 'Iniciar workshop digital', 'Planificar sesion de procesos', 'Coordinar workshop personalizado', 'Agenda tu workshop'] }
+        ],
+        abHypothesis: '“Optimizar mis procesos” vs “Ver casos de éxito”: Acción propia vs prueba social.'
     },
     {
         slug: 'humano-vs-tecnologia',
@@ -56,16 +95,24 @@ export const servicesDetail = [
         subtitle: 'Decidimos juntos dónde poner el talento humano y dónde la tecnología para maximizar resultados.',
         description: 'Equilibrio humano-tecnológico para soluciones responsables.',
         descriptionLong: 'Analizamos cada proceso para determinar qué debe seguir en manos de tus colaboradores y qué puede automatizarse con IA/RPA. Así, preservamos la creatividad y la supervisión humana donde más importa.',
-        ctaText: 'Solicitar estrategia IA/RPA',
+        ctaPrimary: 'Potencia tu equipo con IA',
+        ctaSecondary: 'Solicita tu estrategia IA',
+        tracking: '?utm_campaign=humano_vs_tecnologia&utm_medium=web&utm_source=landing',
         seoTitle: 'Automatización Humano-Tecnología – IA Responsable',
-        seoDescription: 'Diseñamos tu estrategia de automatización midiendo qué tareas realiza tu equipo y cuáles podemos delegar a la tecnología.',
+        seoDescription: 'Diseñamos tu estrategia de automatización midiendo qué tareas realiza tu equipo.',
         icon: Users,
         features: ['Matriz de Responsabilidad Humano/Tech', 'Gobernanza de IA (NIST)', 'Plan de Mitigación de Riesgos'],
         variants: [
-            { tone: 'Corporativo', titular: 'Define qué tareas debe hacer tu equipo o la tecnología', rationale: 'Destaca control ejecutivo y balance.' },
-            { tone: 'Humano', titular: 'Potencia a tu equipo, automatizando lo repetitivo', rationale: 'Refleja apoyo al personal y valor humano.' },
-            { tone: 'Técnico', titular: 'Estrategia de automatización: humano vs IA', rationale: 'Habla de “IA” específico, suena experto.' }
-        ]
+            { tone: 'Corporativo', titular: 'Define qué tareas debe hacer tu equipo o la tecnología' },
+            { tone: 'Humano', titular: 'Potencia a tu equipo, automatizando lo repetitivo' },
+            { tone: 'Técnico', titular: 'Estrategia de automatización: humano vs IA' }
+        ],
+        ctaVariants: [
+            { original: 'Balancear mi equipo y tecnología', alt: ['Potencia tu equipo con IA', 'Automatizar con sentido', 'Equilibra persona y máquina', 'Implementar IA responsable', 'Mejorar tu trabajo diario', 'Liderar la automatización'] },
+            { original: 'Solicitar estrategia IA/RPA', alt: ['Diseñar mi plan de IA', 'Solicita tu estrategia IA', 'Estrategia de automatización', 'Planificar IA y RPA', 'Configurar proyectos de IA', 'Desarrollar roadmap IA'] },
+            { original: 'Descubre cómo automatizar', alt: ['Empieza a automatizar hoy', 'Tu empresa hiperconectada', 'Redefinir tus procesos', 'Incrementar mi productividad', 'Adoptar IA rápidamente', 'Digitalizar mis tareas'] }
+        ],
+        abHypothesis: '“Potencia tu equipo con IA” vs “Automatizar con sentido”: Empoderamiento vs enfoque racional.'
     },
     {
         slug: 'diseno-desarrollo',
@@ -73,17 +120,25 @@ export const servicesDetail = [
         highlight: 'Metodologías Ágiles',
         subtitle: 'De la idea al prototipo: desarrollamos la solución ideal para tu negocio.',
         description: 'Construimos prototipos y soluciones digitales personalizadas.',
-        descriptionLong: 'Desarrollamos desde prototipos rápidos hasta productos finales usando metodologías ágiles. Integramos tu infraestructura actual (cloud, APIs, CRM) con nuevas herramientas.',
-        ctaText: 'Construir mi solución digital',
+        descriptionLong: 'Desarrollamos desde prototipos rápidos hasta productos finales usando metodologías ágiles. Integramos tu infraestructura actual con nuevas herramientas.',
+        ctaPrimary: 'Crear mi prototipo ahora',
+        ctaSecondary: 'Desarrollar mi plataforma',
+        tracking: '?utm_campaign=diseno_desarrollo&utm_medium=web&utm_source=landing',
         seoTitle: 'Diseño y Desarrollo de Software – Soluciones a Medida',
-        seoDescription: 'Construimos prototipos y aplicaciones personalizadas que se integran con tus sistemas.',
+        seoDescription: 'Construimos prototipos y aplicaciones personalizadas.',
         icon: Code,
         features: ['Blueprint Tecnológico', 'Prototipado Rápido', 'Validación con Usuarios'],
         variants: [
-            { tone: 'Corporativo', titular: 'Creamos soluciones digitales a tu medida', rationale: 'Profesional, enfocado en personalización.' },
-            { tone: 'Humano', titular: 'Diseñamos tecnología que crece contigo', rationale: 'Cercano, habla de crecimiento mutuo.' },
-            { tone: 'Técnico', titular: 'Prototipado rápido con tecnología ágil', rationale: 'Resalta rapidez y agilidad.' }
-        ]
+            { tone: 'Corporativo', titular: 'Creamos soluciones digitales a tu medida' },
+            { tone: 'Humano', titular: 'Diseñamos tecnología que crece contigo' },
+            { tone: 'Técnico', titular: 'Prototipado rápido con tecnología ágil' }
+        ],
+        ctaVariants: [
+            { original: 'Solicitar prototipo', alt: ['Construye tu prototipo', 'Iniciar prototipado ya', 'Crear demo personal', 'Probar tu idea', 'Hacer mi primer prototipo', 'Validar mi proyecto'] },
+            { original: 'Construir mi solución digital', alt: ['Llevar al siguiente nivel', 'Implementar mi solución', 'Desarrollar mi plataforma', 'Materializar mi proyecto', 'Crear mi app ahora', 'Digitalizar mi producto'] },
+            { original: 'Ver demo rápida', alt: ['Ver prototipo en acción', 'Demo de 5 minutos', 'Tour rápido del producto', 'Explorar demo online', 'Mira la solución', 'Ejemplo práctico aquí'] }
+        ],
+        abHypothesis: '“Crear mi prototipo ahora” vs “Ver demo rápida”: CTA personalizada vs exploración.'
     },
     {
         slug: 'implementacion',
@@ -91,17 +146,25 @@ export const servicesDetail = [
         highlight: 'Transformación Real',
         subtitle: 'Capacitación, despliegue técnico y seguimiento inicial para que todo funcione sin contratiempos.',
         description: 'Lanzamos la tecnología con adopción garantizada.',
-        descriptionLong: 'Nos encargamos de poner en marcha la solución: configuramos los sistemas, migramos datos y formamos a tus usuarios. Garantizamos una transición sin interrupciones.',
-        ctaText: 'Programar implementación',
+        descriptionLong: 'Nos encargamos de poner en marcha la solución: configuramos los sistemas, migramos datos y formamos a tus usuarios.',
+        ctaPrimary: 'Iniciar despliegue ahora',
+        ctaSecondary: 'Soporte inmediato',
+        tracking: '?utm_campaign=implementacion&utm_medium=web&utm_source=landing',
         seoTitle: 'Implementación de Soluciones – Transformación Digital',
-        seoDescription: 'Desplegamos tu solución en producción asegurando integración y soporte continuo.',
+        seoDescription: 'Desplegamos tu solución en producción asegurando integración.',
         icon: Rocket,
         features: ['Migración de Datos', 'Gestión del Cambio (Kotter)', 'Soporte Post-Lanzamiento'],
         variants: [
-            { tone: 'Corporativo', titular: 'Implementamos tu solución con éxito', rationale: 'Resalta confiabilidad y experiencia.' },
-            { tone: 'Humano', titular: 'Acompañamos a tu equipo en cada paso del cambio', rationale: 'Muestra apoyo cercano.' },
-            { tone: 'Técnico', titular: 'Despliegue integral y soporte continuo', rationale: 'Enfocado en procesos técnicos.' }
-        ]
+            { tone: 'Corporativo', titular: 'Implementamos tu solución con éxito' },
+            { tone: 'Humano', titular: 'Acompañamos a tu equipo en cada paso del cambio' },
+            { tone: 'Técnico', titular: 'Despliegue integral y soporte continuo' }
+        ],
+        ctaVariants: [
+            { original: 'Programar implementación', alt: ['Iniciar despliegue ahora', 'Agendar kickoff', 'Llevarlo a producción', 'Migrar a producción', 'Implementar solución hoy', 'Activar mi proyecto'] },
+            { original: 'Plan de cambio completo', alt: ['Cambio garantizado', 'Asistir mi transición', 'Planificar implementación', 'Preparar equipo', 'Soporte en cada paso', 'Acompañar mi equipo'] },
+            { original: 'Contacto de soporte 24/7', alt: ['Soporte inmediato', 'Asistencia permanente', 'Protección total 24h', 'Acceso a helpdesk', 'Ayuda técnica al instante', 'Equipo de soporte'] }
+        ],
+        abHypothesis: '“Iniciar despliegue ahora” vs “Cambio garantizado”: Urgencia vs promesa de seguridad.'
     },
     {
         slug: 'seguimiento-mejora',
@@ -109,17 +172,25 @@ export const servicesDetail = [
         highlight: 'Resiliencia Operativa',
         subtitle: 'Supervisamos métricas clave y ajustamos la solución para maximizar su impacto.',
         description: 'Optimización constante con enfoque humano.',
-        descriptionLong: 'Medimos el desempeño (SLA/SLO) usando dashboards personalizados. Aplicamos mejoras continuas basadas en datos reales y feedback de usuarios.',
-        ctaText: 'Optimizar mi solución ya',
+        descriptionLong: 'Medimos el desempeño (SLA/SLO) usando dashboards personalizados.',
+        ctaPrimary: 'Analizar resultados ahora',
+        ctaSecondary: 'Suscribirme a mejoras continuas',
+        tracking: '?utm_campaign=mejora_continua&utm_medium=web&utm_source=landing',
         seoTitle: 'Soporte y Mejora Continua – Tecnología Resiliente',
-        seoDescription: 'Monitoreamos tus soluciones digitales con dashboards KPI y realizamos ajustes continuos.',
+        seoDescription: 'Monitoreamos tus soluciones digitales con dashboards KPI.',
         icon: LineChart,
         features: ['Dashboards en Tiempo Real', 'Análisis de SLA/SLO', 'Roadmap de Mejoras'],
         variants: [
-            { tone: 'Corporativo', titular: 'Monitoreamos y mejoramos tus procesos', rationale: 'Centrado en resultados medibles.' },
-            { tone: 'Humano', titular: 'Siempre creciendo: tu tecnología al día', rationale: 'Habla de evolución continua.' },
-            { tone: 'Técnico', titular: 'Dashboard de KPIs y ajustes proactivos', rationale: 'Muestra rigor en medición.' }
-        ]
+            { tone: 'Corporativo', titular: 'Monitoreamos y mejoramos tus procesos' },
+            { tone: 'Humano', titular: 'Siempre creciendo: tu tecnología al día' },
+            { tone: 'Técnico', titular: 'Dashboard de KPIs y ajustes proactivos' }
+        ],
+        ctaVariants: [
+            { original: 'Ver métrica de rendimiento', alt: ['Analizar resultados ahora', 'Dashboard personalizado', 'Mis datos en tiempo real', 'Ver KPIs clave', 'Monitorear mi sistema', 'Acceder a métricas'] },
+            { original: 'Contratar seguimiento mensual', alt: ['Mantenerme siempre optimizado', 'Suscribirme a mejoras continuas', 'Cobertura mensual total', 'Plan de mejora constante', 'Actualización permanente', 'Soporte y evolución'] },
+            { original: 'Optimizar mi solución ya', alt: ['Mejorar mis resultados', 'Actualizar mi plataforma', 'Potenciar mi rendimiento', 'Aumentar mi estabilidad', 'Llevar al siguiente nivel', 'Activa mejoras ahora'] }
+        ],
+        abHypothesis: '“Analizar resultados ahora” vs “Suscribirme a mejoras continuas”: Acción inmediata vs plan a largo plazo.'
     }
 ]
 
@@ -133,7 +204,7 @@ export const productsDetail = [
         price: 'Paquete de Auditoría',
         ctaText: 'Solicitar diagnóstico',
         seoTitle: 'Diagnóstico MD-IA – Madurez Digital',
-        seoDescription: 'Informe ejecutivo de madurez digital e IA con hoja de ruta priorizada. Mejora tu competitividad.',
+        seoDescription: 'Informe ejecutivo de madurez digital e IA con hoja de ruta priorizada.',
         icon: ClipboardCheck,
         variants: [
             { tone: 'Corporativo', titular: 'Diagnóstico de Madurez Digital y de IA' },
@@ -150,7 +221,7 @@ export const productsDetail = [
         price: 'Trial de 4 Semanas',
         ctaText: 'Agendar demo',
         seoTitle: 'Prototipo Funcional – MVP Ágil',
-        seoDescription: 'Desarrollo rápido de prototipo funcional para validar tu proyecto digital. Mide impacto antes de escalar.',
+        seoDescription: 'Desarrollo rápido de prototipo funcional para validar tu proyecto digital.',
         icon: Zap,
         variants: [
             { tone: 'Corporativo', titular: 'Prototipo de Solución en 4 semanas' },
@@ -167,7 +238,7 @@ export const productsDetail = [
         price: 'Suscripción Mensual',
         ctaText: 'Ver detalles técnicos',
         seoTitle: 'Servicio de Mejora Continua – SLA Garantizado',
-        seoDescription: 'Cobertura mensual de soporte, actualización y optimización de tu solución digital. Seguridad y rendimiento.',
+        seoDescription: 'Cobertura mensual de soporte, actualización y optimización de tu solución digital.',
         icon: Infinity,
         variants: [
             { tone: 'Corporativo', titular: 'Soporte y Mejora Continua' },

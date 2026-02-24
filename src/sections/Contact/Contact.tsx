@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { siteConfig } from '../../data/config'
-import { Button } from '../../components/ui/Button'
+import { ContactForm } from '../../components/forms/ContactForm'
 import { Mail, MapPin, Linkedin, Terminal } from 'lucide-react'
 
 export function Contact() {
@@ -45,35 +45,9 @@ export function Contact() {
                         viewport={{ once: true }}
                         className="bg-white border-4 border-slate-900 p-12 lg:p-20 shadow-[20px_20px_0px_0px_rgba(0,0,0,0.05)]"
                     >
-                        <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
-                            <div className="space-y-4">
-                                <label className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Identity Name</label>
-                                <input
-                                    type="text"
-                                    placeholder="Andrés Tabla"
-                                    className="w-full bg-slate-50 border-b-2 border-slate-200 p-4 text-xl font-bold text-slate-900 outline-none focus:border-brand-primary transition-all placeholder:text-slate-300"
-                                />
-                            </div>
-                            <div className="space-y-4">
-                                <label className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Transmission Protocol (Email)</label>
-                                <input
-                                    type="email"
-                                    placeholder="andres@corporation.com"
-                                    className="w-full bg-slate-50 border-b-2 border-slate-200 p-4 text-xl font-bold text-slate-900 outline-none focus:border-brand-primary transition-all placeholder:text-slate-300"
-                                />
-                            </div>
-                            <div className="space-y-4">
-                                <label className="text-xs font-black uppercase tracking-[0.4em] text-slate-400">Project Brief</label>
-                                <textarea
-                                    rows={4}
-                                    placeholder="¿Cuál es tu próximo hito digital?"
-                                    className="w-full bg-slate-50 border-b-2 border-slate-200 p-4 text-xl font-bold text-slate-900 outline-none focus:border-brand-primary transition-all placeholder:text-slate-300 resize-none"
-                                />
-                            </div>
-                            <Button size="lg" className="w-full py-6">
-                                Submit Access Request
-                            </Button>
-                        </form>
+                        <div className="bg-white p-12 md:p-16 border-b-8 border-brand-primary shadow-2xl">
+                            <ContactForm />
+                        </div>
                     </motion.div>
                 </div>
             </div>
