@@ -24,7 +24,6 @@ export function LanguageSelector() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const currentLang = languages.find(l => l.code === language);
 
     return (
         <div className="relative" ref={dropdownRef}>
