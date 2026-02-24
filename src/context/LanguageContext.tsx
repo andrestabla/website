@@ -147,6 +147,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     // Effect: Handle CMS State changes or Language changes
     useEffect(() => {
+        console.log("useEffect triggered: lang=", language, "cmsStateChanged=", cmsState !== translatedState);
         performTranslation(language, cmsState);
     }, [language, cmsState, performTranslation]);
 
