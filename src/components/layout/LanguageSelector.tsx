@@ -12,7 +12,15 @@ const languages: { code: Language; label: string; flag: string }[] = [
 export function LanguageSelector() {
     const { language, setLanguage, isTranslating } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
+    const [isConfigured, setIsConfigured] = useState(true);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // Import check at runtime
+        import('../../lib/gemini').then(m => {
+            setIsConfigured(m.isGeminiConfigured());
+        });
+    }, [language]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -77,6 +85,13 @@ export function LanguageSelector() {
                             <div className="px-4 py-2 bg-brand-secondary/10 border-t border-slate-100">
                                 <span className="text-[8px] font-black uppercase tracking-[0.2em] text-brand-secondary animate-pulse">
                                     Translating via Gemini...
+                                </span>
+                            </div>
+                        )}
+                        {!isConfigured && (
+                            <div className="px-4 py-2 bg-red-50 border-t border-red-100">
+                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-red-500">
+                                    API Key not found
                                 </span>
                             </div>
                         )}
