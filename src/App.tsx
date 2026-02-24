@@ -42,6 +42,7 @@ function App() {
             <Route path="/protocolos/madurez-organica" element={<MadurezOrganica />} />
 
             {/* Admin Routes */}
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="/admin/login" element={<LoginPage />} />
             <Route path="/admin/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/admin/home" element={<ProtectedRoute><ManageHome /></ProtectedRoute>} />

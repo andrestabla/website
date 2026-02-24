@@ -7,20 +7,22 @@ import { loadIntegrations } from "../admin/lib/integrationsStore";
 
 let genAI: GoogleGenerativeAI | null = null;
 
-function getAI() {
+export function getAI() {
     if (genAI) return genAI;
 
-    // Priority 1: integrationsStore (Admin UI)
     const integrations = loadIntegrations();
     const apiKey = integrations.gemini.config.apiKey || import.meta.env.VITE_GEMINI_API_KEY;
 
     if (!apiKey) {
-        console.warn("Gemini API Key not found in store or env.");
         return null;
     }
 
     genAI = new GoogleGenerativeAI(apiKey);
     return genAI;
+}
+
+export function isGeminiConfigured() {
+    return getAI() !== null;
 }
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -57,8 +59,12 @@ export async function translateText(text: string, targetLang: string): Promise<s
  * Translates string values while preserving keys and structure.
  */
 export async function translateObject<T>(obj: T, targetLang: string): Promise<T> {
+    if (targetLang === 'es') return obj;
+
     const ai = getAI();
-    if (!ai || targetLang === 'es') return obj;
+    if (!ai) {
+        throw new Error("Gemini API key is not configured. Please add it in the Admin Integrations panel.");
+    }
 
     try {
         const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
