@@ -12,7 +12,8 @@ import {
     ExternalLink,
     SearchCheck,
     Megaphone,
-    BarChart2
+    BarChart2,
+    Home
 } from 'lucide-react'
 
 
@@ -27,6 +28,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
     const navigation = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms' },
+        { name: 'Home', href: '/admin/home', icon: Home, group: 'cms' },
         { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms' },
         { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms' },
         { name: 'Configuración', href: '/admin/settings', icon: Settings, group: 'cms' },
