@@ -4,6 +4,7 @@ import { ProductPage } from './pages/ProductPage'
 import { LoginPage } from './admin/pages/LoginPage'
 import { Dashboard } from './admin/pages/Dashboard'
 import { ManageHome } from './admin/pages/ManageHome'
+import { ManageDesign } from './admin/pages/ManageDesign'
 import { ManageServices } from './admin/pages/ManageServices'
 import { ManageProducts } from './admin/pages/ManageProducts'
 import { ManageSite } from './admin/pages/ManageSite'
@@ -38,6 +39,7 @@ function App() {
           <Route path="/admin/services" element={<ProtectedRoute><ManageServices /></ProtectedRoute>} />
           <Route path="/admin/products" element={<ProtectedRoute><ManageProducts /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute><ManageSite /></ProtectedRoute>} />
+          <Route path="/admin/design" element={<ProtectedRoute><ManageDesign /></ProtectedRoute>} />
           <Route path="/admin/seo" element={<ProtectedRoute><ManageSEO /></ProtectedRoute>} />
           <Route path="/admin/marketing" element={<ProtectedRoute><ManageMarketing /></ProtectedRoute>} />
           <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />

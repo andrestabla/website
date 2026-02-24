@@ -13,7 +13,8 @@ import {
     SearchCheck,
     Megaphone,
     BarChart2,
-    Home
+    Home,
+    Paintbrush
 } from 'lucide-react'
 
 
@@ -32,6 +33,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms' },
         { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms' },
         { name: 'Configuración', href: '/admin/settings', icon: Settings, group: 'cms' },
+        { name: 'Diseño', href: '/admin/design', icon: Paintbrush, group: 'cms' },
         { name: 'SEO Manager', href: '/admin/seo', icon: SearchCheck, group: 'growth' },
         { name: 'Marketing', href: '/admin/marketing', icon: Megaphone, group: 'growth' },
         { name: 'Analítica', href: '/admin/analytics', icon: BarChart2, group: 'growth' },

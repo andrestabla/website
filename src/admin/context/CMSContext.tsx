@@ -1,13 +1,10 @@
 /**
  * CMSContext — Runtime in-memory CMS store backed by localStorage.
- * All admin pages READ from and WRITE to this context.
- * The public site already reads from the static data files; the CMS
- * updates the context and localStorage so changes persist across page reloads
- * (until a real backend/API is integrated).
+ * Includes design tokens that are injected as CSS custom properties.
  */
 
 import {
-    createContext, useContext, useState, useCallback,
+    createContext, useContext, useState, useCallback, useEffect,
     type ReactNode,
 } from 'react'
 import { servicesDetail, productsDetail } from '../../data/details'
@@ -28,7 +25,6 @@ export type ServiceItem = {
     seoTitle: string
     seoDescription: string
     features: string[]
-    // icon is intentionally omitted from editable state (it's a React component)
 }
 
 export type ProductItem = {
@@ -61,11 +57,96 @@ export type SiteConfig = {
     twitter: string
 }
 
+export type DesignTokens = {
+    // Colors (hex format for color inputs, converted to oklch at runtime)
+    colorPrimary: string       // brand-primary: deep tech blue
+    colorSecondary: string     // brand-secondary: action blue
+    colorSurface: string       // brand-surface: tinted background
+    colorAccent: string        // accent highlight (gradient, selections)
+
+    // Typography
+    fontBody: string           // body font family
+    fontDisplay: string        // display/heading font family
+
+    // Layout
+    borderRadius: string       // 'none' | 'sm' | 'md' | 'lg' | 'full'
+    buttonStyle: string        // 'sharp' | 'rounded' | 'pill'
+    gridOpacity: string        // infra-grid opacity string
+
+    // Dark panel color (hero card, service page sidebar)
+    colorDark: string
+}
+
 export type CMSState = {
     services: ServiceItem[]
     products: ProductItem[]
     hero: HeroContent
     site: SiteConfig
+    design: DesignTokens
+}
+
+// ─── Default Design Tokens ────────────────────────────────────────────────────
+
+export const defaultDesign: DesignTokens = {
+    colorPrimary: '#1a2d5a',     // Deep navy
+    colorSecondary: '#2563eb',   // Electric blue (Tailwind blue-600)
+    colorSurface: '#f8faff',     // Ultra-light blue-tinted white
+    colorAccent: '#3b82f6',      // Tailwind blue-500
+    colorDark: '#0f172a',        // Slate-900 (dark panels)
+
+    fontBody: 'Inter',
+    fontDisplay: 'Inter',
+
+    borderRadius: 'none',
+    buttonStyle: 'sharp',
+    gridOpacity: '0.03',
+}
+
+// ─── CSS Injection ────────────────────────────────────────────────────────────
+
+
+export function injectDesignTokens(tokens: DesignTokens) {
+    const root = document.documentElement
+
+    // Override Tailwind v4 color tokens
+    // Tailwind reads --color-brand-* so we set them directly
+    root.style.setProperty('--color-brand-primary', tokens.colorPrimary)
+    root.style.setProperty('--color-brand-secondary', tokens.colorSecondary)
+    root.style.setProperty('--color-brand-surface', tokens.colorSurface)
+
+    // Font overrides
+    root.style.setProperty('--font-sans', `"${tokens.fontBody}", system-ui, sans-serif`)
+    root.style.setProperty('--font-display', `"${tokens.fontDisplay}", serif`)
+
+    // Border-radius mapping
+    const radii: Record<string, string> = {
+        none: '0px',
+        sm: '4px',
+        md: '8px',
+        lg: '16px',
+        full: '9999px',
+    }
+    root.style.setProperty('--cms-radius', radii[tokens.borderRadius] ?? '0px')
+
+    // Dark panel
+    root.style.setProperty('--cms-dark', tokens.colorDark)
+
+    // Grid opacity
+    root.style.setProperty('--cms-grid-opacity', tokens.gridOpacity)
+
+    // Load Google Font dynamically
+    const fontFamily = tokens.fontBody
+    const existingLink = document.getElementById('cms-font-link')
+    if (existingLink) existingLink.remove()
+
+    const builtInFonts = ['Inter', 'system-ui']
+    if (!builtInFonts.includes(fontFamily)) {
+        const link = document.createElement('link')
+        link.id = 'cms-font-link'
+        link.rel = 'stylesheet'
+        link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@300;400;600;700;900&display=swap`
+        document.head.appendChild(link)
+    }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -134,6 +215,7 @@ function buildInitialState(): CMSState {
         products: stored.products ?? staticProducts,
         hero: stored.hero ?? staticHero,
         site: stored.site ?? staticSite,
+        design: stored.design ?? defaultDesign,
     }
 }
 
@@ -142,23 +224,18 @@ function buildInitialState(): CMSState {
 type CMSContextType = {
     state: CMSState
 
-    // Services
     updateService: (slug: string, data: Partial<ServiceItem>) => void
-    addService: (data: Omit<ServiceItem, 'slug'> & { slug: string }) => void
+    addService: (data: ServiceItem) => void
     deleteService: (slug: string) => void
 
-    // Products
     updateProduct: (slug: string, data: Partial<ProductItem>) => void
     addProduct: (data: ProductItem) => void
     deleteProduct: (slug: string) => void
 
-    // Hero
     updateHero: (data: Partial<HeroContent>) => void
-
-    // Site
     updateSite: (data: Partial<SiteConfig>) => void
+    updateDesign: (data: Partial<DesignTokens>) => void
 
-    // Reset
     resetToDefaults: () => void
 }
 
@@ -169,6 +246,11 @@ const CMSContext = createContext<CMSContextType | null>(null)
 export function CMSProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<CMSState>(buildInitialState)
 
+    // Inject design tokens on mount and whenever they change
+    useEffect(() => {
+        injectDesignTokens(state.design)
+    }, [state.design])
+
     const persist = useCallback((next: CMSState) => {
         setState(next)
         saveToStorage(next)
@@ -176,10 +258,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
 
     const updateService = useCallback((slug: string, data: Partial<ServiceItem>) => {
         setState(prev => {
-            const next = {
-                ...prev,
-                services: prev.services.map(s => s.slug === slug ? { ...s, ...data } : s),
-            }
+            const next = { ...prev, services: prev.services.map(s => s.slug === slug ? { ...s, ...data } : s) }
             saveToStorage(next)
             return next
         })
@@ -203,10 +282,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
 
     const updateProduct = useCallback((slug: string, data: Partial<ProductItem>) => {
         setState(prev => {
-            const next = {
-                ...prev,
-                products: prev.products.map(p => p.slug === slug ? { ...p, ...data } : p),
-            }
+            const next = { ...prev, products: prev.products.map(p => p.slug === slug ? { ...p, ...data } : p) }
             saveToStorage(next)
             return next
         })
@@ -242,7 +318,16 @@ export function CMSProvider({ children }: { children: ReactNode }) {
             saveToStorage(next)
             return next
         })
-    }, [persist])
+    }, [])
+
+    const updateDesign = useCallback((data: Partial<DesignTokens>) => {
+        setState(prev => {
+            const next = { ...prev, design: { ...prev.design, ...data } }
+            saveToStorage(next)
+            injectDesignTokens(next.design) // immediate visual feedback
+            return next
+        })
+    }, [])
 
     const resetToDefaults = useCallback(() => {
         const fresh: CMSState = {
@@ -250,8 +335,10 @@ export function CMSProvider({ children }: { children: ReactNode }) {
             products: staticProducts,
             hero: staticHero,
             site: staticSite,
+            design: defaultDesign,
         }
         persist(fresh)
+        injectDesignTokens(defaultDesign)
     }, [persist])
 
     return (
@@ -259,8 +346,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
             state,
             updateService, addService, deleteService,
             updateProduct, addProduct, deleteProduct,
-            updateHero,
-            updateSite,
+            updateHero, updateSite, updateDesign,
             resetToDefaults,
         }}>
             {children}
