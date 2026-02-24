@@ -43,17 +43,23 @@ function saveCache(cache: TranslationCache) {
 
 // Simple hash function for CMS state to detect changes
 function getCMSHash(state: CMSState): string {
-    // We only hash content, not design tokens or URLs
-    const content = {
-        hero: state.hero,
-        services: state.services,
-        products: state.products,
-        site: {
-            name: state.site.name,
-            description: state.site.description
-        }
-    };
-    return btoa(JSON.stringify(content)).slice(0, 32);
+    try {
+        // We only hash content, not design tokens or URLs
+        const content = JSON.stringify({
+            hero: state.hero,
+            services: state.services,
+            products: state.products,
+            site: {
+                name: state.site.name,
+                description: state.site.description
+            }
+        });
+        // Use a simple but Unicode-safe "hash": string length + first/last chars
+        return `${content.length}-${content.slice(0, 10)}-${content.slice(-10)}`;
+    } catch (e) {
+        console.error("Hash calculation failed:", e);
+        return "fallback-hash-" + Date.now();
+    }
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
@@ -74,6 +80,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         }
 
         const hash = getCMSHash(baseState);
+        console.log("CMS Hash calculated:", hash);
         const cache = loadCache();
 
         if (cache[targetLang]?.[hash]) {
