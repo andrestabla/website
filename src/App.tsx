@@ -6,6 +6,9 @@ import { Dashboard } from './admin/pages/Dashboard'
 import { ManageServices } from './admin/pages/ManageServices'
 import { ManageProducts } from './admin/pages/ManageProducts'
 import { ManageSite } from './admin/pages/ManageSite'
+import { ManageSEO } from './admin/pages/ManageSEO'
+import { ManageMarketing } from './admin/pages/ManageMarketing'
+import { Analytics } from './admin/pages/Analytics'
 import { AdminLayout } from './admin/components/AdminLayout'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate } from 'react-router-dom'
@@ -51,14 +54,10 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/admin/settings"
-          element={
-            <ProtectedRoute>
-              <ManageSite />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/settings" element={<ProtectedRoute><ManageSite /></ProtectedRoute>} />
+        <Route path="/admin/seo" element={<ProtectedRoute><ManageSEO /></ProtectedRoute>} />
+        <Route path="/admin/marketing" element={<ProtectedRoute><ManageMarketing /></ProtectedRoute>} />
+        <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
       </Routes>
     </AnimatePresence>
   )

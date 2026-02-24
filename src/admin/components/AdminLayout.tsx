@@ -9,7 +9,10 @@ import {
     Menu,
     X,
     Shield,
-    ExternalLink
+    ExternalLink,
+    SearchCheck,
+    Megaphone,
+    BarChart2
 } from 'lucide-react'
 
 
@@ -23,10 +26,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     const navigate = useNavigate()
 
     const navigation = [
-        { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-        { name: 'Servicios', href: '/admin/services', icon: Briefcase },
-        { name: 'Productos', href: '/admin/products', icon: Package },
-        { name: 'Configuración', href: '/admin/settings', icon: Settings },
+        { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms' },
+        { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms' },
+        { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms' },
+        { name: 'Configuración', href: '/admin/settings', icon: Settings, group: 'cms' },
+        { name: 'SEO Manager', href: '/admin/seo', icon: SearchCheck, group: 'growth' },
+        { name: 'Marketing', href: '/admin/marketing', icon: Megaphone, group: 'growth' },
+        { name: 'Analítica', href: '/admin/analytics', icon: BarChart2, group: 'growth' },
     ]
 
     const handleLogout = () => {
