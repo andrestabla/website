@@ -1,11 +1,13 @@
-import { content } from '../../data/content'
+import { useCMS } from '../../admin/context/CMSContext'
 import { Card } from '../../components/ui/Card'
 import { CheckCircle2, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { servicesDetail } from '../../data/details'
 
 export function Services() {
-    const { services } = content
+    const { state } = useCMS()
+    // CMS services are a flat ServiceItem[]; icons live in servicesDetail (React components can't be stored)
+    const services = state.services
 
     return (
         <section className="py-32 px-6 bg-slate-50 border-y border-slate-200 relative overflow-hidden">
@@ -18,27 +20,26 @@ export function Services() {
                     <div className="flex items-center gap-4 mb-6">
                         <span className="w-12 h-1 bg-brand-primary" />
                         <span className="text-sm font-black uppercase tracking-[0.4em] text-brand-primary">
-                            Infrastructure & Operations
+                            Infrastructure &amp; Operations
                         </span>
                     </div>
                     <h2 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 tracking-tighter">
-                        {services.title}
+                        Portafolio de Servicios Digitales
                     </h2>
                     <p className="text-2xl text-slate-500 font-light max-w-2xl border-l-2 border-slate-200 pl-8">
-                        {services.subtitle}
+                        Nuestro método sistemático para capturar valor y asegurar la adopción real.
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border-t border-l border-slate-200">
-                    {services.items.map((service, index) => {
-                        const Icon = service.icon
-                        // Match with unique slug from details
-                        const detail = servicesDetail[index]
-                        const slug = detail ? detail.slug : 'captura-adn' // Fallback for index safety
+                    {services.map((service, index) => {
+                        // Get the icon from static data by matching slug
+                        const staticDetail = servicesDetail.find(d => d.slug === service.slug) ?? servicesDetail[index]
+                        const Icon = staticDetail?.icon
 
                         return (
                             <Card
-                                key={service.id}
+                                key={service.slug}
                                 initial={{ opacity: 0 }}
                                 whileInView={{ opacity: 1 }}
                                 viewport={{ once: true }}
@@ -47,7 +48,7 @@ export function Services() {
                             >
                                 <div className="flex items-start justify-between mb-16">
                                     <div className="w-16 h-16 rounded-none bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-primary group-hover:text-white transition-all duration-500">
-                                        <Icon className="w-8 h-8 stroke-[1.5]" />
+                                        {Icon && <Icon className="w-8 h-8 stroke-[1.5]" />}
                                     </div>
                                     <span className="text-4xl font-black text-slate-50 group-hover:text-slate-100 transition-colors">
                                         0{index + 1}
@@ -72,10 +73,10 @@ export function Services() {
                                 </div>
 
                                 <Link
-                                    to={`/servicios/${slug}`}
+                                    to={`/servicios/${service.slug}`}
                                     className="flex items-center text-sm font-black uppercase tracking-[0.2em] text-brand-primary hover:text-slate-900 transition-colors group/btn"
                                 >
-                                    {service.cta}
+                                    {service.ctaPrimary}
                                     <ArrowRight className="ml-3 w-5 h-5 group-hover/btn:translate-x-2 transition-transform" />
                                 </Link>
                             </Card>
