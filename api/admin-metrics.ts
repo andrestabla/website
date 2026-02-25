@@ -29,53 +29,71 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const started = Date.now()
   try {
     if (!requireAdminSession(req, res)) return
-    const [cmsSnapshot, integrationsSnapshot, translationCount, translationsByLang, latestTranslations, latestSnapshots,
-      analyticsTotalEvents, pageViewCount, sectionViewCount, consentCount, avgTimeAggregate, topPagesRaw, topSectionsRaw,
-      byCountryRaw, recentAnalytics, recentConsents
-    ] = await Promise.all([
+    const [cmsSnapshot, integrationsSnapshot, translationCount, translationsByLang, latestTranslations, latestSnapshots] = await Promise.all([
       prisma.cmsSnapshot.findUnique({ where: { id: CMS_ID } }),
       prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } }),
       prisma.translationCache.count(),
       prisma.translationCache.groupBy({ by: ['targetLang'], _count: { _all: true } }),
       prisma.translationCache.findMany({ orderBy: { updatedAt: 'desc' }, take: 20, select: { targetLang: true, updatedAt: true, provider: true, model: true } }),
       prisma.cmsSnapshot.findMany({ orderBy: { updatedAt: 'desc' }, take: 10, select: { id: true, updatedAt: true } }),
-      prisma.analyticsEvent.count(),
-      prisma.analyticsEvent.count({ where: { eventType: 'page_view' } }),
-      prisma.analyticsEvent.count({ where: { eventType: 'section_view' } }),
-      prisma.privacyConsentAcceptance.count(),
-      prisma.analyticsEvent.aggregate({ where: { eventType: 'page_exit', durationMs: { not: null } }, _avg: { durationMs: true } }),
-      prisma.analyticsEvent.groupBy({
-        by: ['path'],
-        where: { eventType: 'page_view', path: { not: null } },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } } as any,
-        take: 10,
-      }),
-      prisma.analyticsEvent.groupBy({
-        by: ['sectionId'],
-        where: { eventType: 'section_view', sectionId: { not: null } },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } } as any,
-        take: 12,
-      }),
-      prisma.analyticsEvent.groupBy({
-        by: ['country'],
-        where: { country: { not: null } },
-        _count: { _all: true },
-        orderBy: { _count: { _all: 'desc' } } as any,
-        take: 10,
-      }),
-      prisma.analyticsEvent.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 400,
-        select: { eventType: true, path: true, sectionId: true, durationMs: true, country: true, city: true, createdAt: true },
-      }),
-      prisma.privacyConsentAcceptance.findMany({
-        orderBy: { acceptedAt: 'desc' },
-        take: 20,
-        select: { policyVersion: true, path: true, country: true, city: true, acceptedAt: true, visitorId: true },
-      }),
     ])
+
+    let analyticsTotalEvents = 0
+    let pageViewCount = 0
+    let sectionViewCount = 0
+    let consentCount = 0
+    let avgTimeAggregate: any = { _avg: { durationMs: null } }
+    let topPagesRaw: any[] = []
+    let topSectionsRaw: any[] = []
+    let byCountryRaw: any[] = []
+    let recentAnalytics: any[] = []
+    let recentConsents: any[] = []
+
+    try {
+      ;([
+        analyticsTotalEvents, pageViewCount, sectionViewCount, consentCount, avgTimeAggregate, topPagesRaw, topSectionsRaw,
+        byCountryRaw, recentAnalytics, recentConsents,
+      ] = await Promise.all([
+        prisma.analyticsEvent.count(),
+        prisma.analyticsEvent.count({ where: { eventType: 'page_view' } }),
+        prisma.analyticsEvent.count({ where: { eventType: 'section_view' } }),
+        prisma.privacyConsentAcceptance.count(),
+        prisma.analyticsEvent.aggregate({ where: { eventType: 'page_exit', durationMs: { not: null } }, _avg: { durationMs: true } }),
+        prisma.analyticsEvent.groupBy({
+          by: ['path'],
+          where: { eventType: 'page_view', path: { not: null } },
+          _count: { _all: true },
+          orderBy: { _count: { _all: 'desc' } } as any,
+          take: 10,
+        }),
+        prisma.analyticsEvent.groupBy({
+          by: ['sectionId'],
+          where: { eventType: 'section_view', sectionId: { not: null } },
+          _count: { _all: true },
+          orderBy: { _count: { _all: 'desc' } } as any,
+          take: 12,
+        }),
+        prisma.analyticsEvent.groupBy({
+          by: ['country'],
+          where: { country: { not: null } },
+          _count: { _all: true },
+          orderBy: { _count: { _all: 'desc' } } as any,
+          take: 10,
+        }),
+        prisma.analyticsEvent.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 400,
+          select: { eventType: true, path: true, sectionId: true, durationMs: true, country: true, city: true, createdAt: true },
+        }),
+        prisma.privacyConsentAcceptance.findMany({
+          orderBy: { acceptedAt: 'desc' },
+          take: 20,
+          select: { policyVersion: true, path: true, country: true, city: true, acceptedAt: true, visitorId: true },
+        }),
+      ]))
+    } catch (analyticsError) {
+      console.error('api/admin-metrics analytics block degraded', analyticsError)
+    }
 
     const cmsData: any = cmsSnapshot?.data ?? {}
     const integrations = sanitizeIntegrations(integrationsSnapshot?.data ?? {})
