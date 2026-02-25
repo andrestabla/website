@@ -3,7 +3,7 @@ import { prisma } from '../../src/lib/prisma.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'GET') {
-        const integrations = await prisma.integration.findMany()
+        const integrations = await (prisma as any).integration.findMany()
         // Convert array to object key/value for frontend convenience
         const state = integrations.reduce((acc: any, curr: any) => {
             acc[curr.key] = {
@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'POST' || req.method === 'PUT') {
         const { key, enabled, status, config } = req.body
-        const integration = await prisma.integration.upsert({
+        const integration = await (prisma as any).integration.upsert({
             where: { key },
             update: { enabled, status, config },
             create: { key, enabled, status, config },
