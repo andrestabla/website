@@ -528,17 +528,16 @@ export function ManageHome() {
                 </div>
             </div>
 
-            {/* Split Layout Container */}
-            <div className="flex-1 flex overflow-hidden">
-                {/* Panel Editor - Left */}
-                <div className="w-full xl:w-[450px] 2xl:w-[500px] border-r border-slate-200 bg-slate-50 flex flex-col shrink-0">
+            {/* Editor Workspace */}
+            <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar">
+                <div className="w-full flex flex-col">
                     <div className="p-4 border-b border-slate-200 bg-white space-y-4">
                         {(['Principal', 'Secciones', 'Sistema'] as const).map((groupName) => {
                             const groupTabs = tabs.filter(t => t.group === groupName)
                             return (
                                 <div key={groupName} className="space-y-2">
                                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">{groupName}</div>
-                                    <div className="grid grid-cols-1 gap-2">
+                                    <div className="flex flex-wrap gap-2">
                                         {groupTabs.map((t) => {
                                             const Icon = t.icon
                                             const isSelected = tab === t.id
@@ -547,7 +546,7 @@ export function ManageHome() {
                                                     key={t.id}
                                                     type="button"
                                                     onClick={() => setTab(t.id)}
-                                                    className={`w-full text-left rounded-xl border px-3 py-3 transition-all ${isSelected
+                                                    className={`text-left rounded-xl border px-3 py-2.5 transition-all min-w-[220px] max-w-full ${isSelected
                                                         ? 'border-brand-primary bg-blue-50/70 shadow-sm'
                                                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                                         }`}
@@ -580,7 +579,7 @@ export function ManageHome() {
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                    <div className="p-6 space-y-6">
                         <AnimatePresence>
                             {saved && (
                                 <motion.div
@@ -1036,8 +1035,6 @@ export function ManageHome() {
                         )}
                     </div>
                 </div>
-
-                {/* Panel Preview - Right - HIGH FIDELITY */}
             </div>
 
             <AnimatePresence>
