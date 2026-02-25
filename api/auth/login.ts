@@ -16,11 +16,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } else if (password === 'admin123') {
             // Auto-create first admin if DB is empty
             await (prisma as any).adminUser.create({
-                return res.status(200).json({ token: 'session_active_' + Date.now() })
-            }
-
-        return res.status(401).json({ error: 'Protocolo de acceso denegado. Credencial inválida.' })
+                data: {
+                    username: 'admin',
+                    passwordHash: 'admin123',
+                    displayName: 'Admin Default',
+                }
+            })
+            return res.status(200).json({ token: 'session_active_' + Date.now() })
         }
 
-        return res.status(405).json({ error: 'Method not allowed' })
+        return res.status(401).json({ error: 'Protocolo de acceso denegado. Credencial inválida.' })
     }
+
+    return res.status(405).json({ error: 'Method not allowed' })
+}
