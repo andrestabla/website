@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useCMS } from '../../admin/context/CMSContext'
-import { getOrCreateVisitorId, getSessionId, getStoredConsent } from '../../lib/privacyConsent'
+import { CONSENT_CHANGED_EVENT, getOrCreateVisitorId, getSessionId, getStoredConsent } from '../../lib/privacyConsent'
 
 type TelemetryEvent = {
   eventType: 'page_view' | 'section_view' | 'page_exit'
@@ -45,10 +45,25 @@ function postEvents(events: TelemetryEvent[]) {
 export function SiteTelemetry() {
   const { pathname, search } = useLocation()
   const { state } = useCMS()
+  const [consentRevision, setConsentRevision] = useState(0)
   const currentPathRef = useRef<string>('')
   const startedAtRef = useRef<number>(0)
   const sectionsSeenRef = useRef<Set<string>>(new Set())
   const observerRef = useRef<IntersectionObserver | null>(null)
+
+  useEffect(() => {
+    const onConsentChanged = () => setConsentRevision((v) => v + 1)
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key !== 'algoritmot_data_consent_v1') return
+      setConsentRevision((v) => v + 1)
+    }
+    window.addEventListener(CONSENT_CHANGED_EVENT, onConsentChanged as EventListener)
+    window.addEventListener('storage', onStorage)
+    return () => {
+      window.removeEventListener(CONSENT_CHANGED_EVENT, onConsentChanged as EventListener)
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [])
 
   useEffect(() => {
     if (pathname.startsWith('/admin')) return
@@ -116,7 +131,7 @@ export function SiteTelemetry() {
       observer.disconnect()
       window.removeEventListener('beforeunload', handleBeforeUnload)
     }
-  }, [pathname, search, state.site.dataPolicyEnabled, state.site.dataPolicyVersion])
+  }, [pathname, search, state.site.dataPolicyEnabled, state.site.dataPolicyVersion, consentRevision])
 
   return null
 }

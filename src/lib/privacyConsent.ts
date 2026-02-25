@@ -1,5 +1,6 @@
 export const CONSENT_STORAGE_KEY = 'algoritmot_data_consent_v1'
 export const VISITOR_ID_KEY = 'algoritmot_visitor_id_v1'
+export const CONSENT_CHANGED_EVENT = 'algoritmot:consent-changed'
 
 export type StoredConsent = {
   decision: 'accepted' | 'rejected'
@@ -23,6 +24,11 @@ export function getStoredConsent(): StoredConsent | null {
 
 export function setStoredConsent(value: StoredConsent) {
   localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(value))
+  try {
+    window.dispatchEvent(new CustomEvent(CONSENT_CHANGED_EVENT, { detail: value }))
+  } catch {
+    // no-op for non-browser contexts
+  }
 }
 
 export function getOrCreateVisitorId() {
@@ -49,4 +55,3 @@ export function getSessionId() {
     return `s_${Date.now().toString(36)}`
   }
 }
-
