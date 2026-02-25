@@ -352,6 +352,9 @@ export function ManageHome() {
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
     const [previewViewport, setPreviewViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
     const [heroPanelTab, setHeroPanelTab] = useState<'content' | 'background' | 'type' | 'stats' | 'cta'>('content')
+    const [fieldSearch, setFieldSearch] = useState('')
+    const [presetSelection, setPresetSelection] = useState('')
+    const [styleClipboard, setStyleClipboard] = useState<Record<string, any> | null>(null)
 
     // Refs for scrolling to fields
     const fieldRefs = {
@@ -420,6 +423,167 @@ export function ManageHome() {
     }
     const addHeroStat = () => setHome({ ...homeDraft, hero: { ...homeDraft.hero, stats: [...homeDraft.hero.stats, { label: 'Nuevo Stat', value: '0' }] } })
     const removeHeroStat = (index: number) => setHome({ ...homeDraft, hero: { ...homeDraft.hero, stats: homeDraft.hero.stats.filter((_, i) => i !== index) } })
+
+    const resetCurrentSection = () => {
+        if (tab === 'hero') {
+            setHeroDraft({ ...state.hero })
+            setHome({ ...homeDraft, hero: JSON.parse(JSON.stringify(state.homePage.hero)) })
+            return
+        }
+        if (tab === 'services') return setHome({ ...homeDraft, servicesSection: JSON.parse(JSON.stringify(state.homePage.servicesSection)) })
+        if (tab === 'products') return setHome({ ...homeDraft, productsSection: JSON.parse(JSON.stringify(state.homePage.productsSection)) })
+        if (tab === 'frameworks') return setHome({ ...homeDraft, frameworksSection: JSON.parse(JSON.stringify(state.homePage.frameworksSection)) })
+        if (tab === 'contact') return setHome({ ...homeDraft, contactSection: JSON.parse(JSON.stringify(state.homePage.contactSection)) })
+        if (tab === 'visual') return setDesignDraft({ ...state.design })
+        if (tab === 'advanced') return setHomeDraft(JSON.parse(JSON.stringify(state.homePage)))
+    }
+
+    const getCurrentStyleObject = (): Record<string, any> | null => {
+        if (tab === 'hero') return { ...homeDraft.hero.style }
+        if (tab === 'services') return { ...homeDraft.servicesSection.style }
+        if (tab === 'products') return { ...homeDraft.productsSection.style }
+        if (tab === 'frameworks') return { ...homeDraft.frameworksSection.style }
+        if (tab === 'contact') return { ...homeDraft.contactSection.style }
+        if (tab === 'visual') return {
+            colorPrimary: designDraft.colorPrimary,
+            colorSecondary: designDraft.colorSecondary,
+            colorSurface: designDraft.colorSurface,
+            colorAccent: designDraft.colorAccent,
+            colorDark: designDraft.colorDark,
+            gridOpacity: designDraft.gridOpacity,
+            buttonStyle: designDraft.buttonStyle,
+            borderRadius: designDraft.borderRadius,
+        }
+        return null
+    }
+
+    const applyStyleObjectToCurrentTab = (style: Record<string, any>) => {
+        if (tab === 'hero') return setHome({ ...homeDraft, hero: { ...homeDraft.hero, style: { ...homeDraft.hero.style, ...style } } })
+        if (tab === 'services') return setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, ...style } } })
+        if (tab === 'products') return setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, ...style } } })
+        if (tab === 'frameworks') return setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, ...style } } })
+        if (tab === 'contact') return setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, ...style } } })
+        if (tab === 'visual') {
+            setDesignDraft((d) => ({ ...d, ...style }))
+        }
+    }
+
+    const duplicateCurrentStyle = async () => {
+        const currentStyle = getCurrentStyleObject()
+        if (!currentStyle) return
+        setStyleClipboard(currentStyle)
+        try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(JSON.stringify(currentStyle, null, 2))
+            }
+        } catch { }
+    }
+
+    const applyPreset = (presetId: string) => {
+        setPresetSelection(presetId)
+        if (!presetId) return
+        if (tab === 'hero') {
+            const presets: Record<string, Record<string, string>> = {
+                'hero-industrial': {
+                    sectionOverlayColor: '#ffffff',
+                    sectionOverlayOpacity: '0.80',
+                    rightPanelOverlayColor: '#ffffff',
+                    rightPanelOverlayOpacity: '0.86',
+                    titleColor: '#0f172a',
+                    titleAccentColor: '#2563eb',
+                    subtitleColor: '#64748b',
+                    highlightColor: '#1a2d5a',
+                },
+                'hero-darktech': {
+                    sectionOverlayColor: '#0f172a',
+                    sectionOverlayOpacity: '0.62',
+                    rightPanelOverlayColor: '#0f172a',
+                    rightPanelOverlayOpacity: '0.40',
+                    titleColor: '#ffffff',
+                    titleAccentColor: '#3b82f6',
+                    subtitleColor: '#cbd5e1',
+                    highlightColor: '#cbd5e1',
+                    statsValueColor: '#ffffff',
+                    statsLabelColor: '#cbd5e1',
+                    statsDividerColor: '#334155',
+                    statsPanelBorderColor: '#334155',
+                },
+                'hero-clean': {
+                    sectionOverlayColor: '#ffffff',
+                    sectionOverlayOpacity: '0.92',
+                    rightPanelOverlayColor: '#ffffff',
+                    rightPanelOverlayOpacity: '0.92',
+                    titleColor: '#0f172a',
+                    titleAccentColor: '#2563eb',
+                    subtitleColor: '#64748b',
+                    highlightColor: '#334155',
+                },
+            }
+            return applyStyleObjectToCurrentTab(presets[presetId] || {})
+        }
+        if (tab === 'visual') {
+            const presets: Record<string, Partial<DesignTokens>> = {
+                'visual-algoritmot': { colorPrimary: '#1a2d5a', colorSecondary: '#2563eb', colorAccent: '#3b82f6', colorSurface: '#f8fafc', colorDark: '#0f172a', buttonStyle: 'sharp', borderRadius: 'lg' },
+                'visual-industrial': { colorPrimary: '#0f172a', colorSecondary: '#f97316', colorAccent: '#fb923c', colorSurface: '#f8fafc', colorDark: '#111827', buttonStyle: 'rounded', borderRadius: 'md' },
+                'visual-minimal': { colorPrimary: '#111827', colorSecondary: '#334155', colorAccent: '#64748b', colorSurface: '#ffffff', colorDark: '#0f172a', buttonStyle: 'sharp', borderRadius: 'sm' },
+            }
+            return applyStyleObjectToCurrentTab(presets[presetId] as Record<string, any>)
+        }
+        if (tab === 'services' || tab === 'products' || tab === 'frameworks' || tab === 'contact') {
+            const presets: Record<string, Record<string, any>> = {
+                'section-clean': { backgroundColor: '#f8fafc', backgroundImageUrl: '' },
+                'section-white': { backgroundColor: '#ffffff', backgroundImageUrl: '' },
+                'section-dark': { backgroundColor: '#0f172a' },
+            }
+            return applyStyleObjectToCurrentTab(presets[presetId] || {})
+        }
+    }
+
+    const quickFieldIndex = useMemo(() => ([
+        { id: 'hero-title', tab: 'hero', label: 'Hero título', keywords: 'hero title titular h1 headline', action: () => { setTab('hero'); setHeroPanelTab('content'); fieldRefs.title.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) } },
+        { id: 'hero-subtitle', tab: 'hero', label: 'Hero subtítulo', keywords: 'hero subtitle subtitulo copy description', action: () => { setTab('hero'); setHeroPanelTab('content'); fieldRefs.subtitle.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) } },
+        { id: 'hero-cta', tab: 'hero', label: 'Hero CTA', keywords: 'cta button boton call to action', action: () => { setTab('hero'); setHeroPanelTab('cta'); } },
+        { id: 'hero-overlay', tab: 'hero', label: 'Hero overlay / filtro', keywords: 'overlay filtro opacity opacidad background hero', action: () => { setTab('hero'); setHeroPanelTab('background'); } },
+        { id: 'hero-stats', tab: 'hero', label: 'Hero stats panel', keywords: 'stats panel metricas hero', action: () => { setTab('hero'); setHeroPanelTab('stats'); } },
+        { id: 'services-header', tab: 'services', label: 'Servicios cabecera Home', keywords: 'services home header title subtitle eyebrow', action: () => setTab('services') },
+        { id: 'products-header', tab: 'products', label: 'Productos cabecera Home', keywords: 'products home header title subtitle labels', action: () => setTab('products') },
+        { id: 'frameworks-items', tab: 'frameworks', label: 'Frameworks items', keywords: 'frameworks items compliance cards blocks', action: () => setTab('frameworks') },
+        { id: 'contact-labels', tab: 'contact', label: 'Contacto labels', keywords: 'contact labels linkedin email hq official', action: () => setTab('contact') },
+        { id: 'visual-palette', tab: 'visual', label: 'Paleta global', keywords: 'color palette primary secondary accent visual', action: () => setTab('visual') },
+        { id: 'visual-typography', tab: 'visual', label: 'Tipografías globales', keywords: 'font typography display body visual', action: () => setTab('visual') },
+        { id: 'json-advanced', tab: 'advanced', label: 'JSON avanzado', keywords: 'json advanced raw', action: () => setTab('advanced') },
+    ]), [fieldRefs.title, fieldRefs.subtitle])
+
+    const visibleQuickFields = useMemo(() => {
+        const q = fieldSearch.trim().toLowerCase()
+        if (!q) return []
+        return quickFieldIndex
+            .filter(item => item.tab === tab || (tab === 'structure' && ['services', 'products'].includes(item.tab)))
+            .filter(item => (`${item.label} ${item.keywords}`).toLowerCase().includes(q))
+            .slice(0, 8)
+    }, [fieldSearch, quickFieldIndex, tab])
+
+    const presetOptions = useMemo(() => {
+        if (tab === 'hero') return [
+            { value: '', label: 'Aplicar preset…' },
+            { value: 'hero-clean', label: 'Hero · Clean Light' },
+            { value: 'hero-industrial', label: 'Hero · Industrial' },
+            { value: 'hero-darktech', label: 'Hero · Dark Tech' },
+        ]
+        if (tab === 'visual') return [
+            { value: '', label: 'Aplicar preset…' },
+            { value: 'visual-algoritmot', label: 'Visual · AlgoritmoT' },
+            { value: 'visual-industrial', label: 'Visual · Industrial' },
+            { value: 'visual-minimal', label: 'Visual · Minimal' },
+        ]
+        if (['services', 'products', 'frameworks', 'contact'].includes(tab)) return [
+            { value: '', label: 'Aplicar preset…' },
+            { value: 'section-clean', label: 'Section · Clean' },
+            { value: 'section-white', label: 'Section · White' },
+            { value: 'section-dark', label: 'Section · Dark' },
+        ]
+        return [{ value: '', label: 'Sin presets para esta vista' }]
+    }, [tab])
 
     const previewScaleClass = previewViewport === 'desktop'
         ? 'scale-[0.65] 2xl:scale-[0.8] w-[153.8%] 2xl:w-[125%]'
@@ -531,7 +695,7 @@ export function ManageHome() {
             {/* Editor Workspace */}
             <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar">
                 <div className="w-full flex flex-col">
-                    <div className="p-4 border-b border-slate-200 bg-white space-y-4">
+                    <div className="sticky top-0 z-20 p-4 border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 space-y-4">
                         {(['Principal', 'Secciones', 'Sistema'] as const).map((groupName) => {
                             const groupTabs = tabs.filter(t => t.group === groupName)
                             return (
@@ -576,6 +740,72 @@ export function ManageHome() {
                             {tab === 'contact' && 'Bloque de contacto del Home: títulos, labels y estilos base.'}
                             {tab === 'visual' && 'Tokens visuales globales del Home (paleta, tipografías y estética general).'}
                             {tab === 'advanced' && 'Edición JSON avanzada de homePage. Úsala solo para ajustes finos/estructuras complejas.'}
+                        </div>
+
+                        <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_auto] gap-3 pt-1">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Búsqueda rápida de campos</label>
+                                <Input
+                                    value={fieldSearch}
+                                    onChange={(e) => setFieldSearch(e.target.value)}
+                                    placeholder="Buscar: overlay, cta, subtitle, frameworks..."
+                                />
+                                {fieldSearch.trim() && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {visibleQuickFields.length > 0 ? visibleQuickFields.map((item) => (
+                                            <button
+                                                key={item.id}
+                                                type="button"
+                                                onClick={item.action}
+                                                className="px-3 py-1.5 rounded-full border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-brand-primary hover:border-brand-primary"
+                                            >
+                                                {item.label}
+                                            </button>
+                                        )) : (
+                                            <div className="text-xs text-slate-400">Sin coincidencias para esta sección.</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Atajos de sección</div>
+                                <div className="flex flex-wrap gap-2 xl:justify-end">
+                                    <button
+                                        type="button"
+                                        onClick={resetCurrentSection}
+                                        className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                                    >
+                                        Reset sección
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={duplicateCurrentStyle}
+                                        disabled={!getCurrentStyleObject()}
+                                        className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        Duplicar estilo
+                                    </button>
+                                    {styleClipboard && getCurrentStyleObject() && (
+                                        <button
+                                            type="button"
+                                            onClick={() => applyStyleObjectToCurrentTab(styleClipboard)}
+                                            className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-brand-primary"
+                                        >
+                                            Pegar estilo
+                                        </button>
+                                    )}
+                                    <select
+                                        value={presetSelection}
+                                        onChange={(e) => applyPreset(e.target.value)}
+                                        className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 min-w-[220px]"
+                                    >
+                                        {presetOptions.map((opt) => (
+                                            <option key={opt.value || 'empty'} value={opt.value}>{opt.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
