@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useCMS, type HeroContent, type HomePageContent, type DesignTokens } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
+import { HeroView } from '../../sections/Hero/HeroView'
 
 type Tab = 'hero' | 'services' | 'products' | 'frameworks' | 'contact' | 'visual' | 'advanced' | 'structure' | 'sections'
 
@@ -247,17 +248,6 @@ export function ManageHome() {
         setDesignDraft({ ...state.design })
     }, [state.hero, state.homePage, state.design])
 
-    const scrollToField = (key: keyof typeof fieldRefs) => {
-        fieldRefs[key]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        const el = fieldRefs[key]?.current
-        if (el) {
-            el.classList.add('ring-2', 'ring-brand-primary', 'ring-offset-4')
-            setTimeout(() => {
-                el.classList.remove('ring-2', 'ring-brand-primary', 'ring-offset-4')
-            }, 2000)
-        }
-    }
-
     const saveAll = async () => {
         setIsSaving(true)
         await Promise.all([
@@ -297,18 +287,20 @@ export function ManageHome() {
         JSON.stringify(state.design) !== JSON.stringify(designDraft)
 
     return (
-        <div className="space-y-8 max-w-[1400px] mx-auto pb-20">
-            {/* Header with quick actions */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <div className="flex items-center gap-2 text-brand-primary font-black text-[10px] uppercase tracking-[0.3em] mb-3">
-                        <Zap className="w-3 h-3 fill-current" />
-                        Editor en Vivo
+        <div className="h-[calc(100vh-6rem)] flex flex-col overflow-hidden -m-8 md:-m-12">
+            {/* Header with quick actions - Compressed */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-8 py-4 bg-white border-b border-slate-200 shrink-0">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-brand-primary/10 rounded-xl flex items-center justify-center text-brand-primary">
+                        <Zap className="w-5 h-5 fill-current" />
                     </div>
-                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-2">Home Page</h1>
-                    <p className="text-slate-500 font-medium max-w-xl">
-                        Gestiona el primer impacto de tu sitio. Los cambios se previsualizan al instante antes de publicar.
-                    </p>
+                    <div>
+                        <h1 className="text-xl font-black text-slate-900 tracking-tighter">Home Editor</h1>
+                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <Sparkles className="w-3 h-3" />
+                            Edición en Tiempo Real
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -316,188 +308,190 @@ export function ManageHome() {
                         href="/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary transition-colors pr-4 border-r border-slate-200"
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary transition-colors pr-4 border-r border-slate-200"
                     >
-                        <Home className="w-4 h-4" />
+                        <Home className="w-3.5 h-3.5" />
                         Ver Sitio
                     </a>
                     <button
                         onClick={saveAll}
                         disabled={!hasChanges || isSaving}
-                        className={`group flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all ${hasChanges
-                            ? 'bg-brand-primary text-white shadow-xl shadow-brand-primary/20 hover:scale-[1.02] active:scale-95'
+                        className={`group flex items-center gap-2 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${hasChanges
+                            ? 'bg-brand-primary text-white shadow-lg shadow-brand-primary/20 hover:scale-[1.02] active:scale-95'
                             : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                             }`}
                     >
                         {isSaving ? (
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (
-                            <Save className={`w-5 h-5 transition-transform ${hasChanges && 'group-hover:rotate-12'}`} />
+                            <Save className={`w-4 h-4 transition-transform ${hasChanges && 'group-hover:rotate-12'}`} />
                         )}
-                        {hasChanges ? 'Publicar Cambios' : 'Sin Cambios'}
+                        {hasChanges ? 'Guardar Cambios' : 'Sin Cambios'}
                     </button>
                 </div>
             </div>
 
-            <AnimatePresence>
-                {saved && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 px-6 py-4 rounded-2xl text-emerald-800 font-bold text-sm shadow-sm"
-                    >
-                        <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="w-5 h-5 text-white" />
+            {/* Split Layout Container */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* Panel Editor - Left */}
+                <div className="w-full xl:w-[450px] 2xl:w-[500px] border-r border-slate-200 bg-slate-50 flex flex-col shrink-0">
+                    <div className="p-4 border-b border-slate-200 bg-white">
+                        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl overflow-x-auto custom-scrollbar no-scrollbar">
+                            {tabs.map(t => {
+                                const Icon = t.icon
+                                const isSelected = tab === t.id
+                                return (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => setTab(t.id)}
+                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all shrink-0 ${isSelected
+                                            ? 'bg-white text-brand-primary shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                            }`}
+                                    >
+                                        <Icon className="w-3.5 h-3.5" />
+                                        {t.label}
+                                    </button>
+                                )
+                            })}
                         </div>
-                        Contenido actualizado con éxito en la base de datos de Neon
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    </div>
 
-            {/* Main Tabs */}
-            <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit">
-                {tabs.map(t => {
-                    const Icon = t.icon
-                    const isSelected = tab === t.id
-                    return (
-                        <button
-                            key={t.id}
-                            onClick={() => setTab(t.id)}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${isSelected
-                                ? 'bg-white text-slate-900 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                        >
-                            <Icon className="w-4 h-4" />
-                            {t.label}
-                        </button>
-                    )
-                })}
-            </div>
-
-            {/* Tab Contents */}
-            <div className="mt-8">
-                {tab === 'hero' && (
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-                        <div className="space-y-6 order-2 xl:order-1">
-                            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-                                <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
-                                    <h3 className="font-black text-slate-900 flex items-center gap-3">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />
-                                        Textos Principales
-                                    </h3>
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full">
-                                        Hero Editor
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                        <AnimatePresence>
+                            {saved && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-emerald-800 font-bold text-xs shadow-sm"
+                                >
+                                    <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shrink-0">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                                     </div>
-                                </div>
-                                <div className="space-y-8">
-                                    <div ref={fieldRefs.highlight}>
-                                        <Field label="Highlight"><Input value={heroDraft.highlight} onChange={e => setHeroDraft(d => ({ ...d, highlight: e.target.value }))} /></Field>
+                                    Cambios publicados
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        {tab === 'hero' && (
+                            <div className="space-y-6">
+                                <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                                    <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                                        <h3 className="font-black text-slate-900 text-sm flex items-center gap-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />
+                                            Textos Principales
+                                        </h3>
                                     </div>
-                                    <div ref={fieldRefs.title}>
-                                        <Field label="Titular (H1)"><Textarea rows={3} value={heroDraft.title} onChange={e => setHeroDraft(d => ({ ...d, title: e.target.value }))} /></Field>
-                                    </div>
-                                    <div ref={fieldRefs.subtitle}>
-                                        <Field label="Subtítulo"><Textarea rows={3} value={heroDraft.subtitle} onChange={e => setHeroDraft(d => ({ ...d, subtitle: e.target.value }))} /></Field>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div ref={fieldRefs.cta}>
-                                            <Field label="CTA Principal"><Input value={heroDraft.cta} onChange={e => setHeroDraft(d => ({ ...d, cta: e.target.value }))} /></Field>
+                                    <div className="space-y-6">
+                                        <div ref={fieldRefs.highlight}>
+                                            <Field label="Highlight"><Input value={heroDraft.highlight} onChange={e => setHeroDraft(d => ({ ...d, highlight: e.target.value }))} /></Field>
                                         </div>
-                                        <div ref={fieldRefs.secondaryCta}>
-                                            <Field label="CTA Secundario"><Input value={heroDraft.secondaryCta} onChange={e => setHeroDraft(d => ({ ...d, secondaryCta: e.target.value }))} /></Field>
+                                        <div ref={fieldRefs.title}>
+                                            <Field label="Titular (H1)"><Textarea rows={3} value={heroDraft.title} onChange={e => setHeroDraft(d => ({ ...d, title: e.target.value }))} /></Field>
+                                        </div>
+                                        <div ref={fieldRefs.subtitle}>
+                                            <Field label="Subtítulo"><Textarea rows={3} value={heroDraft.subtitle} onChange={e => setHeroDraft(d => ({ ...d, subtitle: e.target.value }))} /></Field>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div ref={fieldRefs.cta}>
+                                                <Field label="CTA Prim."><Input value={heroDraft.cta} onChange={e => setHeroDraft(d => ({ ...d, cta: e.target.value }))} /></Field>
+                                            </div>
+                                            <div ref={fieldRefs.secondaryCta}>
+                                                <Field label="CTA Sec."><Input value={heroDraft.secondaryCta} onChange={e => setHeroDraft(d => ({ ...d, secondaryCta: e.target.value }))} /></Field>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                </section>
+
+                                <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2 border-b border-slate-100 pb-3">Estilos Visuales</div>
+                                    <ColorField label="Fondo Sección" value={homeDraft.hero.style.backgroundColor} onChange={(v) => setHeroStyle('backgroundColor', v)} />
+                                    <Field label="Imagen/Video Fondo">
+                                        <div className="space-y-3">
+                                            <Input value={homeDraft.hero.style.backgroundImageUrl} onChange={e => setHome({ ...homeDraft, hero: { ...homeDraft.hero, style: { ...homeDraft.hero.style, backgroundImageUrl: e.target.value } } })} />
+                                            <ImageUrlPreview url={homeDraft.hero.style.backgroundImageUrl} />
+                                        </div>
+                                    </Field>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <ColorField label="Color Filtro" value={homeDraft.hero.style.sectionOverlayColor} onChange={(v) => setHeroStyle('sectionOverlayColor', v)} />
+                                        <RangeField label="Opacidad" value={Number(homeDraft.hero.style.sectionOverlayOpacity || '0.92')} onChange={(v) => setHeroStyle('sectionOverlayOpacity', v.toFixed(2))} />
+                                    </div>
+                                    <Field label="Acento Titular">
+                                        <ColorField label="" value={homeDraft.hero.style.titleAccentColor} onChange={(v) => setHeroStyle('titleAccentColor', v)} />
+                                    </Field>
+                                </section>
                             </div>
+                        )}
+                    </div>
+                </div>
 
-                            <div className="bg-white border border-slate-200 p-8 rounded-3xl space-y-4">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-4">Estilos del Hero</div>
-                                <ColorField label="Color fondo sección" value={homeDraft.hero.style.backgroundColor} onChange={(v) => setHeroStyle('backgroundColor', v)} />
-                                <Field label="Imagen/Video fondo">
-                                    <div className="space-y-3">
-                                        <Input value={homeDraft.hero.style.backgroundImageUrl} onChange={e => setHome({ ...homeDraft, hero: { ...homeDraft.hero, style: { ...homeDraft.hero.style, backgroundImageUrl: e.target.value } } })} />
-                                        <ImageUrlPreview url={homeDraft.hero.style.backgroundImageUrl} />
-                                    </div>
-                                </Field>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <ColorField label="Color filtro" value={homeDraft.hero.style.sectionOverlayColor} onChange={(v) => setHeroStyle('sectionOverlayColor', v)} />
-                                    <RangeField label="Opacidad filtro" value={Number(homeDraft.hero.style.sectionOverlayOpacity || '0.92')} onChange={(v) => setHeroStyle('sectionOverlayOpacity', v.toFixed(2))} />
-                                </div>
-                            </div>
-                        </div>
+                {/* Panel Preview - Right - HIGH FIDELITY */}
+                <div className="hidden xl:flex flex-1 bg-white flex-col overflow-hidden relative group">
+                    <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200 shadow-sm animate-pulse-slow">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Site Preview (High-Fidelity)</span>
+                    </div>
 
-                        <div className="sticky top-10 order-1 xl:order-2 space-y-4">
-                            <div className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 px-4">Preview Live</div>
-                            <div className="relative group bg-[#0F172A] rounded-[2.5rem] border-[12px] border-slate-900 shadow-2xl overflow-hidden aspect-[16/10] flex items-center justify-center p-12 text-center select-none">
-                                <div className="relative z-10 space-y-8 max-w-2xl">
-                                    <motion.div onClick={() => scrollToField('highlight')} className="cursor-pointer hover:ring-2 hover:ring-brand-primary p-2">
-                                        <div className="text-xs font-black uppercase tracking-[0.4em] text-brand-primary mb-2">
-                                            {heroDraft.highlight || 'Highlight'}
-                                        </div>
-                                    </motion.div>
-                                    <motion.h2 onClick={() => scrollToField('title')} className="text-4xl font-black text-white cursor-pointer hover:ring-2 hover:ring-brand-primary p-2">
-                                        {heroDraft.title || 'Main Title'}
-                                    </motion.h2>
-                                    <motion.p onClick={() => scrollToField('subtitle')} className="text-slate-400 font-medium cursor-pointer hover:ring-2 hover:ring-brand-primary p-2">
-                                        {heroDraft.subtitle || 'Supporting description.'}
-                                    </motion.p>
-                                    <div className="flex gap-4 justify-center">
-                                        <div onClick={() => scrollToField('cta')} className="px-6 py-3 bg-brand-primary text-white font-black text-[10px] uppercase rounded-xl cursor-pointer">
-                                            {heroDraft.cta || 'CTA'}
-                                        </div>
-                                        <div onClick={() => scrollToField('secondaryCta')} className="px-6 py-3 border border-white/20 text-white font-black text-[10px] uppercase rounded-xl cursor-pointer">
-                                            {heroDraft.secondaryCta || 'Learn More'}
-                                        </div>
-                                    </div>
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-900 preview-container">
+                        <div className="origin-top-left scale-[0.65] 2xl:scale-[0.8] w-[153.8%] 2xl:w-[125%] transition-transform duration-500 ease-in-out">
+                            {/* Inyectamos los drafts en el componente real para fidelidad 100% */}
+                            <HeroView
+                                hero={heroDraft}
+                                heroSection={homeDraft.hero}
+                                animated={false}
+                            />
+
+                            {/* Resto del home (placeholder estilizado) */}
+                            <div className="h-screen bg-slate-50 border-t border-slate-200 flex items-center justify-center">
+                                <div className="text-center space-y-4">
+                                    <Zap className="w-12 h-12 text-slate-200 mx-auto" />
+                                    <div className="text-xl font-bold text-slate-300">Sections Placeholder</div>
                                 </div>
-                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(37,99,235,0.1),transparent)]" />
                             </div>
                         </div>
                     </div>
-                )}
+                </div>
 
                 {tab === 'services' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div className="space-y-6 bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
+                    <div className="space-y-6">
+                        <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
                             <Field label="Eyebrow"><Input value={homeDraft.servicesSection.eyebrow} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, eyebrow: e.target.value } })} /></Field>
-                            <Field label="Título sección"><Textarea rows={2} value={homeDraft.servicesSection.title} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, title: e.target.value } })} /></Field>
-                            <Field label="Subtítulo sección"><Textarea rows={3} value={homeDraft.servicesSection.subtitle} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, subtitle: e.target.value } })} /></Field>
-                            <ColorField label="Color fondo" value={homeDraft.servicesSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundColor: v } } })} />
-                        </div>
-                        <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm space-y-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-4">Servicios vinculados</div>
+                            <Field label="Título Sección"><Textarea rows={2} value={homeDraft.servicesSection.title} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, title: e.target.value } })} /></Field>
+                            <Field label="Subtítulo"><Textarea rows={3} value={homeDraft.servicesSection.subtitle} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, subtitle: e.target.value } })} /></Field>
+                            <ColorField label="Fondo" value={homeDraft.servicesSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundColor: v } } })} />
+                        </section>
+                        <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Servicios Vinculados</div>
                             {state.services.map(s => (
-                                <div key={s.slug} className="border border-slate-100 p-4 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all">
+                                <div key={s.slug} className="border border-slate-100 p-3 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all cursor-pointer" onClick={() => navigate(`/admin/services?slug=${s.slug}`)}>
                                     <div>
-                                        <div className="font-black text-slate-900">{s.title}</div>
-                                        <div className="text-[10px] text-slate-400 uppercase tracking-widest">{s.highlight}</div>
+                                        <div className="font-black text-slate-900 text-xs">{s.title}</div>
+                                        <div className="text-[9px] text-slate-400 uppercase tracking-widest">{s.highlight}</div>
                                     </div>
-                                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-brand-primary" />
+                                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-brand-primary" />
                                 </div>
                             ))}
-                        </div>
+                        </section>
                     </div>
                 )}
 
                 {tab === 'products' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div className="space-y-6 bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
+                    <div className="space-y-6">
+                        <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
                             <Field label="Eyebrow"><Input value={homeDraft.productsSection.eyebrow} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, eyebrow: e.target.value } })} /></Field>
-                            <Field label="Título sección"><Textarea rows={2} value={homeDraft.productsSection.title} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, title: e.target.value } })} /></Field>
-                            <Field label="Label precio"><Input value={homeDraft.productsSection.availabilityPricingLabel} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, availabilityPricingLabel: e.target.value } })} /></Field>
-                            <ColorField label="Color fondo" value={homeDraft.productsSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundColor: v } } })} />
-                        </div>
-                        <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm space-y-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-4">Productos vinculados</div>
+                            <Field label="Título Sección"><Textarea rows={2} value={homeDraft.productsSection.title} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, title: e.target.value } })} /></Field>
+                            <Field label="Label Precio"><Input value={homeDraft.productsSection.availabilityPricingLabel} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, availabilityPricingLabel: e.target.value } })} /></Field>
+                            <ColorField label="Fondo" value={homeDraft.productsSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundColor: v } } })} />
+                        </section>
+                        <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Productos Vinculados</div>
                             {state.products.map(p => (
-                                <div key={p.slug} className="border border-slate-100 p-4 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all">
-                                    <div className="font-black text-slate-900">{p.title}</div>
-                                    <div className="text-xs font-bold text-brand-primary">{p.price}</div>
+                                <div key={p.slug} className="border border-slate-100 p-3 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all cursor-pointer" onClick={() => navigate(`/admin/products?slug=${p.slug}`)}>
+                                    <div className="font-black text-slate-900 text-xs">{p.title}</div>
+                                    <div className="text-[10px] font-bold text-brand-primary">{p.price}</div>
                                 </div>
                             ))}
-                        </div>
+                        </section>
                     </div>
                 )}
 
