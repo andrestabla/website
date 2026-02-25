@@ -17,8 +17,8 @@ model Hero {
 }
 
 model Service {
-  id              String  @id @default(cuid())
-  slug            String  @unique
+  id              String   @id @default(cuid())
+  slug            String   @unique
   title           String
   highlight       String?
   subtitle        String?
@@ -29,12 +29,12 @@ model Service {
   seoDescription  String?
   iconName        String
   features        String[]
-  active          Boolean @default(true)
+  active          Boolean  @default(true)
 }
 
 model Product {
-  id              String  @id @default(cuid())
-  slug            String  @unique
+  id              String   @id @default(cuid())
+  slug            String   @unique
   title           String
   description     String
   descriptionLong String?
@@ -43,11 +43,11 @@ model Product {
   seoTitle        String?
   seoDescription  String?
   iconName        String
-  active          Boolean @default(true)
+  active          Boolean  @default(true)
 }
 
 model SiteConfig {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String
   email       String
@@ -55,3 +55,35 @@ model SiteConfig {
   linkedin    String
   twitter     String?
 }
+
+model Integration {
+  id      String  @id @default(cuid())
+  key     String  @unique // gemini, openai, smtp, r2
+  enabled Boolean @default(false)
+  status  String  @default("unconfigured")
+  config  Json
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  displayName  String?
+  role         String   @default("admin")
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// model CmsSnapshot {
+//   id        String   @id @default(cuid())
+//   data      Json
+//   createdAt DateTime @default(now())
+// }
+
+// model TranslationCache {
+//   id        String    @id @default(cuid())
+//   key       String?   @unique
+//   value     String?
+//   createdAt DateTime @default(now())
+// }

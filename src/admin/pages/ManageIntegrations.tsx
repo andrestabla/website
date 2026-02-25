@@ -371,16 +371,20 @@ function ConfirmRow({ label, value }: { label: string; value: string }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ManageIntegrations() {
-    const [integrations, setIntegrations] = useState<IntegrationsState>(loadIntegrations)
+    const [integrations, setIntegrations] = useState<IntegrationsState | null>(null)
     const [wizard, setWizard] = useState<WizardState>({ open: false, key: null, step: 0 })
     const [saved, setSaved] = useState(false)
     const [draftConfig, setDraftConfig] = useState<Record<string, unknown>>({})
 
     useEffect(() => {
-        if (wizard.open && wizard.key) {
+        loadIntegrations().then(setIntegrations)
+    }, [])
+
+    useEffect(() => {
+        if (wizard.open && wizard.key && integrations) {
             setDraftConfig({ ...integrations[wizard.key].config } as Record<string, unknown>)
         }
-    }, [wizard.open, wizard.key])
+    }, [wizard.open, wizard.key, integrations])
 
     const openWizard = (key: IntegrationKey) => {
         setWizard({ open: true, key, step: 0 })
@@ -394,31 +398,39 @@ export function ManageIntegrations() {
     const currentDef = integrationDefs.find(d => d.key === wizard.key)
     const totalSteps = currentDef?.steps.length ?? 0
 
-    const handleSave = () => {
-        if (!wizard.key) return
+    const handleSave = async () => {
+        if (!wizard.key || !integrations) return
+
+        const config = { ...integrations[wizard.key].config, ...draftConfig }
+        await saveIntegrations(wizard.key, {
+            config,
+            enabled: true,
+            status: 'configured',
+        })
+
         const next: IntegrationsState = {
             ...integrations,
             [wizard.key]: {
                 ...integrations[wizard.key],
-                config: { ...integrations[wizard.key].config, ...draftConfig },
+                config,
                 enabled: true,
                 status: 'configured',
             },
         }
         setIntegrations(next)
-        saveIntegrations(next)
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
         closeWizard()
     }
 
-    const toggleEnabled = (key: IntegrationKey) => {
+    const toggleEnabled = async (key: IntegrationKey) => {
+        if (!integrations) return
         const next = {
             ...integrations,
             [key]: { ...integrations[key], enabled: !integrations[key].enabled },
         }
         setIntegrations(next)
-        saveIntegrations(next)
+        await saveIntegrations(key, { enabled: next[key].enabled })
     }
 
     const renderWizardContent = () => {

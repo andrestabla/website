@@ -71,19 +71,24 @@ const defaults: IntegrationsState = {
     },
 }
 
-export function loadIntegrations(): IntegrationsState {
+export async function loadIntegrations(): Promise<IntegrationsState> {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY)
-        if (!raw) return JSON.parse(JSON.stringify(defaults))
-        return { ...JSON.parse(JSON.stringify(defaults)), ...JSON.parse(raw) }
+        const res = await fetch('/api/integrations')
+        if (!res.ok) return JSON.parse(JSON.stringify(defaults))
+        const data = await res.json()
+        return { ...JSON.parse(JSON.stringify(defaults)), ...data }
     } catch {
         return JSON.parse(JSON.stringify(defaults))
     }
 }
 
-export function saveIntegrations(state: IntegrationsState) {
+export async function saveIntegrations(key: keyof IntegrationsState, data: any) {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+        await fetch('/api/integrations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key, ...data }),
+        })
     } catch { }
 }
 

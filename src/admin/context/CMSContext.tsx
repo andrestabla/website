@@ -116,21 +116,17 @@ export const defaultDesign: DesignTokens = {
 
 // ─── CSS Injection ────────────────────────────────────────────────────────────
 
-
 export function injectDesignTokens(tokens: DesignTokens) {
+    if (typeof document === 'undefined') return
     const root = document.documentElement
 
-    // Override Tailwind v4 color tokens
-    // Tailwind reads --color-brand-* so we set them directly
     root.style.setProperty('--color-brand-primary', tokens.colorPrimary)
     root.style.setProperty('--color-brand-secondary', tokens.colorSecondary)
     root.style.setProperty('--color-brand-surface', tokens.colorSurface)
 
-    // Font overrides
     root.style.setProperty('--font-sans', `"${tokens.fontBody}", system-ui, sans-serif`)
     root.style.setProperty('--font-display', `"${tokens.fontDisplay}", serif`)
 
-    // Border-radius mapping
     const radii: Record<string, string> = {
         none: '0px',
         sm: '4px',
@@ -139,14 +135,9 @@ export function injectDesignTokens(tokens: DesignTokens) {
         full: '9999px',
     }
     root.style.setProperty('--cms-radius', radii[tokens.borderRadius] ?? '0px')
-
-    // Dark panel
     root.style.setProperty('--cms-dark', tokens.colorDark)
-
-    // Grid opacity
     root.style.setProperty('--cms-grid-opacity', tokens.gridOpacity)
 
-    // Load Google Font dynamically
     const fontFamily = tokens.fontBody
     const existingLink = document.getElementById('cms-font-link')
     if (existingLink) existingLink.remove()
@@ -163,21 +154,39 @@ export function injectDesignTokens(tokens: DesignTokens) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'algoritmot_cms_v1'
-
-function loadFromStorage(): Partial<CMSState> {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY)
-        return raw ? JSON.parse(raw) : {}
-    } catch {
-        return {}
-    }
+const API_ROUTES = {
+    hero: '/api/cms/hero',
+    services: '/api/cms/services',
+    products: '/api/cms/products',
+    site: '/api/cms/site',
 }
 
-function saveToStorage(state: CMSState) {
+async function fetchCMSContent(): Promise<Partial<CMSState>> {
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch { }
+        const [heroRes, servicesRes, productsRes, siteRes] = await Promise.all([
+            fetch(API_ROUTES.hero),
+            fetch(API_ROUTES.services),
+            fetch(API_ROUTES.products),
+            fetch(API_ROUTES.site),
+        ])
+
+        const [hero, services, products, site] = await Promise.all([
+            heroRes.ok ? heroRes.json() : null,
+            servicesRes.ok ? servicesRes.json() : null,
+            productsRes.ok ? productsRes.json() : null,
+            siteRes.ok ? siteRes.json() : null,
+        ])
+
+        return {
+            hero: hero || undefined,
+            services: services || undefined,
+            products: products || undefined,
+            site: site || undefined,
+        }
+    } catch (error) {
+        console.error('Error fetching CMS content:', error)
+        return {}
+    }
 }
 
 // ─── Initial state from static data ──────────────────────────────────────────
@@ -226,13 +235,12 @@ const staticSite: SiteConfig = {
 }
 
 function buildInitialState(): CMSState {
-    const stored = loadFromStorage()
     return {
-        services: stored.services ?? staticServices,
-        products: stored.products ?? staticProducts,
-        hero: stored.hero ?? staticHero,
-        site: stored.site ?? staticSite,
-        design: stored.design ?? defaultDesign,
+        services: staticServices,
+        products: staticProducts,
+        hero: staticHero,
+        site: staticSite,
+        design: defaultDesign,
     }
 }
 
@@ -263,88 +271,157 @@ const CMSContext = createContext<CMSContextType | null>(null)
 export function CMSProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<CMSState>(buildInitialState)
 
+    // Load CMS content from API on mount
+    useEffect(() => {
+        fetchCMSContent().then(data => {
+            setState(prev => ({
+                ...prev,
+                hero: data.hero || prev.hero,
+                services: data.services || prev.services,
+                products: data.products || prev.products,
+                site: data.site || prev.site,
+                design: data.design || prev.design,
+            }))
+        })
+    }, [])
+
     // Inject design tokens on mount and whenever they change
     useEffect(() => {
         injectDesignTokens(state.design)
     }, [state.design])
 
-    const persist = useCallback((next: CMSState) => {
-        setState(next)
-        saveToStorage(next)
+    const updateService = useCallback(async (slug: string, data: Partial<ServiceItem>) => {
+        const service = state.services.find(s => s.slug === slug)
+        if (!service) return
+
+        const updated = { ...service, ...data }
+        await fetch(API_ROUTES.services, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated),
+        })
+
+        setState(prev => ({
+            ...prev,
+            services: prev.services.map(s => s.slug === slug ? updated : s)
+        }))
+    }, [state.services])
+
+    const addService = useCallback(async (data: ServiceItem) => {
+        const res = await fetch(API_ROUTES.services, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        })
+        if (!res.ok) return
+
+        const saved = await res.json()
+        setState(prev => ({
+            ...prev,
+            services: [...prev.services, saved]
+        }))
     }, [])
 
-    const updateService = useCallback((slug: string, data: Partial<ServiceItem>) => {
-        setState(prev => {
-            const next = { ...prev, services: prev.services.map(s => s.slug === slug ? { ...s, ...data } : s) }
-            saveToStorage(next)
-            return next
+    const deleteService = useCallback(async (slug: string) => {
+        const service = state.services.find(s => s.slug === slug)
+        if (!service) return
+
+        const res = await fetch(`${API_ROUTES.services}?id=${(service as any).id}`, {
+            method: 'DELETE',
         })
+        if (!res.ok) return
+
+        setState(prev => ({
+            ...prev,
+            services: prev.services.filter(s => s.slug !== slug)
+        }))
+    }, [state.services])
+
+    const updateProduct = useCallback(async (slug: string, data: Partial<ProductItem>) => {
+        const product = state.products.find(p => p.slug === slug)
+        if (!product) return
+
+        const updated = { ...product, ...data }
+        await fetch(API_ROUTES.products, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated),
+        })
+
+        setState(prev => ({
+            ...prev,
+            products: prev.products.map(p => p.slug === slug ? updated : p)
+        }))
+    }, [state.products])
+
+    const addProduct = useCallback(async (data: ProductItem) => {
+        const res = await fetch(API_ROUTES.products, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        })
+        if (!res.ok) return
+
+        const saved = await res.json()
+        setState(prev => ({
+            ...prev,
+            products: [...prev.products, saved]
+        }))
     }, [])
 
-    const addService = useCallback((data: ServiceItem) => {
-        setState(prev => {
-            const next = { ...prev, services: [...prev.services, data] }
-            saveToStorage(next)
-            return next
-        })
-    }, [])
+    const deleteProduct = useCallback(async (slug: string) => {
+        const product = state.products.find(p => p.slug === slug)
+        if (!product) return
 
-    const deleteService = useCallback((slug: string) => {
-        setState(prev => {
-            const next = { ...prev, services: prev.services.filter(s => s.slug !== slug) }
-            saveToStorage(next)
-            return next
+        const res = await fetch(`${API_ROUTES.products}?id=${(product as any).id}`, {
+            method: 'DELETE',
         })
-    }, [])
+        if (!res.ok) return
 
-    const updateProduct = useCallback((slug: string, data: Partial<ProductItem>) => {
-        setState(prev => {
-            const next = { ...prev, products: prev.products.map(p => p.slug === slug ? { ...p, ...data } : p) }
-            saveToStorage(next)
-            return next
-        })
-    }, [])
+        setState(prev => ({
+            ...prev,
+            products: prev.products.filter(p => p.slug !== slug)
+        }))
+    }, [state.products])
 
-    const addProduct = useCallback((data: ProductItem) => {
-        setState(prev => {
-            const next = { ...prev, products: [...prev.products, data] }
-            saveToStorage(next)
-            return next
+    const updateHero = useCallback(async (data: Partial<HeroContent>) => {
+        const updated = { ...state.hero, ...data }
+        await fetch(API_ROUTES.hero, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated),
         })
-    }, [])
+        setState(prev => ({ ...prev, hero: updated }))
+    }, [state.hero])
 
-    const deleteProduct = useCallback((slug: string) => {
-        setState(prev => {
-            const next = { ...prev, products: prev.products.filter(p => p.slug !== slug) }
-            saveToStorage(next)
-            return next
+    const updateSite = useCallback(async (data: Partial<SiteConfig>) => {
+        const updated = { ...state.site, ...data }
+        await fetch(API_ROUTES.site, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated),
         })
-    }, [])
-
-    const updateHero = useCallback((data: Partial<HeroContent>) => {
-        setState(prev => {
-            const next = { ...prev, hero: { ...prev.hero, ...data } }
-            saveToStorage(next)
-            return next
-        })
-    }, [])
-
-    const updateSite = useCallback((data: Partial<SiteConfig>) => {
-        setState(prev => {
-            const next = { ...prev, site: { ...prev.site, ...data } }
-            saveToStorage(next)
-            return next
-        })
-    }, [])
+        setState(prev => ({ ...prev, site: updated }))
+    }, [state.site])
 
     const updateDesign = useCallback((data: Partial<DesignTokens>) => {
         setState(prev => {
             const next = { ...prev, design: { ...prev.design, ...data } }
-            saveToStorage(next)
-            injectDesignTokens(next.design) // immediate visual feedback
+            injectDesignTokens(next.design)
             return next
         })
     }, [])
+
+    const persist = useCallback(async (next: CMSState) => {
+        setState(next)
+        // Batch updates to multiple endpoints if needed, although usually this is for full resets
+        await Promise.all([
+            updateHero(next.hero),
+            updateSite(next.site),
+            // Services and Products are more complex as they are arrays, 
+            // but usually persist is called for a full state replacement.
+        ])
+    }, [updateHero, updateSite])
 
     const resetToDefaults = useCallback(() => {
         const fresh: CMSState = {

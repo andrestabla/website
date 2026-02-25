@@ -8,14 +8,21 @@ export function LoginPage() {
     const [error, setError] = useState('')
     const navigate = useNavigate()
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
-        // Simple mock auth
-        if (password === 'admin123') {
-            localStorage.setItem('admin_token', 'session_active_' + Date.now())
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password }),
+        })
+
+        if (res.ok) {
+            const { token } = await res.json()
+            localStorage.setItem('admin_token', token)
             navigate('/admin/dashboard')
         } else {
-            setError('Protocolo de acceso denegado. Credencial inválida.')
+            const { error } = await res.json()
+            setError(error || 'Protocolo de acceso denegado. Credencial inválida.')
         }
     }
 
