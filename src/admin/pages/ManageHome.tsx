@@ -335,8 +335,8 @@ export function ManageHome() {
             <div className="flex-1 flex overflow-hidden">
                 {/* Panel Editor - Left */}
                 <div className="w-full xl:w-[450px] 2xl:w-[500px] border-r border-slate-200 bg-slate-50 flex flex-col shrink-0">
-                    <div className="p-4 border-b border-slate-200 bg-white">
-                        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl overflow-x-auto custom-scrollbar no-scrollbar">
+                    <div className="p-4 border-b border-slate-200 bg-white space-y-3">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl">
                             {tabs.map(t => {
                                 const Icon = t.icon
                                 const isSelected = tab === t.id
@@ -344,16 +344,26 @@ export function ManageHome() {
                                     <button
                                         key={t.id}
                                         onClick={() => setTab(t.id)}
-                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all shrink-0 ${isSelected
+                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-black text-[9px] uppercase tracking-widest transition-all min-w-0 ${isSelected
                                             ? 'bg-white text-brand-primary shadow-sm'
                                             : 'text-slate-500 hover:text-slate-700'
                                             }`}
                                     >
                                         <Icon className="w-3.5 h-3.5" />
-                                        {t.label}
+                                        <span className="truncate">{t.label}</span>
                                     </button>
                                 )
                             })}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium">
+                            {tab === 'hero' && 'Edita el bloque principal del Home: textos, fondo, overlays, video/imagen y acentos.'}
+                            {tab === 'structure' && 'Mapa y navegación hacia editores especializados para secciones del Home.'}
+                            {tab === 'services' && 'Cabecera visual/textual de la sección Servicios del Home y acceso rápido a servicios publicados.'}
+                            {tab === 'products' && 'Cabecera visual/textual de Productos en Home y acceso rápido a productos publicados.'}
+                            {tab === 'frameworks' && 'Contenido de frameworks/compliance mostrado en Home.'}
+                            {tab === 'contact' && 'Bloque de contacto del Home: títulos, labels y estilos base.'}
+                            {tab === 'visual' && 'Tokens visuales globales del Home (paleta, tipografías y estética general).'}
+                            {tab === 'advanced' && 'Edición JSON avanzada de homePage. Úsala solo para ajustes finos/estructuras complejas.'}
                         </div>
                     </div>
 
@@ -422,11 +432,149 @@ export function ManageHome() {
                                 </section>
                             </div>
                         )}
+
+                        {tab === 'services' && (
+                            <div className="space-y-6">
+                                <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Cabecera Servicios (Home)</div>
+                                    <Field label="Eyebrow"><Input value={homeDraft.servicesSection.eyebrow} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, eyebrow: e.target.value } })} /></Field>
+                                    <Field label="Título Sección"><Textarea rows={2} value={homeDraft.servicesSection.title} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, title: e.target.value } })} /></Field>
+                                    <Field label="Subtítulo"><Textarea rows={3} value={homeDraft.servicesSection.subtitle} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, subtitle: e.target.value } })} /></Field>
+                                    <Field label="Número decorativo"><Input value={homeDraft.servicesSection.sectionNumber} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, sectionNumber: e.target.value } })} /></Field>
+                                    <ColorField label="Fondo" value={homeDraft.servicesSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundColor: v } } })} />
+                                    <Field label="Imagen Fondo (URL)">
+                                        <div className="space-y-3">
+                                            <Input value={homeDraft.servicesSection.style.backgroundImageUrl} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundImageUrl: e.target.value } } })} />
+                                            <ImageUrlPreview url={homeDraft.servicesSection.style.backgroundImageUrl} />
+                                        </div>
+                                    </Field>
+                                </section>
+                                <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Servicios Vinculados</div>
+                                    {state.services.map(s => (
+                                        <button key={s.slug} type="button" className="w-full border border-slate-100 p-3 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all cursor-pointer text-left" onClick={() => navigate(`/admin/services?slug=${s.slug}`)}>
+                                            <div>
+                                                <div className="font-black text-slate-900 text-xs">{s.title}</div>
+                                                <div className="text-[9px] text-slate-400 uppercase tracking-widest">{s.highlight}</div>
+                                            </div>
+                                            <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-brand-primary" />
+                                        </button>
+                                    ))}
+                                </section>
+                            </div>
+                        )}
+
+                        {tab === 'products' && (
+                            <div className="space-y-6">
+                                <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Cabecera Productos (Home)</div>
+                                    <Field label="Eyebrow"><Input value={homeDraft.productsSection.eyebrow} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, eyebrow: e.target.value } })} /></Field>
+                                    <Field label="Título Sección"><Textarea rows={2} value={homeDraft.productsSection.title} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, title: e.target.value } })} /></Field>
+                                    <Field label="Subtítulo"><Textarea rows={3} value={homeDraft.productsSection.subtitle} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, subtitle: e.target.value } })} /></Field>
+                                    <Field label="Label Precio"><Input value={homeDraft.productsSection.availabilityPricingLabel} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, availabilityPricingLabel: e.target.value } })} /></Field>
+                                    <Field label="Label CTA Deploy"><Input value={homeDraft.productsSection.deploySolutionLabel} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, deploySolutionLabel: e.target.value } })} /></Field>
+                                    <ColorField label="Fondo" value={homeDraft.productsSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundColor: v } } })} />
+                                </section>
+                                <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Productos Vinculados</div>
+                                    {state.products.map(p => (
+                                        <button key={p.slug} type="button" className="w-full border border-slate-100 p-3 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all cursor-pointer text-left" onClick={() => navigate(`/admin/products?slug=${p.slug}`)}>
+                                            <div className="font-black text-slate-900 text-xs">{p.title}</div>
+                                            <div className="text-[10px] font-bold text-brand-primary">{p.price}</div>
+                                        </button>
+                                    ))}
+                                </section>
+                            </div>
+                        )}
+
+                        {tab === 'frameworks' && (
+                            <div className="space-y-6">
+                                <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Frameworks (Home)</div>
+                                    <Field label="Eyebrow"><Input value={homeDraft.frameworksSection.eyebrow} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, eyebrow: e.target.value } })} /></Field>
+                                    <Field label="Título"><Textarea rows={2} value={homeDraft.frameworksSection.title} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, title: e.target.value } })} /></Field>
+                                    <Field label="Subtítulo"><Textarea rows={3} value={homeDraft.frameworksSection.subtitle} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, subtitle: e.target.value } })} /></Field>
+                                    <ColorField label="Fondo" value={homeDraft.frameworksSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, backgroundColor: v } } })} />
+                                    <RangeField label="Opacidad Overlay" value={Number(homeDraft.frameworksSection.style.overlayOpacity || '0.10')} onChange={(v) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, overlayOpacity: v.toFixed(2) } } })} />
+                                </section>
+                            </div>
+                        )}
+
+                        {tab === 'contact' && (
+                            <div className="space-y-6">
+                                <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Contacto (Home)</div>
+                                    <Field label="Eyebrow"><Input value={homeDraft.contactSection.eyebrow} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, eyebrow: e.target.value } })} /></Field>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Field label="Título Prefix"><Input value={homeDraft.contactSection.titlePrefix} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, titlePrefix: e.target.value } })} /></Field>
+                                        <Field label="Título Accent"><Input value={homeDraft.contactSection.titleAccent} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, titleAccent: e.target.value } })} /></Field>
+                                    </div>
+                                    <ColorField label="Fondo" value={homeDraft.contactSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, backgroundColor: v } } })} />
+                                </section>
+                            </div>
+                        )}
+
+                        {tab === 'visual' && (
+                            <div className="space-y-8">
+                                <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-8 border-b border-slate-100 pb-4">Identidad Visual</div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <ColorField label="Primario" value={designDraft.colorPrimary} onChange={v => setDesignDraft(d => ({ ...d, colorPrimary: v }))} />
+                                        <ColorField label="Secundario" value={designDraft.colorSecondary} onChange={v => setDesignDraft(d => ({ ...d, colorSecondary: v }))} />
+                                        <FontField label="Fuente Display" value={designDraft.fontDisplay} onChange={v => setDesignDraft(d => ({ ...d, fontDisplay: v }))} />
+                                        <FontField label="Fuente Body" value={designDraft.fontBody} onChange={v => setDesignDraft(d => ({ ...d, fontBody: v }))} />
+                                    </div>
+                                </div>
+                                <div className="bg-slate-900 text-white p-12 rounded-[2rem] shadow-2xl relative overflow-hidden">
+                                    <div className="relative z-10 space-y-4">
+                                        <div className="text-xs font-black uppercase tracking-[0.4em]" style={{ color: designDraft.colorPrimary }}>Preview Visual</div>
+                                        <h2 className="text-4xl 2xl:text-6xl font-black tracking-tighter" style={{ fontFamily: designDraft.fontDisplay }}>Digital Transformation</h2>
+                                        <p className="text-slate-400 text-base 2xl:text-lg max-w-xl" style={{ fontFamily: designDraft.fontBody }}>Esta es una vista previa de cómo interactúan tus tipografías y colores principales.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'advanced' && (
+                            <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
+                                <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Editor JSON Avanzado</div>
+                                    <div className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">Atención: Cambios directos</div>
+                                </div>
+                                <JsonEditor value={homeDraft} onChange={v => setHomeDraft(v)} />
+                            </div>
+                        )}
+
+                        {(tab === 'structure' || tab === 'sections') && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {[
+                                    { title: 'Servicios', icon: Briefcase, desc: 'Configura la cabecera de servicios.' },
+                                    { title: 'Productos', icon: Package, desc: 'Configura la cabecera de la tienda.' }
+                                ].map(s => (
+                                    <div key={s.title} className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm group hover:border-brand-primary transition-all">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-brand-primary group-hover:text-white transition-all">
+                                                <s.icon className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-black text-slate-900 text-xl">{s.title}</h3>
+                                                <p className="text-sm text-slate-400">{s.desc}</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => navigate(`/admin/${s.title.toLowerCase()}`)} className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
+                                            Abrir Editor Específico
+                                            <ArrowRight className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Panel Preview - Right - HIGH FIDELITY */}
-                <div className="hidden xl:flex flex-1 bg-white flex-col overflow-hidden relative group">
+                {tab !== 'advanced' && (
+                <div className="hidden xl:flex flex-1 bg-white flex-col overflow-hidden relative group min-w-0">
                     <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200 shadow-sm animate-pulse-slow">
                         <div className="w-2 h-2 rounded-full bg-emerald-500" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Site Preview (High-Fidelity)</span>
@@ -451,109 +599,6 @@ export function ManageHome() {
                         </div>
                     </div>
                 </div>
-
-                {tab === 'services' && (
-                    <div className="space-y-6">
-                        <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
-                            <Field label="Eyebrow"><Input value={homeDraft.servicesSection.eyebrow} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, eyebrow: e.target.value } })} /></Field>
-                            <Field label="Título Sección"><Textarea rows={2} value={homeDraft.servicesSection.title} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, title: e.target.value } })} /></Field>
-                            <Field label="Subtítulo"><Textarea rows={3} value={homeDraft.servicesSection.subtitle} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, subtitle: e.target.value } })} /></Field>
-                            <ColorField label="Fondo" value={homeDraft.servicesSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundColor: v } } })} />
-                        </section>
-                        <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Servicios Vinculados</div>
-                            {state.services.map(s => (
-                                <div key={s.slug} className="border border-slate-100 p-3 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all cursor-pointer" onClick={() => navigate(`/admin/services?slug=${s.slug}`)}>
-                                    <div>
-                                        <div className="font-black text-slate-900 text-xs">{s.title}</div>
-                                        <div className="text-[9px] text-slate-400 uppercase tracking-widest">{s.highlight}</div>
-                                    </div>
-                                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-brand-primary" />
-                                </div>
-                            ))}
-                        </section>
-                    </div>
-                )}
-
-                {tab === 'products' && (
-                    <div className="space-y-6">
-                        <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
-                            <Field label="Eyebrow"><Input value={homeDraft.productsSection.eyebrow} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, eyebrow: e.target.value } })} /></Field>
-                            <Field label="Título Sección"><Textarea rows={2} value={homeDraft.productsSection.title} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, title: e.target.value } })} /></Field>
-                            <Field label="Label Precio"><Input value={homeDraft.productsSection.availabilityPricingLabel} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, availabilityPricingLabel: e.target.value } })} /></Field>
-                            <ColorField label="Fondo" value={homeDraft.productsSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundColor: v } } })} />
-                        </section>
-                        <section className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Productos Vinculados</div>
-                            {state.products.map(p => (
-                                <div key={p.slug} className="border border-slate-100 p-3 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all cursor-pointer" onClick={() => navigate(`/admin/products?slug=${p.slug}`)}>
-                                    <div className="font-black text-slate-900 text-xs">{p.title}</div>
-                                    <div className="text-[10px] font-bold text-brand-primary">{p.price}</div>
-                                </div>
-                            ))}
-                        </section>
-                    </div>
-                )}
-
-                {tab === 'visual' && (
-                    <div className="space-y-8">
-                        <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-8 border-b border-slate-100 pb-4">Identidad Visual</div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <ColorField label="Primario" value={designDraft.colorPrimary} onChange={v => setDesignDraft(d => ({ ...d, colorPrimary: v }))} />
-                                <ColorField label="Secundario" value={designDraft.colorSecondary} onChange={v => setDesignDraft(d => ({ ...d, colorSecondary: v }))} />
-                                <FontField label="Fuente Display" value={designDraft.fontDisplay} onChange={v => setDesignDraft(d => ({ ...d, fontDisplay: v }))} />
-                                <FontField label="Fuente Body" value={designDraft.fontBody} onChange={v => setDesignDraft(d => ({ ...d, fontBody: v }))} />
-                            </div>
-                        </div>
-                        <div className="bg-slate-900 text-white p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
-                            <div className="relative z-10 space-y-4">
-                                <div className="text-xs font-black uppercase tracking-[0.4em]" style={{ color: designDraft.colorPrimary }}>Preview Visual</div>
-                                <h2 className="text-6xl font-black tracking-tighter" style={{ fontFamily: designDraft.fontDisplay }}>Digital Transformation</h2>
-                                <p className="text-slate-400 text-lg max-w-xl" style={{ fontFamily: designDraft.fontBody }}>Esta es una vista previa de cómo interactúan tus tipografías y colores principales en un entorno oscuro.</p>
-                                <div className="flex gap-4 pt-4">
-                                    <div className="px-8 py-4 bg-brand-primary text-white font-black text-xs uppercase tracking-widest rounded-xl" style={{ backgroundColor: designDraft.colorPrimary }}>Botón Primario</div>
-                                    <div className="px-8 py-4 border border-white/20 text-white font-black text-xs uppercase tracking-widest rounded-xl">Botón Outline</div>
-                                </div>
-                            </div>
-                            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, ${designDraft.colorPrimary} 1px, transparent 0)`, backgroundSize: '40px 40px' }} />
-                        </div>
-                    </div>
-                )}
-
-                {tab === 'advanced' && (
-                    <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
-                        <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Editor JSON Avanzado</div>
-                            <div className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">Atención: Cambios directos</div>
-                        </div>
-                        <JsonEditor value={homeDraft} onChange={v => setHomeDraft(v)} />
-                    </div>
-                )}
-
-                {tab === 'sections' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {[
-                            { title: 'Servicios', icon: Briefcase, desc: 'Configura la cabecera de servicios.' },
-                            { title: 'Productos', icon: Package, desc: 'Configura la cabecera de la tienda.' }
-                        ].map(s => (
-                            <div key={s.title} className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm group hover:border-brand-primary transition-all">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-brand-primary group-hover:text-white transition-all">
-                                        <s.icon className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-black text-slate-900 text-xl">{s.title}</h3>
-                                        <p className="text-sm text-slate-400">{s.desc}</p>
-                                    </div>
-                                </div>
-                                <button onClick={() => navigate(`/admin/${s.title.toLowerCase()}`)} className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
-                                    Abrir Editor Específico
-                                    <ArrowRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
                 )}
             </div>
         </div>
