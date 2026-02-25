@@ -480,8 +480,9 @@ export function ManageIntegrations() {
             {/* Integration cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {integrationDefs.map(def => {
+                    if (!integrations) return null
                     const Icon = def.icon
-                    const state = integrations[def.key]
+                    const intState = integrations[def.key]
                     const configured = isConfigured(integrations, def.key)
 
                     return (
@@ -500,16 +501,16 @@ export function ManageIntegrations() {
                                 {configured && (
                                     <button
                                         onClick={() => toggleEnabled(def.key)}
-                                        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${state.enabled ? 'bg-brand-primary' : 'bg-slate-200'}`}
-                                        title={state.enabled ? 'Desactivar' : 'Activar'}
+                                        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${intState.enabled ? 'bg-brand-primary' : 'bg-slate-200'}`}
+                                        title={intState.enabled ? 'Desactivar' : 'Activar'}
                                     >
-                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${state.enabled ? 'left-7' : 'left-1'}`} />
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${intState.enabled ? 'left-7' : 'left-1'}`} />
                                     </button>
                                 )}
                             </div>
 
                             <div className="flex items-center justify-between">
-                                <StatusBadge status={state.status} enabled={state.enabled} />
+                                <StatusBadge status={intState.status} enabled={intState.enabled} />
                                 <div className="flex items-center gap-3">
                                     {configured && (
                                         <a href={def.docs} target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-colors">
@@ -532,7 +533,7 @@ export function ManageIntegrations() {
                             {/* Progress indicator if configured */}
                             {configured && (
                                 <div className="h-1 bg-slate-100">
-                                    <div className="h-full bg-brand-primary" style={{ width: state.enabled ? '100%' : '60%' }} />
+                                    <div className="h-full bg-brand-primary" style={{ width: intState.enabled ? '100%' : '60%' }} />
                                 </div>
                             )}
                         </div>

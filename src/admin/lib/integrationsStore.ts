@@ -4,8 +4,6 @@
  * should never be stored in the browser — use server-side environment variables.
  */
 
-const STORAGE_KEY = 'algoritmot_integrations_v1'
-
 export type IntegrationStatus = 'configured' | 'unconfigured' | 'error' | 'testing'
 
 export type GeminiConfig = {

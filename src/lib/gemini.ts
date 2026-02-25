@@ -7,10 +7,10 @@ import { loadIntegrations } from "../admin/lib/integrationsStore";
 
 let genAI: GoogleGenerativeAI | null = null;
 
-export function getAI() {
+export async function getAI() {
     if (genAI) return genAI;
 
-    const integrations = loadIntegrations();
+    const integrations = await loadIntegrations();
     const apiKey = integrations.gemini.config.apiKey || import.meta.env.VITE_GEMINI_API_KEY;
 
     if (!apiKey) {
@@ -24,8 +24,8 @@ export function getAI() {
     return genAI;
 }
 
-export function isGeminiConfigured() {
-    return getAI() !== null;
+export async function isGeminiConfigured() {
+    return (await getAI()) !== null;
 }
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -35,7 +35,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
 };
 
 export async function translateText(text: string, targetLang: string): Promise<string> {
-    const ai = getAI();
+    const ai = await getAI();
     if (!ai || !text || targetLang === 'es') return text;
 
     try {
@@ -64,7 +64,7 @@ export async function translateText(text: string, targetLang: string): Promise<s
 export async function translateObject<T>(obj: T, targetLang: string): Promise<T> {
     if (targetLang === 'es') return obj;
 
-    const ai = getAI();
+    const ai = await getAI();
     if (!ai) {
         throw new Error("Gemini API key is not configured. Please add it in the Admin Integrations panel.");
     }
