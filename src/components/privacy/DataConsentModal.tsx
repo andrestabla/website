@@ -13,6 +13,7 @@ export function DataConsentModal({ onDecision }: Props) {
   const { pathname } = useLocation()
   const [submitting, setSubmitting] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [dismissedForVersion, setDismissedForVersion] = useState<string | null>(null)
 
   const site = state.site
   const policyVersion = site.dataPolicyVersion || 'v1'
@@ -21,10 +22,11 @@ export function DataConsentModal({ onDecision }: Props) {
   const shouldShow = useMemo(() => {
     if (!enabled) return false
     if (pathname.startsWith('/admin')) return false
+    if (dismissedForVersion === policyVersion) return false
     const consent = getStoredConsent()
     if (!consent) return true
     return consent.policyVersion !== policyVersion
-  }, [enabled, pathname, policyVersion])
+  }, [enabled, pathname, policyVersion, dismissedForVersion])
 
   if (!shouldShow) return null
 
@@ -39,16 +41,15 @@ export function DataConsentModal({ onDecision }: Props) {
       e.stopPropagation()
     }
     const now = new Date().toISOString()
-    // Defer dismissal one tick to avoid click-through side effects on underlying UI.
-    window.setTimeout(() => {
-      setStoredConsent({
-        decision,
-        policyVersion,
-        acceptedAt: decision === 'accepted' ? now : undefined,
-        updatedAt: now,
-      })
-      onDecision?.(decision)
-    }, 0)
+    // Hide immediately in UI while persisting the decision.
+    setDismissedForVersion(policyVersion)
+    setStoredConsent({
+      decision,
+      policyVersion,
+      acceptedAt: decision === 'accepted' ? now : undefined,
+      updatedAt: now,
+    })
+    onDecision?.(decision)
     if (decision !== 'accepted') return
 
     try {

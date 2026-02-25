@@ -51,7 +51,16 @@ export function Analytics() {
       }
     }
     void load()
-    return () => { cancelled = true }
+    const intervalId = window.setInterval(() => { void load() }, 10000)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void load()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   const sourceData = useMemo(() => {
