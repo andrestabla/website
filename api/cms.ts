@@ -86,7 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 hash: JSON.stringify(changedSections),
               },
             },
-          } as any,
+          } as any),
         ])
       }
 
@@ -152,7 +152,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             section,
             metadata: { versionId },
           },
-        } as any,
+        } as any),
       ])
 
       return res.status(200).json({ ok: true, section, rolledBackToVersionId: versionId })
