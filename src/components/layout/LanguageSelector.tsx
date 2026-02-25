@@ -17,8 +17,8 @@ export function LanguageSelector() {
 
     useEffect(() => {
         // Import check at runtime
-        import('../../lib/gemini').then(m => {
-            setIsConfigured(m.isGeminiConfigured());
+        import('../../lib/gemini').then(async m => {
+            setIsConfigured(await m.isGeminiConfigured());
         });
     }, [language]);
 
