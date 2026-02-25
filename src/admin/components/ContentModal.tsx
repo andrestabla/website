@@ -32,34 +32,37 @@ export function ContentModal({ isOpen, onClose, title, subtitle, children, onSav
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
 
             {/* Panel */}
-            <div className={`relative ml-auto w-full max-w-xl bg-white h-full flex flex-col shadow-2xl border-l-8 border-brand-primary overflow-hidden ${panelClassName ?? ''}`}>
+            <div className={`relative ml-auto w-full max-w-2xl bg-white h-full flex flex-col shadow-2xl border-l border-slate-200 overflow-hidden ${panelClassName ?? ''}`}>
                 {/* Header */}
-                <div className="px-8 py-6 border-b border-slate-100 flex items-start justify-between shrink-0">
+                <div className="px-10 py-8 border-b border-slate-100 flex items-start justify-between shrink-0 bg-white/50 backdrop-blur-md sticky top-0 z-10">
                     <div>
-                        <h2 className="font-black text-xl tracking-tighter text-slate-900">{title}</h2>
-                        {subtitle && <p className="text-sm text-slate-400 font-light mt-1">{subtitle}</p>}
+                        <div className="flex items-center gap-2 text-brand-primary font-black text-[10px] uppercase tracking-[0.3em] mb-2">
+                            Módulo de Edición
+                        </div>
+                        <h2 className="font-black text-3xl tracking-tighter text-slate-900 leading-none">{title}</h2>
+                        {subtitle && <p className="text-sm text-slate-500 font-medium mt-2">{subtitle}</p>}
                     </div>
-                    <button onClick={onClose} className="text-slate-300 hover:text-slate-700 transition-colors mt-1">
+                    <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto px-8 py-8">
+                <div className="flex-1 overflow-y-auto px-10 py-10 custom-scrollbar">
                     {children}
                 </div>
 
                 {/* Footer */}
-                <div className="px-8 py-6 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0 bg-slate-50">
-                    <button onClick={onClose} className="text-sm font-bold text-slate-400 hover:text-slate-700 transition-colors px-4 py-3">
+                <div className="px-10 py-8 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0 bg-slate-50">
+                    <button onClick={onClose} className="text-sm font-bold text-slate-400 hover:text-slate-600 px-6 py-4 transition-colors">
                         Cancelar
                     </button>
                     {onSave && (
                         <button
                             onClick={onSave}
-                            className={`px-8 py-3 font-black text-[11px] uppercase tracking-widest text-white transition-all ${danger
-                                ? 'bg-red-600 hover:bg-red-700'
-                                : 'bg-brand-primary hover:bg-blue-800'
+                            className={`px-10 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest text-white shadow-lg transition-all active:scale-95 ${danger
+                                ? 'bg-red-600 hover:bg-red-700 shadow-red-600/10'
+                                : 'bg-brand-primary hover:bg-blue-800 shadow-brand-primary/10'
                                 }`}
                         >
                             {saveLabel}
@@ -89,7 +92,7 @@ export function Field({ label, children, hint }: FieldProps) {
     )
 }
 
-const inputBase = "w-full bg-slate-50 border border-slate-200 p-4 text-sm font-medium text-slate-900 focus:border-brand-primary focus:bg-white outline-none transition-colors"
+const inputBase = "w-full bg-slate-50 border border-slate-200 rounded-xl px-5 py-4 text-sm font-medium text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 outline-none transition-all duration-200"
 
 type InputProps = React.InputHTMLAttributes<HTMLInputElement>
 export function Input(props: InputProps) {
@@ -98,7 +101,7 @@ export function Input(props: InputProps) {
 
 type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>
 export function Textarea({ rows = 4, ...props }: TextareaProps) {
-    return <textarea className={`${inputBase} resize-none`} rows={rows} {...props} />
+    return <textarea className={`${inputBase} resize-none custom-scrollbar`} rows={rows} {...props} />
 }
 
 // ─── Confirm delete dialog ────────────────────────────────────────────────────

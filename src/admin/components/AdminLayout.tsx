@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
     LayoutDashboard,
     Briefcase,
@@ -15,16 +16,18 @@ import {
     BarChart2,
     Home,
     Paintbrush,
-    Plug
-    , CircleHelp
-    , CheckCircle2
-    , History
-    , RotateCcw
-    , AlertTriangle
-    , Loader2
+    Plug,
+    ChevronRight,
+    Bell,
+    User,
+    CircleHelp,
+    CheckCircle2,
+    History,
+    RotateCcw,
+    AlertTriangle,
+    Loader2
 } from 'lucide-react'
 import { useCMS } from '../context/CMSContext'
-
 
 interface AdminLayoutProps {
     children: ReactNode
@@ -45,15 +48,15 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
 
     const navigation = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms' },
-        { name: 'Home', href: '/admin/home', icon: Home, group: 'cms' },
+        { name: 'Home Editor', href: '/admin/home', icon: Home, group: 'cms' },
         { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms' },
         { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms' },
-        { name: 'Configuración', href: '/admin/settings', icon: Settings, group: 'cms' },
-        { name: 'Diseño', href: '/admin/design', icon: Paintbrush, group: 'cms' },
+        { name: 'Diseño Global', href: '/admin/design', icon: Paintbrush, group: 'cms' },
         { name: 'SEO Manager', href: '/admin/seo', icon: SearchCheck, group: 'growth' },
         { name: 'Marketing', href: '/admin/marketing', icon: Megaphone, group: 'growth' },
         { name: 'Analítica', href: '/admin/analytics', icon: BarChart2, group: 'growth' },
         { name: 'Integraciones', href: '/admin/integrations', icon: Plug, group: 'infra' },
+        { name: 'Configuración', href: '/admin/settings', icon: Settings, group: 'infra' },
     ]
 
     const confirmLeaveIfPending = () => {
@@ -181,38 +184,67 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
     }
 
     const activeHelp = pageHelp[location.pathname]
+    const groups = [
+        { id: 'cms', label: 'Gestión de Contenido' },
+        { id: 'growth', label: 'Crecimiento y SEO' },
+        { id: 'infra', label: 'Infraestructura' }
+    ]
 
     return (
-        <div className="min-h-screen bg-slate-50 flex">
+        <div className="min-h-screen bg-[#F8FAFC] flex font-sans selection:bg-brand-primary/10 selection:text-brand-primary">
             {/* Sidebar */}
             <aside
-                className={`bg-slate-900 text-white transition-all duration-300 flex flex-col ${isSidebarOpen ? 'w-64' : 'w-20'
+                className={`fixed inset-y-0 left-0 z-50 bg-[#0F172A] text-white transition-all duration-300 ease-in-out flex flex-col border-r border-white/5 ${isSidebarOpen ? 'w-72' : 'w-24'
                     }`}
             >
-                <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                    <div className={`flex items-center gap-3 ${!isSidebarOpen && 'hidden'}`}>
-                        <div className="w-8 h-8 bg-brand-primary flex items-center justify-center font-black">A</div>
-                        <span className="font-black tracking-tighter text-xl">ADMIN</span>
-                    </div>
-                    <button
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="text-white/40 hover:text-white transition-colors"
-                    >
-                        {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                    </button>
+                {/* Logo Section */}
+                <div className="h-24 px-6 border-b border-white/5 flex items-center justify-between shrink-0 overflow-hidden">
+                    <AnimatePresence mode="wait">
+                        {isSidebarOpen ? (
+                            <motion.div
+                                key="logo-full"
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                className="flex items-center gap-3"
+                            >
+                                <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/20">
+                                    <Shield className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <span className="block font-black tracking-tighter text-xl leading-none">ALGORITMO</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-primary/60">Admin Panel</span>
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="logo-collapsed"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                className="w-full flex justify-center"
+                            >
+                                <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/20">
+                                    <Shield className="w-6 h-6 text-white" />
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
-                <nav className="flex-1 p-4 overflow-y-auto">
-                    {(['cms', 'growth', 'infra'] as const).map(group => {
-                        const items = navigation.filter(n => n.group === group)
-                        if (!items.length) return null
-                        const groupLabel: Record<string, string> = { cms: 'Contenido', growth: 'Crecimiento', infra: 'Infraestructura' }
+                {/* Navigation */}
+                <nav className="flex-1 py-8 px-4 overflow-y-auto custom-scrollbar space-y-8">
+                    {groups.map(group => {
+                        const items = navigation.filter(n => n.group === group.id)
                         return (
-                            <div key={group} className="mb-4">
+                            <div key={group.id} className="space-y-2">
                                 {isSidebarOpen && (
-                                    <div className="text-[9px] font-black uppercase tracking-[0.4em] text-white/20 px-3 py-2">{groupLabel[group]}</div>
+                                    <h3 className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 flex items-center gap-2">
+                                        <div className="w-1 h-1 rounded-full bg-brand-primary/40" />
+                                        {group.label}
+                                    </h3>
                                 )}
-                                <div className="space-y-0.5">
+                                <div className="space-y-1">
                                     {items.map(item => {
                                         const isActive = location.pathname === item.href
                                         return (
@@ -223,15 +255,22 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                                                     if (location.pathname === item.href) return
                                                     if (!confirmLeaveIfPending()) e.preventDefault()
                                                 }}
-                                                className={`flex items-center gap-4 p-3 transition-all ${isActive
-                                                    ? 'bg-brand-primary text-white'
-                                                    : 'text-white/60 hover:bg-white/5 hover:text-white'
-                                                    }`}
+                                                className={`group flex items-center h-12 rounded-xl transition-all duration-200 relative ${isActive
+                                                    ? 'bg-brand-primary text-white shadow-xl shadow-brand-primary/10'
+                                                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                                    } ${!isSidebarOpen && 'justify-center mx-2'}`}
                                             >
-                                                <item.icon className="w-5 h-5 shrink-0" />
-                                                <span className={`font-medium transition-opacity ${!isSidebarOpen && 'opacity-0 w-0'}`}>
-                                                    {item.name}
-                                                </span>
+                                                <div className={`shrink-0 flex items-center justify-center ${isSidebarOpen ? 'w-12 mx-1' : 'w-12'}`}>
+                                                    <item.icon className={`w-5 h-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
+                                                </div>
+                                                {isSidebarOpen && (
+                                                    <span className="text-sm font-bold tracking-tight grow overflow-hidden whitespace-nowrap">
+                                                        {item.name}
+                                                    </span>
+                                                )}
+                                                {isActive && isSidebarOpen && (
+                                                    <ChevronRight className="w-4 h-4 mr-4 opacity-50 shrink-0" />
+                                                )}
                                             </Link>
                                         )
                                     })}
@@ -241,79 +280,112 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-white/5">
+                {/* Footer Section */}
+                <div className="p-4 border-t border-white/5 space-y-2">
                     <Link
                         to="/"
+                        target="_blank"
                         onClick={(e) => {
                             if (!confirmLeaveIfPending()) e.preventDefault()
                         }}
-                        className="flex items-center gap-4 p-3 text-white/40 hover:text-white transition-colors mb-2"
+                        className="flex items-center h-12 px-4 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-all group"
                     >
-                        <ExternalLink className="w-5 h-5" />
-                        <span className={`${!isSidebarOpen && 'hidden'}`}>Ver Sitio</span>
+                        <ExternalLink className="w-5 h-5 shrink-0" />
+                        {isSidebarOpen && (
+                            <span className="ml-4 text-sm font-bold">Ver Sitio Web</span>
+                        )}
                     </Link>
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-4 p-3 text-red-400 hover:bg-red-400/10 transition-colors"
+                        className="w-full flex items-center h-12 px-4 rounded-xl text-red-400 hover:bg-red-400/10 transition-all group"
                     >
-                        <LogOut className="w-5 h-5" />
-                        <span className={`font-medium ${!isSidebarOpen && 'opacity-0 w-0'}`}>Cerrar Sesión</span>
+                        <LogOut className="w-5 h-5 shrink-0" />
+                        {isSidebarOpen && (
+                            <span className="ml-4 text-sm font-bold">Cerrar Sesión</span>
+                        )}
+                    </button>
+
+                    {/* Collapse Button */}
+                    <button
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="w-full flex items-center h-12 px-4 rounded-xl text-slate-500 hover:text-white transition-all overflow-hidden"
+                    >
+                        {isSidebarOpen ? <Menu className="w-5 h-5 shrink-0" /> : <ChevronRight className="w-5 h-5 shrink-0" />}
+                        {isSidebarOpen && <span className="ml-4 text-[10px] font-black uppercase tracking-widest">Colapsar</span>}
                     </button>
                 </div>
             </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col h-screen overflow-hidden">
-                <header className="bg-white border-b border-slate-200 h-20 px-8 flex items-center justify-between shrink-0">
+            {/* Main Content Area */}
+            <main className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${isSidebarOpen ? 'pl-72' : 'pl-24'}`}>
+                {/* Header */}
+                <header className="h-24 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-40">
                     <div className="flex items-center gap-4">
-                        <Shield className="w-5 h-5 text-brand-primary" />
-                        <h2 className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">
+                        <div className="w-1 h-6 bg-brand-primary rounded-full hidden md:block" />
+                        <h2 className="text-lg font-black tracking-tighter text-slate-900 flex items-center gap-3">
                             {navigation.find(n => n.href === location.pathname)?.name || 'Panel Control'}
                         </h2>
                     </div>
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
                         {activeHelp && (
                             <button
                                 onClick={() => setIsHelpOpen(true)}
-                                className="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-500 hover:text-brand-primary hover:border-brand-primary transition-colors text-[11px] font-black uppercase tracking-widest"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 text-slate-500 hover:text-brand-primary hover:bg-white border border-slate-100 transition-all text-[10px] font-black uppercase tracking-widest shadow-sm"
                             >
                                 <CircleHelp className="w-4 h-4" />
-                                Instrucciones
+                                <span className="hidden sm:inline">Instrucciones</span>
                             </button>
                         )}
                         <button
                             onClick={() => setIsCmsStatusOpen(v => !v)}
-                            className={`inline-flex items-center gap-2 px-4 py-2 border transition-colors text-[11px] font-black uppercase tracking-widest ${
-                                persistence.pendingChanges
-                                    ? 'border-amber-300 text-amber-700 bg-amber-50'
-                                    : persistence.status === 'error'
-                                        ? 'border-red-300 text-red-700 bg-red-50'
-                                        : persistence.status === 'saving' || persistence.status === 'retrying'
-                                            ? 'border-blue-300 text-blue-700 bg-blue-50'
-                                            : 'border-slate-200 text-slate-500 hover:text-brand-primary hover:border-brand-primary'
-                            }`}
+                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border transition-all text-[10px] font-black uppercase tracking-widest shadow-sm ${persistence.pendingChanges
+                                ? 'border-amber-200 text-amber-700 bg-amber-50'
+                                : persistence.status === 'error'
+                                    ? 'border-red-200 text-red-700 bg-red-50'
+                                    : persistence.status === 'saving' || persistence.status === 'retrying'
+                                        ? 'border-blue-200 text-blue-700 bg-blue-50'
+                                        : 'border-slate-100 text-slate-500 bg-slate-50 hover:text-brand-primary hover:bg-white'
+                                }`}
                             title="Estado de persistencia CMS"
                         >
                             {(persistence.status === 'saving' || persistence.status === 'retrying') ? <Loader2 className="w-4 h-4 animate-spin" /> :
                                 persistence.status === 'error' ? <AlertTriangle className="w-4 h-4" /> :
                                     <History className="w-4 h-4" />}
-                            {labelForCmsStatus(persistence.status)}
+                            <span className="hidden sm:inline">{labelForCmsStatus(persistence.status)}</span>
                         </button>
-                        <div className="text-right">
-                            <div className="text-sm font-bold text-slate-900">{sessionUser?.displayName || 'Admin AlgoritmoT'}</div>
-                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-300">
-                                {sessionUser ? `${sessionUser.role} · @${sessionUser.username}` : 'Nivel de Acceso: 01'}
+
+                        {/* Notifications */}
+                        <button className="relative w-10 h-10 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                            <Bell className="w-5 h-5" />
+                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-brand-primary rounded-full border-2 border-white" />
+                        </button>
+
+                        <div className="flex items-center gap-4 pl-4 border-l border-slate-200">
+                            <div className="text-right hidden sm:block">
+                                <div className="text-sm font-black text-slate-900 leading-none">{sessionUser?.displayName || 'Admin Rico'}</div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-primary mt-1">
+                                    {sessionUser ? `${sessionUser.role}` : 'Super Admin'}
+                                </div>
+                            </div>
+                            <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center border-2 border-white shadow-xl shadow-slate-200 overflow-hidden ring-1 ring-slate-100">
+                                <User className="w-6 h-6 text-white/50" />
                             </div>
                         </div>
-                        <div className="w-10 h-10 bg-slate-200 rounded-none border-t-2 border-brand-primary"></div>
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto p-8">
-                    <div className="max-w-6xl mx-auto">
+                {/* Page Content */}
+                <div className="flex-1 p-8 md:p-12 overflow-x-hidden">
+                    <motion.div
+                        key={location.pathname}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="max-w-7xl mx-auto"
+                    >
                         {children}
-                    </div>
+                    </motion.div>
                 </div>
             </main>
 
@@ -366,88 +438,90 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
 
-            {isCmsStatusOpen && (
-                <div className="fixed bottom-6 right-6 z-40 w-[460px] max-w-[calc(100vw-2rem)] bg-white border border-slate-200 shadow-2xl">
-                    <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                        <div>
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Persistencia CMS</div>
-                            <div className="text-sm font-bold text-slate-900">Estado de guardado / historial / rollback</div>
-                        </div>
-                        <button onClick={() => setIsCmsStatusOpen(false)} className="text-slate-300 hover:text-slate-700">
-                            <X className="w-4 h-4" />
-                        </button>
-                    </div>
-                    <div className="p-5 space-y-4">
-                        <div className="grid grid-cols-2 gap-3 text-xs">
-                            <StatusCard label="Estado" value={labelForCmsStatus(persistence.status)} tone={statusTone(persistence.status)} />
-                            <StatusCard label="Pendientes" value={persistence.pendingChanges ? 'Sí' : 'No'} tone={persistence.pendingChanges ? 'amber' : 'green'} />
-                            <StatusCard label="Reintentos" value={String(persistence.retryCount)} />
-                            <StatusCard label="Último guardado" value={persistence.lastSavedAt ? new Date(persistence.lastSavedAt).toLocaleTimeString() : '—'} />
-                        </div>
-
-                        {!!persistence.changedSections.length && (
-                            <div className="border border-slate-200 p-3">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Secciones con cambios</div>
-                                <div className="flex flex-wrap gap-2">
-                                    {persistence.changedSections.map((section) => (
-                                        <span key={section} className="px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black uppercase tracking-widest">
-                                            {section}
-                                        </span>
-                                    ))}
-                                </div>
+            {
+                isCmsStatusOpen && (
+                    <div className="fixed bottom-6 right-6 z-40 w-[460px] max-w-[calc(100vw-2rem)] bg-white border border-slate-200 shadow-2xl">
+                        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Persistencia CMS</div>
+                                <div className="text-sm font-bold text-slate-900">Estado de guardado / historial / rollback</div>
                             </div>
-                        )}
-
-                        {persistence.lastError && (
-                            <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                                {persistence.lastError}
-                            </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Historial reciente (rollback por sección)</div>
-                            <button
-                                onClick={() => void refreshHistory()}
-                                className="text-[10px] font-black uppercase tracking-widest text-brand-primary"
-                            >
-                                Recargar
+                            <button onClick={() => setIsCmsStatusOpen(false)} className="text-slate-300 hover:text-slate-700">
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="max-h-72 overflow-auto border border-slate-200 divide-y divide-slate-100">
-                            {persistence.historyLoading && (
-                                <div className="p-4 text-xs text-slate-500">Cargando historial...</div>
-                            )}
-                            {!persistence.historyLoading && persistence.history.length === 0 && (
-                                <div className="p-4 text-xs text-slate-500">No hay versiones disponibles aún.</div>
-                            )}
-                            {persistence.history.map((v) => (
-                                <div key={v.id} className="p-3 flex items-center justify-between gap-3">
-                                    <div className="min-w-0">
-                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{v.section}</div>
-                                        <div className="text-xs text-slate-700 truncate">
-                                            {new Date(v.createdAt).toLocaleString()} · {v.createdBy || 'system'}
-                                        </div>
-                                        {v.note && <div className="text-[10px] text-slate-400 truncate">{v.note}</div>}
+                        <div className="p-5 space-y-4">
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                                <StatusCard label="Estado" value={labelForCmsStatus(persistence.status)} tone={statusTone(persistence.status)} />
+                                <StatusCard label="Pendientes" value={persistence.pendingChanges ? 'Sí' : 'No'} tone={persistence.pendingChanges ? 'amber' : 'green'} />
+                                <StatusCard label="Reintentos" value={String(persistence.retryCount)} />
+                                <StatusCard label="Último guardado" value={persistence.lastSavedAt ? new Date(persistence.lastSavedAt).toLocaleTimeString() : '—'} />
+                            </div>
+
+                            {!!persistence.changedSections.length && (
+                                <div className="border border-slate-200 p-3">
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Secciones con cambios</div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {persistence.changedSections.map((section) => (
+                                            <span key={section} className="px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black uppercase tracking-widest">
+                                                {section}
+                                            </span>
+                                        ))}
                                     </div>
-                                    <button
-                                        onClick={async () => {
-                                            const ok = window.confirm(`Revertir la sección "${v.section}" a esta versión?`)
-                                            if (!ok) return
-                                            await rollbackSection(v.id)
-                                        }}
-                                        className="inline-flex items-center gap-1 px-2 py-1 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-brand-primary hover:text-brand-primary"
-                                    >
-                                        <RotateCcw className="w-3 h-3" />
-                                        Rollback
-                                    </button>
                                 </div>
-                            ))}
+                            )}
+
+                            {persistence.lastError && (
+                                <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                    {persistence.lastError}
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-between">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Historial reciente (rollback por sección)</div>
+                                <button
+                                    onClick={() => void refreshHistory()}
+                                    className="text-[10px] font-black uppercase tracking-widest text-brand-primary"
+                                >
+                                    Recargar
+                                </button>
+                            </div>
+                            <div className="max-h-72 overflow-auto border border-slate-200 divide-y divide-slate-100">
+                                {persistence.historyLoading && (
+                                    <div className="p-4 text-xs text-slate-500">Cargando historial...</div>
+                                )}
+                                {!persistence.historyLoading && persistence.history.length === 0 && (
+                                    <div className="p-4 text-xs text-slate-500">No hay versiones disponibles aún.</div>
+                                )}
+                                {persistence.history.map((v) => (
+                                    <div key={v.id} className="p-3 flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{v.section}</div>
+                                            <div className="text-xs text-slate-700 truncate">
+                                                {new Date(v.createdAt).toLocaleString()} · {v.createdBy || 'system'}
+                                            </div>
+                                            {v.note && <div className="text-[10px] text-slate-400 truncate">{v.note}</div>}
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                const ok = window.confirm(`Revertir la sección "${v.section}" a esta versión?`)
+                                                if (!ok) return
+                                                await rollbackSection(v.id)
+                                            }}
+                                            className="inline-flex items-center gap-1 px-2 py-1 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-brand-primary hover:text-brand-primary"
+                                        >
+                                            <RotateCcw className="w-3 h-3" />
+                                            Rollback
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
         </div>
     )
 }
@@ -488,3 +562,4 @@ function StatusCard({ label, value, tone = 'slate' }: { label: string; value: st
         </div>
     )
 }
+

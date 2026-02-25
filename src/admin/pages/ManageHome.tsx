@@ -1,12 +1,31 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, useRef, type CSSProperties } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import {
-    Save, Home, Monitor, Sparkles, Package, ShieldCheck, Mail, Palette, Braces, CheckCircle2, UploadCloud, Minus, Plus
+    Save,
+    Home,
+    Monitor,
+    Sparkles,
+    Package,
+    ShieldCheck,
+    Mail,
+    Palette,
+    Braces,
+    CheckCircle2,
+    UploadCloud,
+    Minus,
+    Plus,
+    MousePointer2,
+    Layout,
+    Zap,
+    ArrowRight,
+    Briefcase
 } from 'lucide-react'
 import { useCMS, type HeroContent, type HomePageContent, type DesignTokens } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
 import { HeroView } from '../../sections/Hero/HeroView'
 
-type Tab = 'hero' | 'services' | 'products' | 'frameworks' | 'contact' | 'visual' | 'advanced'
+type Tab = 'hero' | 'services' | 'products' | 'frameworks' | 'contact' | 'visual' | 'advanced' | 'structure'
 
 const COLOR_SWATCHES = ['#ffffff', '#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#334155', '#0f172a', '#1a2d5a', '#2563eb', '#3b82f6', '#f97316']
 const FONT_PRESETS = ['Inter', 'Space Grotesk', 'Manrope', 'Sora', 'IBM Plex Sans', 'Montserrat', 'Poppins', 'system-ui']
@@ -366,11 +385,22 @@ function ImageUrlPreview({ url }: { url: string }) {
 
 export function ManageHome() {
     const { state, updateHero, updateHomePage, updateDesign } = useCMS()
+    const navigate = useNavigate()
     const [tab, setTab] = useState<Tab>('hero')
     const [heroDraft, setHeroDraft] = useState<HeroContent>({ ...state.hero })
     const [homeDraft, setHomeDraft] = useState<HomePageContent>(() => JSON.parse(JSON.stringify(state.homePage)))
     const [designDraft, setDesignDraft] = useState<DesignTokens>({ ...state.design })
     const [saved, setSaved] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+
+    // Refs for scrolling to fields
+    const fieldRefs = {
+        highlight: useRef<HTMLDivElement>(null),
+        title: useRef<HTMLDivElement>(null),
+        subtitle: useRef<HTMLDivElement>(null),
+        cta: useRef<HTMLDivElement>(null),
+        secondaryCta: useRef<HTMLDivElement>(null),
+    }
 
     useEffect(() => {
         setHeroDraft({ ...state.hero })
@@ -378,23 +408,39 @@ export function ManageHome() {
         setDesignDraft({ ...state.design })
     }, [state.hero, state.homePage, state.design])
 
+    const scrollToField = (key: keyof typeof fieldRefs) => {
+        fieldRefs[key]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        const el = fieldRefs[key]?.current
+        if (el) {
+            el.classList.add('ring-2', 'ring-brand-primary', 'ring-offset-4')
+            setTimeout(() => {
+                el.classList.remove('ring-2', 'ring-brand-primary', 'ring-offset-4')
+            }, 2000)
+        }
+    }
+
+    const saveAll = async () => {
+        setIsSaving(true)
+        await Promise.all([
+            updateHero(heroDraft),
+            updateHomePage(homeDraft),
+            updateDesign(designDraft)
+        ])
+        setIsSaving(false)
+        setSaved(true)
+        window.setTimeout(() => setSaved(false), 3000)
+    }
+
     const tabs = useMemo(() => [
-        { id: 'hero' as Tab, label: 'Hero', icon: Monitor },
-        { id: 'services' as Tab, label: 'Servicios (Sección)', icon: Sparkles },
-        { id: 'products' as Tab, label: 'Productos (Sección)', icon: Package },
+        { id: 'hero' as Tab, label: 'Hero Principal', icon: Layout },
+        { id: 'structure' as Tab, label: 'Estructura Home', icon: Sparkles },
+        { id: 'services' as Tab, label: 'Servicios', icon: Briefcase },
+        { id: 'products' as Tab, label: 'Productos', icon: Package },
         { id: 'frameworks' as Tab, label: 'Frameworks', icon: ShieldCheck },
         { id: 'contact' as Tab, label: 'Contacto', icon: Mail },
         { id: 'visual' as Tab, label: 'Visual Global', icon: Palette },
         { id: 'advanced' as Tab, label: 'JSON Avanzado', icon: Braces },
     ], [])
-
-    const saveAll = () => {
-        updateHero(heroDraft)
-        updateHomePage(homeDraft)
-        updateDesign(designDraft)
-        setSaved(true)
-        window.setTimeout(() => setSaved(false), 3000)
-    }
 
     const setHome = (next: HomePageContent) => setHomeDraft(next)
     const setHeroStyle = <K extends keyof HomePageContent['hero']['style']>(key: K, value: HomePageContent['hero']['style'][K]) => {
@@ -407,52 +453,81 @@ export function ManageHome() {
         })
     }
 
+    const hasChanges = JSON.stringify(state.hero) !== JSON.stringify(heroDraft) ||
+        JSON.stringify(state.homePage) !== JSON.stringify(homeDraft) ||
+        JSON.stringify(state.design) !== JSON.stringify(designDraft)
+
     return (
-        <div className="space-y-10 pb-20">
-            <div className="flex items-start justify-between gap-6">
+        <div className="space-y-8 max-w-[1400px] mx-auto pb-20">
+            {/* Header with quick actions */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter mb-2">Editor Completo del Home</h1>
-                    <p className="text-slate-500 font-light">
-                        Edita contenido, estilos e imágenes de todas las secciones del home en CMS real (servidor + Neon).
+                    <div className="flex items-center gap-2 text-brand-primary font-black text-[10px] uppercase tracking-[0.3em] mb-3">
+                        <Zap className="w-3 h-3 fill-current" />
+                        Editor en Vivo
+                    </div>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter mb-2">Home Page</h1>
+                    <p className="text-slate-500 font-medium max-w-xl">
+                        Gestiona el primer impacto de tu sitio. Los cambios se previsualizan al instante antes de publicar.
                     </p>
                 </div>
+
                 <div className="flex items-center gap-3">
                     <a
                         href="/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary transition-colors"
+                        className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary transition-colors pr-4 border-r border-slate-200"
                     >
                         <Home className="w-4 h-4" />
-                        Ver Home
+                        Ver Sitio
                     </a>
                     <button
                         onClick={saveAll}
-                        className="flex items-center gap-2 px-8 py-4 bg-brand-primary text-white font-black text-[11px] uppercase tracking-widest hover:bg-blue-800 transition-colors"
+                        disabled={!hasChanges || isSaving}
+                        className={`group flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all ${hasChanges
+                            ? 'bg-brand-primary text-white shadow-xl shadow-brand-primary/20 hover:scale-[1.02] active:scale-95'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            }`}
                     >
-                        <Save className="w-5 h-5" />
-                        Guardar Todo
+                        {isSaving ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            <Save className={`w-5 h-5 transition-transform ${hasChanges && 'group-hover:rotate-12'}`} />
+                        )}
+                        {hasChanges ? 'Publicar Cambios' : 'Sin Cambios'}
                     </button>
                 </div>
             </div>
 
-            {saved && (
-                <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-6 py-4 text-green-800 font-bold text-sm">
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    Home actualizado en servidor y base de datos
-                </div>
-            )}
+            <AnimatePresence>
+                {saved && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 px-6 py-4 rounded-2xl text-emerald-800 font-bold text-sm shadow-sm"
+                    >
+                        <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="w-5 h-5 text-white" />
+                        </div>
+                        Contenido actualizado con éxito en la base de datos de Neon
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            <div className="flex border-b border-slate-200 overflow-x-auto">
+            {/* Main Tabs */}
+            <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit">
                 {tabs.map(t => {
                     const Icon = t.icon
+                    const isSelected = tab === t.id
                     return (
                         <button
                             key={t.id}
                             onClick={() => setTab(t.id)}
-                            className={`shrink-0 flex items-center gap-2 px-6 py-4 font-black text-[11px] uppercase tracking-widest transition-all border-b-2 ${tab === t.id
-                                ? 'border-brand-primary text-brand-primary'
-                                : 'border-transparent text-slate-400 hover:text-slate-700'
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${isSelected
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             <Icon className="w-4 h-4" />
@@ -462,374 +537,192 @@ export function ManageHome() {
                 })}
             </div>
 
-            {tab === 'hero' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                        <div className="bg-white border border-slate-200 p-6 space-y-4">
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Mapa de estilos del Hero</div>
-                                <button
-                                    type="button"
-                                    onClick={() => setTab('visual')}
-                                    className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-primary"
-                                >
-                                    Ir a Visual Global
+            {/* Tab Contents */}
+            <div className="mt-8">
+                {tab === 'hero' && (
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+                        <div className="space-y-6 order-2 xl:order-1">
+                            <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                                <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100">
+                                    <h3 className="font-black text-slate-900 flex items-center gap-3">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-brand-primary" />
+                                        Textos Principales
+                                    </h3>
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full">
+                                        Hero Editor
+                                    </div>
+                                </div>
+                                <div className="space-y-8">
+                                    <div ref={fieldRefs.highlight}>
+                                        <Field label="Highlight"><Input value={heroDraft.highlight} onChange={e => setHeroDraft(d => ({ ...d, highlight: e.target.value }))} /></Field>
+                                    </div>
+                                    <div ref={fieldRefs.title}>
+                                        <Field label="Titular (H1)"><Textarea rows={3} value={heroDraft.title} onChange={e => setHeroDraft(d => ({ ...d, title: e.target.value }))} /></Field>
+                                    </div>
+                                    <div ref={fieldRefs.subtitle}>
+                                        <Field label="Subtítulo"><Textarea rows={3} value={heroDraft.subtitle} onChange={e => setHeroDraft(d => ({ ...d, subtitle: e.target.value }))} /></Field>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div ref={fieldRefs.cta}>
+                                            <Field label="CTA Principal"><Input value={heroDraft.cta} onChange={e => setHeroDraft(d => ({ ...d, cta: e.target.value }))} /></Field>
+                                        </div>
+                                        <div ref={fieldRefs.secondaryCta}>
+                                            <Field label="CTA Secundario"><Input value={heroDraft.secondaryCta} onChange={e => setHeroDraft(d => ({ ...d, secondaryCta: e.target.value }))} /></Field>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white border border-slate-200 p-8 rounded-3xl space-y-4">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-4">Estilos del Hero</div>
+                                <ColorField label="Color fondo sección" value={homeDraft.hero.style.backgroundColor} onChange={(v) => setHeroStyle('backgroundColor', v)} />
+                                <Field label="Imagen/Video fondo">
+                                    <div className="space-y-3">
+                                        <Input value={homeDraft.hero.style.backgroundImageUrl} onChange={e => setHome({ ...homeDraft, hero: { ...homeDraft.hero, style: { ...homeDraft.hero.style, backgroundImageUrl: e.target.value } } })} />
+                                        <ImageUrlPreview url={homeDraft.hero.style.backgroundImageUrl} />
+                                    </div>
+                                </Field>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <ColorField label="Color filtro" value={homeDraft.hero.style.sectionOverlayColor} onChange={(v) => setHeroStyle('sectionOverlayColor', v)} />
+                                    <RangeField label="Opacidad filtro" value={Number(homeDraft.hero.style.sectionOverlayOpacity || '0.92')} onChange={(v) => setHeroStyle('sectionOverlayOpacity', v.toFixed(2))} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="sticky top-10 order-1 xl:order-2 space-y-4">
+                            <div className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 px-4">Preview Live</div>
+                            <div className="relative group bg-[#0F172A] rounded-[2.5rem] border-[12px] border-slate-900 shadow-2xl overflow-hidden aspect-[16/10] flex items-center justify-center p-12 text-center select-none">
+                                <div className="relative z-10 space-y-8 max-w-2xl">
+                                    <motion.div onClick={() => scrollToField('highlight')} className="cursor-pointer hover:ring-2 hover:ring-brand-primary p-2">
+                                        <div className="text-xs font-black uppercase tracking-[0.4em] text-brand-primary mb-2">
+                                            {heroDraft.highlight || 'Highlight'}
+                                        </div>
+                                    </motion.div>
+                                    <motion.h2 onClick={() => scrollToField('title')} className="text-4xl font-black text-white cursor-pointer hover:ring-2 hover:ring-brand-primary p-2">
+                                        {heroDraft.title || 'Main Title'}
+                                    </motion.h2>
+                                    <motion.p onClick={() => scrollToField('subtitle')} className="text-slate-400 font-medium cursor-pointer hover:ring-2 hover:ring-brand-primary p-2">
+                                        {heroDraft.subtitle || 'Supporting description.'}
+                                    </motion.p>
+                                    <div className="flex gap-4 justify-center">
+                                        <div onClick={() => scrollToField('cta')} className="px-6 py-3 bg-brand-primary text-white font-black text-[10px] uppercase rounded-xl cursor-pointer">
+                                            {heroDraft.cta || 'CTA'}
+                                        </div>
+                                        <div onClick={() => scrollToField('secondaryCta')} className="px-6 py-3 border border-white/20 text-white font-black text-[10px] uppercase rounded-xl cursor-pointer">
+                                            {heroDraft.secondaryCta || 'Learn More'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(37,99,235,0.1),transparent)]" />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'services' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="space-y-6 bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
+                            <Field label="Eyebrow"><Input value={homeDraft.servicesSection.eyebrow} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, eyebrow: e.target.value } })} /></Field>
+                            <Field label="Título sección"><Textarea rows={2} value={homeDraft.servicesSection.title} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, title: e.target.value } })} /></Field>
+                            <Field label="Subtítulo sección"><Textarea rows={3} value={homeDraft.servicesSection.subtitle} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, subtitle: e.target.value } })} /></Field>
+                            <ColorField label="Color fondo" value={homeDraft.servicesSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundColor: v } } })} />
+                        </div>
+                        <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm space-y-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-4">Servicios vinculados</div>
+                            {state.services.map(s => (
+                                <div key={s.slug} className="border border-slate-100 p-4 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all">
+                                    <div>
+                                        <div className="font-black text-slate-900">{s.title}</div>
+                                        <div className="text-[10px] text-slate-400 uppercase tracking-widest">{s.category}</div>
+                                    </div>
+                                    <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-brand-primary" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'products' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="space-y-6 bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
+                            <Field label="Eyebrow"><Input value={homeDraft.productsSection.eyebrow} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, eyebrow: e.target.value } })} /></Field>
+                            <Field label="Título sección"><Textarea rows={2} value={homeDraft.productsSection.title} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, title: e.target.value } })} /></Field>
+                            <Field label="Label precio"><Input value={homeDraft.productsSection.availabilityPricingLabel} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, availabilityPricingLabel: e.target.value } })} /></Field>
+                            <ColorField label="Color fondo" value={homeDraft.productsSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundColor: v } } })} />
+                        </div>
+                        <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm space-y-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-4">Productos vinculados</div>
+                            {state.products.map(p => (
+                                <div key={p.slug} className="border border-slate-100 p-4 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all">
+                                    <div className="font-black text-slate-900">{p.title}</div>
+                                    <div className="text-xs font-bold text-brand-primary">{p.price}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'visual' && (
+                    <div className="space-y-8">
+                        <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-8 border-b border-slate-100 pb-4">Identidad Visual</div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <ColorField label="Primario" value={designDraft.colorPrimary} onChange={v => setDesignDraft(d => ({ ...d, colorPrimary: v }))} />
+                                <ColorField label="Secundario" value={designDraft.colorSecondary} onChange={v => setDesignDraft(d => ({ ...d, colorSecondary: v }))} />
+                                <FontField label="Fuente Display" value={designDraft.fontDisplay} onChange={v => setDesignDraft(d => ({ ...d, fontDisplay: v }))} />
+                                <FontField label="Fuente Body" value={designDraft.fontBody} onChange={v => setDesignDraft(d => ({ ...d, fontBody: v }))} />
+                            </div>
+                        </div>
+                        <div className="bg-slate-900 text-white p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
+                            <div className="relative z-10 space-y-4">
+                                <div className="text-xs font-black uppercase tracking-[0.4em]" style={{ color: designDraft.colorPrimary }}>Preview Visual</div>
+                                <h2 className="text-6xl font-black tracking-tighter" style={{ fontFamily: designDraft.fontDisplay }}>Digital Transformation</h2>
+                                <p className="text-slate-400 text-lg max-w-xl" style={{ fontFamily: designDraft.fontBody }}>Esta es una vista previa de cómo interactúan tus tipografías y colores principales en un entorno oscuro.</p>
+                                <div className="flex gap-4 pt-4">
+                                    <div className="px-8 py-4 bg-brand-primary text-white font-black text-xs uppercase tracking-widest rounded-xl" style={{ backgroundColor: designDraft.colorPrimary }}>Botón Primario</div>
+                                    <div className="px-8 py-4 border border-white/20 text-white font-black text-xs uppercase tracking-widest rounded-xl">Botón Outline</div>
+                                </div>
+                            </div>
+                            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, ${designDraft.colorPrimary} 1px, transparent 0)`, backgroundSize: '40px 40px' }} />
+                        </div>
+                    </div>
+                )}
+
+                {tab === 'advanced' && (
+                    <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
+                        <div className="flex items-center justify-between mb-8 border-b border-slate-100 pb-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Editor JSON Avanzado</div>
+                            <div className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">Atención: Cambios directos</div>
+                        </div>
+                        <JsonEditor value={homeDraft} onChange={v => setHomeDraft(v)} />
+                    </div>
+                )}
+
+                {tab === 'sections' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {[
+                            { title: 'Servicios', icon: Briefcase, desc: 'Configura la cabecera de servicios.' },
+                            { title: 'Productos', icon: Package, desc: 'Configura la cabecera de la tienda.' }
+                        ].map(s => (
+                            <div key={s.title} className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm group hover:border-brand-primary transition-all">
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-brand-primary group-hover:text-white transition-all">
+                                        <s.icon className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black text-slate-900 text-xl">{s.title}</h3>
+                                        <p className="text-sm text-slate-400">{s.desc}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => navigate(`/admin/${s.title.toLowerCase()}`)} className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
+                                    Abrir Editor Específico
+                                    <ArrowRight className="w-4 h-4" />
                                 </button>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                <div className="border border-slate-200 p-3">
-                                    <div className="font-black text-slate-900 mb-1">Título / Subtítulo / Filtros</div>
-                                    <div className="text-slate-500">Se editan aquí en `Hero` (colores, tamaños, opacidades, fondo).</div>
-                                </div>
-                                <div className="border border-slate-200 p-3">
-                                    <div className="font-black text-slate-900 mb-1">Botones CTA (colores)</div>
-                                    <div className="text-slate-500">Puedes editarlos aquí abajo en “CTA rápido” o en `Visual Global`.</div>
-                                </div>
-                                <div className="border border-slate-200 p-3">
-                                    <div className="font-black text-slate-900 mb-1">Tipografías globales</div>
-                                    <div className="text-slate-500">Fuente body/display están en `Visual Global`.</div>
-                                </div>
-                                <div className="border border-slate-200 p-3">
-                                    <div className="font-black text-slate-900 mb-1">Panel de stats</div>
-                                    <div className="text-slate-500">Color de labels, valores, bordes y divisores se edita aquí.</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <Field label="Highlight"><Input value={heroDraft.highlight} onChange={e => setHeroDraft(d => ({ ...d, highlight: e.target.value }))} /></Field>
-                        <Field label="Titular (H1)"><Textarea rows={3} value={heroDraft.title} onChange={e => setHeroDraft(d => ({ ...d, title: e.target.value }))} /></Field>
-                        <Field label="Subtítulo"><Textarea rows={3} value={heroDraft.subtitle} onChange={e => setHeroDraft(d => ({ ...d, subtitle: e.target.value }))} /></Field>
-                        <Field label="CTA Principal"><Input value={heroDraft.cta} onChange={e => setHeroDraft(d => ({ ...d, cta: e.target.value }))} /></Field>
-                        <Field label="CTA Secundario"><Input value={heroDraft.secondaryCta} onChange={e => setHeroDraft(d => ({ ...d, secondaryCta: e.target.value }))} /></Field>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {homeDraft.hero.stats.map((stat, i) => (
-                                <div key={i} className="border border-slate-200 p-4 space-y-3">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stat {i + 1}</div>
-                                    <Input value={stat.label} onChange={e => setHome({ ...homeDraft, hero: { ...homeDraft.hero, stats: homeDraft.hero.stats.map((s, idx) => idx === i ? { ...s, label: e.target.value } : s) } })} />
-                                    <Input value={stat.value} onChange={e => setHome({ ...homeDraft, hero: { ...homeDraft.hero, stats: homeDraft.hero.stats.map((s, idx) => idx === i ? { ...s, value: e.target.value } : s) } })} />
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="bg-white border border-slate-200 p-6 space-y-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Estilos e imágenes del Hero</div>
-                            <ColorField label="Color fondo sección" value={homeDraft.hero.style.backgroundColor} onChange={(v) => setHeroStyle('backgroundColor', v)} />
-                            <Field label="Imagen/Video fondo sección (URL o YouTube)">
-                                <div className="space-y-3">
-                                    <Input value={homeDraft.hero.style.backgroundImageUrl} onChange={e => setHome({ ...homeDraft, hero: { ...homeDraft.hero, style: { ...homeDraft.hero.style, backgroundImageUrl: e.target.value } } })} />
-                                    <R2ImageUploadButton folder="home/hero" onUploaded={(url) => setHome({ ...homeDraft, hero: { ...homeDraft.hero, style: { ...homeDraft.hero.style, backgroundImageUrl: url } } })} />
-                                    <ImageUrlPreview url={homeDraft.hero.style.backgroundImageUrl} />
-                                </div>
-                            </Field>
-                            <ColorField label="Color panel derecho" value={homeDraft.hero.style.rightPanelBackgroundColor} onChange={(v) => setHeroStyle('rightPanelBackgroundColor', v)} />
-                            <Field label="Imagen/Video panel derecho (URL o YouTube)">
-                                <div className="space-y-3">
-                                    <Input value={homeDraft.hero.style.rightPanelBackgroundImageUrl} onChange={e => setHome({ ...homeDraft, hero: { ...homeDraft.hero, style: { ...homeDraft.hero.style, rightPanelBackgroundImageUrl: e.target.value } } })} />
-                                    <R2ImageUploadButton folder="home/hero-panel" onUploaded={(url) => setHome({ ...homeDraft, hero: { ...homeDraft.hero, style: { ...homeDraft.hero.style, rightPanelBackgroundImageUrl: url } } })} />
-                                    <ImageUrlPreview url={homeDraft.hero.style.rightPanelBackgroundImageUrl} />
-                                </div>
-                            </Field>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                                <ColorField label="Color filtro sección" value={homeDraft.hero.style.sectionOverlayColor} onChange={(v) => setHeroStyle('sectionOverlayColor', v)} />
-                                <RangeField label="Opacidad filtro sección" value={Number(homeDraft.hero.style.sectionOverlayOpacity || '0.92')} onChange={(v) => setHeroStyle('sectionOverlayOpacity', v.toFixed(2))} />
-                                <ColorField label="Color filtro panel derecho" value={homeDraft.hero.style.rightPanelOverlayColor} onChange={(v) => setHeroStyle('rightPanelOverlayColor', v)} />
-                                <RangeField label="Opacidad filtro panel" value={Number(homeDraft.hero.style.rightPanelOverlayOpacity || '0.90')} onChange={(v) => setHeroStyle('rightPanelOverlayOpacity', v.toFixed(2))} />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                                <ColorField label="Color highlight" value={homeDraft.hero.style.highlightColor} onChange={(v) => setHeroStyle('highlightColor', v)} />
-                                <ColorField label="Color título" value={homeDraft.hero.style.titleColor} onChange={(v) => setHeroStyle('titleColor', v)} />
-                                <ColorField label="Color acento título" value={homeDraft.hero.style.titleAccentColor} onChange={(v) => setHeroStyle('titleAccentColor', v)} />
-                                <ColorField label="Color subtítulo" value={homeDraft.hero.style.subtitleColor} onChange={(v) => setHeroStyle('subtitleColor', v)} />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                                <StepperField label="Tamaño título móvil (rem)" value={parseRem(homeDraft.hero.style.titleFontSizeMobile, 4.5)} min={2} max={12} step={0.1} onChange={(v) => setHeroStyle('titleFontSizeMobile', formatRem(v))} />
-                                <StepperField label="Tamaño título desktop (rem)" value={parseRem(homeDraft.hero.style.titleFontSizeDesktop, 8)} min={2} max={16} step={0.1} onChange={(v) => setHeroStyle('titleFontSizeDesktop', formatRem(v))} />
-                                <StepperField label="Tamaño subtítulo móvil (rem)" value={parseRem(homeDraft.hero.style.subtitleFontSizeMobile, 1.5)} min={0.75} max={4} step={0.05} onChange={(v) => setHeroStyle('subtitleFontSizeMobile', formatRem(v))} />
-                                <StepperField label="Tamaño subtítulo desktop (rem)" value={parseRem(homeDraft.hero.style.subtitleFontSizeDesktop, 1.875)} min={0.75} max={5} step={0.05} onChange={(v) => setHeroStyle('subtitleFontSizeDesktop', formatRem(v))} />
-                                <StepperField label="Peso título (100-900)" value={Number(homeDraft.hero.style.titleFontWeight || '900')} min={100} max={900} step={100} onChange={(v) => setHeroStyle('titleFontWeight', String(v))} />
-                                <StepperField label="Peso subtítulo (100-900)" value={Number(homeDraft.hero.style.subtitleFontWeight || '500')} min={100} max={900} step={100} onChange={(v) => setHeroStyle('subtitleFontWeight', String(v))} />
-                                <StepperField label="Line-height título" value={Number(homeDraft.hero.style.titleLineHeight || '0.85')} min={0.6} max={1.4} step={0.01} onChange={(v) => setHeroStyle('titleLineHeight', v.toFixed(2))} />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                                <ColorField label="Color label stats" value={homeDraft.hero.style.statsLabelColor} onChange={(v) => setHeroStyle('statsLabelColor', v)} />
-                                <ColorField label="Color valor stats" value={homeDraft.hero.style.statsValueColor} onChange={(v) => setHeroStyle('statsValueColor', v)} />
-                                <ColorField label="Color divisores stats" value={homeDraft.hero.style.statsDividerColor} onChange={(v) => setHeroStyle('statsDividerColor', v)} />
-                                <ColorField label="Color borde panel stats" value={homeDraft.hero.style.statsPanelBorderColor} onChange={(v) => setHeroStyle('statsPanelBorderColor', v)} />
-                            </div>
-
-                            <div className="pt-4 border-t border-slate-100 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">CTA rápido (botones del Hero)</div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setTab('visual')}
-                                        className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-primary"
-                                    >
-                                        Abrir Visual Global
-                                    </button>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <ColorField label="Color CTA principal" value={designDraft.colorPrimary} onChange={(v) => setDesignDraft(d => ({ ...d, colorPrimary: v }))} />
-                                    <ColorField label="Color CTA secundario" value={designDraft.colorSecondary} onChange={(v) => setDesignDraft(d => ({ ...d, colorSecondary: v }))} />
-                                    <ColorField label="Texto CTA principal" value={designDraft.buttonPrimaryTextColor} onChange={(v) => setDesignDraft(d => ({ ...d, buttonPrimaryTextColor: v }))} />
-                                    <ColorField label="Texto CTA secundario" value={designDraft.buttonOutlineTextColor} onChange={(v) => setDesignDraft(d => ({ ...d, buttonOutlineTextColor: v }))} />
-                                    <ColorField label="Borde CTA secundario" value={designDraft.buttonOutlineBorderColor} onChange={(v) => setDesignDraft(d => ({ ...d, buttonOutlineBorderColor: v }))} />
-                                    <Field label="Estilo botón (global)">
-                                        <select
-                                            value={designDraft.buttonStyle}
-                                            onChange={(e) => setDesignDraft(d => ({ ...d, buttonStyle: e.target.value }))}
-                                            className="w-full bg-slate-50 border border-slate-200 p-4 text-sm font-medium text-slate-900 focus:border-brand-primary focus:bg-white outline-none transition-colors"
-                                        >
-                                            <option value="sharp">Sharp</option>
-                                            <option value="rounded">Rounded</option>
-                                            <option value="pill">Pill</option>
-                                        </select>
-                                    </Field>
-                                    <Field label="Border radius (global)">
-                                        <select
-                                            value={designDraft.borderRadius}
-                                            onChange={(e) => setDesignDraft(d => ({ ...d, borderRadius: e.target.value }))}
-                                            className="w-full bg-slate-50 border border-slate-200 p-4 text-sm font-medium text-slate-900 focus:border-brand-primary focus:bg-white outline-none transition-colors"
-                                        >
-                                            <option value="none">None</option>
-                                            <option value="sm">SM</option>
-                                            <option value="md">MD</option>
-                                            <option value="lg">LG</option>
-                                            <option value="full">Full</option>
-                                        </select>
-                                    </Field>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="sticky top-8 h-fit space-y-3">
-                        <div className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 px-1">Vista previa real (mismo render del sitio)</div>
-                        <div className="border border-slate-200 bg-white overflow-hidden">
-                            <div
-                                className="origin-top-left pointer-events-none"
-                                style={{
-                                    width: 1280,
-                                    transform: 'scale(0.47)',
-                                    height: 430,
-                                    ...getPreviewDesignVars(designDraft),
-                                }}
-                            >
-                                <HeroView
-                                    hero={heroDraft}
-                                    heroSection={homeDraft.hero}
-                                    animated={false}
-                                />
-                            </div>
-                        </div>
-                        <div className="text-xs text-slate-500">
-                            Esta vista usa el mismo componente del Home público. Si cambias aquí y luego <strong>Guardar Todo</strong>, el resultado publicado debe coincidir.
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {tab === 'services' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-6 bg-white border border-slate-200 p-6">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Contenido y Estilo</div>
-                            <div className="text-xs font-bold text-slate-400">Sección Servicios</div>
-                        </div>
-                        <Field label="Eyebrow"><Input value={homeDraft.servicesSection.eyebrow} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, eyebrow: e.target.value } })} /></Field>
-                        <Field label="Título sección"><Textarea rows={2} value={homeDraft.servicesSection.title} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, title: e.target.value } })} /></Field>
-                        <Field label="Subtítulo sección"><Textarea rows={3} value={homeDraft.servicesSection.subtitle} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, subtitle: e.target.value } })} /></Field>
-                        <Field label="Número decorativo"><Input value={homeDraft.servicesSection.sectionNumber} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, sectionNumber: e.target.value } })} /></Field>
-                        <ColorField label="Color fondo" value={homeDraft.servicesSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundColor: v } } })} />
-                        <Field label="Imagen fondo (URL)">
-                            <div className="space-y-3">
-                                <Input value={homeDraft.servicesSection.style.backgroundImageUrl} onChange={e => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundImageUrl: e.target.value } } })} />
-                                <R2ImageUploadButton folder="home/services" onUploaded={(url) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundImageUrl: url } } })} />
-                                <ImageUrlPreview url={homeDraft.servicesSection.style.backgroundImageUrl} />
-                            </div>
-                        </Field>
-                    </div>
-                    <div className="bg-white border border-slate-200 p-8 space-y-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Datos de tarjetas en Home</div>
-                        <p className="text-sm text-slate-500">Los ítems de servicios visibles en Home se editan también en <strong>Servicios</strong> (mismo CMS real).</p>
-                        <div className="space-y-4">
-                            {state.services.map((s) => (
-                                <div key={s.slug} className="border border-slate-200 p-4">
-                                    <div className="font-black text-slate-900">{s.title}</div>
-                                    <div className="text-sm text-slate-500">{s.description}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {tab === 'products' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-6 bg-white border border-slate-200 p-6">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Contenido y Estilo</div>
-                            <div className="text-xs font-bold text-slate-400">Sección Productos</div>
-                        </div>
-                        <Field label="Eyebrow"><Input value={homeDraft.productsSection.eyebrow} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, eyebrow: e.target.value } })} /></Field>
-                        <Field label="Título sección"><Textarea rows={2} value={homeDraft.productsSection.title} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, title: e.target.value } })} /></Field>
-                        <Field label="Subtítulo sección"><Textarea rows={3} value={homeDraft.productsSection.subtitle} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, subtitle: e.target.value } })} /></Field>
-                        <Field label="Label disponibilidad/precio"><Input value={homeDraft.productsSection.availabilityPricingLabel} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, availabilityPricingLabel: e.target.value } })} /></Field>
-                        <Field label="Texto botón tarjetas"><Input value={homeDraft.productsSection.deploySolutionLabel} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, deploySolutionLabel: e.target.value } })} /></Field>
-                        <ColorField label="Color fondo" value={homeDraft.productsSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundColor: v } } })} />
-                        <Field label="Imagen fondo (URL)">
-                            <div className="space-y-3">
-                                <Input value={homeDraft.productsSection.style.backgroundImageUrl} onChange={e => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundImageUrl: e.target.value } } })} />
-                                <R2ImageUploadButton folder="home/products" onUploaded={(url) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundImageUrl: url } } })} />
-                                <ImageUrlPreview url={homeDraft.productsSection.style.backgroundImageUrl} />
-                            </div>
-                        </Field>
-                    </div>
-                    <div className="bg-white border border-slate-200 p-8 space-y-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Productos visibles en Home</div>
-                        {state.products.map((p) => (
-                            <div key={p.slug} className="border border-slate-200 p-4">
-                                <div className="font-black">{p.title}</div>
-                                <div className="text-sm text-slate-500">{p.description}</div>
-                                <div className="text-xs text-slate-400 mt-1">{p.price}</div>
-                            </div>
                         ))}
                     </div>
-                </div>
-            )}
-
-            {tab === 'frameworks' && (
-                <div className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white border border-slate-200 p-6">
-                        <Field label="Eyebrow"><Input value={homeDraft.frameworksSection.eyebrow} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, eyebrow: e.target.value } })} /></Field>
-                        <Field label="Título"><Input value={homeDraft.frameworksSection.title} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, title: e.target.value } })} /></Field>
-                        <Field label="Subtítulo">
-                            <Textarea rows={3} value={homeDraft.frameworksSection.subtitle} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, subtitle: e.target.value } })} />
-                        </Field>
-                        <div className="space-y-4">
-                            <ColorField label="Color fondo" value={homeDraft.frameworksSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, backgroundColor: v } } })} />
-                            <Field label="Imagen fondo (URL)">
-                                <div className="space-y-3">
-                                    <Input value={homeDraft.frameworksSection.style.backgroundImageUrl} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, backgroundImageUrl: e.target.value } } })} />
-                                    <R2ImageUploadButton folder="home/frameworks" onUploaded={(url) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, backgroundImageUrl: url } } })} />
-                                    <ImageUrlPreview url={homeDraft.frameworksSection.style.backgroundImageUrl} />
-                                </div>
-                            </Field>
-                            <RangeField label="Opacidad patrón overlay" value={Number(homeDraft.frameworksSection.style.overlayOpacity || '0.10')} onChange={(v) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, overlayOpacity: v.toFixed(2) } } })} />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {homeDraft.frameworksSection.items.map((item, i) => (
-                            <div key={i} className="border border-slate-200 bg-white p-4 space-y-3">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Framework {i + 1}</div>
-                                <Input value={item.organization} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, items: homeDraft.frameworksSection.items.map((f, idx) => idx === i ? { ...f, organization: e.target.value } : f) } })} />
-                                <Input value={item.name} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, items: homeDraft.frameworksSection.items.map((f, idx) => idx === i ? { ...f, name: e.target.value } : f) } })} />
-                                <Textarea rows={3} value={item.description} onChange={e => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, items: homeDraft.frameworksSection.items.map((f, idx) => idx === i ? { ...f, description: e.target.value } : f) } })} />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {tab === 'contact' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="space-y-6 bg-white border border-slate-200 p-6">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Contenido de Contacto</div>
-                            <div className="text-xs font-bold text-slate-400">Textos y labels</div>
-                        </div>
-                        <Field label="Eyebrow"><Input value={homeDraft.contactSection.eyebrow} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, eyebrow: e.target.value } })} /></Field>
-                        <Field label="Título prefijo"><Input value={homeDraft.contactSection.titlePrefix} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, titlePrefix: e.target.value } })} /></Field>
-                        <Field label="Título acento"><Input value={homeDraft.contactSection.titleAccent} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, titleAccent: e.target.value } })} /></Field>
-                        <Field label="Label canal oficial"><Input value={homeDraft.contactSection.labels.officialChannel} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, labels: { ...homeDraft.contactSection.labels, officialChannel: e.target.value } } })} /></Field>
-                        <Field label="Label Hub HQ"><Input value={homeDraft.contactSection.labels.hubHq} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, labels: { ...homeDraft.contactSection.labels, hubHq: e.target.value } } })} /></Field>
-                        <Field label="Label red corporativa"><Input value={homeDraft.contactSection.labels.corporateNetwork} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, labels: { ...homeDraft.contactSection.labels, corporateNetwork: e.target.value } } })} /></Field>
-                        <Field label="Texto LinkedIn"><Input value={homeDraft.contactSection.labels.linkedinProtocol} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, labels: { ...homeDraft.contactSection.labels, linkedinProtocol: e.target.value } } })} /></Field>
-                    </div>
-                    <div className="space-y-6">
-                        <div className="bg-white border border-slate-200 p-6 space-y-4">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Estilos e imágenes de contacto</div>
-                            <ColorField label="Color fondo sección" value={homeDraft.contactSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, backgroundColor: v } } })} />
-                            <Field label="Imagen fondo sección (URL)">
-                                <div className="space-y-3">
-                                    <Input value={homeDraft.contactSection.style.backgroundImageUrl} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, backgroundImageUrl: e.target.value } } })} />
-                                    <R2ImageUploadButton folder="home/contact" onUploaded={(url) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, backgroundImageUrl: url } } })} />
-                                    <ImageUrlPreview url={homeDraft.contactSection.style.backgroundImageUrl} />
-                                </div>
-                            </Field>
-                            <ColorField label="Color panel externo formulario" value={homeDraft.contactSection.style.formOuterBackgroundColor} onChange={(v) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, formOuterBackgroundColor: v } } })} />
-                            <Field label="Imagen panel externo (URL)">
-                                <div className="space-y-3">
-                                    <Input value={homeDraft.contactSection.style.formOuterBackgroundImageUrl} onChange={e => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, formOuterBackgroundImageUrl: e.target.value } } })} />
-                                    <R2ImageUploadButton folder="home/contact-form" onUploaded={(url) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, formOuterBackgroundImageUrl: url } } })} />
-                                    <ImageUrlPreview url={homeDraft.contactSection.style.formOuterBackgroundImageUrl} />
-                                </div>
-                            </Field>
-                            <ColorField label="Color panel interno formulario" value={homeDraft.contactSection.style.formInnerBackgroundColor} onChange={(v) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, formInnerBackgroundColor: v } } })} />
-                        </div>
-                        <div className="bg-amber-50 border border-amber-200 p-5 text-sm text-amber-900">
-                            Email, dirección y links del bloque contacto se toman de <strong>Configuración</strong> (CMS real) y también impactan el Home.
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {tab === 'visual' && (
-                <div className="space-y-8">
-                    <div className="bg-white border border-slate-200 p-6">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-4">Paleta Global</div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <ColorField label="Color primario (brand-primary)" value={designDraft.colorPrimary} onChange={(v) => setDesignDraft(d => ({ ...d, colorPrimary: v }))} />
-                            <ColorField label="Color secundario (brand-secondary)" value={designDraft.colorSecondary} onChange={(v) => setDesignDraft(d => ({ ...d, colorSecondary: v }))} />
-                            <ColorField label="Color superficie" value={designDraft.colorSurface} onChange={(v) => setDesignDraft(d => ({ ...d, colorSurface: v }))} />
-                            <ColorField label="Color acento" value={designDraft.colorAccent} onChange={(v) => setDesignDraft(d => ({ ...d, colorAccent: v }))} />
-                            <ColorField label="Color panel oscuro" value={designDraft.colorDark} onChange={(v) => setDesignDraft(d => ({ ...d, colorDark: v }))} />
-                            <RangeField label="Opacidad grid" value={Number(designDraft.gridOpacity || '0.03')} onChange={(v) => setDesignDraft(d => ({ ...d, gridOpacity: v.toFixed(2) }))} />
-                            <ColorField label="Texto botón primario" value={designDraft.buttonPrimaryTextColor} onChange={(v) => setDesignDraft(d => ({ ...d, buttonPrimaryTextColor: v }))} />
-                            <ColorField label="Texto botón outline" value={designDraft.buttonOutlineTextColor} onChange={(v) => setDesignDraft(d => ({ ...d, buttonOutlineTextColor: v }))} />
-                            <ColorField label="Borde botón outline" value={designDraft.buttonOutlineBorderColor} onChange={(v) => setDesignDraft(d => ({ ...d, buttonOutlineBorderColor: v }))} />
-                        </div>
-                    </div>
-
-                    <div className="bg-white border border-slate-200 p-6">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-4">Tipografía Global</div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FontField label="Fuente body" value={designDraft.fontBody} onChange={(v) => setDesignDraft(d => ({ ...d, fontBody: v }))} />
-                            <FontField label="Fuente display" value={designDraft.fontDisplay} onChange={(v) => setDesignDraft(d => ({ ...d, fontDisplay: v }))} />
-                        </div>
-                    </div>
-
-                    <div className="bg-slate-900 text-white p-6 border border-slate-800">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-white/50 mb-4">Vista previa rápida de sistema visual</div>
-                        <div className="space-y-4">
-                            <div className="text-sm uppercase tracking-[0.3em]" style={{ color: designDraft.colorPrimary, fontFamily: designDraft.fontBody }}>AlgoritmoT UI</div>
-                            <div className="text-4xl font-black tracking-tighter" style={{ color: designDraft.colorSurface, fontFamily: designDraft.fontDisplay }}>
-                                Digital Mastery
-                            </div>
-                            <div className="text-base" style={{ color: '#cbd5e1', fontFamily: designDraft.fontBody }}>
-                                Vista previa de colores y tipografías aplicadas desde el CMS.
-                            </div>
-                            <div className="flex gap-3">
-                                <div className="px-4 py-2 font-black text-xs uppercase tracking-widest text-white" style={{ backgroundColor: designDraft.colorPrimary }}>Primario</div>
-                                <div className="px-4 py-2 font-black text-xs uppercase tracking-widest text-white" style={{ backgroundColor: designDraft.colorSecondary }}>Secundario</div>
-                                <div className="px-4 py-2 font-black text-xs uppercase tracking-widest text-slate-900" style={{ backgroundColor: designDraft.colorAccent }}>Acento</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {tab === 'advanced' && (
-                <div className="space-y-8">
-                    <div className="bg-white border border-slate-200 p-8">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-3">JSON completo de homePage</div>
-                        <p className="text-sm text-slate-500 mb-6">
-                            Control total de textos, estilos e imágenes del Home. Cambios válidos se persisten en CMS real al guardar.
-                        </p>
-                        <JsonEditor value={homeDraft} onChange={(next) => setHomeDraft(next)} />
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     )
 }
