@@ -176,8 +176,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: integrations[key].status,
     }))
 
-    const topPages = (topPagesRaw as any[]).map((row) => ({ path: row.path || '(sin ruta)', count: row._count?._all || 0 }))
-    const topSections = (topSectionsRaw as any[]).map((row) => ({ sectionId: row.sectionId || '(sin id)', count: row._count?._all || 0 }))
+    const topPages = (topPagesRaw as any[]).length
+      ? (topPagesRaw as any[]).map((row) => ({ path: row.path || '(sin ruta)', count: row._count?._all || 0 }))
+      : (() => {
+          const counts = new Map<string, number>()
+          for (const item of recentAnalytics as any[]) {
+            if (item.eventType !== 'page_view') continue
+            const key = String(item.path || '(sin ruta)')
+            counts.set(key, (counts.get(key) || 0) + 1)
+          }
+          return Array.from(counts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([path, count]) => ({ path, count }))
+        })()
+
+    const topSections = (topSectionsRaw as any[]).length
+      ? (topSectionsRaw as any[]).map((row) => ({ sectionId: row.sectionId || '(sin id)', count: row._count?._all || 0 }))
+      : (() => {
+          const counts = new Map<string, number>()
+          for (const item of recentAnalytics as any[]) {
+            if (item.eventType !== 'section_view') continue
+            const key = String(item.sectionId || '(sin id)')
+            counts.set(key, (counts.get(key) || 0) + 1)
+          }
+          return Array.from(counts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 12)
+            .map(([sectionId, count]) => ({ sectionId, count }))
+        })()
     const byCountry = (byCountryRaw as any[]).map((row) => ({ country: row.country || 'Unknown', count: row._count?._all || 0 }))
 
     return res.status(200).json({
