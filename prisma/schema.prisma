@@ -102,6 +102,48 @@ model TranslationCache {
   updatedAt DateTime @updatedAt
 }
 
+model PrivacyConsentAcceptance {
+  id            String   @id @default(cuid())
+  visitorId      String
+  sessionId      String?
+  policyVersion  String
+  policyHash     String
+  path           String?
+  country        String?
+  region         String?
+  city           String?
+  userAgent      String?
+  metadata       Json?
+  acceptedAt     DateTime @default(now())
+
+  @@index([acceptedAt(sort: Desc)])
+  @@index([visitorId, acceptedAt(sort: Desc)])
+  @@index([policyVersion, acceptedAt(sort: Desc)])
+}
+
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  visitorId   String
+  sessionId   String?
+  eventType   String
+  path        String?
+  pageTitle   String?
+  sectionId   String?
+  durationMs  Int?
+  country     String?
+  region      String?
+  city        String?
+  referrer    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+  @@index([path, createdAt(sort: Desc)])
+  @@index([sectionId, createdAt(sort: Desc)])
+  @@index([country, createdAt(sort: Desc)])
+}
+
 enum AdminRole {
   SUPERADMIN
   ADMIN

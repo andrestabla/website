@@ -146,6 +146,14 @@ export type SiteConfig = {
     contactAddress: string
     linkedin: string
     twitter: string
+    dataPolicyEnabled: string
+    dataPolicyVersion: string
+    dataPolicyTitle: string
+    dataPolicySummary: string
+    dataPolicyContent: string
+    dataPolicyLinkLabel: string
+    dataPolicyAcceptLabel: string
+    dataPolicyRejectLabel: string
 }
 
 export type DesignTokens = {
@@ -483,6 +491,14 @@ const staticSite: SiteConfig = {
     contactAddress: defaultSiteConfig.contact.address,
     linkedin: defaultSiteConfig.links.linkedin,
     twitter: defaultSiteConfig.links.twitter,
+    dataPolicyEnabled: 'true',
+    dataPolicyVersion: 'v1',
+    dataPolicyTitle: 'Política de tratamiento de datos',
+    dataPolicySummary: 'Usamos cookies y analítica de navegación para mejorar la experiencia, medir interacción y optimizar el contenido del sitio. Puedes consultar el detalle de tratamiento y aceptar para continuar con analítica.',
+    dataPolicyContent: `En AlgoritmoT tratamos datos de navegación con fines de analítica, mejora continua del servicio, seguridad y optimización de la experiencia digital.\n\nDatos que podemos registrar tras tu aceptación:\n- Ubicación geográfica aproximada (país, región, ciudad) inferida por IP.\n- Páginas y secciones consultadas.\n- Tiempo de permanencia aproximado por página.\n- Eventos de interacción técnica para analítica operativa.\n\nNo utilizamos esta información para decisiones automatizadas sobre el usuario final. Los datos se almacenan en infraestructura de servidor y base de datos asociada al sitio para fines de trazabilidad y analítica agregada.\n\nPuedes revocar o limpiar este consentimiento borrando los datos locales del navegador y dejando de usar el sitio.`,
+    dataPolicyLinkLabel: 'Leer política',
+    dataPolicyAcceptLabel: 'Aceptar',
+    dataPolicyRejectLabel: 'Continuar sin analítica',
 }
 
 function buildInitialState(): CMSState {

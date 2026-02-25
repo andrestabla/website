@@ -5,6 +5,7 @@ import { ProductPage } from './pages/ProductPage'
 import { IngenieriaHumana } from './pages/IngenieriaHumana'
 import { DespliegueIA } from './pages/DespliegueIA'
 import { MadurezOrganica } from './pages/MadurezOrganica'
+import { DataPolicy } from './pages/DataPolicy'
 import { LoginPage } from './admin/pages/LoginPage'
 import { Dashboard } from './admin/pages/Dashboard'
 import { ManageHome } from './admin/pages/ManageHome'
@@ -19,6 +20,8 @@ import { Analytics } from './admin/pages/Analytics'
 import { AdminLayout } from './admin/components/AdminLayout'
 import { CMSProvider, useCMS } from './admin/context/CMSContext'
 import { LanguageProvider } from './context/LanguageContext'
+import { DataConsentModal } from './components/privacy/DataConsentModal'
+import { SiteTelemetry } from './components/analytics/SiteTelemetry'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
@@ -131,6 +134,8 @@ function App() {
         <AnimatePresence mode="wait">
           <ScrollToTopOnRouteChange />
           <GlobalBrandLoader />
+          <SiteTelemetry />
+          <DataConsentModal />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/servicios/:slug" element={<ServicePage />} />
@@ -138,6 +143,7 @@ function App() {
             <Route path="/protocolos/ingenieria-humana" element={<IngenieriaHumana />} />
             <Route path="/protocolos/despliegue-ia" element={<DespliegueIA />} />
             <Route path="/protocolos/madurez-organica" element={<MadurezOrganica />} />
+            <Route path="/politica-tratamiento-datos" element={<DataPolicy />} />
 
             {/* Admin Routes */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

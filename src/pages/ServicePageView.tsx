@@ -34,6 +34,7 @@ export function ServicePageView({
   return (
     <>
       <section
+        data-track-section="service-hero"
         className="relative py-24 px-6 bg-white infra-grid overflow-hidden"
         style={{
           backgroundColor: pageStyle.heroBackgroundColor || undefined,
@@ -120,6 +121,7 @@ export function ServicePageView({
 
       {outcomes && outcomes.length > 0 && (
         <section
+          data-track-section="service-outcomes"
           className="py-24 px-6 text-white"
           style={{ backgroundColor: pageStyle.outcomesBackgroundColor || '#020617' }}
         >
@@ -161,6 +163,7 @@ export function ServicePageView({
 
       {VisualComponent && (
         <section
+          data-track-section="service-visual"
           className="py-24 px-6 border-t border-slate-100"
           style={{ backgroundColor: pageStyle.visualSectionBackgroundColor || '#ffffff' }}
         >
@@ -172,7 +175,7 @@ export function ServicePageView({
         </section>
       )}
 
-      <section className="py-32 px-6 bg-slate-50 border-t border-slate-200 dot-pattern">
+      <section data-track-section="service-variants" className="py-32 px-6 bg-slate-50 border-t border-slate-200 dot-pattern">
         <div className="max-w-7xl mx-auto">
           <div className="text-xs font-black uppercase tracking-[0.4em] text-slate-400 mb-16 text-center">
             {uiText.variantsEyebrow}

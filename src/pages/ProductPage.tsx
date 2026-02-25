@@ -27,7 +27,7 @@ export function ProductPage() {
 
     return (
         <Layout>
-            <section className="relative py-24 px-6 bg-white infra-grid overflow-hidden">
+            <section data-track-section="product-hero" className="relative py-24 px-6 bg-white infra-grid overflow-hidden">
                 <div className="max-w-7xl mx-auto">
                     <Link to="/#productos" className="inline-flex items-center text-xs font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary mb-16 group">
                         <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
@@ -98,7 +98,7 @@ export function ProductPage() {
                 </div>
             </section>
 
-            <section className="py-32 px-6 bg-slate-900 text-white overflow-hidden relative">
+            <section data-track-section="product-variants" className="py-32 px-6 bg-slate-900 text-white overflow-hidden relative">
                 <div className="absolute inset-0 dot-pattern opacity-5" />
                 <div className="max-w-7xl mx-auto relative text-center">
                     <h2 className="text-4xl md:text-6xl font-black mb-12 tracking-tighter">{uiText.productPage.whyModel}</h2>

@@ -63,6 +63,7 @@ export function Layout({ children }: LayoutProps) {
                                 <ul className="space-y-4 text-white/60 font-medium text-sm">
                                     <li><a href={site.linkedin} target="_blank" rel="noreferrer">LinkedIn</a></li>
                                     <li><a href={`mailto:${site.contactEmail}`}>Email</a></li>
+                                    <li><Link to="/politica-tratamiento-datos" className="hover:text-white transition-colors">{site.dataPolicyTitle || 'Política de tratamiento de datos'}</Link></li>
                                 </ul>
                             </div>
                         </div>

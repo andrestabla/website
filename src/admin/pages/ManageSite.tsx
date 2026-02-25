@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Terminal, Save, Globe, MessageSquare, CheckCircle2, RefreshCw } from 'lucide-react'
+import { Terminal, Save, Globe, MessageSquare, CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useCMS, type SiteConfig } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
 
@@ -87,6 +87,42 @@ export function ManageSite() {
                             <Input value={draft.twitter} onChange={e => set('twitter', e.target.value)} />
                         </Field>
                     </div>
+                </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 p-10 space-y-8">
+                <div className="flex items-center gap-3 border-b border-slate-100 pb-6 mb-2">
+                    <ShieldCheck className="w-5 h-5 text-brand-primary" />
+                    <h3 className="font-black uppercase tracking-widest text-xs text-slate-900">Política de Tratamiento de Datos y Consentimiento</h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Field label="Consentimiento habilitado (true/false)">
+                        <Input value={draft.dataPolicyEnabled} onChange={e => set('dataPolicyEnabled', e.target.value)} />
+                    </Field>
+                    <Field label="Versión de política (ej. v1, 2026-02)">
+                        <Input value={draft.dataPolicyVersion} onChange={e => set('dataPolicyVersion', e.target.value)} />
+                    </Field>
+                    <Field label="Título de política">
+                        <Input value={draft.dataPolicyTitle} onChange={e => set('dataPolicyTitle', e.target.value)} />
+                    </Field>
+                    <Field label="Texto enlace de lectura">
+                        <Input value={draft.dataPolicyLinkLabel} onChange={e => set('dataPolicyLinkLabel', e.target.value)} />
+                    </Field>
+                    <Field label="Botón aceptar">
+                        <Input value={draft.dataPolicyAcceptLabel} onChange={e => set('dataPolicyAcceptLabel', e.target.value)} />
+                    </Field>
+                    <Field label="Botón continuar sin analítica">
+                        <Input value={draft.dataPolicyRejectLabel} onChange={e => set('dataPolicyRejectLabel', e.target.value)} />
+                    </Field>
+                </div>
+                <Field label="Resumen breve (modal)">
+                    <Textarea rows={4} value={draft.dataPolicySummary} onChange={e => set('dataPolicySummary', e.target.value)} />
+                </Field>
+                <Field label="Texto completo de la política (lectura)">
+                    <Textarea rows={14} value={draft.dataPolicyContent} onChange={e => set('dataPolicyContent', e.target.value)} />
+                </Field>
+                <div className="text-xs text-slate-500">
+                    Este contenido alimenta el modal de consentimiento del sitio y la página de lectura de política. Las aceptaciones quedan trazadas en servidor + base de datos (Neon).
                 </div>
             </div>
 

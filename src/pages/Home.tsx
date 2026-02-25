@@ -24,16 +24,16 @@ export function Home() {
     return (
         <Layout>
             <Hero />
-            <div id="servicios">
+            <div id="servicios" data-track-section="home-servicios">
                 <Services />
             </div>
-            <div id="productos">
+            <div id="productos" data-track-section="home-productos">
                 <Products />
             </div>
-            <div id="confianza">
+            <div id="confianza" data-track-section="home-confianza">
                 <Frameworks />
             </div>
-            <div id="contacto">
+            <div id="contacto" data-track-section="home-contacto">
                 <Contact />
             </div>
         </Layout>
