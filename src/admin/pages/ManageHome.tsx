@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState, useRef, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
     Save,
     Home,
-    Monitor,
     Sparkles,
     Package,
     ShieldCheck,
@@ -12,10 +11,6 @@ import {
     Palette,
     Braces,
     CheckCircle2,
-    UploadCloud,
-    Minus,
-    Plus,
-    MousePointer2,
     Layout,
     Zap,
     ArrowRight,
@@ -23,9 +18,8 @@ import {
 } from 'lucide-react'
 import { useCMS, type HeroContent, type HomePageContent, type DesignTokens } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
-import { HeroView } from '../../sections/Hero/HeroView'
 
-type Tab = 'hero' | 'services' | 'products' | 'frameworks' | 'contact' | 'visual' | 'advanced' | 'structure'
+type Tab = 'hero' | 'services' | 'products' | 'frameworks' | 'contact' | 'visual' | 'advanced' | 'structure' | 'sections'
 
 const COLOR_SWATCHES = ['#ffffff', '#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#334155', '#0f172a', '#1a2d5a', '#2563eb', '#3b82f6', '#f97316']
 const FONT_PRESETS = ['Inter', 'Space Grotesk', 'Manrope', 'Sora', 'IBM Plex Sans', 'Montserrat', 'Poppins', 'system-ui']
@@ -60,83 +54,6 @@ function getYouTubeEmbedUrl(url: string): string | null {
         playsinline: '1',
     })
     return `https://www.youtube.com/embed/${id}?${params.toString()}`
-}
-
-function parseRem(value: string, fallback: number) {
-    const n = Number(String(value).replace('rem', '').trim())
-    return Number.isFinite(n) ? n : fallback
-}
-
-function formatRem(value: number) {
-    return `${Math.round(value * 100) / 100}rem`
-}
-
-function getPreviewDesignVars(tokens: DesignTokens): CSSProperties {
-    const radii: Record<string, string> = {
-        none: '0px',
-        sm: '4px',
-        md: '8px',
-        lg: '16px',
-        full: '9999px',
-    }
-    return {
-        ['--color-brand-primary' as any]: tokens.colorPrimary,
-        ['--color-brand-secondary' as any]: tokens.colorSecondary,
-        ['--color-brand-surface' as any]: tokens.colorSurface,
-        ['--cms-radius' as any]: radii[tokens.borderRadius] ?? '0px',
-        ['--cms-dark' as any]: tokens.colorDark,
-        ['--cms-grid-opacity' as any]: tokens.gridOpacity,
-        ['--cms-button-primary-text' as any]: tokens.buttonPrimaryTextColor || '#ffffff',
-        ['--cms-button-outline-text' as any]: tokens.buttonOutlineTextColor || '#ffffff',
-        ['--cms-button-outline-border' as any]: tokens.buttonOutlineBorderColor || '#ffffff',
-        ['--font-sans' as any]: `"${tokens.fontBody}", system-ui, sans-serif`,
-        ['--font-display' as any]: `"${tokens.fontDisplay}", serif`,
-    } as CSSProperties
-}
-
-function StepperField({
-    label,
-    value,
-    onChange,
-    step = 1,
-    min,
-    max,
-    hint,
-}: {
-    label: string
-    value: number
-    onChange: (next: number) => void
-    step?: number
-    min?: number
-    max?: number
-    hint?: string
-}) {
-    const clamp = (n: number) => {
-        if (typeof min === 'number') n = Math.max(min, n)
-        if (typeof max === 'number') n = Math.min(max, n)
-        return Math.round(n * 100) / 100
-    }
-    return (
-        <Field label={label} hint={hint}>
-            <div className="flex items-center gap-2">
-                <button type="button" onClick={() => onChange(clamp(value - step))} className="h-12 w-12 border border-slate-200 bg-white hover:border-brand-primary flex items-center justify-center">
-                    <Minus className="w-4 h-4" />
-                </button>
-                <input
-                    type="number"
-                    step={step}
-                    min={min}
-                    max={max}
-                    value={value}
-                    onChange={(e) => onChange(clamp(Number(e.target.value || 0)))}
-                    className="w-full bg-slate-50 border border-slate-200 p-4 text-sm font-medium text-slate-900 focus:border-brand-primary focus:bg-white outline-none transition-colors"
-                />
-                <button type="button" onClick={() => onChange(clamp(value + step))} className="h-12 w-12 border border-slate-200 bg-white hover:border-brand-primary flex items-center justify-center">
-                    <Plus className="w-4 h-4" />
-                </button>
-            </div>
-        </Field>
-    )
 }
 
 function RangeField({
@@ -268,84 +185,6 @@ function JsonEditor({ value, onChange }: { value: unknown; onChange: (next: any)
                 className={error ? 'border-red-300' : ''}
             />
             {error && <div className="text-xs font-bold text-red-600">{error}</div>}
-        </div>
-    )
-}
-
-function R2ImageUploadButton({
-    folder,
-    onUploaded,
-}: {
-    folder: string
-    onUploaded: (url: string) => void
-}) {
-    const [isUploading, setIsUploading] = useState(false)
-    const [error, setError] = useState('')
-
-    const uploadFile = async (file: File) => {
-        if (!file.type.startsWith('image/')) {
-            setError('Solo se permiten imágenes.')
-            return
-        }
-        if (file.size > 4 * 1024 * 1024) {
-            setError('Máximo 4MB por imagen.')
-            return
-        }
-        setError('')
-        setIsUploading(true)
-        try {
-            const base64 = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () => {
-                    const result = String(reader.result || '')
-                    const payload = result.includes(',') ? result.split(',')[1] : result
-                    resolve(payload)
-                }
-                reader.onerror = () => reject(reader.error)
-                reader.readAsDataURL(file)
-            })
-
-            const res = await fetch('/api/admin/upload', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    filename: file.name,
-                    contentType: file.type,
-                    base64,
-                    folder,
-                }),
-            })
-            const json = await res.json().catch(() => ({}))
-            if (!res.ok || !json?.ok || !json?.data?.url) {
-                throw new Error(json?.error || `HTTP ${res.status}`)
-            }
-            onUploaded(json.data.url)
-            if (json?.warning) setError(String(json.warning))
-        } catch (err: any) {
-            setError(err?.message || 'Error subiendo a R2')
-        } finally {
-            setIsUploading(false)
-        }
-    }
-
-    return (
-        <div className="flex items-center gap-3">
-            <label className="inline-flex items-center gap-2 px-4 py-3 bg-white border border-slate-200 hover:border-brand-primary text-[11px] font-black uppercase tracking-widest cursor-pointer transition-colors">
-                <UploadCloud className="w-4 h-4" />
-                {isUploading ? 'Subiendo...' : 'Subir a R2'}
-                <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={isUploading}
-                    onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) void uploadFile(file)
-                        e.currentTarget.value = ''
-                    }}
-                />
-            </label>
-            {error && <span className="text-xs font-bold text-red-600">{error}</span>}
         </div>
     )
 }
@@ -633,7 +472,7 @@ export function ManageHome() {
                                 <div key={s.slug} className="border border-slate-100 p-4 rounded-xl flex justify-between items-center group hover:bg-slate-50 transition-all">
                                     <div>
                                         <div className="font-black text-slate-900">{s.title}</div>
-                                        <div className="text-[10px] text-slate-400 uppercase tracking-widest">{s.category}</div>
+                                        <div className="text-[10px] text-slate-400 uppercase tracking-widest">{s.highlight}</div>
                                     </div>
                                     <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-brand-primary" />
                                 </div>
