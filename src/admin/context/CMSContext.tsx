@@ -196,6 +196,47 @@ export type CMSState = {
     homePage: HomePageContent
 }
 
+export type CmsSaveStatus =
+    | 'hydrating'
+    | 'idle'
+    | 'draft'
+    | 'saving'
+    | 'retrying'
+    | 'saved'
+    | 'error'
+
+export type CmsVersionEntry = {
+    id: string
+    section: string
+    createdAt: string
+    createdBy?: string | null
+    note?: string | null
+}
+
+export type CmsAuditEntry = {
+    id: string
+    action: string
+    resource: string
+    section?: string | null
+    actorUsername?: string | null
+    actorRole?: string | null
+    createdAt: string
+    metadata?: any
+}
+
+export type CmsPersistenceState = {
+    status: CmsSaveStatus
+    pendingChanges: boolean
+    autosaveEnabled: boolean
+    retryCount: number
+    lastSavedAt: string | null
+    lastError: string | null
+    changedSections: string[]
+    historyLoading: boolean
+    history: CmsVersionEntry[]
+    audit: CmsAuditEntry[]
+}
+
 // ─── Default Design Tokens ────────────────────────────────────────────────────
 
 export const defaultDesign: DesignTokens = {
@@ -541,6 +582,9 @@ function stateHash(state: CMSState): string {
 
 type CMSContextType = {
     state: CMSState
+    persistence: CmsPersistenceState
+    refreshHistory: () => Promise<void>
+    rollbackSection: (versionId: string) => Promise<{ ok: boolean; error?: string }>
 
     updateService: (slug: string, data: Partial<ServiceItem>) => void
     addService: (data: ServiceItem) => void
@@ -566,8 +610,25 @@ const CMSContext = createContext<CMSContextType | null>(null)
 export function CMSProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<CMSState>(buildInitialState)
     const [serverSyncReady, setServerSyncReady] = useState(false)
+    const [persistence, setPersistence] = useState<CmsPersistenceState>({
+        status: 'hydrating',
+        pendingChanges: false,
+        autosaveEnabled: true,
+        retryCount: 0,
+        lastSavedAt: null,
+        lastError: null,
+        changedSections: [],
+        historyLoading: false,
+        history: [],
+        audit: [],
+    })
     const hydratedFromServer = useRef(false)
     const lastServerHash = useRef('')
+    const lastServerStateRef = useRef<CMSState>(buildInitialState())
+    const saveTimerRef = useRef<number | null>(null)
+    const saveInFlightRef = useRef(false)
+    const retryTimerRef = useRef<number | null>(null)
+    const queuedHashRef = useRef<string | null>(null)
 
     // Inject design tokens on mount and whenever they change
     useEffect(() => {
@@ -585,8 +646,10 @@ export function CMSProvider({ children }: { children: ReactNode }) {
                 const next = normalizeCMSState(json?.data ?? {})
                 if (cancelled) return
                 lastServerHash.current = stateHash(next)
+                lastServerStateRef.current = next
                 hydratedFromServer.current = true
                 setServerSyncReady(true)
+                setPersistence(prev => ({ ...prev, status: 'idle', pendingChanges: false, retryCount: 0, lastError: null }))
                 setState(next)
                 saveToStorage(next)
             } catch (error) {
@@ -595,10 +658,12 @@ export function CMSProvider({ children }: { children: ReactNode }) {
                 try {
                     const local = normalizeCMSState(loadFromStorage())
                     lastServerHash.current = stateHash(local)
+                    lastServerStateRef.current = local
                     setState(local)
                 } catch {
                     // ignore invalid local cache
                 }
+                setPersistence(prev => ({ ...prev, status: 'error', pendingChanges: false, lastError: 'No se pudo conectar a /api/cms (modo cache local)' }))
                 console.warn('CMS server sync unavailable, using local snapshot cache.', error)
             }
         }
@@ -607,26 +672,124 @@ export function CMSProvider({ children }: { children: ReactNode }) {
         return () => { cancelled = true }
     }, [])
 
+    const getChangedSections = useCallback((base: CMSState, next: CMSState) => {
+        const sections: Array<keyof CMSState> = ['hero', 'services', 'products', 'site', 'design', 'homePage']
+        return sections.filter((section) => {
+            try {
+                return JSON.stringify((base as any)[section]) !== JSON.stringify((next as any)[section])
+            } catch {
+                return true
+            }
+        }).map(String)
+    }, [])
+
+    const refreshHistory = useCallback(async () => {
+        setPersistence(prev => ({ ...prev, historyLoading: true }))
+        try {
+            const res = await fetch('/api/cms?history=1&limit=25', { credentials: 'include' })
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const json = await res.json()
+            setPersistence(prev => ({
+                ...prev,
+                historyLoading: false,
+                history: (json?.versions ?? []) as CmsVersionEntry[],
+                audit: (json?.audits ?? []) as CmsAuditEntry[],
+            }))
+        } catch (e: any) {
+            setPersistence(prev => ({ ...prev, historyLoading: false, lastError: prev.lastError ?? (e?.message || 'No se pudo cargar historial CMS') }))
+        }
+    }, [])
+
+    const syncToServer = useCallback(async (snapshot: CMSState, hash: string, retryCount = 0) => {
+        if (saveInFlightRef.current) {
+            queuedHashRef.current = hash
+            return
+        }
+        saveInFlightRef.current = true
+        setPersistence(prev => ({
+            ...prev,
+            status: retryCount > 0 ? 'retrying' : 'saving',
+            retryCount,
+            lastError: null,
+        }))
+        try {
+            const res = await fetch('/api/cms', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(snapshot),
+            })
+            if (!res.ok) {
+                const body = await res.json().catch(() => null)
+                throw new Error(body?.error || `HTTP ${res.status}`)
+            }
+            const json = await res.json().catch(() => ({}))
+            lastServerHash.current = hash
+            lastServerStateRef.current = snapshot
+            setPersistence(prev => ({
+                ...prev,
+                status: 'saved',
+                pendingChanges: false,
+                retryCount: 0,
+                lastSavedAt: json?.savedAt || new Date().toISOString(),
+                changedSections: Array.isArray(json?.changedSections) ? json.changedSections : prev.changedSections,
+                lastError: null,
+            }))
+            void refreshHistory()
+        } catch (error: any) {
+            const nextRetry = retryCount + 1
+            const shouldRetry = nextRetry <= 3
+            setPersistence(prev => ({
+                ...prev,
+                status: shouldRetry ? 'retrying' : 'error',
+                pendingChanges: true,
+                retryCount: nextRetry,
+                lastError: error?.message || 'Error al guardar en servidor',
+            }))
+            if (shouldRetry) {
+                if (retryTimerRef.current) window.clearTimeout(retryTimerRef.current)
+                retryTimerRef.current = window.setTimeout(() => {
+                    void syncToServer(snapshot, hash, nextRetry)
+                }, 800 * nextRetry) as unknown as number
+            }
+        } finally {
+            saveInFlightRef.current = false
+            if (queuedHashRef.current && queuedHashRef.current !== hash) {
+                const latestHash = stateHash(stateRef.current)
+                queuedHashRef.current = null
+                void syncToServer(stateRef.current, latestHash, 0)
+            }
+        }
+    }, [refreshHistory])
+
+    const stateRef = useRef(state)
+    useEffect(() => {
+        stateRef.current = state
+    }, [state])
+
     useEffect(() => {
         if (!serverSyncReady || !hydratedFromServer.current) return
         const hash = stateHash(state)
-        if (hash === lastServerHash.current) return
+        const hasChanges = hash !== lastServerHash.current
+        const changedSections = hasChanges ? getChangedSections(lastServerStateRef.current, state) : []
 
-        const timeout = window.setTimeout(async () => {
-            try {
-                await fetch('/api/cms', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(state),
-                })
-                lastServerHash.current = hash
-            } catch (error) {
-                console.warn('Failed to sync CMS to server.', error)
-            }
-        }, 250)
+        setPersistence(prev => ({
+            ...prev,
+            status: hasChanges ? (prev.status === 'saving' || prev.status === 'retrying' ? prev.status : 'draft') : (prev.status === 'error' ? 'error' : 'idle'),
+            pendingChanges: hasChanges,
+            changedSections: hasChanges ? changedSections : [],
+        }))
 
-        return () => window.clearTimeout(timeout)
-    }, [serverSyncReady, state])
+        if (!hasChanges) return
+        if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = window.setTimeout(() => {
+            void syncToServer(state, hash, 0)
+        }, 800) as unknown as number
+
+        return () => {
+            if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current)
+        }
+    }, [serverSyncReady, state, getChangedSections, syncToServer])
 
     useEffect(() => {
         if (!serverSyncReady) return
@@ -634,13 +797,14 @@ export function CMSProvider({ children }: { children: ReactNode }) {
         const interval = window.setInterval(async () => {
             if (document.hidden) return
             try {
-                const res = await fetch('/api/cms')
+                const res = await fetch('/api/cms', { credentials: 'include' })
                 if (!res.ok) return
                 const json = await res.json()
                 const next = normalizeCMSState(json?.data ?? {})
                 const nextHash = stateHash(next)
                 if (nextHash !== lastServerHash.current) {
                     lastServerHash.current = nextHash
+                    lastServerStateRef.current = next
                     setState(next)
                     saveToStorage(next)
                 }
@@ -651,6 +815,55 @@ export function CMSProvider({ children }: { children: ReactNode }) {
 
         return () => window.clearInterval(interval)
     }, [serverSyncReady])
+
+    useEffect(() => {
+        if (!serverSyncReady) return
+        void refreshHistory()
+    }, [serverSyncReady, refreshHistory])
+
+    useEffect(() => {
+        const handler = (e: BeforeUnloadEvent) => {
+            if (!persistence.pendingChanges) return
+            e.preventDefault()
+            e.returnValue = ''
+        }
+        window.addEventListener('beforeunload', handler)
+        return () => window.removeEventListener('beforeunload', handler)
+    }, [persistence.pendingChanges])
+
+    const rollbackSection = useCallback(async (versionId: string) => {
+        try {
+            setPersistence(prev => ({ ...prev, status: 'saving', lastError: null }))
+            const res = await fetch('/api/cms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ action: 'rollback', versionId }),
+            })
+            const json = await res.json().catch(() => ({}))
+            if (!res.ok) throw new Error(json?.error || `HTTP ${res.status}`)
+            const nextRes = await fetch('/api/cms', { credentials: 'include' })
+            const nextJson = await nextRes.json()
+            const next = normalizeCMSState(nextJson?.data ?? {})
+            lastServerHash.current = stateHash(next)
+            lastServerStateRef.current = next
+            setState(next)
+            saveToStorage(next)
+            setPersistence(prev => ({
+                ...prev,
+                status: 'saved',
+                pendingChanges: false,
+                retryCount: 0,
+                lastError: null,
+                lastSavedAt: new Date().toISOString(),
+            }))
+            void refreshHistory()
+            return { ok: true }
+        } catch (e: any) {
+            setPersistence(prev => ({ ...prev, status: 'error', lastError: e?.message || 'No se pudo revertir versión' }))
+            return { ok: false, error: e?.message || 'No se pudo revertir versión' }
+        }
+    }, [refreshHistory])
 
     const persist = useCallback((next: CMSState) => {
         setState(next)
@@ -763,6 +976,9 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     return (
         <CMSContext.Provider value={{
             state,
+            persistence,
+            refreshHistory,
+            rollbackSection,
             updateService, addService, deleteService,
             updateProduct, addProduct, deleteProduct,
             updateHero, updateSite, updateDesign, updateHomePage,

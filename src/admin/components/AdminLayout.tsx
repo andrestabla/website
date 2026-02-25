@@ -18,7 +18,12 @@ import {
     Plug
     , CircleHelp
     , CheckCircle2
+    , History
+    , RotateCcw
+    , AlertTriangle
+    , Loader2
 } from 'lucide-react'
+import { useCMS } from '../context/CMSContext'
 
 
 interface AdminLayoutProps {
@@ -35,6 +40,8 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
     const [isHelpOpen, setIsHelpOpen] = useState(false)
     const location = useLocation()
     const navigate = useNavigate()
+    const { persistence, rollbackSection, refreshHistory } = useCMS()
+    const [isCmsStatusOpen, setIsCmsStatusOpen] = useState(false)
 
     const navigation = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms' },
@@ -49,7 +56,13 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
         { name: 'Integraciones', href: '/admin/integrations', icon: Plug, group: 'infra' },
     ]
 
+    const confirmLeaveIfPending = () => {
+        if (!persistence.pendingChanges) return true
+        return window.confirm('Hay cambios pendientes de guardar en el CMS. ¿Deseas salir de esta sección de todas formas?')
+    }
+
     const handleLogout = async () => {
+        if (!confirmLeaveIfPending()) return
         try {
             await fetch('/api/admin/logout', { method: 'POST' })
         } catch {
@@ -206,6 +219,10 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                                             <Link
                                                 key={item.name}
                                                 to={item.href}
+                                                onClick={(e) => {
+                                                    if (location.pathname === item.href) return
+                                                    if (!confirmLeaveIfPending()) e.preventDefault()
+                                                }}
                                                 className={`flex items-center gap-4 p-3 transition-all ${isActive
                                                     ? 'bg-brand-primary text-white'
                                                     : 'text-white/60 hover:bg-white/5 hover:text-white'
@@ -227,6 +244,9 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                 <div className="p-4 border-t border-white/5">
                     <Link
                         to="/"
+                        onClick={(e) => {
+                            if (!confirmLeaveIfPending()) e.preventDefault()
+                        }}
                         className="flex items-center gap-4 p-3 text-white/40 hover:text-white transition-colors mb-2"
                     >
                         <ExternalLink className="w-5 h-5" />
@@ -262,6 +282,24 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                                 Instrucciones
                             </button>
                         )}
+                        <button
+                            onClick={() => setIsCmsStatusOpen(v => !v)}
+                            className={`inline-flex items-center gap-2 px-4 py-2 border transition-colors text-[11px] font-black uppercase tracking-widest ${
+                                persistence.pendingChanges
+                                    ? 'border-amber-300 text-amber-700 bg-amber-50'
+                                    : persistence.status === 'error'
+                                        ? 'border-red-300 text-red-700 bg-red-50'
+                                        : persistence.status === 'saving' || persistence.status === 'retrying'
+                                            ? 'border-blue-300 text-blue-700 bg-blue-50'
+                                            : 'border-slate-200 text-slate-500 hover:text-brand-primary hover:border-brand-primary'
+                            }`}
+                            title="Estado de persistencia CMS"
+                        >
+                            {(persistence.status === 'saving' || persistence.status === 'retrying') ? <Loader2 className="w-4 h-4 animate-spin" /> :
+                                persistence.status === 'error' ? <AlertTriangle className="w-4 h-4" /> :
+                                    <History className="w-4 h-4" />}
+                            {labelForCmsStatus(persistence.status)}
+                        </button>
                         <div className="text-right">
                             <div className="text-sm font-bold text-slate-900">{sessionUser?.displayName || 'Admin AlgoritmoT'}</div>
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-300">
@@ -329,6 +367,124 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                     </div>
                 </div>
             )}
+
+            {isCmsStatusOpen && (
+                <div className="fixed bottom-6 right-6 z-40 w-[460px] max-w-[calc(100vw-2rem)] bg-white border border-slate-200 shadow-2xl">
+                    <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Persistencia CMS</div>
+                            <div className="text-sm font-bold text-slate-900">Estado de guardado / historial / rollback</div>
+                        </div>
+                        <button onClick={() => setIsCmsStatusOpen(false)} className="text-slate-300 hover:text-slate-700">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="p-5 space-y-4">
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                            <StatusCard label="Estado" value={labelForCmsStatus(persistence.status)} tone={statusTone(persistence.status)} />
+                            <StatusCard label="Pendientes" value={persistence.pendingChanges ? 'Sí' : 'No'} tone={persistence.pendingChanges ? 'amber' : 'green'} />
+                            <StatusCard label="Reintentos" value={String(persistence.retryCount)} />
+                            <StatusCard label="Último guardado" value={persistence.lastSavedAt ? new Date(persistence.lastSavedAt).toLocaleTimeString() : '—'} />
+                        </div>
+
+                        {!!persistence.changedSections.length && (
+                            <div className="border border-slate-200 p-3">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Secciones con cambios</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {persistence.changedSections.map((section) => (
+                                        <span key={section} className="px-2 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black uppercase tracking-widest">
+                                            {section}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {persistence.lastError && (
+                            <div className="border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                                {persistence.lastError}
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Historial reciente (rollback por sección)</div>
+                            <button
+                                onClick={() => void refreshHistory()}
+                                className="text-[10px] font-black uppercase tracking-widest text-brand-primary"
+                            >
+                                Recargar
+                            </button>
+                        </div>
+                        <div className="max-h-72 overflow-auto border border-slate-200 divide-y divide-slate-100">
+                            {persistence.historyLoading && (
+                                <div className="p-4 text-xs text-slate-500">Cargando historial...</div>
+                            )}
+                            {!persistence.historyLoading && persistence.history.length === 0 && (
+                                <div className="p-4 text-xs text-slate-500">No hay versiones disponibles aún.</div>
+                            )}
+                            {persistence.history.map((v) => (
+                                <div key={v.id} className="p-3 flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{v.section}</div>
+                                        <div className="text-xs text-slate-700 truncate">
+                                            {new Date(v.createdAt).toLocaleString()} · {v.createdBy || 'system'}
+                                        </div>
+                                        {v.note && <div className="text-[10px] text-slate-400 truncate">{v.note}</div>}
+                                    </div>
+                                    <button
+                                        onClick={async () => {
+                                            const ok = window.confirm(`Revertir la sección "${v.section}" a esta versión?`)
+                                            if (!ok) return
+                                            await rollbackSection(v.id)
+                                        }}
+                                        className="inline-flex items-center gap-1 px-2 py-1 border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-brand-primary hover:text-brand-primary"
+                                    >
+                                        <RotateCcw className="w-3 h-3" />
+                                        Rollback
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function labelForCmsStatus(status: string) {
+    const map: Record<string, string> = {
+        hydrating: 'Cargando',
+        idle: 'Sin cambios',
+        draft: 'Borrador',
+        saving: 'Guardando',
+        retrying: 'Reintentando',
+        saved: 'Guardado',
+        error: 'Error',
+    }
+    return map[status] || status
+}
+
+function statusTone(status: string): 'slate' | 'blue' | 'green' | 'amber' | 'red' {
+    if (status === 'saved' || status === 'idle') return 'green'
+    if (status === 'saving' || status === 'retrying' || status === 'hydrating') return 'blue'
+    if (status === 'draft') return 'amber'
+    if (status === 'error') return 'red'
+    return 'slate'
+}
+
+function StatusCard({ label, value, tone = 'slate' }: { label: string; value: string; tone?: 'slate' | 'blue' | 'green' | 'amber' | 'red' }) {
+    const toneClass: Record<string, string> = {
+        slate: 'border-slate-200 bg-slate-50 text-slate-900',
+        blue: 'border-blue-200 bg-blue-50 text-blue-900',
+        green: 'border-green-200 bg-green-50 text-green-900',
+        amber: 'border-amber-200 bg-amber-50 text-amber-900',
+        red: 'border-red-200 bg-red-50 text-red-900',
+    }
+    return (
+        <div className={`border p-3 ${toneClass[tone]}`}>
+            <div className="text-[10px] font-black uppercase tracking-widest opacity-60">{label}</div>
+            <div className="text-sm font-bold truncate">{value}</div>
         </div>
     )
 }

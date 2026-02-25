@@ -63,6 +63,35 @@ model CmsSnapshot {
   updatedAt DateTime @updatedAt
 }
 
+model CmsSnapshotVersion {
+  id           String   @id @default(cuid())
+  snapshotId   String
+  section      String
+  data         Json
+  createdAt    DateTime @default(now())
+  createdById  String?
+  createdBy    String?
+  note         String?
+
+  @@index([snapshotId, section, createdAt(sort: Desc)])
+}
+
+model AdminAuditLog {
+  id            String   @id @default(cuid())
+  actorUserId    String?
+  actorUsername  String?
+  actorRole      String?
+  action         String
+  resource       String
+  resourceId     String?
+  section        String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([resource, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+}
+
 model TranslationCache {
   key       String   @id
   targetLang String
