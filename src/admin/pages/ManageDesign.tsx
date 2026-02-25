@@ -2,12 +2,12 @@
  * ManageDesign — Admin visual style editor.
  * Changes are applied to the site in real-time via CSS custom property injection.
  */
-import { useState } from 'react'
-import { Palette, Type, Layout, Save, RotateCcw, CheckCircle2, Eye } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Palette, Type, Layout, Save, RotateCcw, CheckCircle2, Eye, ImageIcon, LoaderCircle, UploadCloud } from 'lucide-react'
 import { useCMS, type DesignTokens, defaultDesign } from '../context/CMSContext'
-import { Field } from '../components/ContentModal'
+import { Field, Input, Textarea } from '../components/ContentModal'
 
-type Tab = 'colors' | 'typography' | 'layout'
+type Tab = 'colors' | 'typography' | 'layout' | 'branding'
 
 const GOOGLE_FONTS = [
     'Inter',
@@ -70,12 +70,104 @@ function ColorSwatch({ label, value, onChange, hint }: {
     )
 }
 
+function AssetPreview({ url, label }: { url: string; label: string }) {
+    if (!url?.trim()) return null
+    return (
+        <div className="border border-slate-200 bg-white p-3 space-y-2">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</div>
+            <img
+                src={url}
+                alt={label}
+                className="max-h-24 w-auto object-contain bg-slate-50 border border-slate-100 p-2"
+                onError={(e) => {
+                    const target = e.currentTarget
+                    target.style.display = 'none'
+                    const next = target.nextElementSibling as HTMLElement | null
+                    if (next) next.style.display = 'block'
+                }}
+            />
+            <div className="hidden text-xs text-amber-700 font-bold">
+                No se pudo cargar el asset desde esta URL. Verifica acceso público (R2 `publicUrl`).
+            </div>
+        </div>
+    )
+}
+
+function R2AssetUploadButton({ folder, onUploaded }: { folder: string; onUploaded: (url: string) => void }) {
+    const [isUploading, setIsUploading] = useState(false)
+    const [error, setError] = useState('')
+
+    const uploadFile = async (file: File) => {
+        if (file.size > 4 * 1024 * 1024) {
+            setError('Máximo 4MB por archivo.')
+            return
+        }
+        setIsUploading(true)
+        setError('')
+        try {
+            const base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => {
+                    const result = String(reader.result || '')
+                    resolve(result.includes(',') ? result.split(',')[1] : result)
+                }
+                reader.onerror = () => reject(reader.error)
+                reader.readAsDataURL(file)
+            })
+
+            const res = await fetch('/api/admin/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    filename: file.name,
+                    contentType: file.type || 'application/octet-stream',
+                    base64,
+                    folder,
+                }),
+            })
+            const json = await res.json().catch(() => ({}))
+            if (!res.ok || !json?.ok || !json?.data?.url) throw new Error(json?.error || `HTTP ${res.status}`)
+            onUploaded(String(json.data.url))
+            if (json?.warning) setError(String(json.warning))
+        } catch (err: any) {
+            setError(err?.message || 'Error subiendo archivo')
+        } finally {
+            setIsUploading(false)
+        }
+    }
+
+    return (
+        <div className="flex items-center gap-3">
+            <label className="inline-flex items-center gap-2 px-4 py-3 bg-white border border-slate-200 hover:border-brand-primary text-[11px] font-black uppercase tracking-widest cursor-pointer transition-colors">
+                <UploadCloud className="w-4 h-4" />
+                {isUploading ? 'Subiendo...' : 'Subir a R2'}
+                <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={isUploading}
+                    onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) void uploadFile(file)
+                        e.currentTarget.value = ''
+                    }}
+                />
+            </label>
+            {error && <span className="text-xs font-bold text-red-600">{error}</span>}
+        </div>
+    )
+}
+
 export function ManageDesign() {
-    const { state, updateDesign, resetToDefaults } = useCMS()
+    const { state, updateDesign, resetDesign } = useCMS()
     const [tab, setTab] = useState<Tab>('colors')
     const [draft, setDraft] = useState<DesignTokens>({ ...state.design })
     const [saved, setSaved] = useState(false)
     const [confirmReset, setConfirmReset] = useState(false)
+
+    useEffect(() => {
+        setDraft({ ...state.design })
+    }, [state.design])
 
     const set = <K extends keyof DesignTokens>(key: K, val: DesignTokens[K]) => {
         const next = { ...draft, [key]: val }
@@ -91,7 +183,7 @@ export function ManageDesign() {
 
     const handleReset = () => {
         setDraft({ ...defaultDesign })
-        resetToDefaults()
+        resetDesign()
         setConfirmReset(false)
     }
 
@@ -99,6 +191,7 @@ export function ManageDesign() {
         { id: 'colors', label: 'Colores', icon: Palette },
         { id: 'typography', label: 'Tipografía', icon: Type },
         { id: 'layout', label: 'Forma & Layout', icon: Layout },
+        { id: 'branding', label: 'Branding & Assets', icon: ImageIcon },
     ]
 
     return (
@@ -146,6 +239,7 @@ export function ManageDesign() {
                     className="px-6 py-3 text-white font-black text-xs uppercase tracking-widest"
                     style={{
                         backgroundColor: draft.colorPrimary,
+                        color: draft.buttonPrimaryTextColor || '#fff',
                         borderRadius: { none: '0px', sm: '4px', md: '8px', lg: '16px', full: '9999px' }[draft.borderRadius] ?? '0px',
                         fontFamily: draft.fontBody,
                     }}
@@ -155,8 +249,8 @@ export function ManageDesign() {
                 <div
                     className="px-6 py-3 font-black text-xs uppercase tracking-widest border-2"
                     style={{
-                        color: draft.colorPrimary,
-                        borderColor: draft.colorPrimary,
+                        color: draft.buttonOutlineTextColor || draft.colorPrimary,
+                        borderColor: draft.buttonOutlineBorderColor || draft.colorPrimary,
                         borderRadius: { none: '0px', sm: '4px', md: '8px', lg: '16px', full: '9999px' }[draft.borderRadius] ?? '0px',
                         fontFamily: draft.fontBody,
                     }}
@@ -421,6 +515,163 @@ export function ManageDesign() {
                 </div>
             )}
 
+            {/* ─── BRANDING & ASSETS TAB ─── */}
+            {tab === 'branding' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="space-y-8">
+                        <div className="bg-white border border-slate-200 p-8 space-y-6">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-primary">
+                                <ImageIcon className="w-4 h-4" />
+                                Logos y Favicon
+                            </div>
+
+                            <Field label="Modo de logo (header/footer)">
+                                <select
+                                    value={draft.logoMode}
+                                    onChange={(e) => set('logoMode', e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 px-4 py-4 text-sm font-medium text-slate-900 focus:border-brand-primary outline-none"
+                                >
+                                    <option value="text">Texto (ALGORITMOT)</option>
+                                    <option value="image">Imagen</option>
+                                </select>
+                            </Field>
+
+                            <Field label="Logo header (URL)">
+                                <div className="space-y-3">
+                                    <Input value={draft.logoUrl} onChange={(e) => set('logoUrl', e.target.value)} placeholder="https://..." />
+                                    <R2AssetUploadButton folder="branding/logo-header" onUploaded={(url) => set('logoUrl', url)} />
+                                    <AssetPreview url={draft.logoUrl} label="Logo Header" />
+                                </div>
+                            </Field>
+
+                            <Field label="Logo footer (URL) — opcional">
+                                <div className="space-y-3">
+                                    <Input value={draft.logoFooterUrl} onChange={(e) => set('logoFooterUrl', e.target.value)} placeholder="https://..." />
+                                    <R2AssetUploadButton folder="branding/logo-footer" onUploaded={(url) => set('logoFooterUrl', url)} />
+                                    <AssetPreview url={draft.logoFooterUrl} label="Logo Footer" />
+                                </div>
+                            </Field>
+
+                            <Field label="Texto ALT del logo">
+                                <Input value={draft.logoAlt} onChange={(e) => set('logoAlt', e.target.value)} placeholder="AlgoritmoT" />
+                            </Field>
+
+                            <Field label="Favicon (URL .png/.ico/.svg)">
+                                <div className="space-y-3">
+                                    <Input value={draft.faviconUrl} onChange={(e) => set('faviconUrl', e.target.value)} placeholder="https://..." />
+                                    <R2AssetUploadButton folder="branding/favicon" onUploaded={(url) => set('faviconUrl', url)} />
+                                    <AssetPreview url={draft.faviconUrl} label="Favicon" />
+                                </div>
+                            </Field>
+                        </div>
+
+                        <div className="bg-white border border-slate-200 p-8 space-y-6">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-primary">
+                                <LoaderCircle className="w-4 h-4" />
+                                Loader Global
+                            </div>
+
+                            <Field label="Activar loader al entrar al sitio (público)">
+                                <select
+                                    value={draft.loaderEnabled}
+                                    onChange={(e) => set('loaderEnabled', e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 px-4 py-4 text-sm font-medium text-slate-900 focus:border-brand-primary outline-none"
+                                >
+                                    <option value="false">Desactivado</option>
+                                    <option value="true">Activado</option>
+                                </select>
+                            </Field>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <ColorSwatch label="Fondo loader" value={draft.loaderBackgroundColor} onChange={(v) => set('loaderBackgroundColor', v)} />
+                                <ColorSwatch label="Acento loader (barra)" value={draft.loaderAccentColor} onChange={(v) => set('loaderAccentColor', v)} />
+                                <ColorSwatch label="Texto loader" value={draft.loaderTextColor} onChange={(v) => set('loaderTextColor', v)} />
+                                <Field label="Duración (ms)">
+                                    <Input type="number" min={300} max={5000} step={100} value={draft.loaderDurationMs} onChange={(e) => set('loaderDurationMs', e.target.value)} />
+                                </Field>
+                            </div>
+
+                            <Field label="Texto loader">
+                                <Textarea rows={2} value={draft.loaderLabel} onChange={(e) => set('loaderLabel', e.target.value)} />
+                            </Field>
+
+                            <Field label="Logo loader (URL) — opcional">
+                                <div className="space-y-3">
+                                    <Input value={draft.loaderLogoUrl} onChange={(e) => set('loaderLogoUrl', e.target.value)} placeholder="https://..." />
+                                    <R2AssetUploadButton folder="branding/loader" onUploaded={(url) => set('loaderLogoUrl', url)} />
+                                    <AssetPreview url={draft.loaderLogoUrl} label="Loader Logo" />
+                                </div>
+                            </Field>
+                        </div>
+                    </div>
+
+                    <div className="space-y-8">
+                        <div className="bg-white border border-slate-200 p-8 space-y-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Vista previa branding</div>
+                            <div className="border border-slate-200 p-5 flex items-center justify-between bg-white">
+                                <div className="inline-flex items-center">
+                                    {draft.logoMode === 'image' && draft.logoUrl ? (
+                                        <img src={draft.logoUrl} alt={draft.logoAlt || 'Logo'} className="h-10 w-auto object-contain" />
+                                    ) : (
+                                        <div className="text-2xl font-black tracking-tighter text-slate-900">ALGORITMO<span style={{ color: draft.colorPrimary }}>T</span></div>
+                                    )}
+                                </div>
+                                <div className="text-xs text-slate-400 font-bold uppercase tracking-widest">Header</div>
+                            </div>
+
+                            <div className="border border-slate-800 bg-slate-900 p-6 flex items-center justify-between">
+                                <div className="inline-flex items-center">
+                                    {draft.logoMode === 'image' && (draft.logoFooterUrl || draft.logoUrl) ? (
+                                        <img src={draft.logoFooterUrl || draft.logoUrl} alt={draft.logoAlt || 'Logo'} className="h-12 w-auto object-contain" />
+                                    ) : (
+                                        <div className="text-3xl font-black tracking-tighter text-white">ALGORITMO<span className="text-white/30">T</span></div>
+                                    )}
+                                </div>
+                                <div className="text-xs text-white/30 font-bold uppercase tracking-widest">Footer</div>
+                            </div>
+
+                            <div className="border border-slate-200 p-4 bg-slate-50">
+                                <div className="text-xs font-bold text-slate-500 mb-2">Favicon (preview)</div>
+                                <div className="inline-flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-white border border-slate-200 flex items-center justify-center">
+                                        {draft.faviconUrl ? (
+                                            <img src={draft.faviconUrl} alt="favicon" className="w-5 h-5 object-contain" />
+                                        ) : (
+                                            <span className="text-xs font-black text-slate-400">ICO</span>
+                                        )}
+                                    </div>
+                                    <span className="text-sm text-slate-600">Browser tab icon</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white border border-slate-200 p-8 space-y-4">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Vista previa loader</div>
+                            <div className="border border-slate-200 overflow-hidden">
+                                <div className="p-8 flex flex-col items-center gap-5" style={{ backgroundColor: draft.loaderBackgroundColor }}>
+                                    {draft.loaderLogoUrl ? (
+                                        <img src={draft.loaderLogoUrl} alt={draft.logoAlt || 'Loader'} className="h-12 w-auto object-contain" />
+                                    ) : (
+                                        <div className="text-2xl font-black tracking-tighter" style={{ color: draft.loaderTextColor }}>
+                                            ALGORITMO<span style={{ color: draft.loaderAccentColor }}>T</span>
+                                        </div>
+                                    )}
+                                    <div className="w-56 h-1.5 bg-white/10 overflow-hidden">
+                                        <div className="h-full w-24" style={{ backgroundColor: draft.loaderAccentColor }} />
+                                    </div>
+                                    <div className="text-xs font-black uppercase tracking-[0.3em]" style={{ color: draft.loaderTextColor }}>
+                                        {draft.loaderLabel || 'Cargando experiencia'}
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="text-xs text-slate-500">
+                                El loader se muestra una vez por sesión en el sitio público cuando está activado.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Reset */}
             <div className="flex items-center justify-between border-t border-slate-200 pt-8">
                 <div>
@@ -432,11 +683,11 @@ export function ManageDesign() {
                         className="flex items-center gap-2 px-6 py-3 border border-slate-300 text-slate-500 hover:text-red-600 hover:border-red-300 font-black text-[10px] uppercase tracking-widest transition-colors"
                     >
                         <RotateCcw className="w-4 h-4" />
-                        Restaurar Default
+                        Restaurar Diseño Default
                     </button>
                 ) : (
                     <div className="flex items-center gap-3">
-                        <span className="text-red-500 font-bold text-sm">¿Confirmar restauración?</span>
+                        <span className="text-red-500 font-bold text-sm">¿Confirmar restauración de diseño?</span>
                         <button onClick={handleReset} className="px-5 py-3 bg-red-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-red-700 transition-colors">
                             Sí, restaurar
                         </button>

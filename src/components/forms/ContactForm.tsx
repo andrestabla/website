@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { formMicrocopy } from '../../data/details'
 import { Button } from '../ui/Button'
 import { Mail, User, MessageSquare, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react'
+import { useTranslatedStatic } from '../../hooks/useTranslatedStatic'
+import { useLanguage } from '../../context/LanguageContext'
 
 interface ContactFormProps {
     serviceSlug?: string
@@ -11,6 +13,8 @@ interface ContactFormProps {
 
 export function ContactForm({ serviceSlug, context = 'general' }: ContactFormProps) {
     const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+    const { uiText } = useLanguage()
+    const translatedMicrocopy = useTranslatedStatic('contact-form-microcopy', formMicrocopy)
 
     // Use props to avoid TS6198
     console.log(`Initializing form for ${serviceSlug || 'general'} in ${context} context`)
@@ -19,8 +23,8 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
     const getRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]
 
     const placeholders = {
-        name: getRandom(formMicrocopy.placeholders.name),
-        email: getRandom(formMicrocopy.placeholders.email)
+        name: getRandom(translatedMicrocopy.placeholders.name),
+        email: getRandom(translatedMicrocopy.placeholders.email)
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -44,17 +48,17 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                     <CheckCircle className="w-10 h-10" />
                 </div>
                 <h3 className="text-3xl font-black text-slate-900 mb-6 tracking-tighter">
-                    {getRandom(formMicrocopy.success)}
+                    {getRandom(translatedMicrocopy.success)}
                 </h3>
                 <p className="text-slate-500 mb-8 font-light">
-                    Analizaremos tu solicitud bajo nuestros protocolos de Industria 5.0 y te contactaremos en breve.
+                    {uiText.form.successBlurb}
                 </p>
                 <Button
                     variant="outline"
                     onClick={() => setStatus('idle')}
                     className="mx-auto"
                 >
-                    {getRandom(formMicrocopy.confirm)}
+                    {getRandom(translatedMicrocopy.confirm)}
                 </Button>
             </motion.div>
         )
@@ -64,7 +68,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
         <form onSubmit={handleSubmit} className="space-y-8">
             <div className="relative">
                 <label className="block text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 ml-1">
-                    Identificación
+                    {uiText.form.labels.id}
                 </label>
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-slate-300 group-focus-within:text-brand-primary transition-colors">
@@ -81,7 +85,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
 
             <div className="relative">
                 <label className="block text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 ml-1">
-                    Canal de Comunicación
+                    {uiText.form.labels.channel}
                 </label>
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-slate-300 group-focus-within:text-brand-primary transition-colors">
@@ -98,7 +102,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
 
             <div className="relative">
                 <label className="block text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 ml-1">
-                    Requerimiento Técnico
+                    {uiText.form.labels.requirement}
                 </label>
                 <div className="relative group">
                     <div className="absolute top-6 left-6 pointer-events-none text-slate-300 group-focus-within:text-brand-primary transition-colors">
@@ -107,7 +111,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                     <textarea
                         rows={4}
                         required
-                        placeholder="¿En qué fase de tu transformación digital te encuentras?"
+                        placeholder={uiText.form.placeholders.requirement}
                         className="w-full bg-slate-50 border border-slate-200 py-6 pl-16 pr-6 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium resize-none"
                     />
                 </div>
@@ -122,7 +126,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                         className="flex items-center gap-3 p-4 bg-red-50 text-red-600 text-sm font-bold border-l-4 border-red-600"
                     >
                         <AlertCircle className="w-5 h-5 shrink-0" />
-                        {getRandom(formMicrocopy.error)}
+                        {getRandom(translatedMicrocopy.error)}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -133,13 +137,13 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                 className="w-full py-8 text-lg"
                 disabled={status === 'submitting'}
             >
-                {status === 'submitting' ? 'Sincronizando...' : getRandom(formMicrocopy.submit)}
+                {status === 'submitting' ? uiText.form.submitting : getRandom(translatedMicrocopy.submit)}
                 <ArrowRight className="ml-3 w-6 h-6" />
             </Button>
 
             <div className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-widest leading-relaxed">
-                Cumplimos con normativas de privacidad GDPR. <br />
-                Tus datos están seguros bajo protocolo SSL.
+                {uiText.form.privacy} <br />
+                {uiText.form.ssl}
             </div>
         </form>
     )

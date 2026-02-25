@@ -8,11 +8,20 @@ export function Services() {
     const { translatedState } = useLanguage()
     // CMS services are a flat ServiceItem[]; icons live in servicesDetail (React components can't be stored)
     const services = translatedState.services
+    const sectionCfg = translatedState.homePage.servicesSection
+    const sectionStyle = {
+        backgroundColor: sectionCfg.style.backgroundColor || undefined,
+        backgroundImage: sectionCfg.style.backgroundImageUrl
+            ? `linear-gradient(rgba(248,250,252,0.94), rgba(248,250,252,0.94)), url(${sectionCfg.style.backgroundImageUrl})`
+            : undefined,
+        backgroundSize: sectionCfg.style.backgroundImageUrl ? 'cover' : undefined,
+        backgroundPosition: sectionCfg.style.backgroundImageUrl ? 'center' : undefined,
+    } as const
 
     return (
-        <section className="py-32 px-6 bg-slate-50 border-y border-slate-200 relative overflow-hidden">
+        <section style={sectionStyle} className="py-32 px-6 bg-slate-50 border-y border-slate-200 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-24 text-[20rem] font-black text-slate-200/20 leading-none select-none -z-10 pointer-events-none">
-                01
+                {sectionCfg.sectionNumber}
             </div>
 
             <div className="max-w-7xl mx-auto">
@@ -20,14 +29,14 @@ export function Services() {
                     <div className="flex items-center gap-4 mb-6">
                         <span className="w-12 h-1 bg-brand-primary" />
                         <span className="text-sm font-black uppercase tracking-[0.4em] text-brand-primary">
-                            Infrastructure &amp; Operations
+                            {sectionCfg.eyebrow}
                         </span>
                     </div>
                     <h2 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 tracking-tighter">
-                        Portafolio de Servicios Digitales
+                        {sectionCfg.title}
                     </h2>
                     <p className="text-2xl text-slate-500 font-light max-w-2xl border-l-2 border-slate-200 pl-8">
-                        Nuestro método sistemático para capturar valor y asegurar la adopción real.
+                        {sectionCfg.subtitle}
                     </p>
                 </div>
 

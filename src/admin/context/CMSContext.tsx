@@ -4,7 +4,7 @@
  */
 
 import {
-    createContext, useContext, useState, useCallback, useEffect,
+    createContext, useContext, useState, useCallback, useEffect, useRef,
     type ReactNode,
 } from 'react'
 import { servicesDetail, productsDetail } from '../../data/details'
@@ -32,6 +32,14 @@ export type ServiceItem = {
         titular: string
         rationale?: string
     }>
+    tracking?: string
+    ctaVariants?: Array<{
+        original: string
+        alt: string[]
+    }>
+    abHypothesis?: string
+    visualConfig?: Record<string, any>
+    visualStyle?: Record<string, any>
 }
 
 export type ProductItem = {
@@ -59,6 +67,77 @@ export type HeroContent = {
     secondaryCta: string
 }
 
+export type HomePageContent = {
+    hero: {
+        stats: Array<{ label: string; value: string }>
+        style: {
+            backgroundColor: string
+            backgroundImageUrl: string
+            rightPanelBackgroundColor: string
+            rightPanelBackgroundImageUrl: string
+            sectionOverlayColor: string
+            sectionOverlayOpacity: string
+            rightPanelOverlayColor: string
+            rightPanelOverlayOpacity: string
+            titleColor: string
+            titleAccentColor: string
+            subtitleColor: string
+            highlightColor: string
+            titleFontSizeMobile: string
+            titleFontSizeDesktop: string
+            subtitleFontSizeMobile: string
+            subtitleFontSizeDesktop: string
+            titleFontWeight: string
+            subtitleFontWeight: string
+            titleLineHeight: string
+            statsLabelColor: string
+            statsValueColor: string
+            statsDividerColor: string
+            statsPanelBorderColor: string
+        }
+    }
+    servicesSection: {
+        eyebrow: string
+        title: string
+        subtitle: string
+        sectionNumber: string
+        style: { backgroundColor: string; backgroundImageUrl: string }
+    }
+    productsSection: {
+        eyebrow: string
+        title: string
+        subtitle: string
+        availabilityPricingLabel: string
+        deploySolutionLabel: string
+        style: { backgroundColor: string; backgroundImageUrl: string }
+    }
+    frameworksSection: {
+        eyebrow: string
+        title: string
+        subtitle: string
+        items: Array<{ organization: string; name: string; description: string }>
+        style: { backgroundColor: string; backgroundImageUrl: string; overlayOpacity: string }
+    }
+    contactSection: {
+        eyebrow: string
+        titlePrefix: string
+        titleAccent: string
+        labels: {
+            officialChannel: string
+            hubHq: string
+            corporateNetwork: string
+            linkedinProtocol: string
+        }
+        style: {
+            backgroundColor: string
+            backgroundImageUrl: string
+            formOuterBackgroundColor: string
+            formOuterBackgroundImageUrl: string
+            formInnerBackgroundColor: string
+        }
+    }
+}
+
 export type SiteConfig = {
     name: string
     description: string
@@ -83,10 +162,29 @@ export type DesignTokens = {
     // Layout
     borderRadius: string       // 'none' | 'sm' | 'md' | 'lg' | 'full'
     buttonStyle: string        // 'sharp' | 'rounded' | 'pill'
+    buttonPrimaryTextColor: string
+    buttonOutlineTextColor: string
+    buttonOutlineBorderColor: string
     gridOpacity: string        // infra-grid opacity string
 
     // Dark panel color (hero card, service page sidebar)
     colorDark: string
+
+    // Brand assets
+    logoMode: string           // 'text' | 'image'
+    logoUrl: string
+    logoFooterUrl: string
+    logoAlt: string
+    faviconUrl: string
+
+    // Global loader
+    loaderEnabled: string      // 'true' | 'false'
+    loaderBackgroundColor: string
+    loaderAccentColor: string
+    loaderTextColor: string
+    loaderLogoUrl: string
+    loaderLabel: string
+    loaderDurationMs: string
 }
 
 export type CMSState = {
@@ -95,6 +193,7 @@ export type CMSState = {
     hero: HeroContent
     site: SiteConfig
     design: DesignTokens
+    homePage: HomePageContent
 }
 
 // ─── Default Design Tokens ────────────────────────────────────────────────────
@@ -111,22 +210,43 @@ export const defaultDesign: DesignTokens = {
 
     borderRadius: 'none',
     buttonStyle: 'sharp',
+    buttonPrimaryTextColor: '#ffffff',
+    buttonOutlineTextColor: '#ffffff',
+    buttonOutlineBorderColor: '#ffffff',
     gridOpacity: '0.03',
+
+    logoMode: 'text',
+    logoUrl: '',
+    logoFooterUrl: '',
+    logoAlt: 'AlgoritmoT',
+    faviconUrl: '',
+
+    loaderEnabled: 'false',
+    loaderBackgroundColor: '#0f172a',
+    loaderAccentColor: '#2563eb',
+    loaderTextColor: '#ffffff',
+    loaderLogoUrl: '',
+    loaderLabel: 'Cargando experiencia',
+    loaderDurationMs: '900',
 }
 
 // ─── CSS Injection ────────────────────────────────────────────────────────────
 
+
 export function injectDesignTokens(tokens: DesignTokens) {
-    if (typeof document === 'undefined') return
     const root = document.documentElement
 
+    // Override Tailwind v4 color tokens
+    // Tailwind reads --color-brand-* so we set them directly
     root.style.setProperty('--color-brand-primary', tokens.colorPrimary)
     root.style.setProperty('--color-brand-secondary', tokens.colorSecondary)
     root.style.setProperty('--color-brand-surface', tokens.colorSurface)
 
+    // Font overrides
     root.style.setProperty('--font-sans', `"${tokens.fontBody}", system-ui, sans-serif`)
     root.style.setProperty('--font-display', `"${tokens.fontDisplay}", serif`)
 
+    // Border-radius mapping
     const radii: Record<string, string> = {
         none: '0px',
         sm: '4px',
@@ -135,9 +255,22 @@ export function injectDesignTokens(tokens: DesignTokens) {
         full: '9999px',
     }
     root.style.setProperty('--cms-radius', radii[tokens.borderRadius] ?? '0px')
-    root.style.setProperty('--cms-dark', tokens.colorDark)
-    root.style.setProperty('--cms-grid-opacity', tokens.gridOpacity)
 
+    // Dark panel
+    root.style.setProperty('--cms-dark', tokens.colorDark)
+
+    // Grid opacity
+    root.style.setProperty('--cms-grid-opacity', tokens.gridOpacity)
+    root.style.setProperty('--cms-button-primary-text', tokens.buttonPrimaryTextColor || '#ffffff')
+    root.style.setProperty('--cms-button-outline-text', tokens.buttonOutlineTextColor || '#ffffff')
+    root.style.setProperty('--cms-button-outline-border', tokens.buttonOutlineBorderColor || '#e2e8f0')
+
+    // Loader tokens
+    root.style.setProperty('--cms-loader-bg', tokens.loaderBackgroundColor || '#0f172a')
+    root.style.setProperty('--cms-loader-accent', tokens.loaderAccentColor || '#2563eb')
+    root.style.setProperty('--cms-loader-text', tokens.loaderTextColor || '#ffffff')
+
+    // Load Google Font dynamically
     const fontFamily = tokens.fontBody
     const existingLink = document.getElementById('cms-font-link')
     if (existingLink) existingLink.remove()
@@ -150,43 +283,36 @@ export function injectDesignTokens(tokens: DesignTokens) {
         link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@300;400;600;700;900&display=swap`
         document.head.appendChild(link)
     }
+
+    // Favicon update (live)
+    if (typeof document !== 'undefined' && tokens.faviconUrl) {
+        let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+        if (!favicon) {
+            favicon = document.createElement('link')
+            favicon.rel = 'icon'
+            document.head.appendChild(favicon)
+        }
+        favicon.href = tokens.faviconUrl
+    }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const API_ROUTES = {
-    hero: '/api/cms/hero',
-    services: '/api/cms/services',
-    products: '/api/cms/products',
-    site: '/api/cms/site',
-}
+const STORAGE_KEY = 'algoritmot_cms_v1'
 
-async function fetchCMSContent(): Promise<Partial<CMSState>> {
+function loadFromStorage(): Partial<CMSState> {
     try {
-        const [heroRes, servicesRes, productsRes, siteRes] = await Promise.all([
-            fetch(API_ROUTES.hero),
-            fetch(API_ROUTES.services),
-            fetch(API_ROUTES.products),
-            fetch(API_ROUTES.site),
-        ])
-
-        const [hero, services, products, site] = await Promise.all([
-            heroRes.ok ? heroRes.json() : null,
-            servicesRes.ok ? servicesRes.json() : null,
-            productsRes.ok ? productsRes.json() : null,
-            siteRes.ok ? siteRes.json() : null,
-        ])
-
-        return {
-            hero: hero || undefined,
-            services: services || undefined,
-            products: products || undefined,
-            site: site || undefined,
-        }
-    } catch (error) {
-        console.error('Error fetching CMS content:', error)
+        const raw = localStorage.getItem(STORAGE_KEY)
+        return raw ? JSON.parse(raw) : {}
+    } catch {
         return {}
     }
+}
+
+function saveToStorage(state: CMSState) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    } catch { }
 }
 
 // ─── Initial state from static data ──────────────────────────────────────────
@@ -206,6 +332,11 @@ const staticServices: ServiceItem[] = servicesDetail.map(s => ({
     icon: s.icon,
     outcomes: (s as any).outcomes,
     variants: (s as any).variants,
+    tracking: (s as any).tracking,
+    ctaVariants: (s as any).ctaVariants,
+    abHypothesis: (s as any).abHypothesis,
+    visualConfig: (s as any).visualConfig,
+    visualStyle: (s as any).visualStyle,
 }))
 
 const staticProducts: ProductItem[] = productsDetail.map(p => ({
@@ -224,6 +355,85 @@ const staticProducts: ProductItem[] = productsDetail.map(p => ({
 
 const staticHero: HeroContent = { ...defaultContent.hero }
 
+const staticHomePage: HomePageContent = {
+    hero: {
+        stats: [
+            { label: 'Stability', value: '99.9%' },
+            { label: 'Performance', value: 'High-Tier' },
+            { label: 'Standard', value: 'ISO 9241' },
+        ],
+        style: {
+            backgroundColor: '#ffffff',
+            backgroundImageUrl: '',
+            rightPanelBackgroundColor: '#ffffff',
+            rightPanelBackgroundImageUrl: '',
+            sectionOverlayColor: '#ffffff',
+            sectionOverlayOpacity: '0.92',
+            rightPanelOverlayColor: '#ffffff',
+            rightPanelOverlayOpacity: '0.90',
+            titleColor: '#0f172a',
+            titleAccentColor: '#2563eb',
+            subtitleColor: '#64748b',
+            highlightColor: '#1a2d5a',
+            titleFontSizeMobile: '4.5rem',
+            titleFontSizeDesktop: '8rem',
+            subtitleFontSizeMobile: '1.5rem',
+            subtitleFontSizeDesktop: '1.875rem',
+            titleFontWeight: '900',
+            subtitleFontWeight: '500',
+            titleLineHeight: '0.85',
+            statsLabelColor: '#94a3b8',
+            statsValueColor: '#0f172a',
+            statsDividerColor: '#e2e8f0',
+            statsPanelBorderColor: '#cbd5e1',
+        },
+    },
+    servicesSection: {
+        eyebrow: 'Infrastructure & Operations',
+        title: 'Portafolio de Servicios Digitales',
+        subtitle: 'Nuestro método sistemático para capturar valor y asegurar la adopción real.',
+        sectionNumber: '01',
+        style: { backgroundColor: '#f8fafc', backgroundImageUrl: '' },
+    },
+    productsSection: {
+        eyebrow: 'Performance Modules',
+        title: 'Performance Modules',
+        subtitle: 'Soluciones sistematizadas para resultados predecibles y escalables.',
+        availabilityPricingLabel: 'Availability & Pricing',
+        deploySolutionLabel: 'Deploy Solution',
+        style: { backgroundColor: '#ffffff', backgroundImageUrl: '' },
+    },
+    frameworksSection: {
+        eyebrow: 'Compliance & Standards',
+        title: defaultContent.frameworks.title,
+        subtitle: 'Alineamos cada despliegue con los marcos de trabajo globales más exigentes para garantizar resiliencia y adopción.',
+        items: defaultContent.frameworks.items.map((item) => ({
+            organization: item.organization,
+            name: item.name,
+            description: item.description,
+        })),
+        style: { backgroundColor: '#0f172a', backgroundImageUrl: '', overlayOpacity: '0.10' },
+    },
+    contactSection: {
+        eyebrow: 'System Access',
+        titlePrefix: 'Iniciemos el',
+        titleAccent: 'Despliegue',
+        labels: {
+            officialChannel: 'Official Channel',
+            hubHq: 'Hub HQ',
+            corporateNetwork: 'Corporate Network',
+            linkedinProtocol: 'LinkedIn Protocol',
+        },
+        style: {
+            backgroundColor: '#ffffff',
+            backgroundImageUrl: '',
+            formOuterBackgroundColor: '#ffffff',
+            formOuterBackgroundImageUrl: '',
+            formInnerBackgroundColor: '#ffffff',
+        },
+    },
+}
+
 const staticSite: SiteConfig = {
     name: defaultSiteConfig.name,
     description: defaultSiteConfig.description,
@@ -235,12 +445,95 @@ const staticSite: SiteConfig = {
 }
 
 function buildInitialState(): CMSState {
+    try {
+        return normalizeCMSState(loadFromStorage())
+    } catch (error) {
+        console.warn('Invalid local CMS snapshot, using static defaults.', error)
+        return normalizeCMSState({})
+    }
+}
+
+function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
+    const rawServices = Array.isArray(stored.services) ? stored.services : staticServices
+    const rawProducts = Array.isArray(stored.products) ? stored.products : staticProducts
+    const hero = stored.hero && typeof stored.hero === 'object' ? stored.hero : staticHero
+    const site = stored.site && typeof stored.site === 'object' ? stored.site : staticSite
+    const design = stored.design && typeof stored.design === 'object' ? stored.design : defaultDesign
+    const homePage = stored.homePage && typeof stored.homePage === 'object' ? stored.homePage : staticHomePage
+
+    const services = rawServices.map((service) => {
+        const staticMatch = staticServices.find(s => s.slug === service.slug)
+        return {
+            ...(staticMatch ?? {}),
+            ...service,
+            icon: staticMatch?.icon,
+        }
+    })
+    const products = rawProducts.map((product) => {
+        const staticMatch = staticProducts.find(p => p.slug === product.slug)
+        return {
+            ...(staticMatch ?? {}),
+            ...product,
+            icon: staticMatch?.icon,
+        }
+    })
     return {
-        services: staticServices,
-        products: staticProducts,
-        hero: staticHero,
-        site: staticSite,
-        design: defaultDesign,
+        services,
+        products,
+        hero: { ...staticHero, ...hero },
+        site: { ...staticSite, ...site },
+        design: { ...defaultDesign, ...design },
+        homePage: {
+            ...staticHomePage,
+            ...(homePage as any),
+            hero: {
+                ...staticHomePage.hero,
+                ...((homePage as any).hero ?? {}),
+                stats: Array.isArray((homePage as any).hero?.stats)
+                    ? (homePage as any).hero.stats.map((s: any, i: number) => ({ ...(staticHomePage.hero.stats[i] ?? { label: '', value: '' }), ...s }))
+                    : staticHomePage.hero.stats.map((s) => ({ ...s })),
+                style: { ...staticHomePage.hero.style, ...((homePage as any).hero?.style ?? {}) },
+            },
+            servicesSection: {
+                ...staticHomePage.servicesSection,
+                ...((homePage as any).servicesSection ?? {}),
+                style: { ...staticHomePage.servicesSection.style, ...((homePage as any).servicesSection?.style ?? {}) },
+            },
+            productsSection: {
+                ...staticHomePage.productsSection,
+                ...((homePage as any).productsSection ?? {}),
+                style: { ...staticHomePage.productsSection.style, ...((homePage as any).productsSection?.style ?? {}) },
+            },
+            frameworksSection: {
+                ...staticHomePage.frameworksSection,
+                ...((homePage as any).frameworksSection ?? {}),
+                items: Array.isArray((homePage as any).frameworksSection?.items)
+                    ? (homePage as any).frameworksSection.items.map((it: any, i: number) => ({ ...(staticHomePage.frameworksSection.items[i] ?? { organization: '', name: '', description: '' }), ...it }))
+                    : staticHomePage.frameworksSection.items.map((it) => ({ ...it })),
+                style: { ...staticHomePage.frameworksSection.style, ...((homePage as any).frameworksSection?.style ?? {}) },
+            },
+            contactSection: {
+                ...staticHomePage.contactSection,
+                ...((homePage as any).contactSection ?? {}),
+                labels: { ...staticHomePage.contactSection.labels, ...((homePage as any).contactSection?.labels ?? {}) },
+                style: { ...staticHomePage.contactSection.style, ...((homePage as any).contactSection?.style ?? {}) },
+            },
+        },
+    }
+}
+
+function stateHash(state: CMSState): string {
+    try {
+        return JSON.stringify({
+            hero: state.hero,
+            services: state.services,
+            products: state.products,
+            site: state.site,
+            design: state.design,
+            homePage: state.homePage,
+        })
+    } catch {
+        return String(Date.now())
     }
 }
 
@@ -260,6 +553,8 @@ type CMSContextType = {
     updateHero: (data: Partial<HeroContent>) => void
     updateSite: (data: Partial<SiteConfig>) => void
     updateDesign: (data: Partial<DesignTokens>) => void
+    updateHomePage: (data: Partial<HomePageContent>) => void
+    resetDesign: () => void
 
     resetToDefaults: () => void
 }
@@ -270,177 +565,208 @@ const CMSContext = createContext<CMSContextType | null>(null)
 
 export function CMSProvider({ children }: { children: ReactNode }) {
     const [state, setState] = useState<CMSState>(buildInitialState)
-
-    // Load CMS content from API on mount
-    useEffect(() => {
-        fetchCMSContent().then(data => {
-            setState(prev => ({
-                ...prev,
-                hero: data.hero || prev.hero,
-                services: data.services || prev.services,
-                products: data.products || prev.products,
-                site: data.site || prev.site,
-                design: data.design || prev.design,
-            }))
-        })
-    }, [])
+    const [serverSyncReady, setServerSyncReady] = useState(false)
+    const hydratedFromServer = useRef(false)
+    const lastServerHash = useRef('')
 
     // Inject design tokens on mount and whenever they change
     useEffect(() => {
         injectDesignTokens(state.design)
     }, [state.design])
 
-    const updateService = useCallback(async (slug: string, data: Partial<ServiceItem>) => {
-        const service = state.services.find(s => s.slug === slug)
-        if (!service) return
+    useEffect(() => {
+        let cancelled = false
 
-        const updated = { ...service, ...data }
-        await fetch(API_ROUTES.services, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updated),
-        })
+        const hydrate = async () => {
+            try {
+                const res = await fetch('/api/cms')
+                if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                const json = await res.json()
+                const next = normalizeCMSState(json?.data ?? {})
+                if (cancelled) return
+                lastServerHash.current = stateHash(next)
+                hydratedFromServer.current = true
+                setServerSyncReady(true)
+                setState(next)
+                saveToStorage(next)
+            } catch (error) {
+                hydratedFromServer.current = true
+                setServerSyncReady(true)
+                try {
+                    const local = normalizeCMSState(loadFromStorage())
+                    lastServerHash.current = stateHash(local)
+                    setState(local)
+                } catch {
+                    // ignore invalid local cache
+                }
+                console.warn('CMS server sync unavailable, using local snapshot cache.', error)
+            }
+        }
 
-        setState(prev => ({
-            ...prev,
-            services: prev.services.map(s => s.slug === slug ? updated : s)
-        }))
-    }, [state.services])
-
-    const addService = useCallback(async (data: ServiceItem) => {
-        const res = await fetch(API_ROUTES.services, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        })
-        if (!res.ok) return
-
-        const saved = await res.json()
-        setState(prev => ({
-            ...prev,
-            services: [...prev.services, saved]
-        }))
+        void hydrate()
+        return () => { cancelled = true }
     }, [])
 
-    const deleteService = useCallback(async (slug: string) => {
-        const service = state.services.find(s => s.slug === slug)
-        if (!service) return
+    useEffect(() => {
+        if (!serverSyncReady || !hydratedFromServer.current) return
+        const hash = stateHash(state)
+        if (hash === lastServerHash.current) return
 
-        const res = await fetch(`${API_ROUTES.services}?id=${(service as any).id}`, {
-            method: 'DELETE',
-        })
-        if (!res.ok) return
+        const timeout = window.setTimeout(async () => {
+            try {
+                await fetch('/api/cms', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(state),
+                })
+                lastServerHash.current = hash
+            } catch (error) {
+                console.warn('Failed to sync CMS to server.', error)
+            }
+        }, 250)
 
-        setState(prev => ({
-            ...prev,
-            services: prev.services.filter(s => s.slug !== slug)
-        }))
-    }, [state.services])
+        return () => window.clearTimeout(timeout)
+    }, [serverSyncReady, state])
 
-    const updateProduct = useCallback(async (slug: string, data: Partial<ProductItem>) => {
-        const product = state.products.find(p => p.slug === slug)
-        if (!product) return
+    useEffect(() => {
+        if (!serverSyncReady) return
 
-        const updated = { ...product, ...data }
-        await fetch(API_ROUTES.products, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updated),
-        })
+        const interval = window.setInterval(async () => {
+            if (document.hidden) return
+            try {
+                const res = await fetch('/api/cms')
+                if (!res.ok) return
+                const json = await res.json()
+                const next = normalizeCMSState(json?.data ?? {})
+                const nextHash = stateHash(next)
+                if (nextHash !== lastServerHash.current) {
+                    lastServerHash.current = nextHash
+                    setState(next)
+                    saveToStorage(next)
+                }
+            } catch {
+                // ignore polling errors
+            }
+        }, 5000)
 
-        setState(prev => ({
-            ...prev,
-            products: prev.products.map(p => p.slug === slug ? updated : p)
-        }))
-    }, [state.products])
+        return () => window.clearInterval(interval)
+    }, [serverSyncReady])
 
-    const addProduct = useCallback(async (data: ProductItem) => {
-        const res = await fetch(API_ROUTES.products, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        })
-        if (!res.ok) return
-
-        const saved = await res.json()
-        setState(prev => ({
-            ...prev,
-            products: [...prev.products, saved]
-        }))
+    const persist = useCallback((next: CMSState) => {
+        setState(next)
+        saveToStorage(next)
     }, [])
 
-    const deleteProduct = useCallback(async (slug: string) => {
-        const product = state.products.find(p => p.slug === slug)
-        if (!product) return
-
-        const res = await fetch(`${API_ROUTES.products}?id=${(product as any).id}`, {
-            method: 'DELETE',
-        })
-        if (!res.ok) return
-
-        setState(prev => ({
-            ...prev,
-            products: prev.products.filter(p => p.slug !== slug)
-        }))
-    }, [state.products])
-
-    const updateHero = useCallback(async (data: Partial<HeroContent>) => {
-        const updated = { ...state.hero, ...data }
-        await fetch(API_ROUTES.hero, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updated),
-        })
-        setState(prev => ({ ...prev, hero: updated }))
-    }, [state.hero])
-
-    const updateSite = useCallback(async (data: Partial<SiteConfig>) => {
-        const updated = { ...state.site, ...data }
-        await fetch(API_ROUTES.site, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updated),
-        })
-        setState(prev => ({ ...prev, site: updated }))
-    }, [state.site])
-
-    const updateDesign = useCallback((data: Partial<DesignTokens>) => {
+    const updateService = useCallback((slug: string, data: Partial<ServiceItem>) => {
         setState(prev => {
-            const next = { ...prev, design: { ...prev.design, ...data } }
-            injectDesignTokens(next.design)
+            const next = { ...prev, services: prev.services.map(s => s.slug === slug ? { ...s, ...data } : s) }
+            saveToStorage(next)
             return next
         })
     }, [])
 
-    const persist = useCallback(async (next: CMSState) => {
-        setState(next)
-        // Batch updates to multiple endpoints if needed, although usually this is for full resets
-        await Promise.all([
-            updateHero(next.hero),
-            updateSite(next.site),
-            // Services and Products are more complex as they are arrays, 
-            // but usually persist is called for a full state replacement.
-        ])
-    }, [updateHero, updateSite])
+    const addService = useCallback((data: ServiceItem) => {
+        setState(prev => {
+            const next = { ...prev, services: [...prev.services, data] }
+            saveToStorage(next)
+            return next
+        })
+    }, [])
+
+    const deleteService = useCallback((slug: string) => {
+        setState(prev => {
+            const next = { ...prev, services: prev.services.filter(s => s.slug !== slug) }
+            saveToStorage(next)
+            return next
+        })
+    }, [])
+
+    const updateProduct = useCallback((slug: string, data: Partial<ProductItem>) => {
+        setState(prev => {
+            const next = { ...prev, products: prev.products.map(p => p.slug === slug ? { ...p, ...data } : p) }
+            saveToStorage(next)
+            return next
+        })
+    }, [])
+
+    const addProduct = useCallback((data: ProductItem) => {
+        setState(prev => {
+            const next = { ...prev, products: [...prev.products, data] }
+            saveToStorage(next)
+            return next
+        })
+    }, [])
+
+    const deleteProduct = useCallback((slug: string) => {
+        setState(prev => {
+            const next = { ...prev, products: prev.products.filter(p => p.slug !== slug) }
+            saveToStorage(next)
+            return next
+        })
+    }, [])
+
+    const updateHero = useCallback((data: Partial<HeroContent>) => {
+        setState(prev => {
+            const next = { ...prev, hero: { ...prev.hero, ...data } }
+            saveToStorage(next)
+            return next
+        })
+    }, [])
+
+    const updateSite = useCallback((data: Partial<SiteConfig>) => {
+        setState(prev => {
+            const next = { ...prev, site: { ...prev.site, ...data } }
+            saveToStorage(next)
+            return next
+        })
+    }, [])
+
+    const updateDesign = useCallback((data: Partial<DesignTokens>) => {
+        setState(prev => {
+            const next = { ...prev, design: { ...prev.design, ...data } }
+            saveToStorage(next)
+            injectDesignTokens(next.design) // immediate visual feedback
+            return next
+        })
+    }, [])
+
+    const updateHomePage = useCallback((data: Partial<HomePageContent>) => {
+        setState(prev => {
+            const next = normalizeCMSState({ ...prev, homePage: { ...prev.homePage, ...data } } as Partial<CMSState>)
+            saveToStorage(next)
+            return next
+        })
+    }, [])
 
     const resetToDefaults = useCallback(() => {
         const fresh: CMSState = {
-            services: staticServices,
-            products: staticProducts,
+            services: staticServices.map(s => ({ ...s })),
+            products: staticProducts.map(p => ({ ...p })),
             hero: staticHero,
             site: staticSite,
             design: defaultDesign,
+            homePage: staticHomePage,
         }
         persist(fresh)
         injectDesignTokens(defaultDesign)
     }, [persist])
+
+    const resetDesign = useCallback(() => {
+        setState(prev => {
+            const next = { ...prev, design: { ...defaultDesign } }
+            saveToStorage(next)
+            injectDesignTokens(next.design)
+            return next
+        })
+    }, [])
 
     return (
         <CMSContext.Provider value={{
             state,
             updateService, addService, deleteService,
             updateProduct, addProduct, deleteProduct,
-            updateHero, updateSite, updateDesign,
+            updateHero, updateSite, updateDesign, updateHomePage,
+            resetDesign,
             resetToDefaults,
         }}>
             {children}

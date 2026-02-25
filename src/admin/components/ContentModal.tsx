@@ -13,9 +13,10 @@ type ModalProps = {
     onSave?: () => void
     saveLabel?: string
     danger?: boolean
+    panelClassName?: string
 }
 
-export function ContentModal({ isOpen, onClose, title, subtitle, children, onSave, saveLabel = 'Guardar', danger }: ModalProps) {
+export function ContentModal({ isOpen, onClose, title, subtitle, children, onSave, saveLabel = 'Guardar', danger, panelClassName }: ModalProps) {
     // Close on Escape
     useEffect(() => {
         const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -31,7 +32,7 @@ export function ContentModal({ isOpen, onClose, title, subtitle, children, onSav
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
 
             {/* Panel */}
-            <div className="relative ml-auto w-full max-w-xl bg-white h-full flex flex-col shadow-2xl border-l-8 border-brand-primary overflow-hidden">
+            <div className={`relative ml-auto w-full max-w-xl bg-white h-full flex flex-col shadow-2xl border-l-8 border-brand-primary overflow-hidden ${panelClassName ?? ''}`}>
                 {/* Header */}
                 <div className="px-8 py-6 border-b border-slate-100 flex items-start justify-between shrink-0">
                     <div>

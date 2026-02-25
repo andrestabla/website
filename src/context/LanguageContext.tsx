@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { useCMS, type CMSState } from '../admin/pages/../context/CMSContext';
 import { translateObject } from '../lib/gemini';
+import { getUICopy } from '../i18n/uiCopy';
 
 /**
  * LanguageContext — Manages the current site language and handles on-the-fly 
@@ -20,11 +21,12 @@ type LanguageContextType = {
     setLanguage: (lang: Language) => void;
     translatedState: CMSState;
     isTranslating: boolean;
+    uiText: ReturnType<typeof getUICopy>;
 };
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
-const CACHE_KEY = 'algoritmot_translations_v1';
+const CACHE_KEY = 'algoritmot_translations_v3';
 
 function loadCache(): TranslationCache {
     try {
@@ -41,6 +43,30 @@ function saveCache(cache: TranslationCache) {
     } catch { }
 }
 
+function mergeTranslated<T>(base: T, translated: unknown): T {
+    if (translated === undefined || translated === null) return base;
+
+    if (typeof base === 'string') {
+        return (typeof translated === 'string' ? translated : base) as T;
+    }
+
+    if (Array.isArray(base)) {
+        if (!Array.isArray(translated)) return base;
+        return base.map((item, index) => mergeTranslated(item, translated[index])) as T;
+    }
+
+    if (base && typeof base === 'object') {
+        if (!translated || typeof translated !== 'object' || Array.isArray(translated)) return base;
+        const out: any = { ...(base as any) };
+        for (const key of Object.keys(base as any)) {
+            out[key] = mergeTranslated((base as any)[key], (translated as any)[key]);
+        }
+        return out as T;
+    }
+
+    return (translated as T) ?? base;
+}
+
 // Simple but robust hash function for CMS state
 function getCMSHash(state: CMSState): string {
     try {
@@ -48,7 +74,8 @@ function getCMSHash(state: CMSState): string {
             h: state.hero,
             s: state.services,
             p: state.products,
-            st: state.site
+            st: state.site,
+            hp: (state as any).homePage,
         });
         let hash = 0;
         for (let i = 0; i < text.length; i++) {
@@ -71,6 +98,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const lastProcessed = useRef<string>("");
     const isProcessing = useRef<boolean>(false);
 
+    const translateCollection = useCallback(async <T,>(items: T[], targetLang: Language): Promise<T[]> => {
+        const results = await Promise.allSettled(items.map(item => translateObject(item, targetLang)));
+        return items.map((item, index) => {
+            const result = results[index];
+            if (result?.status === 'fulfilled') return result.value;
+            return item;
+        });
+    }, []);
+
     /**
      * Perform translation with caching logic
      */
@@ -90,8 +126,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         if (cache[targetLang]?.[hash]) {
             const cached = cache[targetLang]![hash];
             setTranslatedState({
-                ...cached,
-                design: baseState.design
+                ...baseState,
+                hero: mergeTranslated(baseState.hero, cached.hero),
+                services: mergeTranslated(baseState.services, cached.services),
+                products: mergeTranslated(baseState.products, cached.products),
+                site: mergeTranslated(baseState.site, cached.site),
+                design: baseState.design,
+                homePage: mergeTranslated((baseState as any).homePage, (cached as any).homePage),
             });
             lastProcessed.current = hash;
             return;
@@ -100,67 +141,34 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         setIsTranslating(true);
         isProcessing.current = true;
         try {
-            const toTranslate = {
-                hero: baseState.hero,
-                services: baseState.services,
-                products: baseState.products,
-                site: {
+            // Split translation into smaller requests to reduce malformed/truncated JSON responses.
+            const [heroT, servicesT, productsT, siteT, homePageT] = await Promise.all([
+                translateObject(baseState.hero, targetLang),
+                translateCollection(baseState.services, targetLang),
+                translateCollection(baseState.products, targetLang),
+                translateObject({
                     name: baseState.site.name,
                     description: baseState.site.description,
                     contactAddress: baseState.site.contactAddress
-                }
-            };
-
-            const translated = await translateObject(toTranslate, targetLang);
-
-            if (!translated || typeof translated !== 'object') {
-                throw new Error("Invalid translation response");
-            }
+                }, targetLang),
+                translateObject((baseState as any).homePage, targetLang),
+            ]);
 
             // Extremely defensive merging
-            const t = translated as any;
+            const t = {
+                hero: heroT,
+                services: servicesT,
+                products: productsT,
+                site: siteT,
+                homePage: homePageT,
+            } as any;
             const newState: CMSState = {
                 ...baseState,
-                hero: {
-                    ...baseState.hero,
-                    title: t.hero?.title || baseState.hero.title,
-                    subtitle: t.hero?.subtitle || baseState.hero.subtitle,
-                    highlight: t.hero?.highlight || baseState.hero.highlight,
-                    cta: t.hero?.cta || baseState.hero.cta,
-                    secondaryCta: t.hero?.secondaryCta || baseState.hero.secondaryCta,
-                },
-                services: baseState.services.map((s, i) => {
-                    const ts = t.services?.[i];
-                    return ts ? {
-                        ...s,
-                        title: ts.title || s.title,
-                        highlight: ts.highlight || s.highlight,
-                        subtitle: ts.subtitle || s.subtitle,
-                        description: ts.description || s.description,
-                        descriptionLong: ts.descriptionLong || s.descriptionLong,
-                        ctaPrimary: ts.ctaPrimary || s.ctaPrimary,
-                        ctaSecondary: ts.ctaSecondary || s.ctaSecondary,
-                        features: Array.isArray(ts.features) ? ts.features : s.features,
-                    } : s;
-                }),
-                products: baseState.products.map((p, i) => {
-                    const tp = t.products?.[i];
-                    return tp ? {
-                        ...p,
-                        title: tp.title || p.title,
-                        highlight: tp.highlight || p.highlight,
-                        description: tp.description || p.description,
-                        descriptionLong: tp.descriptionLong || p.descriptionLong,
-                        price: tp.price || p.price,
-                        ctaText: tp.ctaText || p.ctaText,
-                    } : p;
-                }),
-                site: {
-                    ...baseState.site,
-                    name: t.site?.name || baseState.site.name,
-                    description: t.site?.description || baseState.site.description,
-                    contactAddress: t.site?.contactAddress || baseState.site.contactAddress,
-                }
+                hero: mergeTranslated(baseState.hero, t.hero),
+                services: mergeTranslated(baseState.services, t.services),
+                products: mergeTranslated(baseState.products, t.products),
+                site: mergeTranslated(baseState.site, { ...baseState.site, ...t.site }),
+                homePage: mergeTranslated((baseState as any).homePage, t.homePage),
             };
 
             if (!cache[targetLang]) cache[targetLang] = {};
@@ -177,7 +185,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             setIsTranslating(false);
             isProcessing.current = false;
         }
-    }, []);
+    }, [translateCollection]);
 
     // Effect: Handle CMS State changes or Language changes
     useEffect(() => {
@@ -190,7 +198,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <LanguageContext.Provider value={{ language, setLanguage, translatedState, isTranslating }}>
+        <LanguageContext.Provider value={{ language, setLanguage, translatedState, isTranslating, uiText: getUICopy(language) }}>
             {children}
         </LanguageContext.Provider>
     );

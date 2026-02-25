@@ -54,24 +54,27 @@ const layers: Layer[] = [
     },
 ]
 
-export function DevVisuals() {
-    const [active, setActive] = useState<string>('frontend')
-    const activeLayer = layers.find(l => l.id === active)!
+export function DevVisuals({ config }: { config?: any }) {
+    const cfg = config ?? {}
+    const layerRows: Layer[] = Array.isArray(cfg.layers)
+        ? layers.map((base, i) => ({ ...base, ...(cfg.layers[i] ?? {}), icon: base.icon }))
+        : layers
+    const [active, setActive] = useState<string>(layerRows[0]?.id ?? 'frontend')
+    const activeLayer = layerRows.find(l => l.id === active) ?? layerRows[0]
 
     return (
         <div className="space-y-10">
             <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">Visualización</div>
-                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Arquitectura de la Solución</h2>
+                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">{cfg.eyebrow || 'Visualización'}</div>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">{cfg.title || 'Arquitectura de la Solución'}</h2>
                 <p className="text-slate-500 font-light mb-10 max-w-xl">
-                    Construimos soluciones en capas independientes y escalables. Haz clic en cada nivel para explorar
-                    las tecnologías y su propósito.
+                    {cfg.subtitle || 'Construimos soluciones en capas independientes y escalables. Haz clic en cada nivel para explorar las tecnologías y su propósito.'}
                 </p>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Stack visual */}
                     <div className="space-y-2">
-                        {layers.map((layer) => {
+                        {layerRows.map((layer) => {
                             const Icon = layer.icon
                             const isActive = active === layer.id
                             return (
@@ -108,15 +111,15 @@ export function DevVisuals() {
                     </div>
 
                     {/* Detail panel */}
-                    <div className="bg-slate-950 p-10 text-white sticky top-8">
+                    <div className="bg-slate-950 p-10 text-white sticky top-8" style={{ backgroundColor: cfg.detailPanelBg || undefined }}>
                         <div className={`w-14 h-14 flex items-center justify-center text-white mb-8 ${activeLayer.color}`}>
                             <activeLayer.icon className="w-7 h-7" />
                         </div>
-                        <div className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-2">Capa Seleccionada</div>
+                        <div className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-2">{cfg.selectedLayerLabel || 'Capa Seleccionada'}</div>
                         <h3 className="text-2xl font-black tracking-tighter mb-6">{activeLayer.name}</h3>
                         <p className="text-white/60 font-light leading-relaxed mb-8">{activeLayer.description}</p>
                         <div>
-                            <div className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-4">Tecnologías</div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-4">{cfg.technologiesLabel || 'Tecnologías'}</div>
                             <div className="flex flex-wrap gap-2">
                                 {activeLayer.tech.map(t => (
                                     <span key={t} className="px-3 py-1.5 bg-white/10 text-white text-xs font-bold">

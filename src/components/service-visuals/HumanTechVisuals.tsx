@@ -33,44 +33,45 @@ const riskConfig = {
     high: { label: 'Riesgo Alto', color: 'text-red-600' },
 }
 
-export function HumanTechVisuals() {
+export function HumanTechVisuals({ config }: { config?: any }) {
+    const cfg = config ?? {}
+    const taskRows: Task[] = Array.isArray(cfg.tasks) ? cfg.tasks : tasks
     const [filter, setFilter] = useState<'all' | 'human' | 'auto' | 'hybrid'>('all')
     const [active, setActive] = useState<string | null>(null)
 
-    const visible = filter === 'all' ? tasks : tasks.filter(t => t.mode === filter)
+    const visible = filter === 'all' ? taskRows : taskRows.filter(t => t.mode === filter)
     const counts = {
-        human: tasks.filter(t => t.mode === 'human').length,
-        auto: tasks.filter(t => t.mode === 'auto').length,
-        hybrid: tasks.filter(t => t.mode === 'hybrid').length,
+        human: taskRows.filter(t => t.mode === 'human').length,
+        auto: taskRows.filter(t => t.mode === 'auto').length,
+        hybrid: taskRows.filter(t => t.mode === 'hybrid').length,
     }
 
     return (
         <div className="space-y-10">
             <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">Visualización</div>
-                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Matriz Humano–Tecnología</h2>
+                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">{cfg.eyebrow || 'Visualización'}</div>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">{cfg.title || 'Matriz Humano–Tecnología'}</h2>
                 <p className="text-slate-500 font-light mb-8 max-w-xl">
-                    Analizamos cada actividad de tu empresa y determinamos la distribución óptima entre talento humano,
-                    automatización e IA responsable. Haz clic en cualquier fila para ver el razonamiento.
+                    {cfg.subtitle || 'Analizamos cada actividad de tu empresa y determinamos la distribución óptima entre talento humano, automatización e IA responsable. Haz clic en cualquier fila para ver el razonamiento.'}
                 </p>
 
                 {/* Summary pies */}
                 <div className="grid grid-cols-3 gap-4 mb-8">
                     {(Object.keys(modeConfig) as Array<keyof typeof modeConfig>).map(mode => {
-                        const cfg = modeConfig[mode]
-                        const Icon = cfg.icon
+                        const modeMeta = modeConfig[mode]
+                        const Icon = modeMeta.icon
                         return (
                             <button
                                 key={mode}
                                 onClick={() => setFilter(filter === mode ? 'all' : mode)}
                                 className={`flex items-center gap-4 p-5 border-2 transition-all ${filter === mode ? 'border-brand-primary bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                             >
-                                <div className={`w-10 h-10 flex items-center justify-center ${cfg.color} shrink-0`}>
+                                <div className={`w-10 h-10 flex items-center justify-center ${modeMeta.color} shrink-0`}>
                                     <Icon className="w-5 h-5" />
                                 </div>
                                 <div className="text-left">
                                     <div className="text-2xl font-black text-slate-900">{counts[mode]}</div>
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{cfg.label}</div>
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{modeMeta.label}</div>
                                 </div>
                             </button>
                         )
@@ -82,15 +83,15 @@ export function HumanTechVisuals() {
                     <table className="w-full text-left">
                         <thead className="bg-slate-50">
                             <tr>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Actividad</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hidden md:table-cell">Proceso</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Modo</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hidden lg:table-cell">Riesgo IA</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{cfg.activityLabel || 'Actividad'}</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hidden md:table-cell">{cfg.processLabel || 'Proceso'}</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">{cfg.modeLabel || 'Modo'}</th>
+                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hidden lg:table-cell">{cfg.aiRiskLabel || 'Riesgo IA'}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {visible.map((task, i) => {
-                                const cfg = modeConfig[task.mode]
+                                const modeMeta = modeConfig[task.mode]
                                 const risk = riskConfig[task.riskLevel]
                                 const isActive = active === task.activity
                                 return (
@@ -103,8 +104,8 @@ export function HumanTechVisuals() {
                                             <td className="px-6 py-4 font-bold text-slate-900 text-sm">{task.activity}</td>
                                             <td className="px-6 py-4 text-sm text-slate-500 hidden md:table-cell">{task.process}</td>
                                             <td className="px-6 py-4">
-                                                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 ${cfg.badge}`}>
-                                                    {cfg.label}
+                                                <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 ${modeMeta.badge}`}>
+                                                    {modeMeta.label}
                                                 </span>
                                             </td>
                                             <td className={`px-6 py-4 text-[11px] font-black hidden lg:table-cell ${risk.color}`}>
@@ -116,11 +117,11 @@ export function HumanTechVisuals() {
                                             <tr key={`${i}-detail`}>
                                                 <td colSpan={4} className="px-6 py-4 bg-slate-900 text-white">
                                                     <div className="flex items-start gap-4">
-                                                        <div className={`w-10 h-10 shrink-0 flex items-center justify-center ${cfg.color}`}>
-                                                            <cfg.icon className="w-5 h-5" />
+                                                        <div className={`w-10 h-10 shrink-0 flex items-center justify-center ${modeMeta.color}`}>
+                                                            <modeMeta.icon className="w-5 h-5" />
                                                         </div>
                                                         <div>
-                                                            <div className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Razonamiento AlgoritmoT</div>
+                                                            <div className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">{cfg.reasoningLabel || 'Razonamiento AlgoritmoT'}</div>
                                                             <div className="text-sm font-light text-white/80">{task.rationale}</div>
                                                         </div>
                                                     </div>
@@ -135,7 +136,7 @@ export function HumanTechVisuals() {
                 </div>
 
                 <p className="mt-6 text-xs text-slate-400 border-l-2 border-slate-200 pl-4 italic">
-                    Basado en los marcos NIST AI RMF e ISO 9241‑210 para IA responsable y diseño centrado en el ser humano.
+                    {cfg.footnote || 'Basado en los marcos NIST AI RMF e ISO 9241‑210 para IA responsable y diseño centrado en el ser humano.'}
                 </p>
             </div>
         </div>

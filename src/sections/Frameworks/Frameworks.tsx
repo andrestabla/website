@@ -1,15 +1,24 @@
 import { motion } from 'framer-motion'
-import { content } from '../../data/content'
 import { Shield, LayoutPanelLeft, Users } from 'lucide-react'
+import { useLanguage } from '../../context/LanguageContext'
 
 const frameworkIcons = [Users, LayoutPanelLeft, Shield]
 
 export function Frameworks() {
-    const { frameworks } = content
+    const { translatedState } = useLanguage()
+    const frameworks = translatedState.homePage.frameworksSection
+    const sectionStyle = {
+        backgroundColor: frameworks.style.backgroundColor || undefined,
+        backgroundImage: frameworks.style.backgroundImageUrl
+            ? `url(${frameworks.style.backgroundImageUrl})`
+            : undefined,
+        backgroundSize: frameworks.style.backgroundImageUrl ? 'cover' : undefined,
+        backgroundPosition: frameworks.style.backgroundImageUrl ? 'center' : undefined,
+    } as const
 
     return (
-        <section className="py-32 px-6 bg-slate-900 relative overflow-hidden">
-            <div className="absolute inset-0 dot-pattern opacity-10" />
+        <section style={sectionStyle} className="py-32 px-6 bg-slate-900 relative overflow-hidden">
+            <div className="absolute inset-0 dot-pattern" style={{ opacity: Number(frameworks.style.overlayOpacity || '0.10') }} />
 
             <div className="max-w-7xl mx-auto relative">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-24 items-start">
@@ -17,14 +26,14 @@ export function Frameworks() {
                         <div className="flex items-center gap-4 mb-8">
                             <span className="w-12 h-px bg-white/50" />
                             <span className="text-sm font-black uppercase tracking-[0.4em] text-white/50">
-                                Compliance & Standards
+                                {frameworks.eyebrow}
                             </span>
                         </div>
                         <h2 className="text-5xl md:text-7xl font-black text-white mb-10 tracking-tighter leading-none">
                             {frameworks.title}
                         </h2>
                         <p className="text-xl text-white/50 font-light leading-relaxed">
-                            Alineamos cada despliegue con los marcos de trabajo globales más exigentes para garantizar resiliencia y adopción.
+                            {frameworks.subtitle}
                         </p>
                     </div>
 

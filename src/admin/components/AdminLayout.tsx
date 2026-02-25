@@ -16,15 +16,23 @@ import {
     Home,
     Paintbrush,
     Plug
+    , CircleHelp
+    , CheckCircle2
 } from 'lucide-react'
 
 
 interface AdminLayoutProps {
     children: ReactNode
+    sessionUser?: {
+        displayName: string
+        role: string
+        username: string
+    } | null
 }
 
-export function AdminLayout({ children }: AdminLayoutProps) {
+export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const [isHelpOpen, setIsHelpOpen] = useState(false)
     const location = useLocation()
     const navigate = useNavigate()
 
@@ -41,10 +49,125 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         { name: 'Integraciones', href: '/admin/integrations', icon: Plug, group: 'infra' },
     ]
 
-    const handleLogout = () => {
-        localStorage.removeItem('admin_token')
-        navigate('/admin/login')
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/admin/logout', { method: 'POST' })
+        } catch {
+            // Best-effort logout; still clear local hint and redirect.
+        } finally {
+            localStorage.removeItem('admin_token')
+            navigate('/admin/login')
+        }
     }
+
+    const pageHelp: Record<string, { title: string; intro: string; data: string; steps: string[]; notes?: string[] }> = {
+        '/admin/dashboard': {
+            title: 'Dashboard',
+            intro: 'Monitorea el estado operativo real del sistema (CMS, traducciones, integraciones y tiempos de respuesta).',
+            data: 'Fuente: `/api/admin-metrics` (Vercel Functions + Neon). No usa datos demo.',
+            steps: [
+                'Revisa KPIs (servicios, productos, traducciones cache, integraciones activas).',
+                'Valida “Actividad reciente” para cambios de CMS e integraciones.',
+                'Usa “API Response Time” y “Global Node” para diagnosticar performance.',
+            ],
+        },
+        '/admin/home': {
+            title: 'Home',
+            intro: 'Edita contenido, estilos, imágenes/video y comportamiento visual del Home con vista previa real.',
+            data: 'Fuente: CMS real en `/api/cms` + Neon. Uploads de assets pueden ir a R2.',
+            steps: [
+                'Selecciona una pestaña (Hero, Servicios, Productos, Frameworks, Contacto, Visual Global).',
+                'Modifica campos y valida en la “vista previa real” (mismo render del sitio).',
+                'Usa “Subir a R2” para imágenes/branding y luego “Guardar Todo”.',
+                'Verifica en “Ver Home” que el resultado publicado coincide.',
+            ],
+            notes: ['La preview del Hero ya usa el mismo componente del sitio público.', 'YouTube en fondo de Hero está soportado.'],
+        },
+        '/admin/services': {
+            title: 'Servicios',
+            intro: 'Administra catálogo real de servicios y su contenido de detalle/SEO.',
+            data: 'Fuente: CMS real (`services`) en `/api/cms` + Neon.',
+            steps: [
+                'Editar servicio existente o crear uno nuevo.',
+                'Completar slug, textos, features, outcomes y SEO.',
+                'Guardar y validar en la ruta pública `/servicios/:slug`.',
+            ],
+        },
+        '/admin/products': {
+            title: 'Productos',
+            intro: 'Administra catálogo real de productos y detalles/SEO.',
+            data: 'Fuente: CMS real (`products`) en `/api/cms` + Neon.',
+            steps: [
+                'Editar o crear producto.',
+                'Completar precio, CTA, descripciones, variantes y SEO.',
+                'Guardar y validar en `/productos/:slug`.',
+            ],
+        },
+        '/admin/settings': {
+            title: 'Configuración',
+            intro: 'Gestiona datos globales del sitio (contacto, links, metadata básica).',
+            data: 'Fuente: CMS real (`site`) en `/api/cms` + Neon.',
+            steps: [
+                'Edita nombre, descripción, URL, correo y enlaces.',
+                'Guarda y valida impacto en footer/contacto/marketing.',
+            ],
+        },
+        '/admin/design': {
+            title: 'Diseño',
+            intro: 'Controla tema global, tipografías, bordes, branding (logo/favicon) y loader público.',
+            data: 'Fuente: `design` en CMS real + inyección de tokens CSS en tiempo real.',
+            steps: [
+                'Usa pestañas Colores / Tipografía / Forma & Layout / Branding & Assets.',
+                'Sube logo, favicon y loader logo a R2 desde esta sección.',
+                'Activa loader global si deseas una intro visual en el sitio público.',
+                'Guarda y verifica cambios en header, footer, favicon y UI.',
+            ],
+            notes: ['“Restaurar Diseño Default” solo resetea estilos (no contenido CMS).'],
+        },
+        '/admin/seo': {
+            title: 'SEO Manager',
+            intro: 'Edita y valida campos SEO de servicios, productos y páginas gestionadas.',
+            data: 'Fuente: CMS real (`services/products/site`) + persistencia en `/api/cms`.',
+            steps: [
+                'Busca una ruta o slug.',
+                'Edita SEO title/description.',
+                'Guarda y recarga para verificar persistencia.',
+            ],
+        },
+        '/admin/marketing': {
+            title: 'Marketing',
+            intro: 'Construye URLs/campañas y assets de crecimiento con datos reales del sitio.',
+            data: 'Fuente: CMS real (`site.url`, servicios, productos).',
+            steps: [
+                'Selecciona destino/campaña.',
+                'Completa UTM parameters.',
+                'Copia/valida la URL generada.',
+            ],
+        },
+        '/admin/analytics': {
+            title: 'Analítica',
+            intro: 'Visualiza métricas reales de operación (traducciones cache, cobertura SEO, integraciones).',
+            data: 'Fuente: `/api/admin-metrics` + CMS local para cobertura SEO.',
+            steps: [
+                'Revisa series de traducciones por día.',
+                'Valida cache por idioma.',
+                'Usa cobertura SEO para encontrar rutas incompletas.',
+            ],
+        },
+        '/admin/integrations': {
+            title: 'Integraciones',
+            intro: 'Configura proveedores (Gemini, OpenAI, SMTP, Cloudflare R2) con persistencia real y uso server-side.',
+            data: 'Fuente: `/api/integrations` + Neon. Variables de entorno del servidor tienen prioridad.',
+            steps: [
+                'Configura credenciales y activa cada integración.',
+                'Guarda y recarga para validar persistencia.',
+                'Para R2, define `publicUrl` y asegúrate de acceso público habilitado.',
+                'Prueba upload desde Home/Diseño para validar extremo a extremo.',
+            ],
+        },
+    }
+
+    const activeHelp = pageHelp[location.pathname]
 
     return (
         <div className="min-h-screen bg-slate-50 flex">
@@ -130,9 +253,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     </div>
 
                     <div className="flex items-center gap-6">
+                        {activeHelp && (
+                            <button
+                                onClick={() => setIsHelpOpen(true)}
+                                className="inline-flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-500 hover:text-brand-primary hover:border-brand-primary transition-colors text-[11px] font-black uppercase tracking-widest"
+                            >
+                                <CircleHelp className="w-4 h-4" />
+                                Instrucciones
+                            </button>
+                        )}
                         <div className="text-right">
-                            <div className="text-sm font-bold text-slate-900">Admin AlgoritmoT</div>
-                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-300">Nivel de Acceso: 01</div>
+                            <div className="text-sm font-bold text-slate-900">{sessionUser?.displayName || 'Admin AlgoritmoT'}</div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+                                {sessionUser ? `${sessionUser.role} · @${sessionUser.username}` : 'Nivel de Acceso: 01'}
+                            </div>
                         </div>
                         <div className="w-10 h-10 bg-slate-200 rounded-none border-t-2 border-brand-primary"></div>
                     </div>
@@ -144,6 +278,57 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     </div>
                 </div>
             </main>
+
+            {isHelpOpen && activeHelp && (
+                <div className="fixed inset-0 z-50 flex">
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsHelpOpen(false)} />
+                    <div className="relative ml-auto w-full max-w-2xl h-full bg-white border-l border-slate-200 shadow-2xl flex flex-col">
+                        <div className="px-8 py-6 border-b border-slate-100 flex items-start justify-between">
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Ayuda del Administrador</div>
+                                <h3 className="text-2xl font-black tracking-tighter text-slate-900">{activeHelp.title}</h3>
+                                <p className="text-sm text-slate-500 mt-2">{activeHelp.intro}</p>
+                            </div>
+                            <button onClick={() => setIsHelpOpen(false)} className="text-slate-300 hover:text-slate-700">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-8 py-8 space-y-8">
+                            <div className="bg-slate-50 border border-slate-200 p-5">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Fuente de datos</div>
+                                <div className="text-sm text-slate-700">{activeHelp.data}</div>
+                            </div>
+
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Cómo usar esta sección</div>
+                                <div className="space-y-3">
+                                    {activeHelp.steps.map((step, idx) => (
+                                        <div key={idx} className="flex items-start gap-3 border border-slate-200 p-4">
+                                            <div className="w-6 h-6 shrink-0 bg-slate-900 text-white text-xs font-black flex items-center justify-center">{idx + 1}</div>
+                                            <div className="text-sm text-slate-700">{step}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {!!activeHelp.notes?.length && (
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Notas importantes</div>
+                                    <div className="space-y-2">
+                                        {activeHelp.notes.map((note, idx) => (
+                                            <div key={idx} className="flex items-start gap-2 text-sm text-slate-700">
+                                                <CheckCircle2 className="w-4 h-4 mt-0.5 text-brand-primary shrink-0" />
+                                                <span>{note}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

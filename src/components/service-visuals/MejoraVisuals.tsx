@@ -45,11 +45,14 @@ const pdcaPhases = [
     },
 ]
 
-export function MejoraVisuals() {
+export function MejoraVisuals({ config }: { config?: any }) {
+    const cfg = config ?? {}
+    const dataRows = Array.isArray(cfg.kpiData) ? cfg.kpiData : kpiData
+    const phases = Array.isArray(cfg.pdcaPhases) ? pdcaPhases.map((base, i) => ({ ...base, ...(cfg.pdcaPhases[i] ?? {}) })) : pdcaPhases
     const [activePhase, setActivePhase] = useState<string>('plan')
     const [activeKPI, setActiveKPI] = useState<'ciclo' | 'errores' | 'satisfaccion'>('satisfaccion')
 
-    const activeData = pdcaPhases.find(p => p.id === activePhase)!
+    const activeData = phases.find(p => p.id === activePhase) ?? phases[0]
 
     const cx = 130
     const cy = 130
@@ -64,11 +67,10 @@ export function MejoraVisuals() {
     return (
         <div className="space-y-12">
             <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">Visualización</div>
-                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Ciclo PDCA de Mejora Continua</h2>
+                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">{cfg.eyebrow || 'Visualización'}</div>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">{cfg.title || 'Ciclo PDCA de Mejora Continua'}</h2>
                 <p className="text-slate-500 font-light mb-10 max-w-xl">
-                    Nuestro servicio de retainer sigue un ciclo iterativo de 4 etapas. Haz clic en cada cuadrante para
-                    entender cómo mejoramos continuamente tu solución.
+                    {cfg.subtitle || 'Nuestro servicio de retainer sigue un ciclo iterativo de 4 etapas. Haz clic en cada cuadrante para entender cómo mejoramos continuamente tu solución.'}
                 </p>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -83,7 +85,7 @@ export function MejoraVisuals() {
                                 const y1 = cy + r * Math.sin(toRad(start))
                                 const x2 = cx + r * Math.cos(toRad(end))
                                 const y2 = cy + r * Math.sin(toRad(end))
-                                const phase = pdcaPhases[i]
+                                const phase = phases[i]
                                 const isActive = activePhase === phase.id
                                 return (
                                     <g key={i} onClick={() => setActivePhase(phase.id)} className="cursor-pointer">
@@ -109,8 +111,8 @@ export function MejoraVisuals() {
                             })}
                             {/* Center */}
                             <circle cx={cx} cy={cy} r={28} fill="white" />
-                            <text x={cx} y={cy - 6} textAnchor="middle" fill="#0f172a" fontSize="10" fontWeight="900">PDCA</text>
-                            <text x={cx} y={cy + 8} textAnchor="middle" fill="#94a3b8" fontSize="8">Mejora</text>
+                            <text x={cx} y={cy - 6} textAnchor="middle" fill="#0f172a" fontSize="10" fontWeight="900">{cfg.centerTitle || 'PDCA'}</text>
+                            <text x={cx} y={cy + 8} textAnchor="middle" fill="#94a3b8" fontSize="8">{cfg.centerSubtitle || 'Mejora'}</text>
                             {/* Arrow for cycle direction */}
                             <text x={cx + r + 14} y={cy} textAnchor="middle" fill="#94a3b8" fontSize="18">↻</text>
                         </svg>
@@ -125,7 +127,7 @@ export function MejoraVisuals() {
 
                     {/* KPI Dashboard */}
                     <div>
-                        <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-4">Dashboard de KPIs</h3>
+                        <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-4">{cfg.kpiTitle || 'Dashboard de KPIs'}</h3>
                         <div className="flex gap-2 mb-6">
                             {(Object.keys(kpiLabels) as Array<keyof typeof kpiLabels>).map(key => (
                                 <button
@@ -144,7 +146,7 @@ export function MejoraVisuals() {
                             </div>
                             <ResponsiveContainer width="100%" height={180}>
                                 {activeKPI === 'satisfaccion' ? (
-                                    <LineChart data={kpiData}>
+                                    <LineChart data={dataRows}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                         <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} domain={[60, 100]} />
@@ -152,7 +154,7 @@ export function MejoraVisuals() {
                                         <Line type="monotone" dataKey={activeKPI} stroke={kpiLabels[activeKPI].color} strokeWidth={2.5} dot={{ r: 4 }} />
                                     </LineChart>
                                 ) : (
-                                    <BarChart data={kpiData}>
+                                    <BarChart data={dataRows}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                         <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />

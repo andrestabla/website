@@ -6,7 +6,7 @@ import { DevVisuals } from './DevVisuals'
 import { ImplementacionVisuals } from './ImplementacionVisuals'
 import { MejoraVisuals } from './MejoraVisuals'
 
-export const serviceVisuals: Record<string, ComponentType> = {
+export const serviceVisuals: Record<string, ComponentType<{ config?: any }>> = {
     'captura-adn': ADNVisuals,
     'mapeo-procesos': ProcessVisuals,
     'humano-vs-tecnologia': HumanTechVisuals,

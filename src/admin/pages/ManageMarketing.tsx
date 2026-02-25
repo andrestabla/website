@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { servicesDetail } from '../../data/details'
 import { Megaphone, Copy, FlaskConical, Link } from 'lucide-react'
+import { useCMS } from '../context/CMSContext'
 
 type SelectedVariants = Record<string, string>
 
@@ -9,6 +9,7 @@ function copyToClipboard(text: string) {
 }
 
 export function ManageMarketing() {
+    const { state } = useCMS()
     const [selected, setSelected] = useState<SelectedVariants>({})
     const [utmSource, setUtmSource] = useState('linkedin')
     const [utmMedium, setUtmMedium] = useState('social')
@@ -20,7 +21,8 @@ export function ManageMarketing() {
     }
 
     const buildUTM = (path: string) => {
-        return `https://algoritmot.com${path}?utm_source=${utmSource}&utm_medium=${utmMedium}&utm_campaign=${utmCampaign}`
+        const base = (state.site.url || 'https://algoritmot.com').replace(/\/+$/, '')
+        return `${base}${path}?utm_source=${encodeURIComponent(utmSource)}&utm_medium=${encodeURIComponent(utmMedium)}&utm_campaign=${encodeURIComponent(utmCampaign)}`
     }
 
     const handleCopy = (id: string, url: string) => {
@@ -44,13 +46,13 @@ export function ManageMarketing() {
                         <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Selector de Variantes A/B</h2>
                     </div>
 
-                    {servicesDetail.map(service => {
+                    {state.services.map(service => {
                         const currentVariant = selected[service.slug] || service.ctaPrimary
                         const allOptions = [
                             service.ctaPrimary,
                             service.ctaSecondary,
-                            ...(service.ctaVariants?.[0]?.alt ?? []).slice(0, 4),
-                        ]
+                            ...((service.variants ?? []).map(v => v.titular).filter(Boolean)).slice(0, 4),
+                        ].filter(Boolean)
 
                         return (
                             <div key={service.slug} className="bg-white border border-slate-200 p-8">
@@ -80,11 +82,7 @@ export function ManageMarketing() {
                                     ))}
                                 </div>
 
-                                {service.abHypothesis && (
-                                    <p className="mt-4 text-xs text-slate-400 italic border-l-2 border-slate-200 pl-3">
-                                        {service.abHypothesis}
-                                    </p>
-                                )}
+                                {service.subtitle && <p className="mt-4 text-xs text-slate-400 italic border-l-2 border-slate-200 pl-3">{service.subtitle}</p>}
                             </div>
                         )
                     })}
@@ -133,7 +131,7 @@ export function ManageMarketing() {
 
                         <div className="border-t border-slate-100 pt-6 space-y-3">
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">URLs Generadas</div>
-                            {servicesDetail.map(service => {
+                            {state.services.map(service => {
                                 const url = buildUTM(`/servicios/${service.slug}`)
                                 return (
                                     <div key={service.slug} className="flex items-center gap-3 group">

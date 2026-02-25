@@ -62,17 +62,20 @@ const milestones: Milestone[] = [
     },
 ]
 
-export function ImplementacionVisuals() {
+export function ImplementacionVisuals({ config }: { config?: any }) {
+    const cfg = config ?? {}
+    const milestoneRows: Milestone[] = Array.isArray(cfg.milestones)
+        ? milestones.map((base, i) => ({ ...base, ...(cfg.milestones[i] ?? {}), icon: base.icon }))
+        : milestones
     const [active, setActive] = useState<number>(0)
 
     return (
         <div className="space-y-10">
             <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">Visualización</div>
-                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Cronograma de Implementación</h2>
+                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">{cfg.eyebrow || 'Visualización'}</div>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">{cfg.title || 'Cronograma de Implementación'}</h2>
                 <p className="text-slate-500 font-light mb-10 max-w-xl">
-                    Un plan de 12 semanas, fase a fase, que garantiza un despliegue sin interrupciones en producción.
-                    Haz clic en cada fase para ver el detalle de actividades.
+                    {cfg.subtitle || 'Un plan de 12 semanas, fase a fase, que garantiza un despliegue sin interrupciones en producción. Haz clic en cada fase para ver el detalle de actividades.'}
                 </p>
 
                 {/* Timeline */}
@@ -81,7 +84,7 @@ export function ImplementacionVisuals() {
                     <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-slate-200 hidden md:block" />
 
                     <div className="space-y-4">
-                        {milestones.map((m, i) => {
+                        {milestoneRows.map((m, i) => {
                             const Icon = m.icon
                             const isActive = active === i
                             return (

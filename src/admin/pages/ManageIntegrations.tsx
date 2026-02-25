@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react'
 import { Zap, ChevronRight, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff, X, ArrowRight, ArrowLeft, Save, RefreshCw, Cloud, Mail, Bot, Cpu } from 'lucide-react'
 import {
-    loadIntegrations, saveIntegrations, isConfigured,
+    defaultIntegrations, fetchIntegrations, persistIntegrations, isConfigured,
     type IntegrationsState, type GeminiConfig, type OpenAIConfig, type SMTPConfig, type R2Config,
 } from '../lib/integrationsStore'
 
@@ -371,20 +371,39 @@ function ConfirmRow({ label, value }: { label: string; value: string }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ManageIntegrations() {
-    const [integrations, setIntegrations] = useState<IntegrationsState | null>(null)
+    const [integrations, setIntegrations] = useState<IntegrationsState>(defaultIntegrations)
     const [wizard, setWizard] = useState<WizardState>({ open: false, key: null, step: 0 })
     const [saved, setSaved] = useState(false)
+    const [loadError, setLoadError] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [isSaving, setIsSaving] = useState(false)
     const [draftConfig, setDraftConfig] = useState<Record<string, unknown>>({})
 
     useEffect(() => {
-        loadIntegrations().then(setIntegrations)
-    }, [])
-
-    useEffect(() => {
-        if (wizard.open && wizard.key && integrations) {
+        if (wizard.open && wizard.key) {
             setDraftConfig({ ...integrations[wizard.key].config } as Record<string, unknown>)
         }
     }, [wizard.open, wizard.key, integrations])
+
+    useEffect(() => {
+        let cancelled = false
+        setIsLoading(true)
+        fetchIntegrations()
+            .then((data) => {
+                if (cancelled) return
+                setIntegrations(data)
+                setLoadError(null)
+            })
+            .catch((error) => {
+                if (cancelled) return
+                setLoadError(error instanceof Error ? error.message : 'No se pudo cargar')
+            })
+            .finally(() => {
+                if (!cancelled) setIsLoading(false)
+            })
+
+        return () => { cancelled = true }
+    }, [])
 
     const openWizard = (key: IntegrationKey) => {
         setWizard({ open: true, key, step: 0 })
@@ -399,38 +418,44 @@ export function ManageIntegrations() {
     const totalSteps = currentDef?.steps.length ?? 0
 
     const handleSave = async () => {
-        if (!wizard.key || !integrations) return
-
-        const config = { ...integrations[wizard.key].config, ...draftConfig }
-        await saveIntegrations(wizard.key, {
-            config,
-            enabled: true,
-            status: 'configured',
-        })
-
+        if (!wizard.key) return
         const next: IntegrationsState = {
             ...integrations,
             [wizard.key]: {
                 ...integrations[wizard.key],
-                config,
+                config: { ...integrations[wizard.key].config, ...draftConfig },
                 enabled: true,
                 status: 'configured',
             },
         }
-        setIntegrations(next)
-        setSaved(true)
-        setTimeout(() => setSaved(false), 2000)
-        closeWizard()
+        try {
+            setIsSaving(true)
+            const persisted = await persistIntegrations(next)
+            setIntegrations(persisted)
+            setSaved(true)
+            setTimeout(() => setSaved(false), 2000)
+            closeWizard()
+        } catch (error) {
+            setLoadError(error instanceof Error ? error.message : 'No se pudo guardar')
+        } finally {
+            setIsSaving(false)
+        }
     }
 
     const toggleEnabled = async (key: IntegrationKey) => {
-        if (!integrations) return
+        const previous = integrations
         const next = {
-            ...integrations,
-            [key]: { ...integrations[key], enabled: !integrations[key].enabled },
+            ...previous,
+            [key]: { ...previous[key], enabled: !previous[key].enabled },
         }
         setIntegrations(next)
-        await saveIntegrations(key, { enabled: next[key].enabled })
+        try {
+            const persisted = await persistIntegrations(next)
+            setIntegrations(persisted)
+        } catch (error) {
+            setLoadError(error instanceof Error ? error.message : 'No se pudo actualizar')
+            setIntegrations(previous)
+        }
     }
 
     const renderWizardContent = () => {
@@ -458,8 +483,22 @@ export function ManageIntegrations() {
             {/* Header */}
             <div>
                 <h1 className="text-4xl font-black text-slate-900 tracking-tighter mb-2">Integraciones</h1>
-                <p className="text-slate-500 font-light">Conecta servicios externos para potenciar tu sitio. Las credenciales se almacenan localmente.</p>
+                <p className="text-slate-500 font-light">Conecta servicios externos para potenciar tu sitio. La configuración se persiste en servidor y base de datos.</p>
             </div>
+
+            {isLoading && (
+                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-6 py-4 text-slate-700 font-semibold text-sm">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Cargando integraciones desde el servidor...
+                </div>
+            )}
+
+            {loadError && (
+                <div className="flex items-center gap-3 bg-red-50 border border-red-200 px-6 py-4 text-red-700 font-semibold text-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    {loadError}
+                </div>
+            )}
 
             {saved && (
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 px-6 py-4 text-green-800 font-bold text-sm">
@@ -472,17 +511,16 @@ export function ManageIntegrations() {
             <div className="flex items-start gap-4 bg-amber-50 border border-amber-200 px-6 py-5">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                    <p className="text-amber-900 font-bold text-sm mb-1">Almacenamiento local (desarrollo)</p>
-                    <p className="text-amber-700 font-light text-sm">Las claves se guardant en <code className="bg-amber-100 px-1">localStorage</code>. En producción, usa variables de entorno en el servidor.</p>
+                    <p className="text-amber-900 font-bold text-sm mb-1">Persistencia en servidor (producción)</p>
+                    <p className="text-amber-700 font-light text-sm">La configuración se guarda en <code className="bg-amber-100 px-1">Neon/Postgres</code> vía <code className="bg-amber-100 px-1">/api/integrations</code>. Las variables de entorno del servidor tienen prioridad para Gemini/OpenAI.</p>
                 </div>
             </div>
 
             {/* Integration cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {integrationDefs.map(def => {
-                    if (!integrations) return null
                     const Icon = def.icon
-                    const intState = integrations[def.key]
+                    const state = integrations[def.key]
                     const configured = isConfigured(integrations, def.key)
 
                     return (
@@ -501,16 +539,16 @@ export function ManageIntegrations() {
                                 {configured && (
                                     <button
                                         onClick={() => toggleEnabled(def.key)}
-                                        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${intState.enabled ? 'bg-brand-primary' : 'bg-slate-200'}`}
-                                        title={intState.enabled ? 'Desactivar' : 'Activar'}
+                                        className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${state.enabled ? 'bg-brand-primary' : 'bg-slate-200'}`}
+                                        title={state.enabled ? 'Desactivar' : 'Activar'}
                                     >
-                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${intState.enabled ? 'left-7' : 'left-1'}`} />
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${state.enabled ? 'left-7' : 'left-1'}`} />
                                     </button>
                                 )}
                             </div>
 
                             <div className="flex items-center justify-between">
-                                <StatusBadge status={intState.status} enabled={intState.enabled} />
+                                <StatusBadge status={state.status} enabled={state.enabled} />
                                 <div className="flex items-center gap-3">
                                     {configured && (
                                         <a href={def.docs} target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-colors">
@@ -533,7 +571,7 @@ export function ManageIntegrations() {
                             {/* Progress indicator if configured */}
                             {configured && (
                                 <div className="h-1 bg-slate-100">
-                                    <div className="h-full bg-brand-primary" style={{ width: intState.enabled ? '100%' : '60%' }} />
+                                    <div className="h-full bg-brand-primary" style={{ width: state.enabled ? '100%' : '60%' }} />
                                 </div>
                             )}
                         </div>
@@ -608,10 +646,11 @@ export function ManageIntegrations() {
                             ) : (
                                 <button
                                     onClick={handleSave}
+                                    disabled={isSaving}
                                     className="flex items-center gap-2 px-8 py-4 bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-colors"
                                 >
-                                    <Save className="w-4 h-4" />
-                                    Guardar integración
+                                    {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    {isSaving ? 'Guardando...' : 'Guardar integración'}
                                 </button>
                             )}
                         </div>

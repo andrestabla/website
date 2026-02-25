@@ -20,28 +20,31 @@ const valueMap = [
     { need: 'Alineación del equipo', solution: 'Value Proposition Canvas co-creado', type: 'gain' },
 ]
 
-export function ADNVisuals() {
+export function ADNVisuals({ config }: { config?: any }) {
+    const cfg = config ?? {}
+    const radarRows = Array.isArray(cfg.radarData) ? cfg.radarData : radarData
+    const mapRows = Array.isArray(cfg.valueMap) ? cfg.valueMap : valueMap
+    const theme = cfg.theme ?? {}
     return (
         <div className="space-y-16">
             {/* Radar Chart */}
             <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">Visualización</div>
-                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Radar de Madurez Digital</h2>
+                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-2">{cfg.eyebrow || 'Visualización'}</div>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">{cfg.radarTitle || 'Radar de Madurez Digital'}</h2>
                 <p className="text-slate-500 font-light mb-10 max-w-xl">
-                    Nuestro diagnóstico genera este radar comparando tu posición actual frente al benchmark del sector.
-                    Identifica de inmediato las brechas y prioridades de evolución.
+                    {cfg.radarSubtitle || 'Nuestro diagnóstico genera este radar comparando tu posición actual frente al benchmark del sector. Identifica de inmediato las brechas y prioridades de evolución.'}
                 </p>
-                <div className="bg-slate-950 p-10 border-b-4 border-brand-primary">
+                <div className="bg-slate-950 p-10 border-b-4 border-brand-primary" style={{ backgroundColor: theme.chartPanelBg || undefined, borderBottomColor: theme.accentColor || undefined }}>
                     <div className="flex items-center gap-8 mb-6">
                         <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/60">
-                            <span className="w-8 h-0.5 bg-brand-primary inline-block" /> Tu empresa
+                            <span className="w-8 h-0.5 bg-brand-primary inline-block" style={{ backgroundColor: theme.accentColor || undefined }} /> {cfg.actualLabel || 'Tu empresa'}
                         </span>
                         <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/60">
-                            <span className="w-8 h-0.5 bg-white/30 inline-block" /> Benchmark sector
+                            <span className="w-8 h-0.5 bg-white/30 inline-block" /> {cfg.benchmarkLabel || 'Benchmark sector'}
                         </span>
                     </div>
                     <ResponsiveContainer width="100%" height={340}>
-                        <RadarChart data={radarData}>
+                        <RadarChart data={radarRows}>
                             <PolarGrid stroke="rgba(255,255,255,0.1)" />
                             <PolarAngleAxis
                                 dataKey="dimension"
@@ -51,8 +54,8 @@ export function ADNVisuals() {
                                 contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 0, fontSize: 12 }}
                                 labelStyle={{ color: '#fff', fontWeight: 900 }}
                             />
-                            <Radar name="Benchmark" dataKey="benchmark" stroke="rgba(255,255,255,0.2)" fill="rgba(255,255,255,0.05)" strokeWidth={2} />
-                            <Radar name="Tu empresa" dataKey="actual" stroke="#1d4ed8" fill="rgba(29,78,216,0.25)" strokeWidth={2} dot={{ r: 4, fill: '#1d4ed8' }} />
+                            <Radar name={cfg.benchmarkLabel || 'Benchmark'} dataKey="benchmark" stroke="rgba(255,255,255,0.2)" fill="rgba(255,255,255,0.05)" strokeWidth={2} />
+                            <Radar name={cfg.actualLabel || 'Tu empresa'} dataKey="actual" stroke={theme.accentColor || '#1d4ed8'} fill={theme.actualFill || 'rgba(29,78,216,0.25)'} strokeWidth={2} dot={{ r: 4, fill: theme.accentColor || '#1d4ed8' }} />
                         </RadarChart>
                     </ResponsiveContainer>
                 </div>
@@ -60,28 +63,28 @@ export function ADNVisuals() {
 
             {/* Value Promise Map */}
             <div>
-                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">Mapa de Promesa de Valor</h2>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">{cfg.valueMapTitle || 'Mapa de Promesa de Valor'}</h2>
                 <p className="text-slate-500 font-light mb-10 max-w-xl">
-                    Conectamos cada problema real de tu negocio con la solución concreta que entregamos.
+                    {cfg.valueMapSubtitle || 'Conectamos cada problema real de tu negocio con la solución concreta que entregamos.'}
                 </p>
                 <div className="space-y-3">
-                    {valueMap.map((item, i) => (
+                    {mapRows.map((item: any, i: number) => (
                         <div key={i} className="flex items-center gap-0 group">
                             <div className={`flex-1 border p-5 ${item.type === 'pain'
                                 ? 'border-red-200 bg-red-50 text-red-800'
                                 : 'border-green-200 bg-green-50 text-green-800'
                                 }`}>
                                 <div className="text-[9px] font-black uppercase tracking-widest mb-1 opacity-60">
-                                    {item.type === 'pain' ? 'Problema Actual' : 'Oportunidad'}
+                                    {item.type === 'pain' ? (cfg.painLabel || 'Problema Actual') : (cfg.gainLabel || 'Oportunidad')}
                                 </div>
                                 <div className="font-bold text-sm">{item.need}</div>
                             </div>
-                            <div className="w-12 h-0.5 bg-brand-primary shrink-0 relative">
-                                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-l-4 border-l-brand-primary border-y-4 border-y-transparent" />
+                            <div className="w-12 h-0.5 bg-brand-primary shrink-0 relative" style={{ backgroundColor: theme.accentColor || undefined }}>
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-l-4 border-y-4 border-y-transparent" style={{ borderLeftColor: theme.accentColor || undefined }} />
                             </div>
                             <div className="flex-1 border border-brand-primary/30 bg-blue-50 p-5">
-                                <div className="text-[9px] font-black uppercase tracking-widest text-brand-primary mb-1">Solución AlgoritmoT</div>
-                                <div className="font-bold text-sm text-brand-primary">{item.solution}</div>
+                                <div className="text-[9px] font-black uppercase tracking-widest text-brand-primary mb-1">{cfg.solutionLabel || 'Solución AlgoritmoT'}</div>
+                                <div className="font-bold text-sm text-brand-primary" style={{ color: theme.accentColor || undefined }}>{item.solution}</div>
                             </div>
                         </div>
                     ))}

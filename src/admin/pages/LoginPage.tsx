@@ -4,25 +4,35 @@ import { Shield, Lock, Terminal, ArrowRight } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
 
 export function LoginPage() {
+    const [identifier, setIdentifier] = useState('admin')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const navigate = useNavigate()
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
-        const res = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password }),
-        })
-
-        if (res.ok) {
-            const { token } = await res.json()
-            localStorage.setItem('admin_token', token)
-            navigate('/admin/dashboard')
-        } else {
-            const { error } = await res.json()
-            setError(error || 'Protocolo de acceso denegado. Credencial inválida.')
+        setError('')
+        setIsSubmitting(true)
+        try {
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier, password }),
+            })
+            if (response.ok) {
+                localStorage.setItem('admin_token', 'server_session')
+                navigate('/admin/dashboard')
+                return
+            }
+            const payload = await response.json().catch(() => null)
+            setError(payload?.error === 'Invalid credentials'
+                ? 'Protocolo de acceso denegado. Credencial inválida.'
+                : 'No se pudo iniciar sesión en el servidor.')
+        } catch {
+            setError('No se pudo conectar con el servidor de autenticación.')
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -53,6 +63,18 @@ export function LoginPage() {
                     <form onSubmit={handleLogin} className="space-y-8">
                         <div className="space-y-4">
                             <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">
+                                User (Username or Email)
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 py-4 px-6 text-white placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"
+                                placeholder="admin"
+                                autoComplete="username"
+                            />
+                            <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1 pt-2 block">
                                 Security Key (Password)
                             </label>
                             <div className="relative group">
@@ -66,6 +88,7 @@ export function LoginPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full bg-white/5 border border-white/10 py-6 pl-16 pr-6 text-white placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"
                                     placeholder="••••••••••••"
+                                    autoComplete="current-password"
                                 />
                             </div>
                         </div>
@@ -77,7 +100,7 @@ export function LoginPage() {
                             </div>
                         )}
 
-                        <Button type="submit" className="w-full py-8">
+                        <Button type="submit" className="w-full py-8" disabled={isSubmitting}>
                             Iniciar Protocolo
                             <ArrowRight className="ml-3 w-5 h-5" />
                         </Button>

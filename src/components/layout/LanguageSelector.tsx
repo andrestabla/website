@@ -14,6 +14,16 @@ export function LanguageSelector() {
     const [isOpen, setIsOpen] = useState(false);
     const [isConfigured, setIsConfigured] = useState(true);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const statusLabel = language === 'fr'
+        ? 'Traduction via Gemini...'
+        : language === 'en'
+            ? 'Translating via Gemini...'
+            : 'Traduciendo con Gemini...';
+    const apiMissingLabel = language === 'fr'
+        ? 'Clé API introuvable'
+        : language === 'en'
+            ? 'API Key not found'
+            : 'API Key no encontrada';
 
     useEffect(() => {
         // Import check at runtime
@@ -84,14 +94,14 @@ export function LanguageSelector() {
                         {isTranslating && (
                             <div className="px-4 py-2 bg-brand-secondary/10 border-t border-slate-100">
                                 <span className="text-[8px] font-black uppercase tracking-[0.2em] text-brand-secondary animate-pulse">
-                                    Translating via Gemini...
+                                    {statusLabel}
                                 </span>
                             </div>
                         )}
                         {!isConfigured && (
                             <div className="px-4 py-2 bg-red-50 border-t border-red-100">
                                 <span className="text-[8px] font-black uppercase tracking-[0.2em] text-red-500">
-                                    API Key not found
+                                    {apiMissingLabel}
                                 </span>
                             </div>
                         )}

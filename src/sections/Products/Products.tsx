@@ -8,20 +8,29 @@ import { useLanguage } from '../../context/LanguageContext'
 
 export function Products() {
     const { translatedState } = useLanguage()
+    const sectionCfg = translatedState.homePage.productsSection
     const products = {
-        title: "Performance Modules", // Fallback or handle via siteConfig if it's there
+        title: sectionCfg.title,
         items: translatedState.products
     }
+    const sectionStyle = {
+        backgroundColor: sectionCfg.style.backgroundColor || undefined,
+        backgroundImage: sectionCfg.style.backgroundImageUrl
+            ? `linear-gradient(rgba(255,255,255,0.94), rgba(255,255,255,0.94)), url(${sectionCfg.style.backgroundImageUrl})`
+            : undefined,
+        backgroundSize: sectionCfg.style.backgroundImageUrl ? 'cover' : undefined,
+        backgroundPosition: sectionCfg.style.backgroundImageUrl ? 'center' : undefined,
+    } as const
 
     return (
-        <section className="py-32 px-6 bg-white infra-grid">
+        <section style={sectionStyle} className="py-32 px-6 bg-white infra-grid">
             <div className="max-w-7xl mx-auto">
                 <div className="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-8">
                     <div>
                         <div className="flex items-center gap-3 mb-6">
                             <LayoutGrid className="w-5 h-5 text-brand-secondary" />
                             <span className="text-sm font-black uppercase tracking-[0.4em] text-slate-400">
-                                Performance Modules
+                                {sectionCfg.eyebrow}
                             </span>
                         </div>
                         <h2 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter">
@@ -29,7 +38,7 @@ export function Products() {
                         </h2>
                     </div>
                     <p className="text-xl text-slate-500 font-light max-w-sm">
-                        Soluciones sistematizadas para resultados predecibles y escalables.
+                        {sectionCfg.subtitle}
                     </p>
                 </div>
 
@@ -68,7 +77,7 @@ export function Products() {
 
                                 <div className="mt-auto pt-8 border-t border-current/10">
                                     <div className="text-xs font-black uppercase tracking-[0.3em] opacity-50 mb-4">
-                                        Availability & Pricing
+                                        {sectionCfg.availabilityPricingLabel}
                                     </div>
                                     <div className="text-2xl font-black mb-10 tracking-tight">
                                         {product.price}
@@ -78,7 +87,7 @@ export function Products() {
                                             variant={index === 1 ? 'secondary' : 'primary'}
                                             className="w-full"
                                         >
-                                            Deploy Solution
+                                            {sectionCfg.deploySolutionLabel}
                                         </Button>
                                     </Link>
                                 </div>

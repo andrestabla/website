@@ -1,9 +1,7 @@
 import { useState } from 'react'
-import { servicesDetail } from '../../data/details'
-import { productsDetail } from '../../data/details'
 import { Search, CheckCircle, AlertCircle, Edit2, Save, X, ChevronDown } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import { siteConfig } from '../../data/config'
+import { useCMS } from '../context/CMSContext'
 
 type SEOEntry = {
     id: string
@@ -35,16 +33,17 @@ const scoreLabel = {
 }
 
 export function ManageSEO() {
-    const initial: SEOEntry[] = [
+    const { state, updateService, updateProduct, updateSite } = useCMS()
+    const entries: SEOEntry[] = [
         {
             id: 'home',
             type: 'page',
             path: '/',
             label: 'Página Principal',
-            title: siteConfig.name,
-            description: siteConfig.description,
+            title: state.site.name,
+            description: state.site.description,
         },
-        ...servicesDetail.map(s => ({
+        ...state.services.map(s => ({
             id: s.slug,
             type: 'service' as const,
             path: `/servicios/${s.slug}`,
@@ -52,7 +51,7 @@ export function ManageSEO() {
             title: s.seoTitle || s.title,
             description: s.seoDescription || s.subtitle,
         })),
-        ...productsDetail.map(p => ({
+        ...state.products.map(p => ({
             id: p.slug,
             type: 'product' as const,
             path: `/productos/${p.slug}`,
@@ -61,8 +60,6 @@ export function ManageSEO() {
             description: p.seoDescription || p.description,
         })),
     ]
-
-    const [entries, setEntries] = useState<SEOEntry[]>(initial)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [draft, setDraft] = useState({ title: '', description: '' })
     const [filter, setFilter] = useState('')
@@ -73,7 +70,15 @@ export function ManageSEO() {
     }
 
     const saveEdit = () => {
-        setEntries(prev => prev.map(e => e.id === editingId ? { ...e, ...draft } : e))
+        const target = entries.find(e => e.id === editingId)
+        if (!target) return
+        if (target.type === 'service') {
+            updateService(target.id, { seoTitle: draft.title, seoDescription: draft.description })
+        } else if (target.type === 'product') {
+            updateProduct(target.id, { seoTitle: draft.title, seoDescription: draft.description })
+        } else if (target.type === 'page' && target.id === 'home') {
+            updateSite({ name: draft.title, description: draft.description })
+        }
         setEditingId(null)
     }
 
