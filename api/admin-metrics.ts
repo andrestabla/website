@@ -50,10 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let recentConsents: any[] = []
 
     try {
-      ;([
-        analyticsTotalEvents, pageViewCount, sectionViewCount, consentCount, avgTimeAggregate, topPagesRaw, topSectionsRaw,
-        byCountryRaw, recentAnalytics, recentConsents,
-      ] = await Promise.all([
+      const analyticsResults = await Promise.allSettled([
         prisma.analyticsEvent.count(),
         prisma.analyticsEvent.count({ where: { eventType: 'page_view' } }),
         prisma.analyticsEvent.count({ where: { eventType: 'section_view' } }),
@@ -90,7 +87,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           take: 20,
           select: { policyVersion: true, path: true, country: true, city: true, acceptedAt: true, visitorId: true },
         }),
-      ]))
+      ] as const)
+
+      const pick = <T,>(index: number, fallback: T): T => {
+        const item = analyticsResults[index]
+        if (!item || item.status !== 'fulfilled') {
+          const reason = (item as PromiseRejectedResult | undefined)?.reason
+          if (reason) console.error(`api/admin-metrics analytics query[${index}] degraded`, reason)
+          return fallback
+        }
+        return item.value as T
+      }
+
+      analyticsTotalEvents = pick(0, 0)
+      pageViewCount = pick(1, 0)
+      sectionViewCount = pick(2, 0)
+      consentCount = pick(3, 0)
+      avgTimeAggregate = pick(4, { _avg: { durationMs: null } } as any)
+      topPagesRaw = pick(5, [] as any[])
+      topSectionsRaw = pick(6, [] as any[])
+      byCountryRaw = pick(7, [] as any[])
+      recentAnalytics = pick(8, [] as any[])
+      recentConsents = pick(9, [] as any[])
     } catch (analyticsError) {
       console.error('api/admin-metrics analytics block degraded', analyticsError)
     }
