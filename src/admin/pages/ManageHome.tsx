@@ -16,8 +16,6 @@ import {
     ArrowRight,
     Briefcase,
     Eye,
-    PanelRightOpen,
-    PanelRightClose,
     Monitor,
     Tablet,
     Smartphone,
@@ -352,7 +350,6 @@ export function ManageHome() {
     const [saved, setSaved] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
-    const [showDockedPreview, setShowDockedPreview] = useState(false)
     const [previewViewport, setPreviewViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
     const [heroPanelTab, setHeroPanelTab] = useState<'content' | 'background' | 'type' | 'stats' | 'cta'>('content')
 
@@ -494,14 +491,6 @@ export function ManageHome() {
                 <div className="flex items-center gap-3">
                     {tab !== 'advanced' && (
                         <>
-                            <button
-                                type="button"
-                                onClick={() => setShowDockedPreview(v => !v)}
-                                className="hidden xl:flex items-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-primary"
-                            >
-                                {showDockedPreview ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
-                                {showDockedPreview ? 'Ocultar Preview' : 'Mostrar Preview'}
-                            </button>
                             <button
                                 type="button"
                                 onClick={() => setIsPreviewModalOpen(true)}
@@ -1049,9 +1038,6 @@ export function ManageHome() {
                 </div>
 
                 {/* Panel Preview - Right - HIGH FIDELITY */}
-                {tab !== 'advanced' && showDockedPreview && (
-                    <div className="hidden xl:flex flex-1 min-w-0">{previewContent}</div>
-                )}
             </div>
 
             <AnimatePresence>
