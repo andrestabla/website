@@ -22,7 +22,8 @@ import {
     ChevronDown,
     Plus,
     Trash2,
-    X
+    X,
+    ChevronsUpDown
 } from 'lucide-react'
 import { useCMS, type HeroContent, type HomePageContent, type DesignTokens } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
@@ -355,6 +356,7 @@ export function ManageHome() {
     const [fieldSearch, setFieldSearch] = useState('')
     const [presetSelection, setPresetSelection] = useState('')
     const [styleClipboard, setStyleClipboard] = useState<Record<string, any> | null>(null)
+    const [openTabGroup, setOpenTabGroup] = useState<'Principal' | 'Secciones' | 'Sistema' | null>('Principal')
 
     // Refs for scrolling to fields
     const fieldRefs = {
@@ -585,6 +587,9 @@ export function ManageHome() {
         return [{ value: '', label: 'Sin presets para esta vista' }]
     }, [tab])
 
+    const currentTabMeta = tabs.find(t => t.id === tab)
+    const currentTabGroup = (currentTabMeta?.group ?? 'Principal') as 'Principal' | 'Secciones' | 'Sistema'
+
     const previewScaleClass = previewViewport === 'desktop'
         ? 'scale-[0.65] 2xl:scale-[0.8] w-[153.8%] 2xl:w-[125%]'
         : previewViewport === 'tablet'
@@ -696,41 +701,63 @@ export function ManageHome() {
             <div className="flex-1 bg-slate-50 overflow-y-auto custom-scrollbar">
                 <div className="w-full flex flex-col">
                     <div className="sticky top-0 z-20 p-4 border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 space-y-4">
-                        {(['Principal', 'Secciones', 'Sistema'] as const).map((groupName) => {
-                            const groupTabs = tabs.filter(t => t.group === groupName)
-                            return (
-                                <div key={groupName} className="space-y-2">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">{groupName}</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {groupTabs.map((t) => {
-                                            const Icon = t.icon
-                                            const isSelected = tab === t.id
-                                            return (
-                                                <button
-                                                    key={t.id}
-                                                    type="button"
-                                                    onClick={() => setTab(t.id)}
-                                                    className={`text-left rounded-xl border px-3 py-2.5 transition-all min-w-[220px] max-w-full ${isSelected
-                                                        ? 'border-brand-primary bg-blue-50/70 shadow-sm'
-                                                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-                                                        }`}
-                                                >
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className={`h-7 w-7 rounded-lg border flex items-center justify-center ${isSelected ? 'border-brand-primary text-brand-primary bg-white' : 'border-slate-200 text-slate-400 bg-slate-50'}`}>
-                                                            <Icon className="w-3.5 h-3.5" />
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <div className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? 'text-brand-primary' : 'text-slate-700'}`}>{t.label}</div>
-                                                            <div className="text-[11px] text-slate-500 leading-snug truncate">{t.desc}</div>
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            )
-                                        })}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {(['Principal', 'Secciones', 'Sistema'] as const).map((groupName) => {
+                                const groupTabs = tabs.filter(t => t.group === groupName)
+                                const selectedInGroup = groupTabs.find(t => t.id === tab) ?? groupTabs[0]
+                                const isOpen = openTabGroup === groupName
+                                const SelectedIcon = selectedInGroup.icon
+                                return (
+                                    <div key={groupName} className="relative">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1 mb-2">{groupName}</div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setOpenTabGroup(prev => prev === groupName ? null : groupName)}
+                                            className={`w-full rounded-xl border px-3 py-2.5 bg-white text-left transition-all ${currentTabGroup === groupName ? 'border-brand-primary/40 bg-blue-50/40' : 'border-slate-200 hover:border-slate-300'}`}
+                                        >
+                                            <div className="flex items-center gap-2.5">
+                                                <div className={`h-7 w-7 rounded-lg border flex items-center justify-center ${currentTabGroup === groupName ? 'border-brand-primary text-brand-primary bg-white' : 'border-slate-200 text-slate-400 bg-slate-50'}`}>
+                                                    <SelectedIcon className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-700 truncate">{selectedInGroup.label}</div>
+                                                    <div className="text-[11px] text-slate-500 truncate">{selectedInGroup.desc}</div>
+                                                </div>
+                                                <ChevronsUpDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                            </div>
+                                        </button>
+
+                                        {isOpen && (
+                                            <div className="absolute z-30 mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl p-2 space-y-1">
+                                                {groupTabs.map((t) => {
+                                                    const Icon = t.icon
+                                                    const isSelected = tab === t.id
+                                                    return (
+                                                        <button
+                                                            key={t.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setTab(t.id)
+                                                                setOpenTabGroup(null)
+                                                            }}
+                                                            className={`w-full text-left rounded-xl px-3 py-2 transition-colors ${isSelected ? 'bg-blue-50 text-brand-primary' : 'hover:bg-slate-50 text-slate-700'}`}
+                                                        >
+                                                            <div className="flex items-center gap-2.5">
+                                                                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-brand-primary' : 'text-slate-400'}`} />
+                                                                <div className="min-w-0">
+                                                                    <div className="text-[10px] font-black uppercase tracking-widest truncate">{t.label}</div>
+                                                                    <div className="text-[11px] text-slate-500 truncate">{t.desc}</div>
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            )
-                        })}
+                                )
+                            })}
+                        </div>
                         <div className="text-[11px] text-slate-500 font-medium">
                             {tab === 'hero' && 'Edita el bloque principal del Home: textos, fondo, overlays, video/imagen y acentos.'}
                             {tab === 'structure' && 'Mapa y navegación hacia editores especializados para secciones del Home.'}
