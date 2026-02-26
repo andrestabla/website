@@ -40,10 +40,20 @@ type HeroViewProps = {
     hero: HeroContent
     heroSection: HomePageContent['hero']
     animated?: boolean
+    visibleBlocks?: {
+        headline?: boolean
+        ctas?: boolean
+        stats?: boolean
+    }
 }
 
-export function HeroView({ hero, heroSection, animated = true }: HeroViewProps) {
+export function HeroView({ hero, heroSection, animated = true, visibleBlocks }: HeroViewProps) {
     const hs = heroSection.style
+    const heroVisibleBlocks = {
+        headline: visibleBlocks?.headline !== false,
+        ctas: visibleBlocks?.ctas !== false,
+        stats: visibleBlocks?.stats !== false,
+    }
     const sectionVideoEmbed = getYouTubeEmbedUrl(hs.backgroundImageUrl || '')
     const panelVideoEmbed = getYouTubeEmbedUrl(hs.rightPanelBackgroundImageUrl || '')
     const overlaySectionOpacity = Math.max(0, Math.min(1, Number(hs.sectionOverlayOpacity || '0.92')))
@@ -108,47 +118,54 @@ export function HeroView({ hero, heroSection, animated = true }: HeroViewProps) 
             <div className="absolute top-0 right-0 w-1/3 h-full bg-slate-50/50 -z-10 border-l border-slate-100" />
 
             <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative">
-                <div className="lg:col-span-8">
+                <div className={heroVisibleBlocks.stats ? 'lg:col-span-8' : 'lg:col-span-12'}>
                     <motion.div
                         initial={animated ? { opacity: 0, x: -30 } : false}
                         animate={animated ? { opacity: 1, x: 0 } : undefined}
                         transition={animated ? { duration: 0.8 } : undefined}
                         className="flex flex-col items-start"
                     >
-                        <div className="flex items-center gap-4 mb-10">
-                            <span className="w-12 h-px bg-brand-primary" />
-                            <span className="text-sm font-black uppercase tracking-[0.4em]" style={{ color: hs.highlightColor || undefined }}>
-                                {hero.highlight}
-                            </span>
-                        </div>
+                        {heroVisibleBlocks.headline && (
+                            <>
+                                <div className="flex items-center gap-4 mb-10">
+                                    <span className="w-12 h-px bg-brand-primary" />
+                                    <span className="text-sm font-black uppercase tracking-[0.4em]" style={{ color: hs.highlightColor || undefined }}>
+                                        {hero.highlight}
+                                    </span>
+                                </div>
 
-                        <h1 className="hero-dynamic-title text-7xl md:text-9xl mb-12 tracking-tighter leading-[0.85] text-slate-900" style={titleStyle}>
-                            {hero.title.split(' ').map((word, i) => (
-                                <span key={i} className="block" style={i > 1 ? { color: hs.titleAccentColor || hs.titleColor || undefined } : undefined}>
-                                    {word}
-                                </span>
-                            ))}
-                        </h1>
+                                <h1 className="hero-dynamic-title text-7xl md:text-9xl mb-12 tracking-tighter leading-[0.85] text-slate-900" style={titleStyle}>
+                                    {hero.title.split(' ').map((word, i) => (
+                                        <span key={i} className="block" style={i > 1 ? { color: hs.titleAccentColor || hs.titleColor || undefined } : undefined}>
+                                            {word}
+                                        </span>
+                                    ))}
+                                </h1>
 
-                        <div className="max-w-2xl border-l-4 border-brand-primary pl-10 py-2 mb-16">
-                            <p className="hero-dynamic-subtitle text-2xl md:text-3xl font-medium leading-tight" style={subtitleStyle}>
-                                {hero.subtitle}
-                            </p>
-                        </div>
+                                <div className="max-w-2xl border-l-4 border-brand-primary pl-10 py-2 mb-16">
+                                    <p className="hero-dynamic-subtitle text-2xl md:text-3xl font-medium leading-tight" style={subtitleStyle}>
+                                        {hero.subtitle}
+                                    </p>
+                                </div>
+                            </>
+                        )}
 
-                        <div className="flex flex-wrap items-center gap-4">
-                            <Button size="lg" className="group">
-                                {hero.cta}
-                                <ChevronRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                            <Button variant="outline" size="lg">
-                                {hero.secondaryCta}
-                            </Button>
-                        </div>
+                        {heroVisibleBlocks.ctas && (
+                            <div className="flex flex-wrap items-center gap-4">
+                                <Button size="lg" className="group">
+                                    {hero.cta}
+                                    <ChevronRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                </Button>
+                                <Button variant="outline" size="lg">
+                                    {hero.secondaryCta}
+                                </Button>
+                            </div>
+                        )}
                     </motion.div>
                 </div>
 
-                <div className="lg:col-span-4 hidden lg:block">
+                {heroVisibleBlocks.stats && (
+                    <div className="lg:col-span-4 hidden lg:block">
                     <motion.div
                         initial={animated ? { opacity: 0, scale: 0.9 } : false}
                         animate={animated ? { opacity: 1, scale: 1 } : undefined}
@@ -186,7 +203,8 @@ export function HeroView({ hero, heroSection, animated = true }: HeroViewProps) 
                             ))}
                         </div>
                     </motion.div>
-                </div>
+                    </div>
+                )}
             </div>
             <style>{`
                 @media (min-width: 768px) {

@@ -67,7 +67,33 @@ export type HeroContent = {
     secondaryCta: string
 }
 
+export type HomeSectionId = 'hero' | 'services' | 'products' | 'frameworks' | 'contact'
+export const HOME_SECTION_IDS: HomeSectionId[] = ['hero', 'services', 'products', 'frameworks', 'contact']
+export type HomeResponsiveViewport = 'desktop' | 'tablet' | 'mobile'
+export const HOME_RESPONSIVE_VIEWPORTS: HomeResponsiveViewport[] = ['desktop', 'tablet', 'mobile']
+export type HomeSectionVisibility = Record<HomeResponsiveViewport, boolean>
+export type HomeBlockVisibilityMap = {
+    hero: Record<'headline' | 'ctas' | 'stats', HomeSectionVisibility>
+    services: Record<'header' | 'grid', HomeSectionVisibility>
+    products: Record<'header' | 'cards', HomeSectionVisibility>
+    frameworks: Record<'header' | 'items', HomeSectionVisibility>
+    contact: Record<'header' | 'channels' | 'form', HomeSectionVisibility>
+}
+export const HOME_SECTION_BLOCK_IDS: { [K in HomeSectionId]: Array<keyof HomeBlockVisibilityMap[K]> } = {
+    hero: ['headline', 'ctas', 'stats'],
+    services: ['header', 'grid'],
+    products: ['header', 'cards'],
+    frameworks: ['header', 'items'],
+    contact: ['header', 'channels', 'form'],
+}
+
 export type HomePageContent = {
+    layout: {
+        sectionOrder: HomeSectionId[]
+        hiddenSections: HomeSectionId[]
+        sectionVisibility: Record<HomeSectionId, HomeSectionVisibility>
+        blockVisibility: HomeBlockVisibilityMap
+    }
     hero: {
         stats: Array<{ label: string; value: string }>
         style: {
@@ -420,6 +446,19 @@ const staticProducts: ProductItem[] = productsDetail.map(p => ({
 const staticHero: HeroContent = { ...defaultContent.hero }
 
 const staticHomePage: HomePageContent = {
+    layout: {
+        sectionOrder: [...HOME_SECTION_IDS],
+        hiddenSections: [],
+        sectionVisibility: Object.fromEntries(HOME_SECTION_IDS.map((id) => [id, { desktop: true, tablet: true, mobile: true }])) as Record<HomeSectionId, HomeSectionVisibility>,
+        blockVisibility: Object.fromEntries(
+            HOME_SECTION_IDS.map((sectionId) => [
+                sectionId,
+                Object.fromEntries(
+                    HOME_SECTION_BLOCK_IDS[sectionId].map((blockId) => [blockId, { desktop: true, tablet: true, mobile: true }])
+                ),
+            ])
+        ) as HomeBlockVisibilityMap,
+    },
     hero: {
         stats: [
             { label: 'Stability', value: '99.9%' },
@@ -532,6 +571,43 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
     const site = stored.site && typeof stored.site === 'object' ? stored.site : staticSite
     const design = stored.design && typeof stored.design === 'object' ? stored.design : defaultDesign
     const homePage = stored.homePage && typeof stored.homePage === 'object' ? stored.homePage : staticHomePage
+    const rawLayout = (homePage as any)?.layout ?? {}
+    const validHomeSectionIds = new Set(HOME_SECTION_IDS)
+    const rawSectionOrder = Array.isArray(rawLayout.sectionOrder) ? rawLayout.sectionOrder.filter((id: any) => validHomeSectionIds.has(id)) : []
+    const sectionOrder = [...new Set([...rawSectionOrder, ...HOME_SECTION_IDS])]
+    const hiddenSections = Array.isArray(rawLayout.hiddenSections)
+        ? [...new Set(rawLayout.hiddenSections.filter((id: any) => validHomeSectionIds.has(id)))]
+        : []
+    const sectionVisibility = HOME_SECTION_IDS.reduce((acc, id) => {
+        const rawSection = rawLayout.sectionVisibility && typeof rawLayout.sectionVisibility === 'object'
+            ? (rawLayout.sectionVisibility as any)[id]
+            : undefined
+        acc[id] = {
+            desktop: typeof rawSection?.desktop === 'boolean' ? rawSection.desktop : true,
+            tablet: typeof rawSection?.tablet === 'boolean' ? rawSection.tablet : true,
+            mobile: typeof rawSection?.mobile === 'boolean' ? rawSection.mobile : true,
+        }
+        return acc
+    }, {} as Record<HomeSectionId, HomeSectionVisibility>)
+    const blockVisibility = HOME_SECTION_IDS.reduce((acc, sectionId) => {
+        const rawSectionBlocks = rawLayout.blockVisibility && typeof rawLayout.blockVisibility === 'object'
+            ? (rawLayout.blockVisibility as any)[sectionId]
+            : undefined
+        acc[sectionId] = Object.fromEntries(
+            HOME_SECTION_BLOCK_IDS[sectionId].map((blockId) => {
+                const rawBlock = rawSectionBlocks && typeof rawSectionBlocks === 'object' ? rawSectionBlocks[blockId] : undefined
+                return [
+                    blockId,
+                    {
+                        desktop: typeof rawBlock?.desktop === 'boolean' ? rawBlock.desktop : true,
+                        tablet: typeof rawBlock?.tablet === 'boolean' ? rawBlock.tablet : true,
+                        mobile: typeof rawBlock?.mobile === 'boolean' ? rawBlock.mobile : true,
+                    },
+                ]
+            })
+        ) as any
+        return acc
+    }, {} as HomeBlockVisibilityMap)
 
     const services = rawServices.map((service) => {
         const staticMatch = staticServices.find(s => s.slug === service.slug)
@@ -558,6 +634,14 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
         homePage: {
             ...staticHomePage,
             ...(homePage as any),
+            layout: {
+                ...staticHomePage.layout,
+                ...(rawLayout || {}),
+                sectionOrder: sectionOrder as HomeSectionId[],
+                hiddenSections: hiddenSections as HomeSectionId[],
+                sectionVisibility,
+                blockVisibility,
+            },
             hero: {
                 ...staticHomePage.hero,
                 ...((homePage as any).hero ?? {}),

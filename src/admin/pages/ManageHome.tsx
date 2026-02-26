@@ -20,21 +20,59 @@ import {
     Tablet,
     Smartphone,
     ChevronDown,
+    ArrowUp,
+    ArrowDown,
     Plus,
     Trash2,
     X,
-    ChevronsUpDown
+    ChevronsUpDown,
+    GripVertical,
+    EyeOff,
 } from 'lucide-react'
-import { useCMS, type HeroContent, type HomePageContent, type DesignTokens } from '../context/CMSContext'
+import {
+    useCMS,
+    type HeroContent,
+    type HomePageContent,
+    type DesignTokens,
+    type HomeSectionId,
+    type HomeResponsiveViewport,
+    type HomeSectionVisibility,
+    type HomeBlockVisibilityMap,
+    HOME_SECTION_IDS,
+    HOME_SECTION_BLOCK_IDS,
+    HOME_RESPONSIVE_VIEWPORTS,
+} from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
 import { HeroView } from '../../sections/Hero/HeroView'
 import { Button } from '../../components/ui/Button'
 
 type Tab = 'hero' | 'services' | 'products' | 'frameworks' | 'contact' | 'visual' | 'advanced' | 'structure' | 'sections'
+type HeroStructureBlock = 'section' | 'headline' | 'ctas' | 'stats'
+type ServicesStructureBlock = 'section' | 'header' | 'grid'
+type ProductsStructureBlock = 'section' | 'header' | 'cards'
+type FrameworksStructureBlock = 'section' | 'header' | 'items'
+type ContactStructureBlock = 'section' | 'header' | 'channels' | 'form'
+type StructureBlockKey = string
 
 const COLOR_SWATCHES = ['#ffffff', '#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#334155', '#0f172a', '#1a2d5a', '#2563eb', '#3b82f6', '#f97316']
 const FONT_PRESETS = ['Inter', 'Space Grotesk', 'Manrope', 'Sora', 'IBM Plex Sans', 'Montserrat', 'Poppins', 'system-ui']
 const CMS_RADIUS_VALUES: Record<string, string> = { none: '0px', sm: '4px', md: '8px', lg: '16px', full: '9999px' }
+const DEFAULT_HOME_SECTION_VISIBILITY: HomeSectionVisibility = { desktop: true, tablet: true, mobile: true }
+const HOME_SECTION_META: Record<HomeSectionId, {
+    label: string
+    shortLabel: string
+    description: string
+    tab: Tab
+    icon: ComponentType<{ className?: string }>
+    anchor: string
+    accent: string
+}> = {
+    hero: { label: 'Hero', shortLabel: 'Hero', description: 'Bloque principal con titular, CTAs y panel de métricas.', tab: 'hero', icon: Layout, anchor: '#inicio', accent: '#2563eb' },
+    services: { label: 'Servicios', shortLabel: 'Servicios', description: 'Cabecera de servicios y grilla de oferta.', tab: 'services', icon: Briefcase, anchor: '#servicios', accent: '#0ea5e9' },
+    products: { label: 'Productos', shortLabel: 'Productos', description: 'Módulos/soluciones y CTA de despliegue.', tab: 'products', icon: Package, anchor: '#productos', accent: '#8b5cf6' },
+    frameworks: { label: 'Frameworks', shortLabel: 'Frameworks', description: 'Bloque de confianza/compliance y marcos.', tab: 'frameworks', icon: ShieldCheck, anchor: '#confianza', accent: '#22c55e' },
+    contact: { label: 'Contacto', shortLabel: 'Contacto', description: 'Formulario y canales de contacto.', tab: 'contact', icon: Mail, anchor: '#contacto', accent: '#f97316' },
+}
 
 function getYouTubeId(url: string): string | null {
     if (!url) return null
@@ -322,7 +360,10 @@ function SegmentedField<T extends string>({
 }) {
     return (
         <Field label={label}>
-            <div className="grid grid-cols-3 gap-2 rounded-xl bg-slate-100 p-1">
+            <div
+                className="grid gap-2 rounded-xl bg-slate-100 p-1"
+                style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(options.length, 1), 4)}, minmax(0, 1fr))` }}
+            >
                 {options.map((opt) => {
                     const Icon = opt.icon
                     const active = value === opt.value
@@ -355,6 +396,14 @@ export function ManageHome() {
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false)
     const [previewViewport, setPreviewViewport] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
     const [heroPanelTab, setHeroPanelTab] = useState<'content' | 'background' | 'type' | 'stats' | 'cta'>('content')
+    const [structureSelectedSection, setStructureSelectedSection] = useState<HomeSectionId>('hero')
+    const [structureHeroBlock, setStructureHeroBlock] = useState<HeroStructureBlock>('section')
+    const [structureServicesBlock, setStructureServicesBlock] = useState<ServicesStructureBlock>('section')
+    const [structureProductsBlock, setStructureProductsBlock] = useState<ProductsStructureBlock>('section')
+    const [structureFrameworksBlock, setStructureFrameworksBlock] = useState<FrameworksStructureBlock>('section')
+    const [structureContactBlock, setStructureContactBlock] = useState<ContactStructureBlock>('section')
+    const [structureDraggedSection, setStructureDraggedSection] = useState<HomeSectionId | null>(null)
+    const [structureInspectorTab, setStructureInspectorTab] = useState<'content' | 'behavior' | 'style'>('content')
     const [fieldSearch, setFieldSearch] = useState('')
     const [presetSelection, setPresetSelection] = useState('')
     const [styleClipboard, setStyleClipboard] = useState<Record<string, any> | null>(null)
@@ -414,6 +463,43 @@ export function ManageHome() {
         JSON.stringify(state.design) !== JSON.stringify(designDraft)
 
     const heroStyle = homeDraft.hero.style
+    const defaultSectionVisibilityMap = useMemo(
+        () => Object.fromEntries(HOME_SECTION_IDS.map((id) => [id, { ...DEFAULT_HOME_SECTION_VISIBILITY }])) as Record<HomeSectionId, HomeSectionVisibility>,
+        []
+    )
+    const defaultBlockVisibilityMap = useMemo(
+        () => Object.fromEntries(
+            HOME_SECTION_IDS.map((sectionId) => [
+                sectionId,
+                Object.fromEntries(
+                    HOME_SECTION_BLOCK_IDS[sectionId].map((blockId) => [blockId, { ...DEFAULT_HOME_SECTION_VISIBILITY }])
+                ),
+            ])
+        ) as HomeBlockVisibilityMap,
+        []
+    )
+    const homeLayout = homeDraft.layout ?? { sectionOrder: [...HOME_SECTION_IDS], hiddenSections: [], sectionVisibility: defaultSectionVisibilityMap, blockVisibility: defaultBlockVisibilityMap }
+    const structureSectionOrder = [...new Set([...(homeLayout.sectionOrder ?? []), ...HOME_SECTION_IDS].filter((id): id is HomeSectionId => HOME_SECTION_IDS.includes(id as HomeSectionId)))]
+    const hiddenSectionSet = new Set<HomeSectionId>((homeLayout.hiddenSections ?? []).filter((id): id is HomeSectionId => HOME_SECTION_IDS.includes(id as HomeSectionId)))
+    const structureSectionVisibility = HOME_SECTION_IDS.reduce((acc, id) => {
+        acc[id] = {
+            ...DEFAULT_HOME_SECTION_VISIBILITY,
+            ...(homeLayout.sectionVisibility?.[id] ?? {}),
+        }
+        return acc
+    }, {} as Record<HomeSectionId, HomeSectionVisibility>)
+    const structureBlockVisibility = HOME_SECTION_IDS.reduce((acc, sectionId) => {
+        acc[sectionId] = Object.fromEntries(
+            HOME_SECTION_BLOCK_IDS[sectionId].map((blockId) => [
+                blockId,
+                {
+                    ...DEFAULT_HOME_SECTION_VISIBILITY,
+                    ...((homeLayout.blockVisibility as any)?.[sectionId]?.[blockId] ?? {}),
+                },
+            ])
+        ) as any
+        return acc
+    }, {} as HomeBlockVisibilityMap)
     const heroButtonRadius = CMS_RADIUS_VALUES[String(designDraft.borderRadius || 'none')] ?? '0px'
     const heroPrimaryCtaPreview = heroDraft.cta.trim() || 'Iniciar transformación'
     const heroSecondaryCtaPreview = heroDraft.secondaryCta.trim() || 'Ver servicios'
@@ -430,6 +516,195 @@ export function ManageHome() {
     const parseNum = (value: string | undefined, fallback: number) => {
         const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
         return Number.isFinite(n) ? n : fallback
+    }
+    const setHomeLayout = (patch: Partial<HomePageContent['layout']>) => {
+        const nextOrder = patch.sectionOrder ?? homeLayout.sectionOrder
+        const nextHidden = patch.hiddenSections ?? homeLayout.hiddenSections
+        const nextSectionVisibility = patch.sectionVisibility ?? homeLayout.sectionVisibility
+        const nextBlockVisibility = patch.blockVisibility ?? homeLayout.blockVisibility
+        setHome({
+            ...homeDraft,
+            layout: {
+                ...homeLayout,
+                ...patch,
+                sectionOrder: [...new Set([...(nextOrder ?? []), ...HOME_SECTION_IDS].filter((id): id is HomeSectionId => HOME_SECTION_IDS.includes(id as HomeSectionId)))],
+                hiddenSections: [...new Set((nextHidden ?? []).filter((id): id is HomeSectionId => HOME_SECTION_IDS.includes(id as HomeSectionId)))],
+                sectionVisibility: HOME_SECTION_IDS.reduce((acc, id) => {
+                    acc[id] = {
+                        ...DEFAULT_HOME_SECTION_VISIBILITY,
+                        ...((nextSectionVisibility as Record<HomeSectionId, Partial<HomeSectionVisibility>> | undefined)?.[id] ?? {}),
+                    }
+                    return acc
+                }, {} as Record<HomeSectionId, HomeSectionVisibility>),
+                blockVisibility: HOME_SECTION_IDS.reduce((acc, sectionId) => {
+                    acc[sectionId] = Object.fromEntries(
+                        HOME_SECTION_BLOCK_IDS[sectionId].map((blockId) => [
+                            blockId,
+                            {
+                                ...DEFAULT_HOME_SECTION_VISIBILITY,
+                                ...((nextBlockVisibility as any)?.[sectionId]?.[blockId] ?? {}),
+                            },
+                        ])
+                    ) as any
+                    return acc
+                }, {} as HomeBlockVisibilityMap),
+            },
+        })
+    }
+    const reorderStructureSections = (fromId: HomeSectionId, toId: HomeSectionId) => {
+        if (fromId === toId) return
+        const next = [...structureSectionOrder]
+        const fromIndex = next.indexOf(fromId)
+        const toIndex = next.indexOf(toId)
+        if (fromIndex === -1 || toIndex === -1) return
+        next.splice(fromIndex, 1)
+        next.splice(toIndex, 0, fromId)
+        setHomeLayout({ sectionOrder: next })
+    }
+    const moveStructureSection = (sectionId: HomeSectionId, direction: -1 | 1) => {
+        const currentIndex = structureSectionOrder.indexOf(sectionId)
+        if (currentIndex === -1) return
+        const targetIndex = currentIndex + direction
+        if (targetIndex < 0 || targetIndex >= structureSectionOrder.length) return
+        reorderStructureSections(sectionId, structureSectionOrder[targetIndex])
+    }
+    const toggleStructureSectionVisibility = (sectionId: HomeSectionId) => {
+        const isHidden = hiddenSectionSet.has(sectionId)
+        const hiddenSections = isHidden
+            ? homeLayout.hiddenSections.filter((id) => id !== sectionId)
+            : [...homeLayout.hiddenSections, sectionId]
+        setHomeLayout({ hiddenSections })
+    }
+    const isSectionVisibleInPreviewViewport = (sectionId: HomeSectionId, viewport: HomeResponsiveViewport) => {
+        if (hiddenSectionSet.has(sectionId)) return false
+        return structureSectionVisibility[sectionId]?.[viewport] !== false
+    }
+    const setSectionViewportVisibility = (sectionId: HomeSectionId, viewport: HomeResponsiveViewport, visible: boolean) => {
+        setHomeLayout({
+            sectionVisibility: {
+                ...structureSectionVisibility,
+                [sectionId]: {
+                    ...structureSectionVisibility[sectionId],
+                    [viewport]: visible,
+                },
+            },
+        })
+    }
+    const setSectionAllViewportVisibility = (sectionId: HomeSectionId, visible: boolean) => {
+        setHomeLayout({
+            sectionVisibility: {
+                ...structureSectionVisibility,
+                [sectionId]: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = visible
+                    return acc
+                }, { ...structureSectionVisibility[sectionId] } as HomeSectionVisibility),
+            },
+        })
+    }
+    const getSelectedStructureBlockKey = (sectionId: HomeSectionId = structureSelectedSection): StructureBlockKey | null => {
+        if (sectionId === 'hero') return structureHeroBlock === 'section' ? null : structureHeroBlock
+        if (sectionId === 'services') return structureServicesBlock === 'section' ? null : structureServicesBlock
+        if (sectionId === 'products') return structureProductsBlock === 'section' ? null : structureProductsBlock
+        if (sectionId === 'frameworks') return structureFrameworksBlock === 'section' ? null : structureFrameworksBlock
+        if (sectionId === 'contact') return structureContactBlock === 'section' ? null : structureContactBlock
+        return null
+    }
+    const isSectionBlockVisibleInPreviewViewport = (sectionId: HomeSectionId, blockId: StructureBlockKey, viewport: HomeResponsiveViewport) => {
+        const sectionBlocks = (structureBlockVisibility as any)[sectionId]
+        const blockVisibility = sectionBlocks?.[blockId]
+        if (!blockVisibility) return true
+        return blockVisibility[viewport] !== false
+    }
+    const setSectionBlockViewportVisibility = (sectionId: HomeSectionId, blockId: StructureBlockKey, viewport: HomeResponsiveViewport, visible: boolean) => {
+        const nextSectionBlocks = {
+            ...((structureBlockVisibility as any)[sectionId] ?? {}),
+            [blockId]: {
+                ...((structureBlockVisibility as any)[sectionId]?.[blockId] ?? DEFAULT_HOME_SECTION_VISIBILITY),
+                [viewport]: visible,
+            },
+        }
+        setHomeLayout({
+            blockVisibility: {
+                ...structureBlockVisibility,
+                [sectionId]: nextSectionBlocks,
+            } as any,
+        })
+    }
+    const setSectionBlockAllViewportVisibility = (sectionId: HomeSectionId, blockId: StructureBlockKey, visible: boolean) => {
+        setHomeLayout({
+            blockVisibility: {
+                ...structureBlockVisibility,
+                [sectionId]: {
+                    ...((structureBlockVisibility as any)[sectionId] ?? {}),
+                    [blockId]: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                        acc[viewport] = visible
+                        return acc
+                    }, { ...DEFAULT_HOME_SECTION_VISIBILITY } as HomeSectionVisibility),
+                },
+            } as any,
+        })
+    }
+    const openSectionEditorFromStructure = (sectionId: HomeSectionId) => {
+        const meta = HOME_SECTION_META[sectionId]
+        setTab(meta.tab)
+        setStructureSelectedSection(sectionId)
+        if (sectionId !== 'hero') setStructureHeroBlock('section')
+        if (sectionId !== 'services') setStructureServicesBlock('section')
+        if (sectionId !== 'products') setStructureProductsBlock('section')
+        if (sectionId !== 'frameworks') setStructureFrameworksBlock('section')
+        if (sectionId !== 'contact') setStructureContactBlock('section')
+        if (sectionId === 'hero') {
+            setHeroPanelTab(
+                structureHeroBlock === 'stats'
+                    ? 'stats'
+                    : structureHeroBlock === 'ctas'
+                        ? 'cta'
+                        : 'content'
+            )
+        }
+    }
+    const openSectionStyleEditorFromStructure = (sectionId: HomeSectionId) => {
+        const meta = HOME_SECTION_META[sectionId]
+        setTab(meta.tab)
+        setStructureSelectedSection(sectionId)
+        if (sectionId !== 'hero') setStructureHeroBlock('section')
+        if (sectionId !== 'services') setStructureServicesBlock('section')
+        if (sectionId !== 'products') setStructureProductsBlock('section')
+        if (sectionId !== 'frameworks') setStructureFrameworksBlock('section')
+        if (sectionId !== 'contact') setStructureContactBlock('section')
+        if (sectionId === 'hero') {
+            setHeroPanelTab(
+                structureHeroBlock === 'stats'
+                    ? 'stats'
+                    : structureHeroBlock === 'headline'
+                        ? 'type'
+                        : structureHeroBlock === 'ctas'
+                            ? 'cta'
+                            : 'background'
+            )
+        }
+    }
+    const getStructureSectionHeadline = (sectionId: HomeSectionId) => {
+        if (sectionId === 'hero') return heroDraft.title
+        if (sectionId === 'services') return homeDraft.servicesSection.title
+        if (sectionId === 'products') return homeDraft.productsSection.title
+        if (sectionId === 'frameworks') return homeDraft.frameworksSection.title
+        return `${homeDraft.contactSection.titlePrefix} ${homeDraft.contactSection.titleAccent}`.trim()
+    }
+    const getStructureSectionSubline = (sectionId: HomeSectionId) => {
+        if (sectionId === 'hero') return heroDraft.subtitle
+        if (sectionId === 'services') return homeDraft.servicesSection.subtitle
+        if (sectionId === 'products') return homeDraft.productsSection.subtitle
+        if (sectionId === 'frameworks') return homeDraft.frameworksSection.subtitle
+        return homeDraft.contactSection.eyebrow
+    }
+    const getActiveStructureBlockLabel = (sectionId: HomeSectionId) => {
+        if (sectionId === 'hero') return structureHeroBlock === 'section' ? 'General' : structureHeroBlock === 'headline' ? 'Titular' : structureHeroBlock === 'ctas' ? 'CTAs' : 'Stats'
+        if (sectionId === 'services') return structureServicesBlock === 'section' ? 'General' : structureServicesBlock === 'header' ? 'Header' : 'Grid'
+        if (sectionId === 'products') return structureProductsBlock === 'section' ? 'General' : structureProductsBlock === 'header' ? 'Header' : 'Cards'
+        if (sectionId === 'frameworks') return structureFrameworksBlock === 'section' ? 'General' : structureFrameworksBlock === 'header' ? 'Header' : 'Items'
+        if (sectionId === 'contact') return structureContactBlock === 'section' ? 'General' : structureContactBlock === 'header' ? 'Header' : structureContactBlock === 'channels' ? 'Canales' : 'Formulario'
+        return null
     }
     const setHeroStyleRem = (key: keyof HomePageContent['hero']['style'], next: number) => setHeroStyle(key as any, `${next}rem` as any)
     const setHeroStyleInt = (key: keyof HomePageContent['hero']['style'], next: number) => setHeroStyle(key as any, String(Math.round(next)) as any)
@@ -611,6 +886,81 @@ export function ManageHome() {
             ? 'scale-[0.45] w-[222%]'
             : 'scale-[0.34] w-[294%]'
 
+    const selectSectionFromCanvas = (sectionId: HomeSectionId) => {
+        setStructureSelectedSection(sectionId)
+        setStructureHeroBlock('section')
+        setStructureServicesBlock('section')
+        setStructureProductsBlock('section')
+        setStructureFrameworksBlock('section')
+        setStructureContactBlock('section')
+        if (tab !== 'structure' && tab !== 'sections') {
+            setTab(HOME_SECTION_META[sectionId].tab)
+        }
+    }
+    const selectHeroBlockFromCanvas = (block: HeroStructureBlock) => {
+        setStructureSelectedSection('hero')
+        setStructureHeroBlock(block)
+        setStructureServicesBlock('section')
+        setStructureProductsBlock('section')
+        setStructureFrameworksBlock('section')
+        setStructureContactBlock('section')
+        if (tab !== 'structure' && tab !== 'sections') {
+            setTab('structure')
+        }
+    }
+    const selectServicesBlockFromCanvas = (block: ServicesStructureBlock) => {
+        setStructureSelectedSection('services')
+        setStructureHeroBlock('section')
+        setStructureServicesBlock(block)
+        setStructureProductsBlock('section')
+        setStructureFrameworksBlock('section')
+        setStructureContactBlock('section')
+        if (tab !== 'structure' && tab !== 'sections') {
+            setTab('structure')
+        }
+    }
+    const selectProductsBlockFromCanvas = (block: ProductsStructureBlock) => {
+        setStructureSelectedSection('products')
+        setStructureHeroBlock('section')
+        setStructureServicesBlock('section')
+        setStructureProductsBlock(block)
+        setStructureFrameworksBlock('section')
+        setStructureContactBlock('section')
+        if (tab !== 'structure' && tab !== 'sections') {
+            setTab('structure')
+        }
+    }
+    const selectFrameworksBlockFromCanvas = (block: FrameworksStructureBlock) => {
+        setStructureSelectedSection('frameworks')
+        setStructureHeroBlock('section')
+        setStructureServicesBlock('section')
+        setStructureProductsBlock('section')
+        setStructureFrameworksBlock(block)
+        setStructureContactBlock('section')
+        if (tab !== 'structure' && tab !== 'sections') {
+            setTab('structure')
+        }
+    }
+    const selectContactBlockFromCanvas = (block: ContactStructureBlock) => {
+        setStructureSelectedSection('contact')
+        setStructureHeroBlock('section')
+        setStructureServicesBlock('section')
+        setStructureProductsBlock('section')
+        setStructureFrameworksBlock('section')
+        setStructureContactBlock(block)
+        if (tab !== 'structure' && tab !== 'sections') {
+            setTab('structure')
+        }
+    }
+
+    const getSectionCanvasBackground = (sectionId: HomeSectionId) => {
+        if (sectionId === 'hero') return homeDraft.hero.style.backgroundColor || '#ffffff'
+        if (sectionId === 'services') return homeDraft.servicesSection.style.backgroundColor || '#f8fafc'
+        if (sectionId === 'products') return homeDraft.productsSection.style.backgroundColor || '#ffffff'
+        if (sectionId === 'frameworks') return homeDraft.frameworksSection.style.backgroundColor || '#0f172a'
+        return homeDraft.contactSection.style.backgroundColor || '#ffffff'
+    }
+
     const previewContent = (
         <div className="flex-1 bg-white flex flex-col overflow-hidden relative group min-w-0">
             <div className="absolute top-4 left-4 z-20 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
@@ -642,14 +992,665 @@ export function ManageHome() {
 
             <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-900 preview-container">
                 <div className={`origin-top-left transition-transform duration-500 ease-in-out ${previewScaleClass}`}>
-                    <HeroView hero={heroDraft} heroSection={homeDraft.hero} animated={false} />
-                    <div className="h-screen bg-slate-50 border-t border-slate-200 flex items-center justify-center">
-                        <div className="text-center space-y-4">
-                            <Zap className="w-12 h-12 text-slate-200 mx-auto" />
-                            <div className="text-xl font-bold text-slate-300">Sections Placeholder</div>
-                            <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Usa “Ver sitio” para validar el home completo</div>
-                        </div>
-                    </div>
+                    {structureSectionOrder.map((sectionId, index) => {
+                        const meta = HOME_SECTION_META[sectionId]
+                        const Icon = meta.icon
+                        const isSelected = structureSelectedSection === sectionId
+                        const isGloballyHidden = hiddenSectionSet.has(sectionId)
+                        const isViewportVisible = structureSectionVisibility[sectionId]?.[previewViewport] !== false
+                        const isVisible = isSectionVisibleInPreviewViewport(sectionId, previewViewport)
+                        const canvasBg = getSectionCanvasBackground(sectionId)
+
+                        if (sectionId === 'hero') {
+                            const heroVisibleBlocks = {
+                                headline: isSectionBlockVisibleInPreviewViewport('hero', 'headline', previewViewport),
+                                ctas: isSectionBlockVisibleInPreviewViewport('hero', 'ctas', previewViewport),
+                                stats: isSectionBlockVisibleInPreviewViewport('hero', 'stats', previewViewport),
+                            }
+                            return (
+                                <div key={`preview-${sectionId}`} className="relative border-b border-slate-200">
+                                    <button
+                                        type="button"
+                                        onClick={() => selectHeroBlockFromCanvas('section')}
+                                        className={`absolute top-6 left-6 z-20 rounded-xl border bg-white/90 backdrop-blur px-3 py-2 text-left shadow-sm transition-all ${isSelected ? 'border-brand-primary ring-2 ring-brand-primary/20' : 'border-slate-200 hover:border-slate-300'}`}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">#{String(index + 1).padStart(2, '0')}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{meta.label}</span>
+                                            {!isVisible && (
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                                                    Oculta
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-1 max-w-xs truncate">{heroDraft.cta} · {heroDraft.secondaryCta}</div>
+                                    </button>
+
+                                    {isVisible ? (
+                                        <div className="relative">
+                                            <HeroView hero={heroDraft} heroSection={homeDraft.hero} animated={false} visibleBlocks={heroVisibleBlocks} />
+
+                                            <div className="absolute top-6 right-6 z-20 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
+                                                {([
+                                                    { value: 'headline', label: 'Titular' },
+                                                    { value: 'ctas', label: 'CTAs' },
+                                                    { value: 'stats', label: 'Stats' },
+                                                ] as const).map((opt) => {
+                                                    const active = isSelected && structureHeroBlock === opt.value
+                                                    return (
+                                                        <button
+                                                            key={`hero-block-pill-${opt.value}`}
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                selectHeroBlockFromCanvas(opt.value)
+                                                            }}
+                                                            className={`h-8 px-2 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-colors ${active ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-900'}`}
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectHeroBlockFromCanvas('headline')
+                                                }}
+                                                className={`absolute left-[4%] top-[15%] z-10 w-[60%] h-[48%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureHeroBlock === 'headline' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar bloque titular del hero"
+                                                title="Bloque titular"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureHeroBlock === 'headline' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>
+                                                    Titular
+                                                </span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectHeroBlockFromCanvas('ctas')
+                                                }}
+                                                className={`absolute left-[6%] top-[58%] z-10 w-[42%] h-[12%] rounded-xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureHeroBlock === 'ctas' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar bloque CTAs del hero"
+                                                title="Bloque CTAs"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureHeroBlock === 'ctas' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>
+                                                    CTAs
+                                                </span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectHeroBlockFromCanvas('stats')
+                                                }}
+                                                className={`absolute right-[4.5%] top-[18%] z-10 w-[25%] h-[55%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureHeroBlock === 'stats' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'} hidden lg:block`}
+                                                aria-label="Seleccionar bloque stats del hero"
+                                                title="Bloque stats"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureHeroBlock === 'stats' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>
+                                                    Stats
+                                                </span>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="min-h-[70vh] bg-slate-100 border-b border-slate-200 flex items-center justify-center">
+                                            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-center">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-amber-700">Hero oculto en {previewViewport}</div>
+                                                <div className="text-sm font-semibold text-slate-900 mt-1">
+                                                    {isGloballyHidden ? 'Oculto globalmente' : 'Oculto por configuración responsive'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        }
+
+                        if (sectionId === 'services') {
+                            return (
+                                <div
+                                    key={`preview-${sectionId}`}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => selectServicesBlockFromCanvas('section')}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault()
+                                            selectServicesBlockFromCanvas('section')
+                                        }
+                                    }}
+                                    className={`w-full text-left relative border-b border-slate-200 transition-all ${isSelected ? 'ring-2 ring-inset ring-brand-primary/20' : ''} ${isVisible ? 'opacity-100' : 'opacity-70'}`}
+                                    style={{ backgroundColor: canvasBg }}
+                                >
+                                    <div className="absolute inset-0 pointer-events-none" style={{ background: isVisible ? 'linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.88))' : 'linear-gradient(180deg, rgba(248,250,252,0.92), rgba(248,250,252,0.96))' }} />
+
+                                    <div className="absolute top-4 right-4 z-10 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
+                                        {([
+                                            { value: 'header', label: 'Header' },
+                                            { value: 'grid', label: 'Grid' },
+                                        ] as const).map((opt) => {
+                                            const active = isSelected && structureServicesBlock === opt.value
+                                            return (
+                                                <button
+                                                    key={`services-pill-${opt.value}`}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        selectServicesBlockFromCanvas(opt.value)
+                                                    }}
+                                                    className={`h-8 px-2 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-colors ${active ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-900'}`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+
+                                    <div className="relative p-8 md:p-12">
+                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
+                                                    <Icon className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">#{String(index + 1).padStart(2, '0')}</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{meta.label}</span>
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${isVisible ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                                                            {isVisible ? 'Visible' : 'Oculta'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2">{getStructureSectionHeadline(sectionId) || meta.label}</div>
+                                                    <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="shrink-0 flex flex-col items-start md:items-end gap-2">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{meta.anchor}</div>
+                                                <div className="flex items-center gap-1">
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].desktop ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>D</span>
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].tablet ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>T</span>
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].mobile ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>M</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {Array.from({ length: Math.min(4, state.services.length || 4) }).map((_, cardIndex) => (
+                                                <div key={`services-card-preview-${cardIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4">
+                                                    <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 mb-3" />
+                                                    <div className="h-3 rounded bg-slate-200 w-2/3 mb-2" />
+                                                    <div className="h-2 rounded bg-slate-100 w-full mb-1.5" />
+                                                    <div className="h-2 rounded bg-slate-100 w-5/6" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {isVisible && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectServicesBlockFromCanvas('header')
+                                                }}
+                                                className={`absolute left-6 right-6 top-14 h-[38%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureServicesBlock === 'header' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar header de servicios"
+                                                title="Header servicios"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureServicesBlock === 'header' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Header</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectServicesBlockFromCanvas('grid')
+                                                }}
+                                                className={`absolute left-6 right-6 bottom-6 h-[35%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureServicesBlock === 'grid' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar grid de servicios"
+                                                title="Grid servicios"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureServicesBlock === 'grid' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Grid</span>
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )
+                        }
+
+                        if (sectionId === 'products') {
+                            return (
+                                <div
+                                    key={`preview-${sectionId}`}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => selectProductsBlockFromCanvas('section')}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault()
+                                            selectProductsBlockFromCanvas('section')
+                                        }
+                                    }}
+                                    className={`w-full text-left relative border-b border-slate-200 transition-all ${isSelected ? 'ring-2 ring-inset ring-brand-primary/20' : ''} ${isVisible ? 'opacity-100' : 'opacity-70'}`}
+                                    style={{ backgroundColor: canvasBg }}
+                                >
+                                    <div className="absolute inset-0 pointer-events-none" style={{ background: isVisible ? 'linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.88))' : 'linear-gradient(180deg, rgba(248,250,252,0.92), rgba(248,250,252,0.96))' }} />
+
+                                    <div className="absolute top-4 right-4 z-10 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
+                                        {([
+                                            { value: 'header', label: 'Header' },
+                                            { value: 'cards', label: 'Cards' },
+                                        ] as const).map((opt) => {
+                                            const active = isSelected && structureProductsBlock === opt.value
+                                            return (
+                                                <button
+                                                    key={`products-pill-${opt.value}`}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        selectProductsBlockFromCanvas(opt.value)
+                                                    }}
+                                                    className={`h-8 px-2 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-colors ${active ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-900'}`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+
+                                    <div className="relative p-8 md:p-12">
+                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
+                                                    <Icon className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">#{String(index + 1).padStart(2, '0')}</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{meta.label}</span>
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${isVisible ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                                                            {isVisible ? 'Visible' : 'Oculta'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2">{getStructureSectionHeadline(sectionId) || meta.label}</div>
+                                                    <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="shrink-0 flex flex-col items-start md:items-end gap-2">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{meta.anchor}</div>
+                                                <div className="flex items-center gap-1">
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].desktop ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>D</span>
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].tablet ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>T</span>
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].mobile ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>M</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                            {Array.from({ length: Math.min(3, state.products.length || 3) }).map((_, cardIndex) => (
+                                                <div key={`products-card-preview-${cardIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4 space-y-3">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200" />
+                                                        <div className="h-3 rounded bg-blue-100 w-14" />
+                                                    </div>
+                                                    <div className="h-3 rounded bg-slate-200 w-2/3" />
+                                                    <div className="h-2 rounded bg-slate-100 w-full" />
+                                                    <div className="h-8 rounded-lg border border-slate-200 bg-white" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {isVisible && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectProductsBlockFromCanvas('header')
+                                                }}
+                                                className={`absolute left-6 right-6 top-14 h-[35%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureProductsBlock === 'header' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar header de productos"
+                                                title="Header productos"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureProductsBlock === 'header' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Header</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectProductsBlockFromCanvas('cards')
+                                                }}
+                                                className={`absolute left-6 right-6 bottom-6 h-[38%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureProductsBlock === 'cards' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar cards de productos"
+                                                title="Cards productos"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureProductsBlock === 'cards' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Cards</span>
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )
+                        }
+
+                        if (sectionId === 'frameworks') {
+                            return (
+                                <div
+                                    key={`preview-${sectionId}`}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => selectFrameworksBlockFromCanvas('section')}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault()
+                                            selectFrameworksBlockFromCanvas('section')
+                                        }
+                                    }}
+                                    className={`w-full text-left relative border-b border-slate-200 transition-all ${isSelected ? 'ring-2 ring-inset ring-brand-primary/20' : ''} ${isVisible ? 'opacity-100' : 'opacity-70'}`}
+                                    style={{ backgroundColor: canvasBg }}
+                                >
+                                    <div className="absolute inset-0 pointer-events-none" style={{ background: isVisible ? 'linear-gradient(180deg, rgba(255,255,255,0.76), rgba(255,255,255,0.88))' : 'linear-gradient(180deg, rgba(248,250,252,0.92), rgba(248,250,252,0.96))' }} />
+
+                                    <div className="absolute top-4 right-4 z-10 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
+                                        {([
+                                            { value: 'header', label: 'Header' },
+                                            { value: 'items', label: 'Items' },
+                                        ] as const).map((opt) => {
+                                            const active = isSelected && structureFrameworksBlock === opt.value
+                                            return (
+                                                <button
+                                                    key={`frameworks-pill-${opt.value}`}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        selectFrameworksBlockFromCanvas(opt.value)
+                                                    }}
+                                                    className={`h-8 px-2 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-colors ${active ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-900'}`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+
+                                    <div className="relative p-8 md:p-12">
+                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
+                                                    <Icon className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">#{String(index + 1).padStart(2, '0')}</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{meta.label}</span>
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${isVisible ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                                                            {isVisible ? 'Visible' : 'Oculta'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2">{getStructureSectionHeadline(sectionId) || meta.label}</div>
+                                                    <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="shrink-0 flex flex-col items-start md:items-end gap-2">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{meta.anchor}</div>
+                                                <div className="flex items-center gap-1">
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].desktop ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>D</span>
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].tablet ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>T</span>
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].mobile ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>M</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {homeDraft.frameworksSection.items.slice(0, 4).map((item, itemIndex) => (
+                                                <div key={`frameworks-item-preview-${itemIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4">
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.organization || 'ORG'}</div>
+                                                    <div className="text-sm font-bold text-slate-900 mt-2 line-clamp-1">{item.name || `Framework ${itemIndex + 1}`}</div>
+                                                    <div className="h-2 rounded bg-slate-100 w-full mt-3" />
+                                                    <div className="h-2 rounded bg-slate-100 w-5/6 mt-2" />
+                                                </div>
+                                            ))}
+                                            {homeDraft.frameworksSection.items.length === 0 && (
+                                                <div className="md:col-span-2 rounded-xl border border-dashed border-slate-300 bg-white/80 p-4 text-xs text-slate-500">
+                                                    No hay items de frameworks en el CMS.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {isVisible && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectFrameworksBlockFromCanvas('header')
+                                                }}
+                                                className={`absolute left-6 right-6 top-14 h-[34%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureFrameworksBlock === 'header' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar header de frameworks"
+                                                title="Header frameworks"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureFrameworksBlock === 'header' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Header</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectFrameworksBlockFromCanvas('items')
+                                                }}
+                                                className={`absolute left-6 right-6 bottom-6 h-[40%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureFrameworksBlock === 'items' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar items de frameworks"
+                                                title="Items frameworks"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureFrameworksBlock === 'items' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Items</span>
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )
+                        }
+
+                        if (sectionId === 'contact') {
+                            return (
+                                <div
+                                    key={`preview-${sectionId}`}
+                                    role="button"
+                                    tabIndex={0}
+                                    onClick={() => selectContactBlockFromCanvas('section')}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault()
+                                            selectContactBlockFromCanvas('section')
+                                        }
+                                    }}
+                                    className={`w-full text-left relative border-b border-slate-200 transition-all ${isSelected ? 'ring-2 ring-inset ring-brand-primary/20' : ''} ${isVisible ? 'opacity-100' : 'opacity-70'}`}
+                                    style={{ backgroundColor: canvasBg }}
+                                >
+                                    <div className="absolute inset-0 pointer-events-none" style={{ background: isVisible ? 'linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.90))' : 'linear-gradient(180deg, rgba(248,250,252,0.92), rgba(248,250,252,0.96))' }} />
+
+                                    <div className="absolute top-4 right-4 z-10 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
+                                        {([
+                                            { value: 'header', label: 'Header' },
+                                            { value: 'channels', label: 'Canales' },
+                                            { value: 'form', label: 'Form' },
+                                        ] as const).map((opt) => {
+                                            const active = isSelected && structureContactBlock === opt.value
+                                            return (
+                                                <button
+                                                    key={`contact-pill-${opt.value}`}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        selectContactBlockFromCanvas(opt.value)
+                                                    }}
+                                                    className={`h-8 px-2 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-colors ${active ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-900'}`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+
+                                    <div className="relative p-8 md:p-12">
+                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
+                                                    <Icon className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">#{String(index + 1).padStart(2, '0')}</span>
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{meta.label}</span>
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${isVisible ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                                                            {isVisible ? 'Visible' : 'Oculta'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2">{getStructureSectionHeadline(sectionId) || meta.label}</div>
+                                                    <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="shrink-0 flex flex-col items-start md:items-end gap-2">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{meta.anchor}</div>
+                                                <div className="flex items-center gap-1">
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].desktop ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>D</span>
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].tablet ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>T</span>
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].mobile ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>M</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_0.9fr] gap-5">
+                                            <div className="rounded-2xl border border-slate-200 bg-white/90 p-5 space-y-4">
+                                                <div className="h-4 rounded bg-slate-200 w-3/4" />
+                                                {[
+                                                    homeDraft.contactSection.labels.officialChannel,
+                                                    homeDraft.contactSection.labels.hubHq,
+                                                    homeDraft.contactSection.labels.corporateNetwork,
+                                                    homeDraft.contactSection.labels.linkedinProtocol,
+                                                ].map((label, labelIndex) => (
+                                                    <div key={`contact-channel-preview-${labelIndex}`} className="rounded-xl border border-slate-200 bg-white p-3">
+                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 line-clamp-1">{label || `Label ${labelIndex + 1}`}</div>
+                                                        <div className="h-2 rounded bg-slate-100 w-2/3 mt-2" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="rounded-2xl border border-slate-200 p-4 bg-white/90 space-y-3">
+                                                <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
+                                                <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
+                                                <div className="h-24 rounded-xl bg-slate-100 border border-slate-200" />
+                                                <div className="h-10 rounded-xl bg-white border border-slate-200" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {isVisible && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectContactBlockFromCanvas('header')
+                                                }}
+                                                className={`absolute left-6 right-6 top-14 h-[26%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureContactBlock === 'header' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar header de contacto"
+                                                title="Header contacto"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureContactBlock === 'header' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Header</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectContactBlockFromCanvas('channels')
+                                                }}
+                                                className={`absolute left-6 bottom-6 w-[52%] h-[46%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureContactBlock === 'channels' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar canales de contacto"
+                                                title="Canales contacto"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureContactBlock === 'channels' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Canales</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    selectContactBlockFromCanvas('form')
+                                                }}
+                                                className={`absolute right-6 bottom-6 w-[40%] h-[46%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureContactBlock === 'form' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label="Seleccionar formulario de contacto"
+                                                title="Formulario contacto"
+                                            >
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureContactBlock === 'form' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Form</span>
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            )
+                        }
+
+                        return (
+                            <button
+                                key={`preview-${sectionId}`}
+                                type="button"
+                                onClick={() => selectSectionFromCanvas(sectionId)}
+                                className={`w-full text-left relative border-b border-slate-200 transition-all ${isSelected ? 'ring-2 ring-inset ring-brand-primary/20' : ''} ${isVisible ? 'opacity-100' : 'opacity-70'}`}
+                                style={{ backgroundColor: canvasBg }}
+                            >
+                                {(() => {
+                                    const fallbackSectionId = sectionId as HomeSectionId
+                                    const fallbackVisibility = structureSectionVisibility[fallbackSectionId]
+                                    return (
+                                        <>
+                                <div className="absolute inset-0 pointer-events-none" style={{ background: isVisible ? 'linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.88))' : 'linear-gradient(180deg, rgba(248,250,252,0.92), rgba(248,250,252,0.96))' }} />
+                                <div className="relative p-8 md:p-12">
+                                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
+                                                <Icon className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">#{String(index + 1).padStart(2, '0')}</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{meta.label}</span>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${isVisible ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                                                        {isVisible ? 'Visible' : 'Oculta'}
+                                                    </span>
+                                                </div>
+                                                <div className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2">{getStructureSectionHeadline(sectionId) || meta.label}</div>
+                                                <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="shrink-0 flex flex-col items-start md:items-end gap-2">
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{meta.anchor}</div>
+                                            <div className="flex items-center gap-1">
+                                                <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${fallbackVisibility.desktop ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>D</span>
+                                                <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${fallbackVisibility.tablet ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>T</span>
+                                                <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${fallbackVisibility.mobile ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>M</span>
+                                            </div>
+                                            {!isViewportVisible && !isGloballyHidden && (
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-1">
+                                                    Oculta en {previewViewport}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                        </>
+                                    )
+                                })()}
+                            </button>
+                        )
+                    })}
                 </div>
             </div>
         </div>
@@ -1435,27 +2436,887 @@ export function ManageHome() {
                         )}
 
                         {(tab === 'structure' || tab === 'sections') && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                {[
-                                    { title: 'Servicios', icon: Briefcase, desc: 'Configura la cabecera de servicios.' },
-                                    { title: 'Productos', icon: Package, desc: 'Configura la cabecera de la tienda.' }
-                                ].map(s => (
-                                    <div key={s.title} className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm group hover:border-brand-primary transition-all">
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-brand-primary group-hover:text-white transition-all">
-                                                <s.icon className="w-6 h-6" />
-                                            </div>
+                            <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-6 items-start">
+                                <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+                                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                                             <div>
-                                                <h3 className="font-black text-slate-900 text-xl">{s.title}</h3>
-                                                <p className="text-sm text-slate-400">{s.desc}</p>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Visual CMS v1 · Canvas de Secciones</div>
+                                                <h3 className="text-lg font-black tracking-tight text-slate-900 mt-1">Arrastra para reordenar y haz clic para editar</h3>
+                                                <p className="text-xs text-slate-500 mt-1">Controla el orden y la visibilidad del Home desde una sola vista. El panel derecho funciona como inspector contextual.</p>
+                                            </div>
+                                            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1">
+                                                {([
+                                                    { value: 'desktop', icon: Monitor, label: 'Desktop' },
+                                                    { value: 'tablet', icon: Tablet, label: 'Tablet' },
+                                                    { value: 'mobile', icon: Smartphone, label: 'Mobile' },
+                                                ] as const).map((opt) => {
+                                                    const Icon = opt.icon
+                                                    const active = previewViewport === opt.value
+                                                    return (
+                                                        <button
+                                                            key={opt.value}
+                                                            type="button"
+                                                            title={`Canvas ${opt.label}`}
+                                                            onClick={() => setPreviewViewport(opt.value)}
+                                                            className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${active ? 'bg-blue-50 text-brand-primary border border-blue-100' : 'text-slate-500 hover:text-slate-800'}`}
+                                                        >
+                                                            <Icon className="w-4 h-4" />
+                                                        </button>
+                                                    )
+                                                })}
                                             </div>
                                         </div>
-                                        <button onClick={() => navigate(`/admin/${s.title.toLowerCase()}`)} className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-900 hover:text-white transition-all">
-                                            Abrir Editor Específico
-                                            <ArrowRight className="w-4 h-4" />
-                                        </button>
                                     </div>
-                                ))}
+
+                                    <div className="p-5">
+                                        <div className={`rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-3 space-y-3 ${previewViewport === 'mobile' ? 'max-w-md mx-auto' : previewViewport === 'tablet' ? 'max-w-3xl mx-auto' : ''}`}>
+                                            {structureSectionOrder.map((sectionId, index) => {
+                                                const meta = HOME_SECTION_META[sectionId]
+                                                const Icon = meta.icon
+                                                const isSelected = structureSelectedSection === sectionId
+                                                const isHidden = hiddenSectionSet.has(sectionId)
+                                                const isDragging = structureDraggedSection === sectionId
+                                                const headline = getStructureSectionHeadline(sectionId)
+                                                const subline = getStructureSectionSubline(sectionId)
+                                                return (
+                                                    <div
+                                                        key={sectionId}
+                                                        draggable
+                                                        onDragStart={() => {
+                                                            setStructureDraggedSection(sectionId)
+                                                            selectSectionFromCanvas(sectionId)
+                                                        }}
+                                                        onDragEnd={() => setStructureDraggedSection(null)}
+                                                        onDragOver={(e) => {
+                                                            e.preventDefault()
+                                                            if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+                                                        }}
+                                                        onDrop={(e) => {
+                                                            e.preventDefault()
+                                                            if (structureDraggedSection) reorderStructureSections(structureDraggedSection, sectionId)
+                                                            setStructureDraggedSection(null)
+                                                        }}
+                                                        onClick={() => selectSectionFromCanvas(sectionId)}
+                                                        className={`group cursor-pointer rounded-2xl border p-3 bg-white transition-all ${isSelected ? 'border-brand-primary shadow-md shadow-blue-100' : 'border-slate-200 hover:border-slate-300'} ${isDragging ? 'opacity-50' : ''}`}
+                                                    >
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="pt-1 text-slate-300 group-hover:text-slate-500">
+                                                                <GripVertical className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
+                                                                <Icon className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">#{String(index + 1).padStart(2, '0')}</span>
+                                                                    <span className="text-xs font-black uppercase tracking-widest text-slate-700">{meta.label}</span>
+                                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-black uppercase tracking-widest ${isHidden ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+                                                                        {isHidden ? 'Oculta' : 'Visible'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className={`mt-2 rounded-xl border p-3 ${isHidden ? 'border-slate-200 bg-slate-50/80 opacity-70' : 'border-slate-200 bg-white'}`}>
+                                                                    <div className="text-sm font-bold text-slate-900 line-clamp-2">{headline || `Sección ${meta.shortLabel}`}</div>
+                                                                    <div className="text-xs text-slate-500 mt-1 line-clamp-2">{subline || meta.description}</div>
+                                                                    <div className="mt-2 flex items-center justify-between gap-2">
+                                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{meta.anchor}</div>
+                                                                        <div className="flex items-center gap-1">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation()
+                                                                                    toggleStructureSectionVisibility(sectionId)
+                                                                                }}
+                                                                                className={`h-8 px-2 rounded-lg border text-[10px] font-black uppercase tracking-widest ${isHidden ? 'border-amber-200 text-amber-700 bg-amber-50' : 'border-slate-200 text-slate-500 hover:text-slate-900'}`}
+                                                                            >
+                                                                                {isHidden ? 'Mostrar' : 'Ocultar'}
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation()
+                                                                                    openSectionEditorFromStructure(sectionId)
+                                                                                }}
+                                                                                className="h-8 px-2 rounded-lg border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-primary"
+                                                                            >
+                                                                                Editar
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden xl:sticky xl:top-6">
+                                    <div className="px-6 py-5 border-b border-slate-100 bg-white">
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Inspector</div>
+                                        <h3 className="text-lg font-black tracking-tight text-slate-900 mt-1">Sección seleccionada</h3>
+                                        <p className="text-xs text-slate-500 mt-1">Edita contenido clave, visibilidad y orden sin salir del canvas.</p>
+                                    </div>
+
+                                    <div className="p-6 space-y-5">
+                                        {(() => {
+                                            const selected = structureSelectedSection
+                                            const meta = HOME_SECTION_META[selected]
+                                            const Icon = meta.icon
+                                            const selectedIndex = structureSectionOrder.indexOf(selected)
+                                            const isHidden = hiddenSectionSet.has(selected)
+                                            const canMoveUp = selectedIndex > 0
+                                            const canMoveDown = selectedIndex < structureSectionOrder.length - 1
+                                            const selectedBlockKey = getSelectedStructureBlockKey(selected)
+
+                                            return (
+                                                <>
+                                                    <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
+                                                                <Icon className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <div className="text-sm font-black text-slate-900">{meta.label}</div>
+                                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Posición #{selectedIndex + 1}</span>
+                                                                </div>
+                                                                <div className="text-xs text-slate-500 mt-1">{meta.description}</div>
+                                                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                                    <span className="text-[10px] px-2 py-1 rounded-full border border-slate-200 bg-white font-black uppercase tracking-widest text-slate-500">{meta.anchor}</span>
+                                                                    <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${isHidden ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
+                                                                        {isHidden ? 'Oculta' : 'Visible'}
+                                                                    </span>
+                                                                    {getActiveStructureBlockLabel(selected) && (
+                                                                        <span className="text-[10px] px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary font-black uppercase tracking-widest">
+                                                                            Bloque: {getActiveStructureBlockLabel(selected)}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleStructureSectionVisibility(selected)}
+                                                            className={`h-11 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2 ${isHidden ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}
+                                                        >
+                                                            {isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                                            {isHidden ? 'Mostrar sección' : 'Ocultar sección'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => openSectionEditorFromStructure(selected)}
+                                                            className="h-11 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-brand-primary flex items-center justify-center gap-2"
+                                                        >
+                                                            <ArrowRight className="w-4 h-4" />
+                                                            Abrir editor completo
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => moveStructureSection(selected, -1)}
+                                                            disabled={!canMoveUp}
+                                                            className="h-11 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                        >
+                                                            <ArrowUp className="w-4 h-4" />
+                                                            Subir
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => moveStructureSection(selected, 1)}
+                                                            disabled={!canMoveDown}
+                                                            className="h-11 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                        >
+                                                            <ArrowDown className="w-4 h-4" />
+                                                            Bajar
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="rounded-2xl border border-slate-200 p-4 bg-white">
+                                                        <SegmentedField
+                                                            label="Inspector"
+                                                            value={structureInspectorTab}
+                                                            onChange={setStructureInspectorTab}
+                                                            options={[
+                                                                { value: 'content', label: 'Contenido', icon: Layout },
+                                                                { value: 'behavior', label: 'Comport.', icon: Eye },
+                                                                { value: 'style', label: 'Estilo', icon: Palette },
+                                                            ]}
+                                                        />
+                                                    </div>
+
+                                                    {structureInspectorTab === 'content' && (
+                                                        <div className="rounded-2xl border border-slate-200 p-4 space-y-4">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <div>
+                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Quick Edit</div>
+                                                                    <div className="text-sm font-bold text-slate-900 mt-1">Contenido esencial</div>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setStructureInspectorTab('style')}
+                                                                    className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-primary"
+                                                                >
+                                                                    Ir a estilo
+                                                                </button>
+                                                            </div>
+
+                                                            {selected === 'hero' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque activo · Hero"
+                                                                        value={structureHeroBlock}
+                                                                        onChange={setStructureHeroBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'headline', label: 'Titular', icon: Sparkles },
+                                                                            { value: 'ctas', label: 'CTAs', icon: ArrowRight },
+                                                                            { value: 'stats', label: 'Stats', icon: ShieldCheck },
+                                                                        ]}
+                                                                    />
+                                                                    <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                        Selecciona un hotspot en el preview o cambia aquí el bloque para editar solo ese fragmento del Hero.
+                                                                    </div>
+
+                                                                    {(structureHeroBlock === 'section' || structureHeroBlock === 'headline') && (
+                                                                        <div className="space-y-4">
+                                                                            <Field label="Highlight"><Input value={heroDraft.highlight} onChange={(e) => setHeroDraft((d) => ({ ...d, highlight: e.target.value }))} /></Field>
+                                                                            <Field label="Título"><Textarea rows={3} value={heroDraft.title} onChange={(e) => setHeroDraft((d) => ({ ...d, title: e.target.value }))} /></Field>
+                                                                            <Field label="Subtítulo"><Textarea rows={3} value={heroDraft.subtitle} onChange={(e) => setHeroDraft((d) => ({ ...d, subtitle: e.target.value }))} /></Field>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(structureHeroBlock === 'section' || structureHeroBlock === 'ctas') && (
+                                                                        <div className="grid grid-cols-1 gap-4">
+                                                                            <Field label="Botón principal"><Input value={heroDraft.cta} onChange={(e) => setHeroDraft((d) => ({ ...d, cta: e.target.value }))} /></Field>
+                                                                            <Field label="Botón secundario"><Input value={heroDraft.secondaryCta} onChange={(e) => setHeroDraft((d) => ({ ...d, secondaryCta: e.target.value }))} /></Field>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {structureHeroBlock === 'stats' && (
+                                                                        <div className="space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stats Panel</div>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={addHeroStat}
+                                                                                    className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-brand-primary flex items-center gap-2"
+                                                                                >
+                                                                                    <Plus className="w-3.5 h-3.5" />
+                                                                                    Agregar
+                                                                                </button>
+                                                                            </div>
+                                                                            {homeDraft.hero.stats.map((stat, statIndex) => (
+                                                                                <div key={`hero-stat-quick-${statIndex}`} className="rounded-xl border border-slate-200 p-3 bg-white space-y-2">
+                                                                                    <div className="flex items-center justify-between gap-2">
+                                                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stat #{statIndex + 1}</div>
+                                                                                        {homeDraft.hero.stats.length > 1 && (
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={() => removeHeroStat(statIndex)}
+                                                                                                className="h-7 w-7 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 flex items-center justify-center"
+                                                                                                title="Eliminar stat"
+                                                                                            >
+                                                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                                                            </button>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <Field label="Label"><Input value={stat.label} onChange={(e) => setHeroStat(statIndex, 'label', e.target.value)} /></Field>
+                                                                                    <Field label="Valor"><Input value={stat.value} onChange={(e) => setHeroStat(statIndex, 'value', e.target.value)} /></Field>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {selected === 'services' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque activo · Services"
+                                                                        value={structureServicesBlock}
+                                                                        onChange={setStructureServicesBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'header', label: 'Header', icon: Sparkles },
+                                                                            { value: 'grid', label: 'Grid', icon: Briefcase },
+                                                                        ]}
+                                                                    />
+                                                                    <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                        Selecciona `Header` o `Grid` desde el preview para editar esa parte. Las tarjetas se administran desde el módulo `Services`.
+                                                                    </div>
+
+                                                                    {(structureServicesBlock === 'section' || structureServicesBlock === 'header') && (
+                                                                        <div className="space-y-4">
+                                                                            <Field label="Eyebrow"><Input value={homeDraft.servicesSection.eyebrow} onChange={(e) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, eyebrow: e.target.value } })} /></Field>
+                                                                            <Field label="Título"><Textarea rows={2} value={homeDraft.servicesSection.title} onChange={(e) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, title: e.target.value } })} /></Field>
+                                                                            <Field label="Subtítulo"><Textarea rows={3} value={homeDraft.servicesSection.subtitle} onChange={(e) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, subtitle: e.target.value } })} /></Field>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(structureServicesBlock === 'section' || structureServicesBlock === 'grid') && (
+                                                                        <div className="space-y-4">
+                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                                <Field label="Número decorativo"><Input value={homeDraft.servicesSection.sectionNumber} onChange={(e) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, sectionNumber: e.target.value } })} /></Field>
+                                                                                <Field label="Servicios publicados"><Input value={String(state.services.length)} onChange={() => { }} disabled /></Field>
+                                                                            </div>
+                                                                            <div className="rounded-xl border border-slate-200 bg-white p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Tarjetas del grid</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Contenido de tarjetas, copy y orden se administra en el módulo de servicios.</div>
+                                                                                </div>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => navigate('/admin/services')}
+                                                                                    className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-brand-primary flex items-center justify-center gap-2"
+                                                                                >
+                                                                                    <ArrowRight className="w-4 h-4" />
+                                                                                    Abrir Services
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {structureServicesBlock === 'section' && (
+                                                                        <ColorField label="Fondo (quick)" value={homeDraft.servicesSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundColor: v } } })} />
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {selected === 'products' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque activo · Products"
+                                                                        value={structureProductsBlock}
+                                                                        onChange={setStructureProductsBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'header', label: 'Header', icon: Sparkles },
+                                                                            { value: 'cards', label: 'Cards', icon: Package },
+                                                                        ]}
+                                                                    />
+                                                                    <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                        Selecciona `Header` o `Cards` desde el preview. Las fichas de producto se gestionan en el módulo `Products`.
+                                                                    </div>
+
+                                                                    {(structureProductsBlock === 'section' || structureProductsBlock === 'header') && (
+                                                                        <div className="space-y-4">
+                                                                            <Field label="Eyebrow"><Input value={homeDraft.productsSection.eyebrow} onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, eyebrow: e.target.value } })} /></Field>
+                                                                            <Field label="Título"><Textarea rows={2} value={homeDraft.productsSection.title} onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, title: e.target.value } })} /></Field>
+                                                                            <Field label="Subtítulo"><Textarea rows={3} value={homeDraft.productsSection.subtitle} onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, subtitle: e.target.value } })} /></Field>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(structureProductsBlock === 'section' || structureProductsBlock === 'cards') && (
+                                                                        <div className="space-y-4">
+                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                                <Field label="Label Precio"><Input value={homeDraft.productsSection.availabilityPricingLabel} onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, availabilityPricingLabel: e.target.value } })} /></Field>
+                                                                                <Field label="Label CTA Deploy"><Input value={homeDraft.productsSection.deploySolutionLabel} onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, deploySolutionLabel: e.target.value } })} /></Field>
+                                                                                <Field label="Productos publicados"><Input value={String(state.products.length)} onChange={() => { }} disabled /></Field>
+                                                                            </div>
+                                                                            <div className="rounded-xl border border-slate-200 bg-white p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cards de producto</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">El contenido de cada card (título, precio, CTA, descripción) se edita en el módulo de productos.</div>
+                                                                                </div>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => navigate('/admin/products')}
+                                                                                    className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-brand-primary flex items-center justify-center gap-2"
+                                                                                >
+                                                                                    <ArrowRight className="w-4 h-4" />
+                                                                                    Abrir Products
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {structureProductsBlock === 'section' && (
+                                                                        <ColorField label="Fondo (quick)" value={homeDraft.productsSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundColor: v } } })} />
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {selected === 'frameworks' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque activo · Frameworks"
+                                                                        value={structureFrameworksBlock}
+                                                                        onChange={setStructureFrameworksBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'header', label: 'Header', icon: Sparkles },
+                                                                            { value: 'items', label: 'Items', icon: ShieldCheck },
+                                                                        ]}
+                                                                    />
+                                                                    <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                        Selecciona `Header` o `Items` desde el preview. Aquí editas contenido; estilos de fondo/overlay están en la pestaña `Estilo`.
+                                                                    </div>
+
+                                                                    {(structureFrameworksBlock === 'section' || structureFrameworksBlock === 'header') && (
+                                                                        <div className="space-y-4">
+                                                                            <Field label="Eyebrow"><Input value={homeDraft.frameworksSection.eyebrow} onChange={(e) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, eyebrow: e.target.value } })} /></Field>
+                                                                            <Field label="Título"><Textarea rows={2} value={homeDraft.frameworksSection.title} onChange={(e) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, title: e.target.value } })} /></Field>
+                                                                            <Field label="Subtítulo"><Textarea rows={3} value={homeDraft.frameworksSection.subtitle} onChange={(e) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, subtitle: e.target.value } })} /></Field>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(structureFrameworksBlock === 'section' || structureFrameworksBlock === 'items') && (
+                                                                        <div className="space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Items / Compliance blocks</div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 border border-slate-200 rounded-full px-2 py-1 bg-white">
+                                                                                    {homeDraft.frameworksSection.items.length} items
+                                                                                </div>
+                                                                            </div>
+                                                                            {homeDraft.frameworksSection.items.map((item, itemIndex) => (
+                                                                                <div key={`frameworks-quick-${itemIndex}`} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+                                                                                    <Field label="Organización">
+                                                                                        <Input
+                                                                                            value={item.organization}
+                                                                                            onChange={(e) => {
+                                                                                                const items = [...homeDraft.frameworksSection.items]
+                                                                                                items[itemIndex] = { ...items[itemIndex], organization: e.target.value }
+                                                                                                setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, items } })
+                                                                                            }}
+                                                                                        />
+                                                                                    </Field>
+                                                                                    <Field label="Nombre">
+                                                                                        <Input
+                                                                                            value={item.name}
+                                                                                            onChange={(e) => {
+                                                                                                const items = [...homeDraft.frameworksSection.items]
+                                                                                                items[itemIndex] = { ...items[itemIndex], name: e.target.value }
+                                                                                                setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, items } })
+                                                                                            }}
+                                                                                        />
+                                                                                    </Field>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {selected === 'contact' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque activo · Contact"
+                                                                        value={structureContactBlock}
+                                                                        onChange={setStructureContactBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'header', label: 'Header', icon: Sparkles },
+                                                                            { value: 'channels', label: 'Canales', icon: Mail },
+                                                                            { value: 'form', label: 'Form', icon: Braces },
+                                                                        ]}
+                                                                    />
+                                                                    <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                        Selecciona `Header`, `Canales` o `Form` desde el preview. El formulario todavía no expone copy editable en este schema (solo estilos).
+                                                                    </div>
+
+                                                                    {(structureContactBlock === 'section' || structureContactBlock === 'header') && (
+                                                                        <div className="space-y-4">
+                                                                            <Field label="Eyebrow"><Input value={homeDraft.contactSection.eyebrow} onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, eyebrow: e.target.value } })} /></Field>
+                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                                <Field label="Título Prefix"><Input value={homeDraft.contactSection.titlePrefix} onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, titlePrefix: e.target.value } })} /></Field>
+                                                                                <Field label="Título Accent"><Input value={homeDraft.contactSection.titleAccent} onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, titleAccent: e.target.value } })} /></Field>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(structureContactBlock === 'section' || structureContactBlock === 'channels') && (
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                            <Field label="Canal oficial"><Input value={homeDraft.contactSection.labels.officialChannel} onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, labels: { ...homeDraft.contactSection.labels, officialChannel: e.target.value } } })} /></Field>
+                                                                            <Field label="Hub / HQ"><Input value={homeDraft.contactSection.labels.hubHq} onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, labels: { ...homeDraft.contactSection.labels, hubHq: e.target.value } } })} /></Field>
+                                                                            <Field label="Red corporativa"><Input value={homeDraft.contactSection.labels.corporateNetwork} onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, labels: { ...homeDraft.contactSection.labels, corporateNetwork: e.target.value } } })} /></Field>
+                                                                            <Field label="LinkedIn protocol"><Input value={homeDraft.contactSection.labels.linkedinProtocol} onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, labels: { ...homeDraft.contactSection.labels, linkedinProtocol: e.target.value } } })} /></Field>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {structureContactBlock === 'form' && (
+                                                                        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                                                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Formulario (contenido)</div>
+                                                                            <div className="text-xs text-slate-500">
+                                                                                El formulario no tiene textos configurables por CMS en este schema. En la pestaña `Estilo` sí puedes editar el panel del formulario.
+                                                                            </div>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setStructureInspectorTab('style')}
+                                                                                className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-brand-primary flex items-center gap-2"
+                                                                            >
+                                                                                <Palette className="w-4 h-4" />
+                                                                                Ir a estilo del formulario
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {structureInspectorTab === 'behavior' && (
+                                                        <div className="rounded-2xl border border-slate-200 p-4 space-y-4">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <div>
+                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Comportamiento</div>
+                                                                    <div className="text-sm font-bold text-slate-900 mt-1">Visibilidad y responsive</div>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setStructureInspectorTab('content')}
+                                                                    className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-primary"
+                                                                >
+                                                                    Contenido
+                                                                </button>
+                                                            </div>
+
+                                                            <div className={`rounded-xl border p-3 ${isHidden ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}>
+                                                                <div className="flex items-center justify-between gap-3">
+                                                                    <div>
+                                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Estado global</div>
+                                                                        <div className="text-sm font-bold text-slate-900 mt-1">{isHidden ? 'Sección oculta globalmente' : 'Sección visible globalmente'}</div>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => toggleStructureSectionVisibility(selected)}
+                                                                        className={`h-10 px-3 rounded-xl border text-[10px] font-black uppercase tracking-widest ${isHidden ? 'border-emerald-200 bg-white text-emerald-700' : 'border-amber-200 bg-white text-amber-700'}`}
+                                                                    >
+                                                                        {isHidden ? 'Mostrar' : 'Ocultar'}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="rounded-xl border border-slate-200 p-3 bg-white space-y-3">
+                                                                <div className="flex items-center justify-between gap-3">
+                                                                    <div>
+                                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Visibilidad por dispositivo</div>
+                                                                        <div className="text-xs text-slate-500 mt-1">Estos switches se guardan en el layout y afectan el render público.</div>
+                                                                    </div>
+                                                                    <div className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${isSectionVisibleInPreviewViewport(selected, previewViewport) ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                                                                        {isSectionVisibleInPreviewViewport(selected, previewViewport) ? `Visible en ${previewViewport}` : `Oculta en ${previewViewport}`}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                                    {HOME_RESPONSIVE_VIEWPORTS.map((viewport) => {
+                                                                        const isOn = structureSectionVisibility[selected][viewport]
+                                                                        const viewportLabel = viewport === 'desktop' ? 'Desktop' : viewport === 'tablet' ? 'Tablet' : 'Mobile'
+                                                                        const viewportShort = viewport === 'desktop' ? 'D' : viewport === 'tablet' ? 'T' : 'M'
+                                                                        const isCurrentViewport = previewViewport === viewport
+                                                                        return (
+                                                                            <button
+                                                                                key={`${selected}-${viewport}`}
+                                                                                type="button"
+                                                                                onClick={() => setSectionViewportVisibility(selected, viewport, !isOn)}
+                                                                                className={`rounded-xl border p-3 text-left transition-colors ${isOn ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'} ${isCurrentViewport ? 'ring-2 ring-brand-primary/15' : ''}`}
+                                                                            >
+                                                                                <div className="flex items-center justify-between gap-2">
+                                                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{viewportShort}</span>
+                                                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${isOn ? 'border-emerald-200 bg-white text-emerald-700' : 'border-slate-200 bg-white text-slate-400'}`}>{isOn ? 'ON' : 'OFF'}</span>
+                                                                                </div>
+                                                                                <div className="text-xs font-bold text-slate-900 mt-2">{viewportLabel}</div>
+                                                                                <div className="text-[11px] text-slate-500 mt-0.5">{isCurrentViewport ? 'Viewport actual del preview' : 'Toggle independiente'}</div>
+                                                                            </button>
+                                                                        )
+                                                                    })}
+                                                                </div>
+
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setSectionAllViewportVisibility(selected, true)}
+                                                                        className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                                                                    >
+                                                                        Mostrar en todos
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setSectionViewportVisibility(selected, 'mobile', false)}
+                                                                        className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                                                                    >
+                                                                        Ocultar solo mobile
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            {selectedBlockKey && (
+                                                                <div className="rounded-xl border border-slate-200 p-3 bg-white space-y-3">
+                                                                    <div className="flex items-center justify-between gap-3">
+                                                                        <div>
+                                                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bloque activo · Responsive</div>
+                                                                            <div className="text-sm font-bold text-slate-900 mt-1">{getActiveStructureBlockLabel(selected)}</div>
+                                                                        </div>
+                                                                        <div className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${isSectionBlockVisibleInPreviewViewport(selected, selectedBlockKey, previewViewport) ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+                                                                            {isSectionBlockVisibleInPreviewViewport(selected, selectedBlockKey, previewViewport) ? `Visible en ${previewViewport}` : `Oculto en ${previewViewport}`}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                                        {HOME_RESPONSIVE_VIEWPORTS.map((viewport) => {
+                                                                            const isOn = isSectionBlockVisibleInPreviewViewport(selected, selectedBlockKey, viewport)
+                                                                            const viewportLabel = viewport === 'desktop' ? 'Desktop' : viewport === 'tablet' ? 'Tablet' : 'Mobile'
+                                                                            const viewportShort = viewport === 'desktop' ? 'D' : viewport === 'tablet' ? 'T' : 'M'
+                                                                            const isCurrentViewport = previewViewport === viewport
+                                                                            return (
+                                                                                <button
+                                                                                    key={`${selected}-${selectedBlockKey}-${viewport}`}
+                                                                                    type="button"
+                                                                                    onClick={() => setSectionBlockViewportVisibility(selected, selectedBlockKey, viewport, !isOn)}
+                                                                                    className={`rounded-xl border p-3 text-left transition-colors ${isOn ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'} ${isCurrentViewport ? 'ring-2 ring-brand-primary/15' : ''}`}
+                                                                                >
+                                                                                    <div className="flex items-center justify-between gap-2">
+                                                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{viewportShort}</span>
+                                                                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${isOn ? 'border-emerald-200 bg-white text-emerald-700' : 'border-slate-200 bg-white text-slate-400'}`}>{isOn ? 'ON' : 'OFF'}</span>
+                                                                                    </div>
+                                                                                    <div className="text-xs font-bold text-slate-900 mt-2">{viewportLabel}</div>
+                                                                                    <div className="text-[11px] text-slate-500 mt-0.5">{isCurrentViewport ? 'Viewport actual del preview' : 'Toggle independiente'}</div>
+                                                                                </button>
+                                                                            )
+                                                                        })}
+                                                                    </div>
+
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setSectionBlockAllViewportVisibility(selected, selectedBlockKey, true)}
+                                                                            className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                                                                        >
+                                                                            Mostrar bloque en todos
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setSectionBlockViewportVisibility(selected, selectedBlockKey, 'mobile', false)}
+                                                                            className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                                                                        >
+                                                                            Ocultar bloque en mobile
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {structureInspectorTab === 'style' && (
+                                                        <div className="rounded-2xl border border-slate-200 p-4 space-y-4">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <div>
+                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Style Shortcuts</div>
+                                                                    <div className="text-sm font-bold text-slate-900 mt-1">Ajustes rápidos de apariencia</div>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => openSectionStyleEditorFromStructure(selected)}
+                                                                    className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-primary"
+                                                                >
+                                                                    Abrir editor completo
+                                                                </button>
+                                                            </div>
+
+                                                            {selected === 'hero' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque de estilo · Hero"
+                                                                        value={structureHeroBlock}
+                                                                        onChange={setStructureHeroBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'headline', label: 'Titular', icon: Sparkles },
+                                                                            { value: 'ctas', label: 'CTAs', icon: ArrowRight },
+                                                                            { value: 'stats', label: 'Stats', icon: ShieldCheck },
+                                                                        ]}
+                                                                    />
+
+                                                                    {(structureHeroBlock === 'section' || structureHeroBlock === 'headline') && (
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                            <ColorField label="Color título" value={homeDraft.hero.style.titleColor} onChange={(v) => setHeroStyle('titleColor', v)} />
+                                                                            <ColorField label="Color acento título" value={homeDraft.hero.style.titleAccentColor} onChange={(v) => setHeroStyle('titleAccentColor', v)} />
+                                                                            <ColorField label="Color subtítulo" value={homeDraft.hero.style.subtitleColor} onChange={(v) => setHeroStyle('subtitleColor', v)} />
+                                                                            <ColorField label="Color highlight" value={homeDraft.hero.style.highlightColor} onChange={(v) => setHeroStyle('highlightColor', v)} />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(structureHeroBlock === 'section' || structureHeroBlock === 'ctas') && (
+                                                                        <div className="space-y-4 rounded-xl border border-slate-200 p-3 bg-slate-50">
+                                                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">CTAs (tokens globales rápidos)</div>
+                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                                <ColorField label="Texto botón primario" value={designDraft.buttonPrimaryTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonPrimaryTextColor: v }))} />
+                                                                                <ColorField label="Hover fondo primario" value={designDraft.buttonPrimaryHoverBgColor} onChange={v => setDesignDraft(d => ({ ...d, buttonPrimaryHoverBgColor: v }))} />
+                                                                                <ColorField label="Texto outline" value={designDraft.buttonOutlineTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineTextColor: v }))} />
+                                                                                <ColorField label="Borde outline" value={designDraft.buttonOutlineBorderColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineBorderColor: v }))} />
+                                                                            </div>
+                                                                            <SegmentedField
+                                                                                label="Forma de botón"
+                                                                                value={String(designDraft.buttonStyle || 'sharp') as 'sharp' | 'rounded' | 'pill'}
+                                                                                onChange={(v) => setDesignDraft(d => ({ ...d, buttonStyle: v }))}
+                                                                                options={[
+                                                                                    { value: 'sharp', label: 'Sharp' },
+                                                                                    { value: 'rounded', label: 'Rounded' },
+                                                                                    { value: 'pill', label: 'Pill' },
+                                                                                ]}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(structureHeroBlock === 'section' || structureHeroBlock === 'stats') && (
+                                                                        <div className="space-y-4 rounded-xl border border-slate-200 p-3 bg-slate-50">
+                                                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Panel de Stats</div>
+                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                                <ColorField label="Fondo panel" value={homeDraft.hero.style.rightPanelBackgroundColor} onChange={(v) => setHeroStyle('rightPanelBackgroundColor', v)} />
+                                                                                <ColorField label="Borde panel" value={homeDraft.hero.style.statsPanelBorderColor} onChange={(v) => setHeroStyle('statsPanelBorderColor', v)} />
+                                                                                <ColorField label="Color label stat" value={homeDraft.hero.style.statsLabelColor} onChange={(v) => setHeroStyle('statsLabelColor', v)} />
+                                                                                <ColorField label="Color valor stat" value={homeDraft.hero.style.statsValueColor} onChange={(v) => setHeroStyle('statsValueColor', v)} />
+                                                                                <ColorField label="Divisor stats" value={homeDraft.hero.style.statsDividerColor} onChange={(v) => setHeroStyle('statsDividerColor', v)} />
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {structureHeroBlock === 'section' && (
+                                                                        <div className="space-y-4">
+                                                                            <ColorField label="Fondo Hero" value={homeDraft.hero.style.backgroundColor} onChange={(v) => setHeroStyle('backgroundColor', v)} />
+                                                                            <ColorField label="Overlay Hero" value={homeDraft.hero.style.sectionOverlayColor} onChange={(v) => setHeroStyle('sectionOverlayColor', v)} />
+                                                                            <RangeField label="Opacidad Overlay Hero" value={Number(homeDraft.hero.style.sectionOverlayOpacity || '0.15')} onChange={(v) => setHeroStyle('sectionOverlayOpacity', v.toFixed(2))} />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {selected === 'services' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque de estilo · Services"
+                                                                        value={structureServicesBlock}
+                                                                        onChange={setStructureServicesBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'header', label: 'Header', icon: Sparkles },
+                                                                            { value: 'grid', label: 'Grid', icon: Briefcase },
+                                                                        ]}
+                                                                    />
+                                                                    <ColorField label="Fondo sección" value={homeDraft.servicesSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundColor: v } } })} />
+                                                                    <Field label="Imagen de fondo (URL)"><Input value={homeDraft.servicesSection.style.backgroundImageUrl} onChange={(e) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundImageUrl: e.target.value } } })} /></Field>
+                                                                    {structureServicesBlock !== 'section' && (
+                                                                        <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                            En esta versión `Services` usa estilo compartido a nivel de sección. El siguiente paso es separar estilos de `Header` y `Grid`.
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {selected === 'products' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque de estilo · Products"
+                                                                        value={structureProductsBlock}
+                                                                        onChange={setStructureProductsBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'header', label: 'Header', icon: Sparkles },
+                                                                            { value: 'cards', label: 'Cards', icon: Package },
+                                                                        ]}
+                                                                    />
+                                                                    <ColorField label="Fondo sección" value={homeDraft.productsSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundColor: v } } })} />
+                                                                    <Field label="Imagen de fondo (URL)"><Input value={homeDraft.productsSection.style.backgroundImageUrl} onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundImageUrl: e.target.value } } })} /></Field>
+                                                                    {structureProductsBlock !== 'section' && (
+                                                                        <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                            En esta versión `Products` comparte estilo a nivel de sección. Próxima fase: overrides visuales por `Header` y `Cards`.
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {selected === 'frameworks' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque de estilo · Frameworks"
+                                                                        value={structureFrameworksBlock}
+                                                                        onChange={setStructureFrameworksBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'header', label: 'Header', icon: Sparkles },
+                                                                            { value: 'items', label: 'Items', icon: ShieldCheck },
+                                                                        ]}
+                                                                    />
+                                                                    <ColorField label="Fondo sección" value={homeDraft.frameworksSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, backgroundColor: v } } })} />
+                                                                    <RangeField label="Overlay" value={Number(homeDraft.frameworksSection.style.overlayOpacity || '0.10')} onChange={(v) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, overlayOpacity: v.toFixed(2) } } })} />
+                                                                    <Field label="Imagen de fondo (URL)"><Input value={homeDraft.frameworksSection.style.backgroundImageUrl} onChange={(e) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, backgroundImageUrl: e.target.value } } })} /></Field>
+                                                                    {structureFrameworksBlock !== 'section' && (
+                                                                        <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                            En esta versión `Frameworks` usa estilo compartido a nivel de sección. Próxima fase: overrides separados para `Header` e `Items`.
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            {selected === 'contact' && (
+                                                                <div className="space-y-4">
+                                                                    <SegmentedField
+                                                                        label="Bloque de estilo · Contact"
+                                                                        value={structureContactBlock}
+                                                                        onChange={setStructureContactBlock}
+                                                                        options={[
+                                                                            { value: 'section', label: 'General', icon: Layout },
+                                                                            { value: 'header', label: 'Header', icon: Sparkles },
+                                                                            { value: 'channels', label: 'Canales', icon: Mail },
+                                                                            { value: 'form', label: 'Form', icon: Braces },
+                                                                        ]}
+                                                                    />
+
+                                                                    {(structureContactBlock === 'section' || structureContactBlock === 'header' || structureContactBlock === 'channels') && (
+                                                                        <div className="space-y-4">
+                                                                            <ColorField label="Fondo sección" value={homeDraft.contactSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, backgroundColor: v } } })} />
+                                                                            <Field label="Imagen fondo sección (URL)"><Input value={homeDraft.contactSection.style.backgroundImageUrl} onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, backgroundImageUrl: e.target.value } } })} /></Field>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(structureContactBlock === 'section' || structureContactBlock === 'form') && (
+                                                                        <div className="space-y-4 rounded-xl border border-slate-200 p-3 bg-slate-50">
+                                                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Panel de formulario</div>
+                                                                            <ColorField label="Fondo panel externo" value={homeDraft.contactSection.style.formOuterBackgroundColor} onChange={(v) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, formOuterBackgroundColor: v } } })} />
+                                                                            <Field label="Imagen panel externo (URL)"><Input value={homeDraft.contactSection.style.formOuterBackgroundImageUrl} onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, formOuterBackgroundImageUrl: e.target.value } } })} /></Field>
+                                                                            <ColorField label="Fondo panel interno" value={homeDraft.contactSection.style.formInnerBackgroundColor} onChange={(v) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, style: { ...homeDraft.contactSection.style, formInnerBackgroundColor: v } } })} />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {(structureContactBlock === 'header' || structureContactBlock === 'channels') && (
+                                                                        <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                                                            `Header` y `Canales` comparten hoy el fondo de sección. Próxima fase: estilos diferenciados por sub-bloque.
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    <div className="rounded-2xl border border-slate-200 p-4 bg-slate-50">
+                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Rutas rápidas</div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                            {structureSectionOrder.map((sectionId) => {
+                                                                const m = HOME_SECTION_META[sectionId]
+                                                                const isCurrent = sectionId === selected
+                                                                return (
+                                                                    <button
+                                                                        key={`jump-${sectionId}`}
+                                                                        type="button"
+                                                                        onClick={() => selectSectionFromCanvas(sectionId)}
+                                                                        className={`text-left rounded-xl border px-3 py-2 transition-colors ${isCurrent ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white text-slate-600 hover:text-slate-900'}`}
+                                                                    >
+                                                                        <div className="text-[10px] font-black uppercase tracking-widest">{m.shortLabel}</div>
+                                                                        <div className="text-[11px] opacity-70">{m.anchor}</div>
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )
+                                        })()}
+                                    </div>
+                                </section>
                             </div>
                         )}
                     </div>

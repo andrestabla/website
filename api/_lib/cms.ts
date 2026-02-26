@@ -28,6 +28,16 @@ function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value))
 }
 
+const HOME_SECTION_IDS = ['hero', 'services', 'products', 'frameworks', 'contact'] as const
+const HOME_RESPONSIVE_VIEWPORTS = ['desktop', 'tablet', 'mobile'] as const
+const HOME_SECTION_BLOCK_IDS = {
+  hero: ['headline', 'ctas', 'stats'],
+  services: ['header', 'grid'],
+  products: ['header', 'cards'],
+  frameworks: ['header', 'items'],
+  contact: ['header', 'channels', 'form'],
+} as const
+
 export function getDefaultCmsSnapshot(): CMSState {
   const services = servicesDetail.map((s) => ({
     slug: s.slug,
@@ -81,6 +91,17 @@ export function getDefaultCmsSnapshot(): CMSState {
     },
     design: defaultDesign,
     homePage: {
+      layout: {
+        sectionOrder: [...HOME_SECTION_IDS],
+        hiddenSections: [],
+        sectionVisibility: Object.fromEntries(HOME_SECTION_IDS.map((id) => [id, { desktop: true, tablet: true, mobile: true }])) as any,
+        blockVisibility: Object.fromEntries(
+          HOME_SECTION_IDS.map((sectionId) => [
+            sectionId,
+            Object.fromEntries(HOME_SECTION_BLOCK_IDS[sectionId].map((blockId) => [blockId, { desktop: true, tablet: true, mobile: true }]))
+          ])
+        ) as any,
+      },
       hero: {
         stats: [
           { label: 'Stability', value: '99.9%' },
@@ -168,6 +189,57 @@ export function sanitizeCmsSnapshot(input: unknown): CMSState {
 
   const services = Array.isArray(raw.services) ? raw.services : base.services
   const products = Array.isArray(raw.products) ? raw.products : base.products
+  const rawLayout = raw.homePage?.layout || {}
+  const validHomeSectionIds = new Set(HOME_SECTION_IDS)
+  const rawSectionOrder = Array.isArray(rawLayout.sectionOrder)
+    ? rawLayout.sectionOrder.filter((id: any) => validHomeSectionIds.has(id))
+    : []
+  const sectionOrder = [...new Set([...rawSectionOrder, ...HOME_SECTION_IDS])]
+  const hiddenSections = Array.isArray(rawLayout.hiddenSections)
+    ? [...new Set(rawLayout.hiddenSections.filter((id: any) => validHomeSectionIds.has(id)))]
+    : []
+  const sectionVisibility = Object.fromEntries(
+    HOME_SECTION_IDS.map((id) => {
+      const rawSection = rawLayout.sectionVisibility && typeof rawLayout.sectionVisibility === 'object'
+        ? rawLayout.sectionVisibility[id]
+        : undefined
+      return [
+        id,
+        Object.fromEntries(
+          HOME_RESPONSIVE_VIEWPORTS.map((viewport) => [
+            viewport,
+            typeof rawSection?.[viewport] === 'boolean' ? rawSection[viewport] : true,
+          ])
+        ),
+      ]
+    })
+  )
+  const blockVisibility = Object.fromEntries(
+    HOME_SECTION_IDS.map((sectionId) => {
+      const rawSectionBlocks = rawLayout.blockVisibility && typeof rawLayout.blockVisibility === 'object'
+        ? rawLayout.blockVisibility[sectionId]
+        : undefined
+      return [
+        sectionId,
+        Object.fromEntries(
+          HOME_SECTION_BLOCK_IDS[sectionId].map((blockId) => {
+            const rawBlock = rawSectionBlocks && typeof rawSectionBlocks === 'object'
+              ? rawSectionBlocks[blockId]
+              : undefined
+            return [
+              blockId,
+              Object.fromEntries(
+                HOME_RESPONSIVE_VIEWPORTS.map((viewport) => [
+                  viewport,
+                  typeof rawBlock?.[viewport] === 'boolean' ? rawBlock[viewport] : true,
+                ])
+              ),
+            ]
+          })
+        ),
+      ]
+    })
+  )
 
   return {
     ...base,
@@ -180,6 +252,14 @@ export function sanitizeCmsSnapshot(input: unknown): CMSState {
     homePage: {
       ...(base as any).homePage,
       ...(raw.homePage || {}),
+      layout: {
+        ...(base as any).homePage.layout,
+        ...rawLayout,
+        sectionOrder,
+        hiddenSections,
+        sectionVisibility,
+        blockVisibility,
+      },
       hero: {
         ...(base as any).homePage.hero,
         ...(raw.homePage?.hero || {}),
