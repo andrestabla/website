@@ -2,6 +2,15 @@ import crypto from 'node:crypto'
 import { prisma } from './prisma.js'
 
 const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 }
+const DEFAULT_BOOTSTRAP_ADMIN_PASSWORD = 'admin123'
+
+function isDeployedEnvironment() {
+  return (
+    process.env.NODE_ENV === 'production' ||
+    process.env.VERCEL_ENV === 'production' ||
+    process.env.VERCEL_ENV === 'preview'
+  )
+}
 
 function normalizeIdentifier(value: string) {
   return value.trim().toLowerCase()
@@ -30,7 +39,11 @@ export async function ensureBootstrapAdminUser() {
   const username = process.env.ADMIN_USERNAME || 'admin'
   const email = process.env.ADMIN_EMAIL || null
   const displayName = process.env.ADMIN_DISPLAY_NAME || 'Admin AlgoritmoT'
-  const password = process.env.ADMIN_PASSWORD || 'admin123'
+  const configuredPassword = process.env.ADMIN_PASSWORD
+  if (isDeployedEnvironment() && (!configuredPassword || configuredPassword === DEFAULT_BOOTSTRAP_ADMIN_PASSWORD)) {
+    throw new Error('ADMIN_PASSWORD must be set to a non-default value before bootstrap login in deployed environments')
+  }
+  const password = configuredPassword || DEFAULT_BOOTSTRAP_ADMIN_PASSWORD
 
   await prisma.adminUser.create({
     data: {
@@ -60,4 +73,3 @@ export async function registerAdminLogin(userId: string) {
     data: { lastLoginAt: new Date() },
   } as any)
 }
-

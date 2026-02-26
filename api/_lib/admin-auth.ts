@@ -6,6 +6,14 @@ type VercelResponse = any
 const COOKIE_NAME = 'admin_session'
 const SESSION_TTL_SECONDS = 60 * 60 * 12
 
+function isDeployedEnvironment() {
+  return (
+    process.env.NODE_ENV === 'production' ||
+    process.env.VERCEL_ENV === 'production' ||
+    process.env.VERCEL_ENV === 'preview'
+  )
+}
+
 type SessionPayload = {
   sub: 'admin'
   userId: string
@@ -25,12 +33,12 @@ function base64UrlDecode(input: string) {
 }
 
 function getSessionSecret() {
-  return (
-    process.env.ADMIN_SESSION_SECRET ||
-    process.env.OPENAI_API_KEY ||
-    process.env.VITE_GEMINI_API_KEY ||
-    'algoritmot-admin-session-dev-secret'
-  )
+  const configuredSecret = process.env.ADMIN_SESSION_SECRET
+  if (configuredSecret && configuredSecret.trim()) return configuredSecret
+  if (isDeployedEnvironment()) {
+    throw new Error('Missing required env var ADMIN_SESSION_SECRET for admin auth')
+  }
+  return 'algoritmot-admin-session-dev-secret'
 }
 
 function sign(data: string) {
@@ -82,7 +90,7 @@ function buildCookie(value: string, maxAgeSeconds: number) {
     'SameSite=Lax',
     `Max-Age=${maxAgeSeconds}`,
   ]
-  if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV) {
+  if (isDeployedEnvironment()) {
     parts.push('Secure')
   }
   return parts.join('; ')
