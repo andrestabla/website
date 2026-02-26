@@ -38,6 +38,7 @@ import {
     type HomeResponsiveViewport,
     type HomeSectionVisibility,
     type HomeBlockVisibilityMap,
+    type HomeBlockStyleOverrides,
     HOME_SECTION_IDS,
     HOME_SECTION_BLOCK_IDS,
     HOME_RESPONSIVE_VIEWPORTS,
@@ -58,6 +59,77 @@ const COLOR_SWATCHES = ['#ffffff', '#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '
 const FONT_PRESETS = ['Inter', 'Space Grotesk', 'Manrope', 'Sora', 'IBM Plex Sans', 'Montserrat', 'Poppins', 'system-ui']
 const CMS_RADIUS_VALUES: Record<string, string> = { none: '0px', sm: '4px', md: '8px', lg: '16px', full: '9999px' }
 const DEFAULT_HOME_SECTION_VISIBILITY: HomeSectionVisibility = { desktop: true, tablet: true, mobile: true }
+const DEFAULT_HOME_BLOCK_STYLE_OVERRIDES: HomeBlockStyleOverrides = {
+    services: {
+        header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
+        grid: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+    },
+    products: {
+        header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
+        cards: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+    },
+    frameworks: {
+        header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
+        items: { columns: { mobile: '1', tablet: '2', desktop: '2' } },
+    },
+    contact: {
+        header: { titleSizeRem: { mobile: '3.5rem', tablet: '5rem', desktop: '6rem' } },
+        channels: { gapRem: { mobile: '2rem', tablet: '2.5rem', desktop: '3rem' } },
+        form: { layoutMode: { mobile: 'stack', tablet: 'stack', desktop: 'split' } },
+    },
+}
+
+function normalizeResponsiveStringMap(
+    raw: unknown,
+    fallback: Record<HomeResponsiveViewport, string>
+): Record<HomeResponsiveViewport, string> {
+    const source = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {}
+    return HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+        acc[viewport] = typeof source[viewport] === 'string' ? String(source[viewport]) : fallback[viewport]
+        return acc
+    }, { ...fallback } as Record<HomeResponsiveViewport, string>)
+}
+
+function normalizeHomeBlockStyleOverrides(raw: unknown): HomeBlockStyleOverrides {
+    const source = raw && typeof raw === 'object' ? raw as Record<string, any> : {}
+    return {
+        services: {
+            header: {
+                titleSizeRem: normalizeResponsiveStringMap(source.services?.header?.titleSizeRem, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.services.header.titleSizeRem),
+            },
+            grid: {
+                columns: normalizeResponsiveStringMap(source.services?.grid?.columns, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.services.grid.columns),
+            },
+        },
+        products: {
+            header: {
+                titleSizeRem: normalizeResponsiveStringMap(source.products?.header?.titleSizeRem, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.products.header.titleSizeRem),
+            },
+            cards: {
+                columns: normalizeResponsiveStringMap(source.products?.cards?.columns, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.products.cards.columns),
+            },
+        },
+        frameworks: {
+            header: {
+                titleSizeRem: normalizeResponsiveStringMap(source.frameworks?.header?.titleSizeRem, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.frameworks.header.titleSizeRem),
+            },
+            items: {
+                columns: normalizeResponsiveStringMap(source.frameworks?.items?.columns, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.frameworks.items.columns),
+            },
+        },
+        contact: {
+            header: {
+                titleSizeRem: normalizeResponsiveStringMap(source.contact?.header?.titleSizeRem, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.contact.header.titleSizeRem),
+            },
+            channels: {
+                gapRem: normalizeResponsiveStringMap(source.contact?.channels?.gapRem, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.contact.channels.gapRem),
+            },
+            form: {
+                layoutMode: normalizeResponsiveStringMap(source.contact?.form?.layoutMode, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.contact.form.layoutMode),
+            },
+        },
+    }
+}
 const HOME_SECTION_META: Record<HomeSectionId, {
     label: string
     shortLabel: string
@@ -478,7 +550,13 @@ export function ManageHome() {
         ) as HomeBlockVisibilityMap,
         []
     )
-    const homeLayout = homeDraft.layout ?? { sectionOrder: [...HOME_SECTION_IDS], hiddenSections: [], sectionVisibility: defaultSectionVisibilityMap, blockVisibility: defaultBlockVisibilityMap }
+    const homeLayout = homeDraft.layout ?? {
+        sectionOrder: [...HOME_SECTION_IDS],
+        hiddenSections: [],
+        sectionVisibility: defaultSectionVisibilityMap,
+        blockVisibility: defaultBlockVisibilityMap,
+        blockStyleOverrides: DEFAULT_HOME_BLOCK_STYLE_OVERRIDES,
+    }
     const structureSectionOrder = [...new Set([...(homeLayout.sectionOrder ?? []), ...HOME_SECTION_IDS].filter((id): id is HomeSectionId => HOME_SECTION_IDS.includes(id as HomeSectionId)))]
     const hiddenSectionSet = new Set<HomeSectionId>((homeLayout.hiddenSections ?? []).filter((id): id is HomeSectionId => HOME_SECTION_IDS.includes(id as HomeSectionId)))
     const structureSectionVisibility = HOME_SECTION_IDS.reduce((acc, id) => {
@@ -500,6 +578,7 @@ export function ManageHome() {
         ) as any
         return acc
     }, {} as HomeBlockVisibilityMap)
+    const structureBlockStyleOverrides = normalizeHomeBlockStyleOverrides(homeLayout.blockStyleOverrides)
     const heroButtonRadius = CMS_RADIUS_VALUES[String(designDraft.borderRadius || 'none')] ?? '0px'
     const heroPrimaryCtaPreview = heroDraft.cta.trim() || 'Iniciar transformación'
     const heroSecondaryCtaPreview = heroDraft.secondaryCta.trim() || 'Ver servicios'
@@ -517,11 +596,64 @@ export function ManageHome() {
         const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
         return Number.isFinite(n) ? n : fallback
     }
+    const getHeroTitleSizeKeyByViewport = (viewport: HomeResponsiveViewport) => {
+        if (viewport === 'desktop') return 'titleFontSizeDesktop' as const
+        if (viewport === 'tablet') return 'titleFontSizeTablet' as const
+        return 'titleFontSizeMobile' as const
+    }
+    const getHeroSubtitleSizeKeyByViewport = (viewport: HomeResponsiveViewport) => {
+        if (viewport === 'desktop') return 'subtitleFontSizeDesktop' as const
+        if (viewport === 'tablet') return 'subtitleFontSizeTablet' as const
+        return 'subtitleFontSizeMobile' as const
+    }
+    const getHeroCtaGapKeyByViewport = (viewport: HomeResponsiveViewport) => {
+        if (viewport === 'desktop') return 'ctaGapDesktop' as const
+        if (viewport === 'tablet') return 'ctaGapTablet' as const
+        return 'ctaGapMobile' as const
+    }
+    const getHeroCtaStackKeyByViewport = (viewport: HomeResponsiveViewport) => {
+        if (viewport === 'desktop') return 'ctaStackDesktop' as const
+        if (viewport === 'tablet') return 'ctaStackTablet' as const
+        return 'ctaStackMobile' as const
+    }
+    const getHeroTitleSizeForViewport = (viewport: HomeResponsiveViewport) => {
+        const key = getHeroTitleSizeKeyByViewport(viewport)
+        return parseNum(homeDraft.hero.style[key], viewport === 'desktop' ? 8 : viewport === 'tablet' ? 6 : 4.5)
+    }
+    const getHeroSubtitleSizeForViewport = (viewport: HomeResponsiveViewport) => {
+        const key = getHeroSubtitleSizeKeyByViewport(viewport)
+        return parseNum(homeDraft.hero.style[key], viewport === 'desktop' ? 1.875 : viewport === 'tablet' ? 1.75 : 1.5)
+    }
+    const setHeroTitleSizeForViewport = (viewport: HomeResponsiveViewport, next: number) => {
+        setHeroStyle(getHeroTitleSizeKeyByViewport(viewport), `${next.toFixed(2)}rem`)
+    }
+    const setHeroSubtitleSizeForViewport = (viewport: HomeResponsiveViewport, next: number) => {
+        setHeroStyle(getHeroSubtitleSizeKeyByViewport(viewport), `${next.toFixed(2)}rem`)
+    }
+    const getHeroCtaGapForViewport = (viewport: HomeResponsiveViewport) => {
+        const key = getHeroCtaGapKeyByViewport(viewport)
+        return parseNum(homeDraft.hero.style[key], 1)
+    }
+    const setHeroCtaGapForViewport = (viewport: HomeResponsiveViewport, next: number) => {
+        setHeroStyle(getHeroCtaGapKeyByViewport(viewport), `${next.toFixed(2)}rem`)
+    }
+    const getHeroCtaStackForViewport = (viewport: HomeResponsiveViewport) => {
+        const key = getHeroCtaStackKeyByViewport(viewport)
+        const raw = homeDraft.hero.style[key]
+        if (raw === 'true') return true
+        if (raw === 'false') return false
+        return viewport === 'mobile'
+    }
+    const setHeroCtaStackForViewport = (viewport: HomeResponsiveViewport, stacked: boolean) => {
+        setHeroStyle(getHeroCtaStackKeyByViewport(viewport), stacked ? 'true' : 'false')
+    }
+    const previewViewportLabel = previewViewport === 'desktop' ? 'Desktop' : previewViewport === 'tablet' ? 'Tablet' : 'Mobile'
     const setHomeLayout = (patch: Partial<HomePageContent['layout']>) => {
         const nextOrder = patch.sectionOrder ?? homeLayout.sectionOrder
         const nextHidden = patch.hiddenSections ?? homeLayout.hiddenSections
         const nextSectionVisibility = patch.sectionVisibility ?? homeLayout.sectionVisibility
         const nextBlockVisibility = patch.blockVisibility ?? homeLayout.blockVisibility
+        const nextBlockStyleOverrides = patch.blockStyleOverrides ?? homeLayout.blockStyleOverrides
         setHome({
             ...homeDraft,
             layout: {
@@ -548,6 +680,7 @@ export function ManageHome() {
                     ) as any
                     return acc
                 }, {} as HomeBlockVisibilityMap),
+                blockStyleOverrides: normalizeHomeBlockStyleOverrides(nextBlockStyleOverrides),
             },
         })
     }
@@ -643,6 +776,55 @@ export function ManageHome() {
                 },
             } as any,
         })
+    }
+    const getSectionBlockStyleString = (
+        sectionId: 'services' | 'products' | 'frameworks' | 'contact',
+        blockId: string,
+        prop: string,
+        viewport: HomeResponsiveViewport
+    ) => {
+        const raw = (structureBlockStyleOverrides as any)?.[sectionId]?.[blockId]?.[prop]?.[viewport]
+        return typeof raw === 'string' ? raw : ''
+    }
+    const setSectionBlockStyleString = (
+        sectionId: 'services' | 'products' | 'frameworks' | 'contact',
+        blockId: string,
+        prop: string,
+        viewport: HomeResponsiveViewport,
+        value: string
+    ) => {
+        setHomeLayout({
+            blockStyleOverrides: {
+                ...structureBlockStyleOverrides,
+                [sectionId]: {
+                    ...(structureBlockStyleOverrides as any)[sectionId],
+                    [blockId]: {
+                        ...((structureBlockStyleOverrides as any)[sectionId]?.[blockId] ?? {}),
+                        [prop]: {
+                            ...((structureBlockStyleOverrides as any)[sectionId]?.[blockId]?.[prop] ?? {}),
+                            [viewport]: value,
+                        },
+                    },
+                },
+            } as HomeBlockStyleOverrides,
+        })
+    }
+    const getSectionBlockStyleNumber = (
+        sectionId: 'services' | 'products' | 'frameworks' | 'contact',
+        blockId: string,
+        prop: string,
+        viewport: HomeResponsiveViewport,
+        fallback: number
+    ) => parseNum(getSectionBlockStyleString(sectionId, blockId, prop, viewport), fallback)
+    const getSectionBlockColumnsForViewport = (
+        sectionId: 'services' | 'products' | 'frameworks',
+        blockId: 'grid' | 'cards' | 'items',
+        viewport: HomeResponsiveViewport,
+        fallback: number
+    ) => Math.max(1, Math.min(4, Math.round(getSectionBlockStyleNumber(sectionId, blockId, 'columns', viewport, fallback))))
+    const getContactFormLayoutModeForViewport = (viewport: HomeResponsiveViewport) => {
+        const raw = getSectionBlockStyleString('contact', 'form', 'layoutMode', viewport)
+        return raw === 'split' ? 'split' : 'stack'
     }
     const openSectionEditorFromStructure = (sectionId: HomeSectionId) => {
         const meta = HOME_SECTION_META[sectionId]
@@ -1028,7 +1210,7 @@ export function ManageHome() {
 
                                     {isVisible ? (
                                         <div className="relative">
-                                            <HeroView hero={heroDraft} heroSection={homeDraft.hero} animated={false} visibleBlocks={heroVisibleBlocks} />
+                                            <HeroView hero={heroDraft} heroSection={homeDraft.hero} animated={false} viewport={previewViewport} visibleBlocks={heroVisibleBlocks} />
 
                                             <div className="absolute top-6 right-6 z-20 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
                                                 {([
@@ -1113,6 +1295,23 @@ export function ManageHome() {
                         }
 
                         if (sectionId === 'services') {
+                            const servicesVisibleBlocks = {
+                                header: isSectionBlockVisibleInPreviewViewport('services', 'header', previewViewport),
+                                grid: isSectionBlockVisibleInPreviewViewport('services', 'grid', previewViewport),
+                            }
+                            const servicesHeaderTitleSize = getSectionBlockStyleNumber(
+                                'services',
+                                'header',
+                                'titleSizeRem',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 4.5 : previewViewport === 'tablet' ? 4 : 3
+                            )
+                            const servicesGridColumns = getSectionBlockColumnsForViewport(
+                                'services',
+                                'grid',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2 : 1
+                            )
                             return (
                                 <div
                                     key={`preview-${sectionId}`}
@@ -1153,7 +1352,8 @@ export function ManageHome() {
                                     </div>
 
                                     <div className="relative p-8 md:p-12">
-                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                        {servicesVisibleBlocks.header ? (
+                                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                                             <div className="flex items-start gap-3">
                                                 <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
                                                     <Icon className="w-4 h-4" />
@@ -1166,7 +1366,12 @@ export function ManageHome() {
                                                             {isVisible ? 'Visible' : 'Oculta'}
                                                         </span>
                                                     </div>
-                                                    <div className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2">{getStructureSectionHeadline(sectionId) || meta.label}</div>
+                                                    <div
+                                                        className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
+                                                        style={{ fontSize: `${servicesHeaderTitleSize}rem`, lineHeight: 0.95 }}
+                                                    >
+                                                        {getStructureSectionHeadline(sectionId) || meta.label}
+                                                    </div>
                                                     <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
                                                 </div>
                                             </div>
@@ -1179,9 +1384,18 @@ export function ManageHome() {
                                                     <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].mobile ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>M</span>
                                                 </div>
                                             </div>
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                                                Header oculto en {previewViewport}
+                                            </div>
+                                        )}
 
-                                        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {servicesVisibleBlocks.grid ? (
+                                            <div
+                                                className="mt-8 grid gap-4"
+                                                style={{ gridTemplateColumns: `repeat(${servicesGridColumns}, minmax(0, 1fr))` }}
+                                            >
                                             {Array.from({ length: Math.min(4, state.services.length || 4) }).map((_, cardIndex) => (
                                                 <div key={`services-card-preview-${cardIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4">
                                                     <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 mb-3" />
@@ -1190,7 +1404,12 @@ export function ManageHome() {
                                                     <div className="h-2 rounded bg-slate-100 w-5/6" />
                                                 </div>
                                             ))}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-8 rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                                                Grid oculto en {previewViewport}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {isVisible && (
@@ -1226,6 +1445,23 @@ export function ManageHome() {
                         }
 
                         if (sectionId === 'products') {
+                            const productsVisibleBlocks = {
+                                header: isSectionBlockVisibleInPreviewViewport('products', 'header', previewViewport),
+                                cards: isSectionBlockVisibleInPreviewViewport('products', 'cards', previewViewport),
+                            }
+                            const productsHeaderTitleSize = getSectionBlockStyleNumber(
+                                'products',
+                                'header',
+                                'titleSizeRem',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 4.5 : previewViewport === 'tablet' ? 4 : 3
+                            )
+                            const productsCardsColumns = getSectionBlockColumnsForViewport(
+                                'products',
+                                'cards',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2 : 1
+                            )
                             return (
                                 <div
                                     key={`preview-${sectionId}`}
@@ -1266,7 +1502,8 @@ export function ManageHome() {
                                     </div>
 
                                     <div className="relative p-8 md:p-12">
-                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                        {productsVisibleBlocks.header ? (
+                                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                                             <div className="flex items-start gap-3">
                                                 <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
                                                     <Icon className="w-4 h-4" />
@@ -1279,7 +1516,12 @@ export function ManageHome() {
                                                             {isVisible ? 'Visible' : 'Oculta'}
                                                         </span>
                                                     </div>
-                                                    <div className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2">{getStructureSectionHeadline(sectionId) || meta.label}</div>
+                                                    <div
+                                                        className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
+                                                        style={{ fontSize: `${productsHeaderTitleSize}rem`, lineHeight: 0.95 }}
+                                                    >
+                                                        {getStructureSectionHeadline(sectionId) || meta.label}
+                                                    </div>
                                                     <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
                                                 </div>
                                             </div>
@@ -1292,9 +1534,18 @@ export function ManageHome() {
                                                     <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].mobile ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>M</span>
                                                 </div>
                                             </div>
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                                                Header oculto en {previewViewport}
+                                            </div>
+                                        )}
 
-                                        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                        {productsVisibleBlocks.cards ? (
+                                            <div
+                                                className="mt-8 grid gap-4"
+                                                style={{ gridTemplateColumns: `repeat(${productsCardsColumns}, minmax(0, 1fr))` }}
+                                            >
                                             {Array.from({ length: Math.min(3, state.products.length || 3) }).map((_, cardIndex) => (
                                                 <div key={`products-card-preview-${cardIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4 space-y-3">
                                                     <div className="flex items-center justify-between gap-2">
@@ -1306,7 +1557,12 @@ export function ManageHome() {
                                                     <div className="h-8 rounded-lg border border-slate-200 bg-white" />
                                                 </div>
                                             ))}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-8 rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                                                Cards ocultas en {previewViewport}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {isVisible && (
@@ -1342,6 +1598,23 @@ export function ManageHome() {
                         }
 
                         if (sectionId === 'frameworks') {
+                            const frameworksVisibleBlocks = {
+                                header: isSectionBlockVisibleInPreviewViewport('frameworks', 'header', previewViewport),
+                                items: isSectionBlockVisibleInPreviewViewport('frameworks', 'items', previewViewport),
+                            }
+                            const frameworksHeaderTitleSize = getSectionBlockStyleNumber(
+                                'frameworks',
+                                'header',
+                                'titleSizeRem',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 4.5 : previewViewport === 'tablet' ? 4 : 3
+                            )
+                            const frameworksItemsColumns = getSectionBlockColumnsForViewport(
+                                'frameworks',
+                                'items',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 2 : previewViewport === 'tablet' ? 2 : 1
+                            )
                             return (
                                 <div
                                     key={`preview-${sectionId}`}
@@ -1382,7 +1655,8 @@ export function ManageHome() {
                                     </div>
 
                                     <div className="relative p-8 md:p-12">
-                                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                        {frameworksVisibleBlocks.header ? (
+                                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                                             <div className="flex items-start gap-3">
                                                 <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
                                                     <Icon className="w-4 h-4" />
@@ -1395,7 +1669,12 @@ export function ManageHome() {
                                                             {isVisible ? 'Visible' : 'Oculta'}
                                                         </span>
                                                     </div>
-                                                    <div className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2">{getStructureSectionHeadline(sectionId) || meta.label}</div>
+                                                    <div
+                                                        className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
+                                                        style={{ fontSize: `${frameworksHeaderTitleSize}rem`, lineHeight: 0.95 }}
+                                                    >
+                                                        {getStructureSectionHeadline(sectionId) || meta.label}
+                                                    </div>
                                                     <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
                                                 </div>
                                             </div>
@@ -1408,9 +1687,18 @@ export function ManageHome() {
                                                     <span className={`text-[10px] px-2 py-1 rounded-full border font-black uppercase tracking-widest ${structureSectionVisibility[sectionId].mobile ? 'border-slate-200 bg-white text-slate-600' : 'border-slate-200 bg-slate-100 text-slate-400'}`}>M</span>
                                                 </div>
                                             </div>
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                                                Header oculto en {previewViewport}
+                                            </div>
+                                        )}
 
-                                        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {frameworksVisibleBlocks.items ? (
+                                            <div
+                                                className="mt-8 grid gap-4"
+                                                style={{ gridTemplateColumns: `repeat(${frameworksItemsColumns}, minmax(0, 1fr))` }}
+                                            >
                                             {homeDraft.frameworksSection.items.slice(0, 4).map((item, itemIndex) => (
                                                 <div key={`frameworks-item-preview-${itemIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4">
                                                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.organization || 'ORG'}</div>
@@ -1420,11 +1708,16 @@ export function ManageHome() {
                                                 </div>
                                             ))}
                                             {homeDraft.frameworksSection.items.length === 0 && (
-                                                <div className="md:col-span-2 rounded-xl border border-dashed border-slate-300 bg-white/80 p-4 text-xs text-slate-500">
+                                                <div className="rounded-xl border border-dashed border-slate-300 bg-white/80 p-4 text-xs text-slate-500" style={{ gridColumn: '1 / -1' }}>
                                                     No hay items de frameworks en el CMS.
                                                 </div>
                                             )}
-                                        </div>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-8 rounded-xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                                                Items ocultos en {previewViewport}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {isVisible && (
@@ -1460,6 +1753,28 @@ export function ManageHome() {
                         }
 
                         if (sectionId === 'contact') {
+                            const contactVisibleBlocks = {
+                                header: isSectionBlockVisibleInPreviewViewport('contact', 'header', previewViewport),
+                                channels: isSectionBlockVisibleInPreviewViewport('contact', 'channels', previewViewport),
+                                form: isSectionBlockVisibleInPreviewViewport('contact', 'form', previewViewport),
+                            }
+                            const contactShowLeft = contactVisibleBlocks.header || contactVisibleBlocks.channels
+                            const contactHeaderTitleSize = getSectionBlockStyleNumber(
+                                'contact',
+                                'header',
+                                'titleSizeRem',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 6 : previewViewport === 'tablet' ? 5 : 3.5
+                            )
+                            const contactChannelsGap = getSectionBlockStyleNumber(
+                                'contact',
+                                'channels',
+                                'gapRem',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2.5 : 2
+                            )
+                            const contactFormLayoutMode = getContactFormLayoutModeForViewport(previewViewport)
+                            const contactPreviewSplitLayout = contactShowLeft && contactVisibleBlocks.form && contactFormLayoutMode === 'split'
                             return (
                                 <div
                                     key={`preview-${sectionId}`}
@@ -1514,7 +1829,12 @@ export function ManageHome() {
                                                             {isVisible ? 'Visible' : 'Oculta'}
                                                         </span>
                                                     </div>
-                                                    <div className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2">{getStructureSectionHeadline(sectionId) || meta.label}</div>
+                                                    <div
+                                                        className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
+                                                        style={{ fontSize: `${contactHeaderTitleSize}rem`, lineHeight: 0.95 }}
+                                                    >
+                                                        {getStructureSectionHeadline(sectionId) || meta.label}
+                                                    </div>
                                                     <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
                                                 </div>
                                             </div>
@@ -1529,27 +1849,60 @@ export function ManageHome() {
                                             </div>
                                         </div>
 
-                                        <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_0.9fr] gap-5">
-                                            <div className="rounded-2xl border border-slate-200 bg-white/90 p-5 space-y-4">
-                                                <div className="h-4 rounded bg-slate-200 w-3/4" />
-                                                {[
-                                                    homeDraft.contactSection.labels.officialChannel,
-                                                    homeDraft.contactSection.labels.hubHq,
-                                                    homeDraft.contactSection.labels.corporateNetwork,
-                                                    homeDraft.contactSection.labels.linkedinProtocol,
-                                                ].map((label, labelIndex) => (
-                                                    <div key={`contact-channel-preview-${labelIndex}`} className="rounded-xl border border-slate-200 bg-white p-3">
-                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 line-clamp-1">{label || `Label ${labelIndex + 1}`}</div>
-                                                        <div className="h-2 rounded bg-slate-100 w-2/3 mt-2" />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="rounded-2xl border border-slate-200 p-4 bg-white/90 space-y-3">
-                                                <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
-                                                <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
-                                                <div className="h-24 rounded-xl bg-slate-100 border border-slate-200" />
-                                                <div className="h-10 rounded-xl bg-white border border-slate-200" />
-                                            </div>
+                                        <div
+                                            className="mt-8 grid gap-5"
+                                            style={{
+                                                gridTemplateColumns: contactPreviewSplitLayout
+                                                    ? 'minmax(0,1fr) minmax(0,0.9fr)'
+                                                    : 'minmax(0,1fr)',
+                                            }}
+                                        >
+                                            {contactShowLeft ? (
+                                                <div className="rounded-2xl border border-slate-200 bg-white/90 p-5 space-y-4">
+                                                    {contactVisibleBlocks.header ? (
+                                                        <div className="h-4 rounded bg-slate-200 w-3/4" />
+                                                    ) : (
+                                                        <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/70 px-3 py-2 text-[11px] font-semibold text-amber-800">
+                                                            Header oculto en {previewViewport}
+                                                        </div>
+                                                    )}
+                                                    {contactVisibleBlocks.channels ? (
+                                                        <div className="grid" style={{ gap: `${contactChannelsGap}rem` }}>
+                                                            {[
+                                                                homeDraft.contactSection.labels.officialChannel,
+                                                                homeDraft.contactSection.labels.hubHq,
+                                                                homeDraft.contactSection.labels.corporateNetwork,
+                                                                homeDraft.contactSection.labels.linkedinProtocol,
+                                                            ].map((label, labelIndex) => (
+                                                                <div key={`contact-channel-preview-${labelIndex}`} className="rounded-xl border border-slate-200 bg-white p-3">
+                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 line-clamp-1">{label || `Label ${labelIndex + 1}`}</div>
+                                                                    <div className="h-2 rounded bg-slate-100 w-2/3 mt-2" />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/70 px-3 py-2 text-[11px] font-semibold text-amber-800">
+                                                            Canales ocultos en {previewViewport}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                                                    Columna izquierda oculta en {previewViewport}
+                                                </div>
+                                            )}
+                                            {contactVisibleBlocks.form ? (
+                                                <div className="rounded-2xl border border-slate-200 p-4 bg-white/90 space-y-3">
+                                                    <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
+                                                    <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
+                                                    <div className="h-24 rounded-xl bg-slate-100 border border-slate-200" />
+                                                    <div className="h-10 rounded-xl bg-white border border-slate-200" />
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                                                    Formulario oculto en {previewViewport}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -3132,11 +3485,42 @@ export function ManageHome() {
                                                                     />
 
                                                                     {(structureHeroBlock === 'section' || structureHeroBlock === 'headline') && (
-                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                                            <ColorField label="Color título" value={homeDraft.hero.style.titleColor} onChange={(v) => setHeroStyle('titleColor', v)} />
-                                                                            <ColorField label="Color acento título" value={homeDraft.hero.style.titleAccentColor} onChange={(v) => setHeroStyle('titleAccentColor', v)} />
-                                                                            <ColorField label="Color subtítulo" value={homeDraft.hero.style.subtitleColor} onChange={(v) => setHeroStyle('subtitleColor', v)} />
-                                                                            <ColorField label="Color highlight" value={homeDraft.hero.style.highlightColor} onChange={(v) => setHeroStyle('highlightColor', v)} />
+                                                                        <div className="space-y-4">
+                                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                                <ColorField label="Color título" value={homeDraft.hero.style.titleColor} onChange={(v) => setHeroStyle('titleColor', v)} />
+                                                                                <ColorField label="Color acento título" value={homeDraft.hero.style.titleAccentColor} onChange={(v) => setHeroStyle('titleAccentColor', v)} />
+                                                                                <ColorField label="Color subtítulo" value={homeDraft.hero.style.subtitleColor} onChange={(v) => setHeroStyle('subtitleColor', v)} />
+                                                                                <ColorField label="Color highlight" value={homeDraft.hero.style.highlightColor} onChange={(v) => setHeroStyle('highlightColor', v)} />
+                                                                            </div>
+                                                                            <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                                <div className="flex items-center justify-between gap-3">
+                                                                                    <div>
+                                                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Headline</div>
+                                                                                        <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                    </div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                        {previewViewportLabel}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                                                    <RangeField
+                                                                                        label={`Título (${previewViewportLabel})`}
+                                                                                        value={getHeroTitleSizeForViewport(previewViewport)}
+                                                                                        onChange={(v) => setHeroTitleSizeForViewport(previewViewport, v)}
+                                                                                        min={2}
+                                                                                        max={12}
+                                                                                        step={0.1}
+                                                                                    />
+                                                                                    <RangeField
+                                                                                        label={`Subtítulo (${previewViewportLabel})`}
+                                                                                        value={getHeroSubtitleSizeForViewport(previewViewport)}
+                                                                                        onChange={(v) => setHeroSubtitleSizeForViewport(previewViewport, v)}
+                                                                                        min={1}
+                                                                                        max={4}
+                                                                                        step={0.05}
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
                                                                     )}
 
@@ -3159,6 +3543,34 @@ export function ManageHome() {
                                                                                     { value: 'pill', label: 'Pill' },
                                                                                 ]}
                                                                             />
+                                                                            <div className="rounded-xl border border-slate-200 p-3 bg-white space-y-3">
+                                                                                <div className="flex items-center justify-between gap-3">
+                                                                                    <div>
+                                                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Layout CTAs</div>
+                                                                                        <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                    </div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                        {previewViewportLabel}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <SegmentedField
+                                                                                    label={`Layout (${previewViewportLabel})`}
+                                                                                    value={getHeroCtaStackForViewport(previewViewport) ? 'stack' : 'row'}
+                                                                                    onChange={(next) => setHeroCtaStackForViewport(previewViewport, next === 'stack')}
+                                                                                    options={[
+                                                                                        { value: 'row', label: 'Fila' },
+                                                                                        { value: 'stack', label: 'Stack' },
+                                                                                    ]}
+                                                                                />
+                                                                                <RangeField
+                                                                                    label={`Gap CTAs (${previewViewportLabel})`}
+                                                                                    value={getHeroCtaGapForViewport(previewViewport)}
+                                                                                    onChange={(v) => setHeroCtaGapForViewport(previewViewport, v)}
+                                                                                    min={0.25}
+                                                                                    max={4}
+                                                                                    step={0.05}
+                                                                                />
+                                                                            </div>
                                                                         </div>
                                                                     )}
 
@@ -3199,9 +3611,49 @@ export function ManageHome() {
                                                                     />
                                                                     <ColorField label="Fondo sección" value={homeDraft.servicesSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundColor: v } } })} />
                                                                     <Field label="Imagen de fondo (URL)"><Input value={homeDraft.servicesSection.style.backgroundImageUrl} onChange={(e) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, style: { ...homeDraft.servicesSection.style, backgroundImageUrl: e.target.value } } })} /></Field>
-                                                                    {structureServicesBlock !== 'section' && (
-                                                                        <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                                                            En esta versión `Services` usa estilo compartido a nivel de sección. El siguiente paso es separar estilos de `Header` y `Grid`.
+                                                                    {(structureServicesBlock === 'section' || structureServicesBlock === 'header') && (
+                                                                        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Header</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                </div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                    {previewViewportLabel}
+                                                                                </div>
+                                                                            </div>
+                                                                            <RangeField
+                                                                                label={`Tamaño título (${previewViewportLabel})`}
+                                                                                value={getSectionBlockStyleNumber('services', 'header', 'titleSizeRem', previewViewport, previewViewport === 'desktop' ? 4.5 : previewViewport === 'tablet' ? 4 : 3)}
+                                                                                onChange={(v) => setSectionBlockStyleString('services', 'header', 'titleSizeRem', previewViewport, `${v.toFixed(2)}rem`)}
+                                                                                min={2}
+                                                                                max={7}
+                                                                                step={0.1}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    {(structureServicesBlock === 'section' || structureServicesBlock === 'grid') && (
+                                                                        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Grid</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                </div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                    {previewViewportLabel}
+                                                                                </div>
+                                                                            </div>
+                                                                            <SegmentedField
+                                                                                label={`Columnas (${previewViewportLabel})`}
+                                                                                value={String(getSectionBlockColumnsForViewport('services', 'grid', previewViewport, previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2 : 1)) as '1' | '2' | '3' | '4'}
+                                                                                onChange={(next) => setSectionBlockStyleString('services', 'grid', 'columns', previewViewport, next)}
+                                                                                options={[
+                                                                                    { value: '1', label: '1' },
+                                                                                    { value: '2', label: '2' },
+                                                                                    { value: '3', label: '3' },
+                                                                                    { value: '4', label: '4' },
+                                                                                ]}
+                                                                            />
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -3221,9 +3673,49 @@ export function ManageHome() {
                                                                     />
                                                                     <ColorField label="Fondo sección" value={homeDraft.productsSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundColor: v } } })} />
                                                                     <Field label="Imagen de fondo (URL)"><Input value={homeDraft.productsSection.style.backgroundImageUrl} onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, style: { ...homeDraft.productsSection.style, backgroundImageUrl: e.target.value } } })} /></Field>
-                                                                    {structureProductsBlock !== 'section' && (
-                                                                        <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                                                            En esta versión `Products` comparte estilo a nivel de sección. Próxima fase: overrides visuales por `Header` y `Cards`.
+                                                                    {(structureProductsBlock === 'section' || structureProductsBlock === 'header') && (
+                                                                        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Header</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                </div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                    {previewViewportLabel}
+                                                                                </div>
+                                                                            </div>
+                                                                            <RangeField
+                                                                                label={`Tamaño título (${previewViewportLabel})`}
+                                                                                value={getSectionBlockStyleNumber('products', 'header', 'titleSizeRem', previewViewport, previewViewport === 'desktop' ? 4.5 : previewViewport === 'tablet' ? 4 : 3)}
+                                                                                onChange={(v) => setSectionBlockStyleString('products', 'header', 'titleSizeRem', previewViewport, `${v.toFixed(2)}rem`)}
+                                                                                min={2}
+                                                                                max={7}
+                                                                                step={0.1}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    {(structureProductsBlock === 'section' || structureProductsBlock === 'cards') && (
+                                                                        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Cards</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                </div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                    {previewViewportLabel}
+                                                                                </div>
+                                                                            </div>
+                                                                            <SegmentedField
+                                                                                label={`Columnas (${previewViewportLabel})`}
+                                                                                value={String(getSectionBlockColumnsForViewport('products', 'cards', previewViewport, previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2 : 1)) as '1' | '2' | '3' | '4'}
+                                                                                onChange={(next) => setSectionBlockStyleString('products', 'cards', 'columns', previewViewport, next)}
+                                                                                options={[
+                                                                                    { value: '1', label: '1' },
+                                                                                    { value: '2', label: '2' },
+                                                                                    { value: '3', label: '3' },
+                                                                                    { value: '4', label: '4' },
+                                                                                ]}
+                                                                            />
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -3244,9 +3736,49 @@ export function ManageHome() {
                                                                     <ColorField label="Fondo sección" value={homeDraft.frameworksSection.style.backgroundColor} onChange={(v) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, backgroundColor: v } } })} />
                                                                     <RangeField label="Overlay" value={Number(homeDraft.frameworksSection.style.overlayOpacity || '0.10')} onChange={(v) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, overlayOpacity: v.toFixed(2) } } })} />
                                                                     <Field label="Imagen de fondo (URL)"><Input value={homeDraft.frameworksSection.style.backgroundImageUrl} onChange={(e) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, style: { ...homeDraft.frameworksSection.style, backgroundImageUrl: e.target.value } } })} /></Field>
-                                                                    {structureFrameworksBlock !== 'section' && (
-                                                                        <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                                                            En esta versión `Frameworks` usa estilo compartido a nivel de sección. Próxima fase: overrides separados para `Header` e `Items`.
+                                                                    {(structureFrameworksBlock === 'section' || structureFrameworksBlock === 'header') && (
+                                                                        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Header</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                </div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                    {previewViewportLabel}
+                                                                                </div>
+                                                                            </div>
+                                                                            <RangeField
+                                                                                label={`Tamaño título (${previewViewportLabel})`}
+                                                                                value={getSectionBlockStyleNumber('frameworks', 'header', 'titleSizeRem', previewViewport, previewViewport === 'desktop' ? 4.5 : previewViewport === 'tablet' ? 4 : 3)}
+                                                                                onChange={(v) => setSectionBlockStyleString('frameworks', 'header', 'titleSizeRem', previewViewport, `${v.toFixed(2)}rem`)}
+                                                                                min={2}
+                                                                                max={7}
+                                                                                step={0.1}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    {(structureFrameworksBlock === 'section' || structureFrameworksBlock === 'items') && (
+                                                                        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Items</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                </div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                    {previewViewportLabel}
+                                                                                </div>
+                                                                            </div>
+                                                                            <SegmentedField
+                                                                                label={`Columnas (${previewViewportLabel})`}
+                                                                                value={String(getSectionBlockColumnsForViewport('frameworks', 'items', previewViewport, previewViewport === 'desktop' ? 2 : previewViewport === 'tablet' ? 2 : 1)) as '1' | '2' | '3' | '4'}
+                                                                                onChange={(next) => setSectionBlockStyleString('frameworks', 'items', 'columns', previewViewport, next)}
+                                                                                options={[
+                                                                                    { value: '1', label: '1' },
+                                                                                    { value: '2', label: '2' },
+                                                                                    { value: '3', label: '3' },
+                                                                                    { value: '4', label: '4' },
+                                                                                ]}
+                                                                            />
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -3282,9 +3814,68 @@ export function ManageHome() {
                                                                         </div>
                                                                     )}
 
-                                                                    {(structureContactBlock === 'header' || structureContactBlock === 'channels') && (
-                                                                        <div className="text-xs text-slate-500 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                                                            `Header` y `Canales` comparten hoy el fondo de sección. Próxima fase: estilos diferenciados por sub-bloque.
+                                                                    {(structureContactBlock === 'section' || structureContactBlock === 'header') && (
+                                                                        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Header</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                </div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                    {previewViewportLabel}
+                                                                                </div>
+                                                                            </div>
+                                                                            <RangeField
+                                                                                label={`Tamaño título (${previewViewportLabel})`}
+                                                                                value={getSectionBlockStyleNumber('contact', 'header', 'titleSizeRem', previewViewport, previewViewport === 'desktop' ? 6 : previewViewport === 'tablet' ? 5 : 3.5)}
+                                                                                onChange={(v) => setSectionBlockStyleString('contact', 'header', 'titleSizeRem', previewViewport, `${v.toFixed(2)}rem`)}
+                                                                                min={2.5}
+                                                                                max={9}
+                                                                                step={0.1}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    {(structureContactBlock === 'section' || structureContactBlock === 'channels') && (
+                                                                        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Canales</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                </div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                    {previewViewportLabel}
+                                                                                </div>
+                                                                            </div>
+                                                                            <RangeField
+                                                                                label={`Gap canales (${previewViewportLabel})`}
+                                                                                value={getSectionBlockStyleNumber('contact', 'channels', 'gapRem', previewViewport, previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2.5 : 2)}
+                                                                                onChange={(v) => setSectionBlockStyleString('contact', 'channels', 'gapRem', previewViewport, `${v.toFixed(2)}rem`)}
+                                                                                min={0.5}
+                                                                                max={5}
+                                                                                step={0.1}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    {(structureContactBlock === 'section' || structureContactBlock === 'form') && (
+                                                                        <div className="rounded-xl border border-slate-200 p-3 bg-slate-50 space-y-3">
+                                                                            <div className="flex items-center justify-between gap-3">
+                                                                                <div>
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsive · Layout Form</div>
+                                                                                    <div className="text-xs text-slate-500 mt-1">Editando viewport: {previewViewportLabel}</div>
+                                                                                </div>
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                                                                    {previewViewportLabel}
+                                                                                </div>
+                                                                            </div>
+                                                                            <SegmentedField
+                                                                                label={`Layout (${previewViewportLabel})`}
+                                                                                value={getContactFormLayoutModeForViewport(previewViewport)}
+                                                                                onChange={(next) => setSectionBlockStyleString('contact', 'form', 'layoutMode', previewViewport, next)}
+                                                                                options={[
+                                                                                    { value: 'stack', label: 'Stack' },
+                                                                                    { value: 'split', label: 'Split' },
+                                                                                ]}
+                                                                            />
                                                                         </div>
                                                                     )}
                                                                 </div>

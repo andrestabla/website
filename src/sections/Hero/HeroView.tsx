@@ -2,7 +2,8 @@ import type { CSSProperties } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import type { HeroContent, HomePageContent } from '../../admin/context/CMSContext'
+import { cn } from '../../lib/utils'
+import type { HeroContent, HomePageContent, HomeResponsiveViewport } from '../../admin/context/CMSContext'
 
 function getYouTubeId(url: string): string | null {
     if (!url) return null
@@ -40,6 +41,7 @@ type HeroViewProps = {
     hero: HeroContent
     heroSection: HomePageContent['hero']
     animated?: boolean
+    viewport?: HomeResponsiveViewport
     visibleBlocks?: {
         headline?: boolean
         ctas?: boolean
@@ -47,13 +49,35 @@ type HeroViewProps = {
     }
 }
 
-export function HeroView({ hero, heroSection, animated = true, visibleBlocks }: HeroViewProps) {
+export function HeroView({ hero, heroSection, animated = true, viewport = 'desktop', visibleBlocks }: HeroViewProps) {
     const hs = heroSection.style
     const heroVisibleBlocks = {
         headline: visibleBlocks?.headline !== false,
         ctas: visibleBlocks?.ctas !== false,
         stats: visibleBlocks?.stats !== false,
     }
+    const parseBool = (value: string | undefined, fallback: boolean) => {
+        if (typeof value !== 'string') return fallback
+        return value === 'true'
+    }
+    const getViewportValue = (values: { mobile?: string; tablet?: string; desktop?: string }, fallback: string) => {
+        if (viewport === 'desktop') return values.desktop || values.tablet || values.mobile || fallback
+        if (viewport === 'tablet') return values.tablet || values.mobile || values.desktop || fallback
+        return values.mobile || values.tablet || values.desktop || fallback
+    }
+    const titleTabletSize = hs.titleFontSizeTablet || hs.titleFontSizeDesktop || hs.titleFontSizeMobile || '6rem'
+    const titleDesktopSize = hs.titleFontSizeDesktop || titleTabletSize || hs.titleFontSizeMobile || '8rem'
+    const subtitleTabletSize = hs.subtitleFontSizeTablet || hs.subtitleFontSizeDesktop || hs.subtitleFontSizeMobile || '1.75rem'
+    const subtitleDesktopSize = hs.subtitleFontSizeDesktop || subtitleTabletSize || hs.subtitleFontSizeMobile || '1.875rem'
+    const ctaGap = getViewportValue(
+        { mobile: hs.ctaGapMobile, tablet: hs.ctaGapTablet, desktop: hs.ctaGapDesktop },
+        '1rem'
+    )
+    const ctaStack = viewport === 'desktop'
+        ? parseBool(hs.ctaStackDesktop, false)
+        : viewport === 'tablet'
+            ? parseBool(hs.ctaStackTablet, false)
+            : parseBool(hs.ctaStackMobile, true)
     const sectionVideoEmbed = getYouTubeEmbedUrl(hs.backgroundImageUrl || '')
     const panelVideoEmbed = getYouTubeEmbedUrl(hs.rightPanelBackgroundImageUrl || '')
     const overlaySectionOpacity = Math.max(0, Math.min(1, Number(hs.sectionOverlayOpacity || '0.92')))
@@ -151,12 +175,18 @@ export function HeroView({ hero, heroSection, animated = true, visibleBlocks }: 
                         )}
 
                         {heroVisibleBlocks.ctas && (
-                            <div className="flex flex-wrap items-center gap-4">
-                                <Button size="lg" className="group">
+                            <div
+                                className={cn(
+                                    'flex',
+                                    ctaStack ? 'flex-col items-stretch w-full max-w-xl' : 'flex-wrap items-center'
+                                )}
+                                style={{ gap: ctaGap }}
+                            >
+                                <Button size="lg" className={cn('group', ctaStack && 'w-full justify-center')}>
                                     {hero.cta}
                                     <ChevronRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </Button>
-                                <Button variant="outline" size="lg">
+                                <Button variant="outline" size="lg" className={cn(ctaStack && 'w-full justify-center')}>
                                     {hero.secondaryCta}
                                 </Button>
                             </div>
@@ -207,9 +237,13 @@ export function HeroView({ hero, heroSection, animated = true, visibleBlocks }: 
                 )}
             </div>
             <style>{`
-                @media (min-width: 768px) {
-                    .hero-dynamic-title { font-size: ${hs.titleFontSizeDesktop || hs.titleFontSizeMobile || '8rem'} !important; }
-                    .hero-dynamic-subtitle { font-size: ${hs.subtitleFontSizeDesktop || hs.subtitleFontSizeMobile || '1.875rem'} !important; }
+                @media (min-width: 768px) and (max-width: 1023px) {
+                    .hero-dynamic-title { font-size: ${titleTabletSize} !important; }
+                    .hero-dynamic-subtitle { font-size: ${subtitleTabletSize} !important; }
+                }
+                @media (min-width: 1024px) {
+                    .hero-dynamic-title { font-size: ${titleDesktopSize} !important; }
+                    .hero-dynamic-subtitle { font-size: ${subtitleDesktopSize} !important; }
                 }
             `}</style>
         </section>

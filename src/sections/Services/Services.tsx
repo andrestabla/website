@@ -3,8 +3,25 @@ import { CheckCircle2, ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { servicesDetail } from '../../data/details'
 import { useLanguage } from '../../context/LanguageContext'
+import type { HomeResponsiveViewport } from '../../admin/context/CMSContext'
 
-export function Services() {
+type ServicesProps = {
+    visibleBlocks?: {
+        header?: boolean
+        grid?: boolean
+    }
+    viewport?: HomeResponsiveViewport
+    styleOverrides?: {
+        header?: {
+            titleSizeRem?: string
+        }
+        grid?: {
+            columns?: string
+        }
+    }
+}
+
+export function Services({ visibleBlocks, viewport = 'desktop', styleOverrides }: ServicesProps) {
     const { translatedState } = useLanguage()
     // CMS services are a flat ServiceItem[]; icons live in servicesDetail (React components can't be stored)
     const services = translatedState.services
@@ -17,30 +34,55 @@ export function Services() {
         backgroundSize: sectionCfg.style.backgroundImageUrl ? 'cover' : undefined,
         backgroundPosition: sectionCfg.style.backgroundImageUrl ? 'center' : undefined,
     } as const
+    const blocks = {
+        header: visibleBlocks?.header !== false,
+        grid: visibleBlocks?.grid !== false,
+    }
+    const parseNum = (value: string | undefined, fallback: number) => {
+        const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
+        return Number.isFinite(n) ? n : fallback
+    }
+    const headerTitleSizeRem = parseNum(
+        styleOverrides?.header?.titleSizeRem,
+        viewport === 'desktop' ? 4.5 : viewport === 'tablet' ? 4 : 3
+    )
+    const gridColumns = Math.max(
+        1,
+        Math.min(
+            4,
+            Math.round(parseNum(styleOverrides?.grid?.columns, viewport === 'desktop' ? 3 : viewport === 'tablet' ? 2 : 1))
+        )
+    )
+    if (!blocks.header && !blocks.grid) return null
 
     return (
         <section style={sectionStyle} className="py-32 px-6 bg-slate-50 border-y border-slate-200 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-24 text-[20rem] font-black text-slate-200/20 leading-none select-none -z-10 pointer-events-none">
-                {sectionCfg.sectionNumber}
-            </div>
+            {blocks.header && (
+                <div className="absolute top-0 right-0 p-24 text-[20rem] font-black text-slate-200/20 leading-none select-none -z-10 pointer-events-none">
+                    {sectionCfg.sectionNumber}
+                </div>
+            )}
 
             <div className="max-w-7xl mx-auto">
-                <div className="mb-32">
+                {blocks.header && (
+                    <div className="mb-32">
                     <div className="flex items-center gap-4 mb-6">
                         <span className="w-12 h-1 bg-brand-primary" />
                         <span className="text-sm font-black uppercase tracking-[0.4em] text-brand-primary">
                             {sectionCfg.eyebrow}
                         </span>
                     </div>
-                    <h2 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 tracking-tighter">
+                    <h2 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 tracking-tighter" style={{ fontSize: `${headerTitleSizeRem}rem`, lineHeight: 0.95 }}>
                         {sectionCfg.title}
                     </h2>
                     <p className="text-2xl text-slate-500 font-light max-w-2xl border-l-2 border-slate-200 pl-8">
                         {sectionCfg.subtitle}
                     </p>
-                </div>
+                    </div>
+                )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border-t border-l border-slate-200">
+                {blocks.grid && (
+                    <div className="grid gap-0 border-t border-l border-slate-200" style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}>
                     {services.map((service, index) => {
                         // Get the icon from static data by matching slug
                         const staticDetail = servicesDetail.find(d => d.slug === service.slug) ?? servicesDetail[index]
@@ -91,7 +133,8 @@ export function Services() {
                             </Card>
                         )
                     })}
-                </div>
+                    </div>
+                )}
             </div>
         </section>
     )

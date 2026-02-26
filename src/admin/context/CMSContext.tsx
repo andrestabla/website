@@ -86,6 +86,26 @@ export const HOME_SECTION_BLOCK_IDS: { [K in HomeSectionId]: Array<keyof HomeBlo
     frameworks: ['header', 'items'],
     contact: ['header', 'channels', 'form'],
 }
+export type HomeResponsiveStringMap = Record<HomeResponsiveViewport, string>
+export type HomeBlockStyleOverrides = {
+    services: {
+        header: { titleSizeRem: HomeResponsiveStringMap }
+        grid: { columns: HomeResponsiveStringMap }
+    }
+    products: {
+        header: { titleSizeRem: HomeResponsiveStringMap }
+        cards: { columns: HomeResponsiveStringMap }
+    }
+    frameworks: {
+        header: { titleSizeRem: HomeResponsiveStringMap }
+        items: { columns: HomeResponsiveStringMap }
+    }
+    contact: {
+        header: { titleSizeRem: HomeResponsiveStringMap }
+        channels: { gapRem: HomeResponsiveStringMap }
+        form: { layoutMode: HomeResponsiveStringMap }
+    }
+}
 
 export type HomePageContent = {
     layout: {
@@ -93,6 +113,7 @@ export type HomePageContent = {
         hiddenSections: HomeSectionId[]
         sectionVisibility: Record<HomeSectionId, HomeSectionVisibility>
         blockVisibility: HomeBlockVisibilityMap
+        blockStyleOverrides: HomeBlockStyleOverrides
     }
     hero: {
         stats: Array<{ label: string; value: string }>
@@ -110,9 +131,17 @@ export type HomePageContent = {
             subtitleColor: string
             highlightColor: string
             titleFontSizeMobile: string
+            titleFontSizeTablet: string
             titleFontSizeDesktop: string
             subtitleFontSizeMobile: string
+            subtitleFontSizeTablet: string
             subtitleFontSizeDesktop: string
+            ctaGapMobile: string
+            ctaGapTablet: string
+            ctaGapDesktop: string
+            ctaStackMobile: string
+            ctaStackTablet: string
+            ctaStackDesktop: string
             titleFontWeight: string
             subtitleFontWeight: string
             titleLineHeight: string
@@ -458,6 +487,25 @@ const staticHomePage: HomePageContent = {
                 ),
             ])
         ) as HomeBlockVisibilityMap,
+        blockStyleOverrides: {
+            services: {
+                header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
+                grid: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+            },
+            products: {
+                header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
+                cards: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+            },
+            frameworks: {
+                header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
+                items: { columns: { mobile: '1', tablet: '2', desktop: '2' } },
+            },
+            contact: {
+                header: { titleSizeRem: { mobile: '3.5rem', tablet: '5rem', desktop: '6rem' } },
+                channels: { gapRem: { mobile: '2rem', tablet: '2.5rem', desktop: '3rem' } },
+                form: { layoutMode: { mobile: 'stack', tablet: 'stack', desktop: 'split' } },
+            },
+        },
     },
     hero: {
         stats: [
@@ -479,9 +527,17 @@ const staticHomePage: HomePageContent = {
             subtitleColor: '#64748b',
             highlightColor: '#1a2d5a',
             titleFontSizeMobile: '4.5rem',
+            titleFontSizeTablet: '6rem',
             titleFontSizeDesktop: '8rem',
             subtitleFontSizeMobile: '1.5rem',
+            subtitleFontSizeTablet: '1.75rem',
             subtitleFontSizeDesktop: '1.875rem',
+            ctaGapMobile: '1rem',
+            ctaGapTablet: '1rem',
+            ctaGapDesktop: '1rem',
+            ctaStackMobile: 'true',
+            ctaStackTablet: 'false',
+            ctaStackDesktop: 'false',
             titleFontWeight: '900',
             subtitleFontWeight: '500',
             titleLineHeight: '0.85',
@@ -608,6 +664,88 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
         ) as any
         return acc
     }, {} as HomeBlockVisibilityMap)
+    const blockStyleOverrides = {
+        services: {
+            header: {
+                titleSizeRem: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.services?.header?.titleSizeRem?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.services.header.titleSizeRem[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.services.header.titleSizeRem[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+            },
+            grid: {
+                columns: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.services?.grid?.columns?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.services.grid.columns[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.services.grid.columns[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+            },
+        },
+        products: {
+            header: {
+                titleSizeRem: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.products?.header?.titleSizeRem?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.products.header.titleSizeRem[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.products.header.titleSizeRem[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+            },
+            cards: {
+                columns: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.products?.cards?.columns?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.products.cards.columns[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.products.cards.columns[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+            },
+        },
+        frameworks: {
+            header: {
+                titleSizeRem: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.frameworks?.header?.titleSizeRem?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.frameworks.header.titleSizeRem[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.frameworks.header.titleSizeRem[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+            },
+            items: {
+                columns: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.frameworks?.items?.columns?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.frameworks.items.columns[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.frameworks.items.columns[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+            },
+        },
+        contact: {
+            header: {
+                titleSizeRem: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.contact?.header?.titleSizeRem?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.contact.header.titleSizeRem[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.contact.header.titleSizeRem[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+            },
+            channels: {
+                gapRem: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.contact?.channels?.gapRem?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.contact.channels.gapRem[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.contact.channels.gapRem[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+            },
+            form: {
+                layoutMode: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.contact?.form?.layoutMode?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.contact.form.layoutMode[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.contact.form.layoutMode[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+            },
+        },
+    } as HomeBlockStyleOverrides
 
     const services = rawServices.map((service) => {
         const staticMatch = staticServices.find(s => s.slug === service.slug)
@@ -641,6 +779,7 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
                 hiddenSections: hiddenSections as HomeSectionId[],
                 sectionVisibility,
                 blockVisibility,
+                blockStyleOverrides,
             },
             hero: {
                 ...staticHomePage.hero,

@@ -2,8 +2,29 @@ import { motion } from 'framer-motion'
 import { ContactForm } from '../../components/forms/ContactForm'
 import { Mail, MapPin, Linkedin, Terminal } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
+import type { HomeResponsiveViewport } from '../../admin/context/CMSContext'
 
-export function Contact() {
+type ContactProps = {
+    visibleBlocks?: {
+        header?: boolean
+        channels?: boolean
+        form?: boolean
+    }
+    viewport?: HomeResponsiveViewport
+    styleOverrides?: {
+        header?: {
+            titleSizeRem?: string
+        }
+        channels?: {
+            gapRem?: string
+        }
+        form?: {
+            layoutMode?: string
+        }
+    }
+}
+
+export function Contact({ visibleBlocks, viewport = 'desktop', styleOverrides }: ContactProps) {
     const { translatedState } = useLanguage()
     const section = translatedState.homePage.contactSection
     const sectionStyle = {
@@ -25,24 +46,53 @@ export function Contact() {
     const formInnerStyle = {
         backgroundColor: section.style.formInnerBackgroundColor || undefined,
     } as const
+    const blocks = {
+        header: visibleBlocks?.header !== false,
+        channels: visibleBlocks?.channels !== false,
+        form: visibleBlocks?.form !== false,
+    }
+    const showLeftColumn = blocks.header || blocks.channels
+    const parseNum = (value: string | undefined, fallback: number) => {
+        const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
+        return Number.isFinite(n) ? n : fallback
+    }
+    const headerTitleSizeRem = parseNum(
+        styleOverrides?.header?.titleSizeRem,
+        viewport === 'desktop' ? 6 : viewport === 'tablet' ? 5 : 3.5
+    )
+    const channelsGapRem = parseNum(
+        styleOverrides?.channels?.gapRem,
+        viewport === 'desktop' ? 3 : viewport === 'tablet' ? 2.5 : 2
+    )
+    const formLayoutMode = styleOverrides?.form?.layoutMode === 'split' ? 'split' : 'stack'
+    const formGridTemplateColumns = showLeftColumn && blocks.form && formLayoutMode === 'split'
+        ? 'minmax(0, 1fr) minmax(0, 1fr)'
+        : 'minmax(0, 1fr)'
+    if (!showLeftColumn && !blocks.form) return null
 
     return (
         <section style={sectionStyle} className="py-32 px-6 bg-white infra-grid relative">
             <div className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
-                    <div>
-                        <div className="flex items-center gap-4 mb-10">
+                <div className="grid gap-24" style={{ gridTemplateColumns: formGridTemplateColumns }}>
+                    {showLeftColumn && (
+                        <div>
+                        {blocks.header && (
+                            <>
+                            <div className="flex items-center gap-4 mb-10">
                                 <Terminal className="w-6 h-6 text-brand-primary" />
                                 <span className="text-sm font-black uppercase tracking-[0.4em] text-slate-400">
                                 {section.eyebrow}
                                 </span>
                             </div>
 
-                        <h2 className="text-6xl md:text-8xl font-black text-slate-900 mb-12 tracking-tighter leading-none">
+                        <h2 className="text-6xl md:text-8xl font-black text-slate-900 mb-12 tracking-tighter leading-none" style={{ fontSize: `${headerTitleSizeRem}rem`, lineHeight: 0.95 }}>
                             {section.titlePrefix} <span className="text-gradient">{section.titleAccent}</span>
                         </h2>
+                            </>
+                        )}
 
-                        <div className="space-y-12">
+                        {blocks.channels && (
+                            <div className="grid" style={{ gap: `${channelsGapRem}rem` }}>
                             {[
                                 { icon: Mail, label: section.labels.officialChannel, value: translatedState.site.contactEmail },
                                 { icon: MapPin, label: section.labels.hubHq, value: translatedState.site.contactAddress },
@@ -58,10 +108,13 @@ export function Contact() {
                                     </div>
                                 </div>
                             ))}
+                            </div>
+                        )}
                         </div>
-                    </div>
+                    )}
 
-                    <motion.div
+                    {blocks.form && (
+                        <motion.div
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
                         viewport={{ once: true }}
@@ -71,7 +124,8 @@ export function Contact() {
                         <div style={formInnerStyle} className="bg-white p-12 md:p-16 border-b-8 border-brand-primary shadow-2xl">
                             <ContactForm />
                         </div>
-                    </motion.div>
+                        </motion.div>
+                    )}
                 </div>
             </div>
         </section>

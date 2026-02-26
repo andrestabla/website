@@ -7,7 +7,7 @@ import { Frameworks } from '../sections/Frameworks/Frameworks'
 import { Contact } from '../sections/Contact/Contact'
 import { Layout } from '../components/layout/Layout'
 import { useLanguage } from '../context/LanguageContext'
-import type { HomeResponsiveViewport, HomeSectionId } from '../admin/context/CMSContext'
+import type { HomeResponsiveViewport, HomeSectionId, HomeBlockStyleOverrides } from '../admin/context/CMSContext'
 
 const HOME_SECTION_IDS: HomeSectionId[] = ['hero', 'services', 'products', 'frameworks', 'contact']
 
@@ -51,11 +51,28 @@ export function Home() {
             : []
     )
     const responsiveVisibility = rawLayout?.sectionVisibility
+    const responsiveBlockVisibility = rawLayout?.blockVisibility
+    const responsiveBlockStyles = rawLayout?.blockStyleOverrides as Partial<HomeBlockStyleOverrides> | undefined
     const isVisibleInViewport = (sectionId: HomeSectionId) => {
         if (hiddenSections.has(sectionId)) return false
         const sectionVisibility = responsiveVisibility?.[sectionId]
         if (!sectionVisibility) return true
         return sectionVisibility[viewport] !== false
+    }
+    const isBlockVisibleInViewport = (sectionId: HomeSectionId, blockId: string) => {
+        const sectionBlocks = responsiveBlockVisibility?.[sectionId] as Record<string, Partial<Record<HomeResponsiveViewport, boolean>>> | undefined
+        const blockVisibility = sectionBlocks?.[blockId]
+        if (!blockVisibility) return true
+        return blockVisibility[viewport] !== false
+    }
+    const getBlockStyleStringInViewport = (
+        sectionId: 'services' | 'products' | 'frameworks' | 'contact',
+        blockId: string,
+        prop: string,
+        fallback: string
+    ) => {
+        const raw = (responsiveBlockStyles as any)?.[sectionId]?.[blockId]?.[prop]?.[viewport]
+        return typeof raw === 'string' ? raw : fallback
     }
 
     const sectionRenderers: Record<HomeSectionId, () => ReactElement> = {
@@ -66,22 +83,66 @@ export function Home() {
         ),
         services: () => (
             <div id="servicios" data-track-section="home-servicios">
-                <Services />
+                <Services visibleBlocks={{
+                    header: isBlockVisibleInViewport('services', 'header'),
+                    grid: isBlockVisibleInViewport('services', 'grid'),
+                }} viewport={viewport} styleOverrides={{
+                    header: {
+                        titleSizeRem: getBlockStyleStringInViewport('services', 'header', 'titleSizeRem', viewport === 'desktop' ? '4.5rem' : viewport === 'tablet' ? '4rem' : '3rem'),
+                    },
+                    grid: {
+                        columns: getBlockStyleStringInViewport('services', 'grid', 'columns', viewport === 'desktop' ? '3' : viewport === 'tablet' ? '2' : '1'),
+                    },
+                }} />
             </div>
         ),
         products: () => (
             <div id="productos" data-track-section="home-productos">
-                <Products />
+                <Products visibleBlocks={{
+                    header: isBlockVisibleInViewport('products', 'header'),
+                    cards: isBlockVisibleInViewport('products', 'cards'),
+                }} viewport={viewport} styleOverrides={{
+                    header: {
+                        titleSizeRem: getBlockStyleStringInViewport('products', 'header', 'titleSizeRem', viewport === 'desktop' ? '4.5rem' : viewport === 'tablet' ? '4rem' : '3rem'),
+                    },
+                    cards: {
+                        columns: getBlockStyleStringInViewport('products', 'cards', 'columns', viewport === 'desktop' ? '3' : viewport === 'tablet' ? '2' : '1'),
+                    },
+                }} />
             </div>
         ),
         frameworks: () => (
             <div id="confianza" data-track-section="home-confianza">
-                <Frameworks />
+                <Frameworks visibleBlocks={{
+                    header: isBlockVisibleInViewport('frameworks', 'header'),
+                    items: isBlockVisibleInViewport('frameworks', 'items'),
+                }} viewport={viewport} styleOverrides={{
+                    header: {
+                        titleSizeRem: getBlockStyleStringInViewport('frameworks', 'header', 'titleSizeRem', viewport === 'desktop' ? '4.5rem' : viewport === 'tablet' ? '4rem' : '3rem'),
+                    },
+                    items: {
+                        columns: getBlockStyleStringInViewport('frameworks', 'items', 'columns', viewport === 'desktop' ? '2' : viewport === 'tablet' ? '2' : '1'),
+                    },
+                }} />
             </div>
         ),
         contact: () => (
             <div id="contacto" data-track-section="home-contacto">
-                <Contact />
+                <Contact visibleBlocks={{
+                    header: isBlockVisibleInViewport('contact', 'header'),
+                    channels: isBlockVisibleInViewport('contact', 'channels'),
+                    form: isBlockVisibleInViewport('contact', 'form'),
+                }} viewport={viewport} styleOverrides={{
+                    header: {
+                        titleSizeRem: getBlockStyleStringInViewport('contact', 'header', 'titleSizeRem', viewport === 'desktop' ? '6rem' : viewport === 'tablet' ? '5rem' : '3.5rem'),
+                    },
+                    channels: {
+                        gapRem: getBlockStyleStringInViewport('contact', 'channels', 'gapRem', viewport === 'desktop' ? '3rem' : viewport === 'tablet' ? '2.5rem' : '2rem'),
+                    },
+                    form: {
+                        layoutMode: getBlockStyleStringInViewport('contact', 'form', 'layoutMode', viewport === 'desktop' ? 'split' : 'stack'),
+                    },
+                }} />
             </div>
         ),
     }

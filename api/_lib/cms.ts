@@ -101,6 +101,25 @@ export function getDefaultCmsSnapshot(): CMSState {
             Object.fromEntries(HOME_SECTION_BLOCK_IDS[sectionId].map((blockId) => [blockId, { desktop: true, tablet: true, mobile: true }]))
           ])
         ) as any,
+        blockStyleOverrides: {
+          services: {
+            header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
+            grid: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+          },
+          products: {
+            header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
+            cards: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+          },
+          frameworks: {
+            header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
+            items: { columns: { mobile: '1', tablet: '2', desktop: '2' } },
+          },
+          contact: {
+            header: { titleSizeRem: { mobile: '3.5rem', tablet: '5rem', desktop: '6rem' } },
+            channels: { gapRem: { mobile: '2rem', tablet: '2.5rem', desktop: '3rem' } },
+            form: { layoutMode: { mobile: 'stack', tablet: 'stack', desktop: 'split' } },
+          },
+        },
       },
       hero: {
         stats: [
@@ -122,9 +141,17 @@ export function getDefaultCmsSnapshot(): CMSState {
           subtitleColor: '#64748b',
           highlightColor: '#1a2d5a',
           titleFontSizeMobile: '4.5rem',
+          titleFontSizeTablet: '6rem',
           titleFontSizeDesktop: '8rem',
           subtitleFontSizeMobile: '1.5rem',
+          subtitleFontSizeTablet: '1.75rem',
           subtitleFontSizeDesktop: '1.875rem',
+          ctaGapMobile: '1rem',
+          ctaGapTablet: '1rem',
+          ctaGapDesktop: '1rem',
+          ctaStackMobile: 'true',
+          ctaStackTablet: 'false',
+          ctaStackDesktop: 'false',
           titleFontWeight: '900',
           subtitleFontWeight: '500',
           titleLineHeight: '0.85',
@@ -240,6 +267,54 @@ export function sanitizeCmsSnapshot(input: unknown): CMSState {
       ]
     })
   )
+  const baseBlockStyles = (base as any).homePage.layout.blockStyleOverrides
+  const rawBlockStyles = rawLayout.blockStyleOverrides && typeof rawLayout.blockStyleOverrides === 'object'
+    ? rawLayout.blockStyleOverrides
+    : {}
+  const responsiveString = (value: any, fallback: any) =>
+    Object.fromEntries(
+      HOME_RESPONSIVE_VIEWPORTS.map((viewport) => [
+        viewport,
+        typeof value?.[viewport] === 'string' ? value[viewport] : fallback[viewport],
+      ])
+    )
+  const blockStyleOverrides = {
+    services: {
+      header: {
+        titleSizeRem: responsiveString(rawBlockStyles?.services?.header?.titleSizeRem, baseBlockStyles.services.header.titleSizeRem),
+      },
+      grid: {
+        columns: responsiveString(rawBlockStyles?.services?.grid?.columns, baseBlockStyles.services.grid.columns),
+      },
+    },
+    products: {
+      header: {
+        titleSizeRem: responsiveString(rawBlockStyles?.products?.header?.titleSizeRem, baseBlockStyles.products.header.titleSizeRem),
+      },
+      cards: {
+        columns: responsiveString(rawBlockStyles?.products?.cards?.columns, baseBlockStyles.products.cards.columns),
+      },
+    },
+    frameworks: {
+      header: {
+        titleSizeRem: responsiveString(rawBlockStyles?.frameworks?.header?.titleSizeRem, baseBlockStyles.frameworks.header.titleSizeRem),
+      },
+      items: {
+        columns: responsiveString(rawBlockStyles?.frameworks?.items?.columns, baseBlockStyles.frameworks.items.columns),
+      },
+    },
+    contact: {
+      header: {
+        titleSizeRem: responsiveString(rawBlockStyles?.contact?.header?.titleSizeRem, baseBlockStyles.contact.header.titleSizeRem),
+      },
+      channels: {
+        gapRem: responsiveString(rawBlockStyles?.contact?.channels?.gapRem, baseBlockStyles.contact.channels.gapRem),
+      },
+      form: {
+        layoutMode: responsiveString(rawBlockStyles?.contact?.form?.layoutMode, baseBlockStyles.contact.form.layoutMode),
+      },
+    },
+  }
 
   return {
     ...base,
@@ -259,6 +334,7 @@ export function sanitizeCmsSnapshot(input: unknown): CMSState {
         hiddenSections,
         sectionVisibility,
         blockVisibility,
+        blockStyleOverrides,
       },
       hero: {
         ...(base as any).homePage.hero,

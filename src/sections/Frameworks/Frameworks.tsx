@@ -1,10 +1,27 @@
 import { motion } from 'framer-motion'
 import { Shield, LayoutPanelLeft, Users } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
+import type { HomeResponsiveViewport } from '../../admin/context/CMSContext'
 
 const frameworkIcons = [Users, LayoutPanelLeft, Shield]
 
-export function Frameworks() {
+type FrameworksProps = {
+    visibleBlocks?: {
+        header?: boolean
+        items?: boolean
+    }
+    viewport?: HomeResponsiveViewport
+    styleOverrides?: {
+        header?: {
+            titleSizeRem?: string
+        }
+        items?: {
+            columns?: string
+        }
+    }
+}
+
+export function Frameworks({ visibleBlocks, viewport = 'desktop', styleOverrides }: FrameworksProps) {
     const { translatedState } = useLanguage()
     const frameworks = translatedState.homePage.frameworksSection
     const sectionStyle = {
@@ -15,6 +32,26 @@ export function Frameworks() {
         backgroundSize: frameworks.style.backgroundImageUrl ? 'cover' : undefined,
         backgroundPosition: frameworks.style.backgroundImageUrl ? 'center' : undefined,
     } as const
+    const blocks = {
+        header: visibleBlocks?.header !== false,
+        items: visibleBlocks?.items !== false,
+    }
+    const parseNum = (value: string | undefined, fallback: number) => {
+        const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
+        return Number.isFinite(n) ? n : fallback
+    }
+    const headerTitleSizeRem = parseNum(
+        styleOverrides?.header?.titleSizeRem,
+        viewport === 'desktop' ? 4.5 : viewport === 'tablet' ? 4 : 3
+    )
+    const itemColumns = Math.max(
+        1,
+        Math.min(
+            4,
+            Math.round(parseNum(styleOverrides?.items?.columns, viewport === 'desktop' ? 2 : viewport === 'tablet' ? 2 : 1))
+        )
+    )
+    if (!blocks.header && !blocks.items) return null
 
     return (
         <section style={sectionStyle} className="py-32 px-6 bg-slate-900 relative overflow-hidden">
@@ -22,22 +59,25 @@ export function Frameworks() {
 
             <div className="max-w-7xl mx-auto relative">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-24 items-start">
-                    <div className="lg:col-span-5">
+                    {blocks.header && (
+                        <div className="lg:col-span-5">
                         <div className="flex items-center gap-4 mb-8">
                             <span className="w-12 h-px bg-white/50" />
                             <span className="text-sm font-black uppercase tracking-[0.4em] text-white/50">
                                 {frameworks.eyebrow}
                             </span>
                         </div>
-                        <h2 className="text-5xl md:text-7xl font-black text-white mb-10 tracking-tighter leading-none">
+                        <h2 className="text-5xl md:text-7xl font-black text-white mb-10 tracking-tighter leading-none" style={{ fontSize: `${headerTitleSizeRem}rem`, lineHeight: 0.95 }}>
                             {frameworks.title}
                         </h2>
                         <p className="text-xl text-white/50 font-light leading-relaxed">
                             {frameworks.subtitle}
                         </p>
-                    </div>
+                        </div>
+                    )}
 
-                    <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {blocks.items && (
+                        <div className={`${blocks.header ? 'lg:col-span-7' : 'lg:col-span-12'} grid gap-8`} style={{ gridTemplateColumns: `repeat(${itemColumns}, minmax(0, 1fr))` }}>
                         {frameworks.items.map((item, index) => {
                             const Icon = frameworkIcons[index]
                             return (
@@ -63,7 +103,8 @@ export function Frameworks() {
                                 </motion.div>
                             )
                         })}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </section>

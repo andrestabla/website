@@ -35,5 +35,5 @@ export function Hero({ viewport }: HeroProps) {
         stats: heroBlockVisibility?.stats?.[effectiveViewport] !== false,
     }
 
-    return <HeroView hero={translatedState.hero} heroSection={translatedState.homePage.hero} visibleBlocks={visibleBlocks} />
+    return <HeroView hero={translatedState.hero} heroSection={translatedState.homePage.hero} viewport={effectiveViewport} visibleBlocks={visibleBlocks} />
 }

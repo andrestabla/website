@@ -5,8 +5,25 @@ import { Link } from 'react-router-dom'
 import { productsDetail } from '../../data/details'
 import { cn } from '../../lib/utils'
 import { useLanguage } from '../../context/LanguageContext'
+import type { HomeResponsiveViewport } from '../../admin/context/CMSContext'
 
-export function Products() {
+type ProductsProps = {
+    visibleBlocks?: {
+        header?: boolean
+        cards?: boolean
+    }
+    viewport?: HomeResponsiveViewport
+    styleOverrides?: {
+        header?: {
+            titleSizeRem?: string
+        }
+        cards?: {
+            columns?: string
+        }
+    }
+}
+
+export function Products({ visibleBlocks, viewport = 'desktop', styleOverrides }: ProductsProps) {
     const { translatedState } = useLanguage()
     const sectionCfg = translatedState.homePage.productsSection
     const products = {
@@ -21,11 +38,32 @@ export function Products() {
         backgroundSize: sectionCfg.style.backgroundImageUrl ? 'cover' : undefined,
         backgroundPosition: sectionCfg.style.backgroundImageUrl ? 'center' : undefined,
     } as const
+    const blocks = {
+        header: visibleBlocks?.header !== false,
+        cards: visibleBlocks?.cards !== false,
+    }
+    const parseNum = (value: string | undefined, fallback: number) => {
+        const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
+        return Number.isFinite(n) ? n : fallback
+    }
+    const headerTitleSizeRem = parseNum(
+        styleOverrides?.header?.titleSizeRem,
+        viewport === 'desktop' ? 4.5 : viewport === 'tablet' ? 4 : 3
+    )
+    const cardsColumns = Math.max(
+        1,
+        Math.min(
+            4,
+            Math.round(parseNum(styleOverrides?.cards?.columns, viewport === 'desktop' ? 3 : viewport === 'tablet' ? 2 : 1))
+        )
+    )
+    if (!blocks.header && !blocks.cards) return null
 
     return (
         <section style={sectionStyle} className="py-32 px-6 bg-white infra-grid">
             <div className="max-w-7xl mx-auto">
-                <div className="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-8">
+                {blocks.header && (
+                    <div className="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-8">
                     <div>
                         <div className="flex items-center gap-3 mb-6">
                             <LayoutGrid className="w-5 h-5 text-brand-secondary" />
@@ -33,16 +71,18 @@ export function Products() {
                                 {sectionCfg.eyebrow}
                             </span>
                         </div>
-                        <h2 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter">
+                        <h2 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter" style={{ fontSize: `${headerTitleSizeRem}rem`, lineHeight: 0.95 }}>
                             {products.title}
                         </h2>
                     </div>
                     <p className="text-xl text-slate-500 font-light max-w-sm">
                         {sectionCfg.subtitle}
                     </p>
-                </div>
+                    </div>
+                )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                {blocks.cards && (
+                    <div className="grid gap-12" style={{ gridTemplateColumns: `repeat(${cardsColumns}, minmax(0, 1fr))` }}>
                     {products.items.map((product, index) => {
                         const Icon = (product as any).icon
                         const detail = productsDetail[index]
@@ -94,7 +134,8 @@ export function Products() {
                             </Card>
                         )
                     })}
-                </div>
+                    </div>
+                )}
             </div>
         </section>
     )
