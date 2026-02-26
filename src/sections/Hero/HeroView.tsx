@@ -73,6 +73,16 @@ export function HeroView({ hero, heroSection, animated = true }: HeroViewProps) 
         fontWeight: hs.subtitleFontWeight || undefined,
     } as CSSProperties
     const panelBorderColor = hs.statsPanelBorderColor || undefined
+    const sectionVideoCoverStyle = {
+        width: 'max(210vw, 210vh)',
+        height: 'max(118.125vw, 118.125vh)',
+        transform: 'translate(-50%, -50%) scale(1.9)',
+    } as CSSProperties
+    const panelVideoCoverStyle = {
+        width: 'max(180vw, 180vh)',
+        height: 'max(101.25vw, 101.25vh)',
+        transform: 'translate(-50%, -50%) scale(2.05)',
+    } as CSSProperties
 
     return (
         <section style={sectionStyle} className="relative min-h-[90vh] flex flex-col items-center justify-center pt-24 pb-24 px-6 overflow-hidden bg-white infra-grid">
@@ -81,7 +91,8 @@ export function HeroView({ hero, heroSection, animated = true }: HeroViewProps) 
                     <iframe
                         src={sectionVideoEmbed}
                         title="Hero background video"
-                        className="absolute top-1/2 left-1/2 w-[177.78vh] min-w-full h-[56.25vw] min-h-full -translate-x-1/2 -translate-y-1/2 scale-[1.28]"
+                        className="absolute top-1/2 left-1/2"
+                        style={sectionVideoCoverStyle}
                         allow="autoplay; encrypted-media"
                         referrerPolicy="strict-origin-when-cross-origin"
                     />
@@ -150,7 +161,8 @@ export function HeroView({ hero, heroSection, animated = true }: HeroViewProps) 
                                 <iframe
                                     src={panelVideoEmbed}
                                     title="Hero panel background video"
-                                    className="absolute top-1/2 left-1/2 w-[177.78vh] min-w-full h-[56.25vw] min-h-full -translate-x-1/2 -translate-y-1/2 scale-[1.4]"
+                                    className="absolute top-1/2 left-1/2"
+                                    style={panelVideoCoverStyle}
                                     allow="autoplay; encrypted-media"
                                     referrerPolicy="strict-origin-when-cross-origin"
                                 />
@@ -185,4 +197,3 @@ export function HeroView({ hero, heroSection, animated = true }: HeroViewProps) 
         </section>
     )
 }
-

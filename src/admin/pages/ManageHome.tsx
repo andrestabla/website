@@ -977,8 +977,13 @@ export function ManageHome() {
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <ColorField label="Color CTA principal" value={designDraft.colorPrimary} onChange={v => setDesignDraft(d => ({ ...d, colorPrimary: v }))} />
                                                 <ColorField label="Texto CTA principal" value={designDraft.buttonPrimaryTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonPrimaryTextColor: v }))} />
+                                                <ColorField label="Hover fondo CTA principal" value={designDraft.buttonPrimaryHoverBgColor} onChange={v => setDesignDraft(d => ({ ...d, buttonPrimaryHoverBgColor: v }))} />
+                                                <ColorField label="Hover texto CTA principal" value={designDraft.buttonPrimaryHoverTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonPrimaryHoverTextColor: v }))} />
                                                 <ColorField label="Texto CTA secundario" value={designDraft.buttonOutlineTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineTextColor: v }))} />
                                                 <ColorField label="Borde CTA secundario" value={designDraft.buttonOutlineBorderColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineBorderColor: v }))} />
+                                                <ColorField label="Hover texto CTA secundario" value={designDraft.buttonOutlineHoverTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineHoverTextColor: v }))} />
+                                                <ColorField label="Hover borde CTA secundario" value={designDraft.buttonOutlineHoverBorderColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineHoverBorderColor: v }))} />
+                                                <ColorField label="Hover fondo CTA secundario" value={designDraft.buttonOutlineHoverBgColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineHoverBgColor: v }))} />
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <SegmentedField
@@ -1242,8 +1247,13 @@ export function ManageHome() {
                                             </select>
                                         </Field>
                                         <ColorField label="Texto botón primario" value={designDraft.buttonPrimaryTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonPrimaryTextColor: v }))} />
+                                        <ColorField label="Hover fondo botón primario" value={designDraft.buttonPrimaryHoverBgColor} onChange={v => setDesignDraft(d => ({ ...d, buttonPrimaryHoverBgColor: v }))} />
+                                        <ColorField label="Hover texto botón primario" value={designDraft.buttonPrimaryHoverTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonPrimaryHoverTextColor: v }))} />
                                         <ColorField label="Texto botón outline" value={designDraft.buttonOutlineTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineTextColor: v }))} />
                                         <ColorField label="Borde botón outline" value={designDraft.buttonOutlineBorderColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineBorderColor: v }))} />
+                                        <ColorField label="Hover texto botón outline" value={designDraft.buttonOutlineHoverTextColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineHoverTextColor: v }))} />
+                                        <ColorField label="Hover borde botón outline" value={designDraft.buttonOutlineHoverBorderColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineHoverBorderColor: v }))} />
+                                        <ColorField label="Hover fondo botón outline" value={designDraft.buttonOutlineHoverBgColor} onChange={v => setDesignDraft(d => ({ ...d, buttonOutlineHoverBgColor: v }))} />
                                     </div>
                                 </CollapsibleCard>
                                 <div className="bg-slate-900 text-white p-12 rounded-[2rem] shadow-2xl relative overflow-hidden">

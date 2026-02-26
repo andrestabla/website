@@ -171,8 +171,13 @@ export type DesignTokens = {
     borderRadius: string       // 'none' | 'sm' | 'md' | 'lg' | 'full'
     buttonStyle: string        // 'sharp' | 'rounded' | 'pill'
     buttonPrimaryTextColor: string
+    buttonPrimaryHoverTextColor: string
+    buttonPrimaryHoverBgColor: string
     buttonOutlineTextColor: string
     buttonOutlineBorderColor: string
+    buttonOutlineHoverTextColor: string
+    buttonOutlineHoverBorderColor: string
+    buttonOutlineHoverBgColor: string
     gridOpacity: string        // infra-grid opacity string
 
     // Dark panel color (hero card, service page sidebar)
@@ -260,8 +265,13 @@ export const defaultDesign: DesignTokens = {
     borderRadius: 'none',
     buttonStyle: 'sharp',
     buttonPrimaryTextColor: '#ffffff',
+    buttonPrimaryHoverTextColor: '#ffffff',
+    buttonPrimaryHoverBgColor: '#0f172a',
     buttonOutlineTextColor: '#ffffff',
     buttonOutlineBorderColor: '#ffffff',
+    buttonOutlineHoverTextColor: '#2563eb',
+    buttonOutlineHoverBorderColor: '#2563eb',
+    buttonOutlineHoverBgColor: 'transparent',
     gridOpacity: '0.03',
 
     logoMode: 'text',
@@ -311,8 +321,13 @@ export function injectDesignTokens(tokens: DesignTokens) {
     // Grid opacity
     root.style.setProperty('--cms-grid-opacity', tokens.gridOpacity)
     root.style.setProperty('--cms-button-primary-text', tokens.buttonPrimaryTextColor || '#ffffff')
+    root.style.setProperty('--cms-button-primary-hover-text', tokens.buttonPrimaryHoverTextColor || '#ffffff')
+    root.style.setProperty('--cms-button-primary-hover-bg', tokens.buttonPrimaryHoverBgColor || '#0f172a')
     root.style.setProperty('--cms-button-outline-text', tokens.buttonOutlineTextColor || '#ffffff')
     root.style.setProperty('--cms-button-outline-border', tokens.buttonOutlineBorderColor || '#e2e8f0')
+    root.style.setProperty('--cms-button-outline-hover-text', tokens.buttonOutlineHoverTextColor || '#2563eb')
+    root.style.setProperty('--cms-button-outline-hover-border', tokens.buttonOutlineHoverBorderColor || '#2563eb')
+    root.style.setProperty('--cms-button-outline-hover-bg', tokens.buttonOutlineHoverBgColor || 'transparent')
 
     // Loader tokens
     root.style.setProperty('--cms-loader-bg', tokens.loaderBackgroundColor || '#0f172a')
