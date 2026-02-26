@@ -1329,6 +1329,53 @@ export function ManageHome() {
                                                 })}
                                             </div>
 
+                                            {isSelected && (structureHeroBlock === 'headline' || structureHeroBlock === 'ctas') && (
+                                                <div className="absolute left-6 bottom-6 z-20 w-[min(34rem,88vw)] rounded-2xl border border-slate-200 bg-white/95 backdrop-blur p-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">
+                                                        Edición inline · {structureHeroBlock === 'headline' ? 'Titular' : 'CTAs'}
+                                                    </div>
+                                                    {structureHeroBlock === 'headline' ? (
+                                                        <div className="space-y-2">
+                                                            <input
+                                                                value={heroDraft.highlight}
+                                                                onChange={(e) => setHeroDraft({ ...heroDraft, highlight: e.target.value })}
+                                                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+                                                                placeholder="Highlight"
+                                                            />
+                                                            <textarea
+                                                                rows={2}
+                                                                value={heroDraft.title}
+                                                                onChange={(e) => setHeroDraft({ ...heroDraft, title: e.target.value })}
+                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-900"
+                                                                placeholder="Título principal"
+                                                            />
+                                                            <textarea
+                                                                rows={2}
+                                                                value={heroDraft.subtitle}
+                                                                onChange={(e) => setHeroDraft({ ...heroDraft, subtitle: e.target.value })}
+                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600"
+                                                                placeholder="Subtítulo"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                            <input
+                                                                value={heroDraft.cta}
+                                                                onChange={(e) => setHeroDraft({ ...heroDraft, cta: e.target.value })}
+                                                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+                                                                placeholder="CTA primario"
+                                                            />
+                                                            <input
+                                                                value={heroDraft.secondaryCta}
+                                                                onChange={(e) => setHeroDraft({ ...heroDraft, secondaryCta: e.target.value })}
+                                                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+                                                                placeholder="CTA secundario"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
@@ -1474,13 +1521,41 @@ export function ManageHome() {
                                                             {isVisible ? 'Visible' : 'Oculta'}
                                                         </span>
                                                     </div>
-                                                    <div
-                                                        className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
-                                                        style={{ fontSize: `${servicesHeaderTitleSize}rem`, lineHeight: 0.95 }}
-                                                    >
-                                                        {getStructureSectionHeadline(sectionId) || meta.label}
-                                                    </div>
-                                                    <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                    {isSelected && structureServicesBlock === 'header' ? (
+                                                        <div className="mt-3 rounded-xl border border-brand-primary/20 bg-white/95 p-3 space-y-2 max-w-3xl" onClick={(e) => e.stopPropagation()}>
+                                                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Edición inline · Header</div>
+                                                            <input
+                                                                value={homeDraft.servicesSection.eyebrow}
+                                                                onChange={(e) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, eyebrow: e.target.value } })}
+                                                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+                                                                placeholder="Eyebrow"
+                                                            />
+                                                            <textarea
+                                                                rows={2}
+                                                                value={homeDraft.servicesSection.title}
+                                                                onChange={(e) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, title: e.target.value } })}
+                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-900"
+                                                                placeholder="Título"
+                                                            />
+                                                            <textarea
+                                                                rows={2}
+                                                                value={homeDraft.servicesSection.subtitle}
+                                                                onChange={(e) => setHome({ ...homeDraft, servicesSection: { ...homeDraft.servicesSection, subtitle: e.target.value } })}
+                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600"
+                                                                placeholder="Subtítulo"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div
+                                                                className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
+                                                                style={{ fontSize: `${servicesHeaderTitleSize}rem`, lineHeight: 0.95 }}
+                                                            >
+                                                                {getStructureSectionHeadline(sectionId) || meta.label}
+                                                            </div>
+                                                            <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1645,13 +1720,41 @@ export function ManageHome() {
                                                             {isVisible ? 'Visible' : 'Oculta'}
                                                         </span>
                                                     </div>
-                                                    <div
-                                                        className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
-                                                        style={{ fontSize: `${productsHeaderTitleSize}rem`, lineHeight: 0.95 }}
-                                                    >
-                                                        {getStructureSectionHeadline(sectionId) || meta.label}
-                                                    </div>
-                                                    <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                    {isSelected && structureProductsBlock === 'header' ? (
+                                                        <div className="mt-3 rounded-xl border border-brand-primary/20 bg-white/95 p-3 space-y-2 max-w-3xl" onClick={(e) => e.stopPropagation()}>
+                                                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Edición inline · Header</div>
+                                                            <input
+                                                                value={homeDraft.productsSection.eyebrow}
+                                                                onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, eyebrow: e.target.value } })}
+                                                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+                                                                placeholder="Eyebrow"
+                                                            />
+                                                            <textarea
+                                                                rows={2}
+                                                                value={homeDraft.productsSection.title}
+                                                                onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, title: e.target.value } })}
+                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-900"
+                                                                placeholder="Título"
+                                                            />
+                                                            <textarea
+                                                                rows={2}
+                                                                value={homeDraft.productsSection.subtitle}
+                                                                onChange={(e) => setHome({ ...homeDraft, productsSection: { ...homeDraft.productsSection, subtitle: e.target.value } })}
+                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600"
+                                                                placeholder="Subtítulo"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div
+                                                                className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
+                                                                style={{ fontSize: `${productsHeaderTitleSize}rem`, lineHeight: 0.95 }}
+                                                            >
+                                                                {getStructureSectionHeadline(sectionId) || meta.label}
+                                                            </div>
+                                                            <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1819,13 +1922,41 @@ export function ManageHome() {
                                                             {isVisible ? 'Visible' : 'Oculta'}
                                                         </span>
                                                     </div>
-                                                    <div
-                                                        className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
-                                                        style={{ fontSize: `${frameworksHeaderTitleSize}rem`, lineHeight: 0.95 }}
-                                                    >
-                                                        {getStructureSectionHeadline(sectionId) || meta.label}
-                                                    </div>
-                                                    <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                    {isSelected && structureFrameworksBlock === 'header' ? (
+                                                        <div className="mt-3 rounded-xl border border-brand-primary/20 bg-white/95 p-3 space-y-2 max-w-3xl" onClick={(e) => e.stopPropagation()}>
+                                                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Edición inline · Header</div>
+                                                            <input
+                                                                value={homeDraft.frameworksSection.eyebrow}
+                                                                onChange={(e) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, eyebrow: e.target.value } })}
+                                                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+                                                                placeholder="Eyebrow"
+                                                            />
+                                                            <textarea
+                                                                rows={2}
+                                                                value={homeDraft.frameworksSection.title}
+                                                                onChange={(e) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, title: e.target.value } })}
+                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-900"
+                                                                placeholder="Título"
+                                                            />
+                                                            <textarea
+                                                                rows={2}
+                                                                value={homeDraft.frameworksSection.subtitle}
+                                                                onChange={(e) => setHome({ ...homeDraft, frameworksSection: { ...homeDraft.frameworksSection, subtitle: e.target.value } })}
+                                                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600"
+                                                                placeholder="Subtítulo"
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div
+                                                                className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
+                                                                style={{ fontSize: `${frameworksHeaderTitleSize}rem`, lineHeight: 0.95 }}
+                                                            >
+                                                                {getStructureSectionHeadline(sectionId) || meta.label}
+                                                            </div>
+                                                            <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -1986,13 +2117,41 @@ export function ManageHome() {
                                                             {isVisible ? 'Visible' : 'Oculta'}
                                                         </span>
                                                     </div>
-                                                    <div
-                                                        className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
-                                                        style={{ fontSize: `${contactHeaderTitleSize}rem`, lineHeight: 0.95 }}
-                                                    >
-                                                        {getStructureSectionHeadline(sectionId) || meta.label}
-                                                    </div>
-                                                    <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                    {isSelected && structureContactBlock === 'header' ? (
+                                                        <div className="mt-3 rounded-xl border border-brand-primary/20 bg-white/95 p-3 space-y-2 max-w-3xl" onClick={(e) => e.stopPropagation()}>
+                                                            <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Edición inline · Header</div>
+                                                            <input
+                                                                value={homeDraft.contactSection.eyebrow}
+                                                                onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, eyebrow: e.target.value } })}
+                                                                className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+                                                                placeholder="Eyebrow"
+                                                            />
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                <input
+                                                                    value={homeDraft.contactSection.titlePrefix}
+                                                                    onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, titlePrefix: e.target.value } })}
+                                                                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+                                                                    placeholder="Título (prefijo)"
+                                                                />
+                                                                <input
+                                                                    value={homeDraft.contactSection.titleAccent}
+                                                                    onChange={(e) => setHome({ ...homeDraft, contactSection: { ...homeDraft.contactSection, titleAccent: e.target.value } })}
+                                                                    className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700"
+                                                                    placeholder="Título (acento)"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div
+                                                                className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 mt-3 line-clamp-2"
+                                                                style={{ fontSize: `${contactHeaderTitleSize}rem`, lineHeight: 0.95 }}
+                                                            >
+                                                                {getStructureSectionHeadline(sectionId) || meta.label}
+                                                            </div>
+                                                            <div className="text-sm text-slate-500 mt-2 max-w-3xl line-clamp-2">{getStructureSectionSubline(sectionId) || meta.description}</div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
 
