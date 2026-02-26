@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef, type ComponentType, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, useRef, type ComponentType, type CSSProperties, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -28,11 +28,13 @@ import {
 import { useCMS, type HeroContent, type HomePageContent, type DesignTokens } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
 import { HeroView } from '../../sections/Hero/HeroView'
+import { Button } from '../../components/ui/Button'
 
 type Tab = 'hero' | 'services' | 'products' | 'frameworks' | 'contact' | 'visual' | 'advanced' | 'structure' | 'sections'
 
 const COLOR_SWATCHES = ['#ffffff', '#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#334155', '#0f172a', '#1a2d5a', '#2563eb', '#3b82f6', '#f97316']
 const FONT_PRESETS = ['Inter', 'Space Grotesk', 'Manrope', 'Sora', 'IBM Plex Sans', 'Montserrat', 'Poppins', 'system-ui']
+const CMS_RADIUS_VALUES: Record<string, string> = { none: '0px', sm: '4px', md: '8px', lg: '16px', full: '9999px' }
 
 function getYouTubeId(url: string): string | null {
     if (!url) return null
@@ -412,6 +414,19 @@ export function ManageHome() {
         JSON.stringify(state.design) !== JSON.stringify(designDraft)
 
     const heroStyle = homeDraft.hero.style
+    const heroButtonRadius = CMS_RADIUS_VALUES[String(designDraft.borderRadius || 'none')] ?? '0px'
+    const heroPrimaryCtaPreview = heroDraft.cta.trim() || 'Iniciar transformación'
+    const heroSecondaryCtaPreview = heroDraft.secondaryCta.trim() || 'Ver servicios'
+    const heroButtonPreviewVars = {
+        ['--cms-button-primary-text' as any]: designDraft.buttonPrimaryTextColor || '#ffffff',
+        ['--cms-button-primary-hover-text' as any]: designDraft.buttonPrimaryHoverTextColor || '#ffffff',
+        ['--cms-button-primary-hover-bg' as any]: designDraft.buttonPrimaryHoverBgColor || '#0f172a',
+        ['--cms-button-outline-text' as any]: designDraft.buttonOutlineTextColor || '#ffffff',
+        ['--cms-button-outline-border' as any]: designDraft.buttonOutlineBorderColor || '#e2e8f0',
+        ['--cms-button-outline-hover-text' as any]: designDraft.buttonOutlineHoverTextColor || '#2563eb',
+        ['--cms-button-outline-hover-border' as any]: designDraft.buttonOutlineHoverBorderColor || '#2563eb',
+        ['--cms-button-outline-hover-bg' as any]: designDraft.buttonOutlineHoverBgColor || 'transparent',
+    } as CSSProperties
     const parseNum = (value: string | undefined, fallback: number) => {
         const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
         return Number.isFinite(n) ? n : fallback
@@ -544,7 +559,7 @@ export function ManageHome() {
     const quickFieldIndex = useMemo(() => ([
         { id: 'hero-title', tab: 'hero', label: 'Hero título', keywords: 'hero title titular h1 headline', action: () => { setTab('hero'); setHeroPanelTab('content'); fieldRefs.title.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) } },
         { id: 'hero-subtitle', tab: 'hero', label: 'Hero subtítulo', keywords: 'hero subtitle subtitulo copy description', action: () => { setTab('hero'); setHeroPanelTab('content'); fieldRefs.subtitle.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) } },
-        { id: 'hero-cta', tab: 'hero', label: 'Hero CTA', keywords: 'cta button boton call to action', action: () => { setTab('hero'); setHeroPanelTab('cta'); } },
+        { id: 'hero-cta', tab: 'hero', label: 'Hero botones (CTA)', keywords: 'cta button boton call to action iniciar transformacion ver servicios', action: () => { setTab('hero'); fieldRefs.cta.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } },
         { id: 'hero-overlay', tab: 'hero', label: 'Hero overlay / filtro', keywords: 'overlay filtro opacity opacidad background hero', action: () => { setTab('hero'); setHeroPanelTab('background'); } },
         { id: 'hero-stats', tab: 'hero', label: 'Hero stats panel', keywords: 'stats panel metricas hero', action: () => { setTab('hero'); setHeroPanelTab('stats'); } },
         { id: 'services-header', tab: 'services', label: 'Servicios cabecera Home', keywords: 'services home header title subtitle eyebrow', action: () => setTab('services') },
@@ -554,7 +569,7 @@ export function ManageHome() {
         { id: 'visual-palette', tab: 'visual', label: 'Paleta global', keywords: 'color palette primary secondary accent visual', action: () => setTab('visual') },
         { id: 'visual-typography', tab: 'visual', label: 'Tipografías globales', keywords: 'font typography display body visual', action: () => setTab('visual') },
         { id: 'json-advanced', tab: 'advanced', label: 'JSON avanzado', keywords: 'json advanced raw', action: () => setTab('advanced') },
-    ]), [fieldRefs.title, fieldRefs.subtitle])
+    ]), [fieldRefs.title, fieldRefs.subtitle, fieldRefs.cta])
 
     const visibleQuickFields = useMemo(() => {
         const q = fieldSearch.trim().toLowerCase()
@@ -872,14 +887,151 @@ export function ManageHome() {
                                             { value: 'content', label: 'Contenido' },
                                             { value: 'background', label: 'Fondo' },
                                             { value: 'type', label: 'Tipografía' },
-                                            { value: 'cta', label: 'CTA' },
+                                            { value: 'cta', label: 'Botones' },
                                             { value: 'stats', label: 'Stats' },
                                         ]}
                                     />
                                 </section>
 
+                                <section className="relative overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-slate-50 p-4 shadow-sm">
+                                    <div className="absolute inset-0 opacity-60 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 15% 20%, rgba(37,99,235,0.12), transparent 40%), radial-gradient(circle at 90% 10%, rgba(15,23,42,0.08), transparent 42%)' }} />
+                                    <div className="relative space-y-4">
+                                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                                            <div>
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Editor rápido · Botones del Hero</div>
+                                                <div className="text-sm font-bold text-slate-900 mt-1">Aquí editas los dos botones visibles del bloque principal (como en tu screenshot).</div>
+                                                <div className="text-xs text-slate-500 mt-1">Cambia el texto aquí y usa “Botones” para colores/hover. El preview se actualiza de inmediato.</div>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setHeroPanelTab('cta')}
+                                                    className="px-3 py-2 rounded-xl border border-blue-200 bg-white text-[10px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-50"
+                                                >
+                                                    Abrir estilos de botones
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setHeroPanelTab('content')}
+                                                    className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                                                >
+                                                    Ir a textos del Hero
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-4">
+                                            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    <div ref={fieldRefs.cta}>
+                                                        <Field label="Botón primario (azul / izquierda)" hint="Ejemplo: INICIAR TRANSFORMACIÓN">
+                                                            <Input
+                                                                value={heroDraft.cta}
+                                                                onChange={(e) => setHeroDraft((d) => ({ ...d, cta: e.target.value }))}
+                                                                placeholder="Iniciar transformación"
+                                                            />
+                                                        </Field>
+                                                    </div>
+                                                    <div ref={fieldRefs.secondaryCta}>
+                                                        <Field label="Botón secundario (borde / derecha)" hint="Ejemplo: VER SERVICIOS">
+                                                            <Input
+                                                                value={heroDraft.secondaryCta}
+                                                                onChange={(e) => setHeroDraft((d) => ({ ...d, secondaryCta: e.target.value }))}
+                                                                placeholder="Ver servicios"
+                                                            />
+                                                        </Field>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <SegmentedField
+                                                        label="Forma de botón (global)"
+                                                        value={String(designDraft.buttonStyle || 'sharp') as 'sharp' | 'rounded' | 'pill'}
+                                                        onChange={(v) => setDesignDraft((d) => ({ ...d, buttonStyle: v }))}
+                                                        options={[
+                                                            { value: 'sharp', label: 'Sharp' },
+                                                            { value: 'rounded', label: 'Rounded' },
+                                                            { value: 'pill', label: 'Pill' },
+                                                        ]}
+                                                    />
+                                                    <Field label="Border radius (global)" hint="Afecta botones y otros elementos con radio global.">
+                                                        <select
+                                                            value={designDraft.borderRadius || 'lg'}
+                                                            onChange={(e) => setDesignDraft((d) => ({ ...d, borderRadius: e.target.value }))}
+                                                            className="w-full h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700"
+                                                        >
+                                                            <option value="none">None</option>
+                                                            <option value="sm">SM</option>
+                                                            <option value="md">MD</option>
+                                                            <option value="lg">LG</option>
+                                                            <option value="full">Full</option>
+                                                        </select>
+                                                    </Field>
+                                                </div>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-slate-800 bg-slate-950 text-white p-4 space-y-4 shadow-inner">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <div className="text-[10px] font-black uppercase tracking-widest text-blue-300">Vista previa de botones</div>
+                                                        <div className="text-xs text-slate-300 mt-1">Simula el bloque de acciones del Hero para editar más rápido.</div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsPreviewModalOpen(true)}
+                                                        className="px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-[10px] font-black uppercase tracking-widest text-slate-200 hover:border-blue-400"
+                                                    >
+                                                        Abrir preview
+                                                    </button>
+                                                </div>
+
+                                                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                                                    <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-center gap-3">
+                                                        <Button
+                                                            type="button"
+                                                            size="lg"
+                                                            className="w-full md:w-auto justify-center md:justify-start"
+                                                            style={{
+                                                                ...heroButtonPreviewVars,
+                                                                backgroundColor: designDraft.colorPrimary || undefined,
+                                                                borderRadius: heroButtonRadius,
+                                                            } as any}
+                                                        >
+                                                            {heroPrimaryCtaPreview}
+                                                            <ArrowRight className="ml-3 w-4 h-4" />
+                                                        </Button>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="lg"
+                                                            className="w-full md:w-auto justify-center md:justify-start bg-transparent"
+                                                            style={{
+                                                                ...heroButtonPreviewVars,
+                                                                borderRadius: heroButtonRadius,
+                                                            } as any}
+                                                        >
+                                                            {heroSecondaryCtaPreview}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                                                    <div className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-slate-300">
+                                                        <span className="font-black uppercase tracking-widest text-[10px] text-slate-400">Dónde cambiar texto</span>
+                                                        <div className="mt-1">En los campos de la izquierda (arriba).</div>
+                                                    </div>
+                                                    <div className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 text-slate-300">
+                                                        <span className="font-black uppercase tracking-widest text-[10px] text-slate-400">Dónde cambiar colores</span>
+                                                        <div className="mt-1">Tab <strong className="text-white">Botones</strong> o botón “Abrir estilos de botones”.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
                                 {heroPanelTab === 'content' && (
-                                    <CollapsibleCard title="Contenido principal" subtitle="Eyebrow, H1, subtítulo y CTAs" defaultOpen>
+                                    <CollapsibleCard title="Contenido principal" subtitle="Eyebrow, H1 y subtítulo del Hero (los botones se editan en el editor rápido de arriba)" defaultOpen>
                                         <div className="space-y-5 pt-5">
                                             <div ref={fieldRefs.highlight}>
                                                 <Field label="Highlight / Eyebrow">
@@ -896,13 +1048,19 @@ export function ManageHome() {
                                                     <Textarea rows={3} value={heroDraft.subtitle} onChange={e => setHeroDraft(d => ({ ...d, subtitle: e.target.value }))} />
                                                 </Field>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div ref={fieldRefs.cta}>
-                                                    <Field label="CTA Primario"><Input value={heroDraft.cta} onChange={e => setHeroDraft(d => ({ ...d, cta: e.target.value }))} /></Field>
+                                            <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                                <div>
+                                                    <div className="text-[10px] font-black uppercase tracking-widest text-blue-700">Botones del Hero</div>
+                                                    <div className="text-sm font-semibold text-slate-900 mt-1">Ahora se editan en el bloque “Editor rápido · Botones del Hero” de arriba.</div>
+                                                    <div className="text-xs text-slate-500 mt-1">Ahí puedes cambiar textos y ver el resultado sin navegar entre sub-tabs.</div>
                                                 </div>
-                                                <div ref={fieldRefs.secondaryCta}>
-                                                    <Field label="CTA Secundario"><Input value={heroDraft.secondaryCta} onChange={e => setHeroDraft(d => ({ ...d, secondaryCta: e.target.value }))} /></Field>
-                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setHeroPanelTab('cta')}
+                                                    className="px-4 py-2.5 rounded-xl border border-blue-200 bg-white text-[10px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-50"
+                                                >
+                                                    Abrir estilos de botones
+                                                </button>
                                             </div>
                                         </div>
                                     </CollapsibleCard>
@@ -968,7 +1126,7 @@ export function ManageHome() {
                                 )}
 
                                 {heroPanelTab === 'cta' && (
-                                    <CollapsibleCard title="CTA rápido (botones del Hero)" subtitle="Textos, colores y forma global de botones" defaultOpen>
+                                    <CollapsibleCard title="Botones del Hero · Estilo avanzado" subtitle="Colores, hover y forma global de botones (los textos se editan arriba en el editor rápido)" defaultOpen>
                                         <div className="space-y-6 pt-5">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <Field label="Texto CTA principal"><Input value={heroDraft.cta} onChange={(e) => setHeroDraft(d => ({ ...d, cta: e.target.value }))} /></Field>
