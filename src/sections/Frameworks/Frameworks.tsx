@@ -18,6 +18,7 @@ type FrameworksProps = {
         }
         items?: {
             columns?: string
+            itemLimit?: string
         }
     }
 }
@@ -64,6 +65,14 @@ export function Frameworks({ visibleBlocks, blockOrder, viewport = 'desktop', st
             Math.round(parseNum(styleOverrides?.items?.columns, viewport === 'desktop' ? 2 : viewport === 'tablet' ? 2 : 1))
         )
     )
+    const itemLimit = Math.max(
+        1,
+        Math.min(
+            12,
+            Math.round(parseNum(styleOverrides?.items?.itemLimit, viewport === 'desktop' ? 3 : viewport === 'tablet' ? 3 : 2))
+        )
+    )
+    const visibleItems = frameworks.items.slice(0, itemLimit)
     if (!blocks.header && !blocks.items) return null
 
     return (
@@ -91,7 +100,7 @@ export function Frameworks({ visibleBlocks, blockOrder, viewport = 'desktop', st
 
                     {blocks.items && (
                         <div className={`${blocks.header ? 'lg:col-span-7' : 'lg:col-span-12'} grid gap-8`} style={{ order: itemsOrder + 1, gridTemplateColumns: `repeat(${itemColumns}, minmax(0, 1fr))` }}>
-                        {frameworks.items.map((item, index) => {
+                        {visibleItems.map((item, index) => {
                             const Icon = frameworkIcons[index]
                             return (
                                 <motion.div

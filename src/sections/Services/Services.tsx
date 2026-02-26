@@ -18,6 +18,7 @@ type ServicesProps = {
         }
         grid?: {
             columns?: string
+            itemLimit?: string
         }
     }
 }
@@ -66,6 +67,14 @@ export function Services({ visibleBlocks, blockOrder, viewport = 'desktop', styl
             Math.round(parseNum(styleOverrides?.grid?.columns, viewport === 'desktop' ? 3 : viewport === 'tablet' ? 2 : 1))
         )
     )
+    const gridItemLimit = Math.max(
+        1,
+        Math.min(
+            12,
+            Math.round(parseNum(styleOverrides?.grid?.itemLimit, viewport === 'desktop' ? 6 : viewport === 'tablet' ? 6 : 4))
+        )
+    )
+    const visibleServices = services.slice(0, gridItemLimit)
     if (!blocks.header && !blocks.grid) return null
 
     return (
@@ -99,7 +108,7 @@ export function Services({ visibleBlocks, blockOrder, viewport = 'desktop', styl
 
                 {blocks.grid && (
                     <div className="grid gap-0 border-t border-l border-slate-200" style={{ order: gridOrder + 1, gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}>
-                    {services.map((service, index) => {
+                    {visibleServices.map((service, index) => {
                         // Get the icon from static data by matching slug
                         const staticDetail = servicesDetail.find(d => d.slug === service.slug) ?? servicesDetail[index]
                         const Icon = staticDetail?.icon

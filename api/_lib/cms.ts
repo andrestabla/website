@@ -109,15 +109,24 @@ export function getDefaultCmsSnapshot(): CMSState {
         blockStyleOverrides: {
           services: {
             header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
-            grid: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+            grid: {
+              columns: { mobile: '1', tablet: '2', desktop: '3' },
+              itemLimit: { mobile: '4', tablet: '6', desktop: '6' },
+            },
           },
           products: {
             header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
-            cards: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+            cards: {
+              columns: { mobile: '1', tablet: '2', desktop: '3' },
+              itemLimit: { mobile: '2', tablet: '3', desktop: '3' },
+            },
           },
           frameworks: {
             header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
-            items: { columns: { mobile: '1', tablet: '2', desktop: '2' } },
+            items: {
+              columns: { mobile: '1', tablet: '2', desktop: '2' },
+              itemLimit: { mobile: '2', tablet: '3', desktop: '3' },
+            },
           },
           contact: {
             header: { titleSizeRem: { mobile: '3.5rem', tablet: '5rem', desktop: '6rem' } },
@@ -305,6 +314,7 @@ export function sanitizeCmsSnapshot(input: unknown): CMSState {
       },
       grid: {
         columns: responsiveString(rawBlockStyles?.services?.grid?.columns, baseBlockStyles.services.grid.columns),
+        itemLimit: responsiveString(rawBlockStyles?.services?.grid?.itemLimit, baseBlockStyles.services.grid.itemLimit),
       },
     },
     products: {
@@ -313,6 +323,7 @@ export function sanitizeCmsSnapshot(input: unknown): CMSState {
       },
       cards: {
         columns: responsiveString(rawBlockStyles?.products?.cards?.columns, baseBlockStyles.products.cards.columns),
+        itemLimit: responsiveString(rawBlockStyles?.products?.cards?.itemLimit, baseBlockStyles.products.cards.itemLimit),
       },
     },
     frameworks: {
@@ -321,6 +332,7 @@ export function sanitizeCmsSnapshot(input: unknown): CMSState {
       },
       items: {
         columns: responsiveString(rawBlockStyles?.frameworks?.items?.columns, baseBlockStyles.frameworks.items.columns),
+        itemLimit: responsiveString(rawBlockStyles?.frameworks?.items?.itemLimit, baseBlockStyles.frameworks.items.itemLimit),
       },
     },
     contact: {

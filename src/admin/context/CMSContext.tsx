@@ -95,15 +95,15 @@ export type HomeResponsiveStringMap = Record<HomeResponsiveViewport, string>
 export type HomeBlockStyleOverrides = {
     services: {
         header: { titleSizeRem: HomeResponsiveStringMap }
-        grid: { columns: HomeResponsiveStringMap }
+        grid: { columns: HomeResponsiveStringMap; itemLimit: HomeResponsiveStringMap }
     }
     products: {
         header: { titleSizeRem: HomeResponsiveStringMap }
-        cards: { columns: HomeResponsiveStringMap }
+        cards: { columns: HomeResponsiveStringMap; itemLimit: HomeResponsiveStringMap }
     }
     frameworks: {
         header: { titleSizeRem: HomeResponsiveStringMap }
-        items: { columns: HomeResponsiveStringMap }
+        items: { columns: HomeResponsiveStringMap; itemLimit: HomeResponsiveStringMap }
     }
     contact: {
         header: { titleSizeRem: HomeResponsiveStringMap }
@@ -501,15 +501,24 @@ const staticHomePage: HomePageContent = {
         blockStyleOverrides: {
             services: {
                 header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
-                grid: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+                grid: {
+                    columns: { mobile: '1', tablet: '2', desktop: '3' },
+                    itemLimit: { mobile: '4', tablet: '6', desktop: '6' },
+                },
             },
             products: {
                 header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
-                cards: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+                cards: {
+                    columns: { mobile: '1', tablet: '2', desktop: '3' },
+                    itemLimit: { mobile: '2', tablet: '3', desktop: '3' },
+                },
             },
             frameworks: {
                 header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
-                items: { columns: { mobile: '1', tablet: '2', desktop: '2' } },
+                items: {
+                    columns: { mobile: '1', tablet: '2', desktop: '2' },
+                    itemLimit: { mobile: '2', tablet: '3', desktop: '3' },
+                },
             },
             contact: {
                 header: { titleSizeRem: { mobile: '3.5rem', tablet: '5rem', desktop: '6rem' } },
@@ -706,6 +715,12 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
                         : staticHomePage.layout.blockStyleOverrides.services.grid.columns[viewport]
                     return acc
                 }, {} as HomeResponsiveStringMap),
+                itemLimit: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.services?.grid?.itemLimit?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.services.grid.itemLimit[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.services.grid.itemLimit[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
             },
         },
         products: {
@@ -724,6 +739,12 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
                         : staticHomePage.layout.blockStyleOverrides.products.cards.columns[viewport]
                     return acc
                 }, {} as HomeResponsiveStringMap),
+                itemLimit: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.products?.cards?.itemLimit?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.products.cards.itemLimit[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.products.cards.itemLimit[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
             },
         },
         frameworks: {
@@ -740,6 +761,12 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
                     acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.frameworks?.items?.columns?.[viewport] === 'string'
                         ? (rawLayout as any).blockStyleOverrides.frameworks.items.columns[viewport]
                         : staticHomePage.layout.blockStyleOverrides.frameworks.items.columns[viewport]
+                    return acc
+                }, {} as HomeResponsiveStringMap),
+                itemLimit: HOME_RESPONSIVE_VIEWPORTS.reduce((acc, viewport) => {
+                    acc[viewport] = typeof (rawLayout as any)?.blockStyleOverrides?.frameworks?.items?.itemLimit?.[viewport] === 'string'
+                        ? (rawLayout as any).blockStyleOverrides.frameworks.items.itemLimit[viewport]
+                        : staticHomePage.layout.blockStyleOverrides.frameworks.items.itemLimit[viewport]
                     return acc
                 }, {} as HomeResponsiveStringMap),
             },

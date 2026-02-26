@@ -104,6 +104,7 @@ export function Home() {
                     },
                     grid: {
                         columns: getBlockStyleStringInViewport('services', 'grid', 'columns', viewport === 'desktop' ? '3' : viewport === 'tablet' ? '2' : '1'),
+                        itemLimit: getBlockStyleStringInViewport('services', 'grid', 'itemLimit', viewport === 'desktop' ? '6' : viewport === 'tablet' ? '6' : '4'),
                     },
                 }} />
             </div>
@@ -119,6 +120,7 @@ export function Home() {
                     },
                     cards: {
                         columns: getBlockStyleStringInViewport('products', 'cards', 'columns', viewport === 'desktop' ? '3' : viewport === 'tablet' ? '2' : '1'),
+                        itemLimit: getBlockStyleStringInViewport('products', 'cards', 'itemLimit', viewport === 'desktop' ? '3' : viewport === 'tablet' ? '3' : '2'),
                     },
                 }} />
             </div>
@@ -134,6 +136,7 @@ export function Home() {
                     },
                     items: {
                         columns: getBlockStyleStringInViewport('frameworks', 'items', 'columns', viewport === 'desktop' ? '2' : viewport === 'tablet' ? '2' : '1'),
+                        itemLimit: getBlockStyleStringInViewport('frameworks', 'items', 'itemLimit', viewport === 'desktop' ? '3' : viewport === 'tablet' ? '3' : '2'),
                     },
                 }} />
             </div>

@@ -69,15 +69,24 @@ const DEFAULT_HOME_BLOCK_ORDER: HomeBlockOrderMap = {
 const DEFAULT_HOME_BLOCK_STYLE_OVERRIDES: HomeBlockStyleOverrides = {
     services: {
         header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
-        grid: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+        grid: {
+            columns: { mobile: '1', tablet: '2', desktop: '3' },
+            itemLimit: { mobile: '4', tablet: '6', desktop: '6' },
+        },
     },
     products: {
         header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
-        cards: { columns: { mobile: '1', tablet: '2', desktop: '3' } },
+        cards: {
+            columns: { mobile: '1', tablet: '2', desktop: '3' },
+            itemLimit: { mobile: '2', tablet: '3', desktop: '3' },
+        },
     },
     frameworks: {
         header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
-        items: { columns: { mobile: '1', tablet: '2', desktop: '2' } },
+        items: {
+            columns: { mobile: '1', tablet: '2', desktop: '2' },
+            itemLimit: { mobile: '2', tablet: '3', desktop: '3' },
+        },
     },
     contact: {
         header: { titleSizeRem: { mobile: '3.5rem', tablet: '5rem', desktop: '6rem' } },
@@ -125,6 +134,7 @@ function normalizeHomeBlockStyleOverrides(raw: unknown): HomeBlockStyleOverrides
             },
             grid: {
                 columns: normalizeResponsiveStringMap(source.services?.grid?.columns, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.services.grid.columns),
+                itemLimit: normalizeResponsiveStringMap(source.services?.grid?.itemLimit, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.services.grid.itemLimit),
             },
         },
         products: {
@@ -133,6 +143,7 @@ function normalizeHomeBlockStyleOverrides(raw: unknown): HomeBlockStyleOverrides
             },
             cards: {
                 columns: normalizeResponsiveStringMap(source.products?.cards?.columns, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.products.cards.columns),
+                itemLimit: normalizeResponsiveStringMap(source.products?.cards?.itemLimit, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.products.cards.itemLimit),
             },
         },
         frameworks: {
@@ -141,6 +152,7 @@ function normalizeHomeBlockStyleOverrides(raw: unknown): HomeBlockStyleOverrides
             },
             items: {
                 columns: normalizeResponsiveStringMap(source.frameworks?.items?.columns, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.frameworks.items.columns),
+                itemLimit: normalizeResponsiveStringMap(source.frameworks?.items?.itemLimit, DEFAULT_HOME_BLOCK_STYLE_OVERRIDES.frameworks.items.itemLimit),
             },
         },
         contact: {
@@ -501,6 +513,7 @@ export function ManageHome() {
     const [structureFrameworksBlock, setStructureFrameworksBlock] = useState<FrameworksStructureBlock>('section')
     const [structureContactBlock, setStructureContactBlock] = useState<ContactStructureBlock>('section')
     const [structureDraggedSection, setStructureDraggedSection] = useState<HomeSectionId | null>(null)
+    const [structureDraggedBlock, setStructureDraggedBlock] = useState<string | null>(null)
     const [structureInspectorTab, setStructureInspectorTab] = useState<'content' | 'behavior' | 'style'>('content')
     const [fieldSearch, setFieldSearch] = useState('')
     const [presetSelection, setPresetSelection] = useState('')
@@ -839,6 +852,16 @@ export function ManageHome() {
         current.splice(toIndex, 0, blockId as any)
         setStructureSectionBlockOrder(sectionId, current)
     }
+    const reorderStructureSectionBlocks = (sectionId: ReorderableStructureSectionId, fromBlockId: string, toBlockId: string) => {
+        if (fromBlockId === toBlockId) return
+        const current = [...structureBlockOrder[sectionId]]
+        const fromIndex = current.indexOf(fromBlockId as any)
+        const toIndex = current.indexOf(toBlockId as any)
+        if (fromIndex === -1 || toIndex === -1) return
+        current.splice(fromIndex, 1)
+        current.splice(toIndex, 0, fromBlockId as any)
+        setStructureSectionBlockOrder(sectionId, current)
+    }
     const resetStructureSectionBlockOrder = (sectionId: ReorderableStructureSectionId) => {
         setStructureSectionBlockOrder(sectionId, [...DEFAULT_HOME_BLOCK_ORDER[sectionId]])
     }
@@ -887,6 +910,12 @@ export function ManageHome() {
         viewport: HomeResponsiveViewport,
         fallback: number
     ) => Math.max(1, Math.min(4, Math.round(getSectionBlockStyleNumber(sectionId, blockId, 'columns', viewport, fallback))))
+    const getSectionBlockItemLimitForViewport = (
+        sectionId: 'services' | 'products' | 'frameworks',
+        blockId: 'grid' | 'cards' | 'items',
+        viewport: HomeResponsiveViewport,
+        fallback: number
+    ) => Math.max(1, Math.min(12, Math.round(getSectionBlockStyleNumber(sectionId, blockId, 'itemLimit', viewport, fallback))))
     const getContactFormLayoutModeForViewport = (viewport: HomeResponsiveViewport) => {
         const raw = getSectionBlockStyleString('contact', 'form', 'layoutMode', viewport)
         return raw === 'split' ? 'split' : 'stack'
@@ -1377,6 +1406,12 @@ export function ManageHome() {
                                 previewViewport,
                                 previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2 : 1
                             )
+                            const servicesItemLimit = getSectionBlockItemLimitForViewport(
+                                'services',
+                                'grid',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 6 : previewViewport === 'tablet' ? 6 : 4
+                            )
                             const servicesBlockOrder = structureBlockOrder.services
                             const servicesTopBlock = servicesBlockOrder[0] ?? 'header'
                             const servicesBottomBlock = servicesBlockOrder[1] ?? 'grid'
@@ -1472,7 +1507,7 @@ export function ManageHome() {
                                                     gridTemplateColumns: `repeat(${servicesGridColumns}, minmax(0, 1fr))`,
                                                 }}
                                             >
-                                            {Array.from({ length: Math.min(4, state.services.length || 4) }).map((_, cardIndex) => (
+                                            {Array.from({ length: Math.min(servicesItemLimit, state.services.length || servicesItemLimit) }).map((_, cardIndex) => (
                                                 <div key={`services-card-preview-${cardIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4">
                                                     <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 mb-3" />
                                                     <div className="h-3 rounded bg-slate-200 w-2/3 mb-2" />
@@ -1541,6 +1576,12 @@ export function ManageHome() {
                                 'cards',
                                 previewViewport,
                                 previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2 : 1
+                            )
+                            const productsItemLimit = getSectionBlockItemLimitForViewport(
+                                'products',
+                                'cards',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 3 : 2
                             )
                             const productsBlockOrder = structureBlockOrder.products
                             const productsTopBlock = productsBlockOrder[0] ?? 'header'
@@ -1637,7 +1678,7 @@ export function ManageHome() {
                                                     gridTemplateColumns: `repeat(${productsCardsColumns}, minmax(0, 1fr))`,
                                                 }}
                                             >
-                                            {Array.from({ length: Math.min(3, state.products.length || 3) }).map((_, cardIndex) => (
+                                            {Array.from({ length: Math.min(productsItemLimit, state.products.length || productsItemLimit) }).map((_, cardIndex) => (
                                                 <div key={`products-card-preview-${cardIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4 space-y-3">
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200" />
@@ -1709,6 +1750,12 @@ export function ManageHome() {
                                 'items',
                                 previewViewport,
                                 previewViewport === 'desktop' ? 2 : previewViewport === 'tablet' ? 2 : 1
+                            )
+                            const frameworksItemLimit = getSectionBlockItemLimitForViewport(
+                                'frameworks',
+                                'items',
+                                previewViewport,
+                                previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 3 : 2
                             )
                             const frameworksBlockOrder = structureBlockOrder.frameworks
                             const frameworksTopBlock = frameworksBlockOrder[0] ?? 'header'
@@ -1805,7 +1852,7 @@ export function ManageHome() {
                                                     gridTemplateColumns: `repeat(${frameworksItemsColumns}, minmax(0, 1fr))`,
                                                 }}
                                             >
-                                            {homeDraft.frameworksSection.items.slice(0, 4).map((item, itemIndex) => (
+                                            {homeDraft.frameworksSection.items.slice(0, frameworksItemLimit).map((item, itemIndex) => (
                                                 <div key={`frameworks-item-preview-${itemIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4">
                                                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.organization || 'ORG'}</div>
                                                     <div className="text-sm font-bold text-slate-900 mt-2 line-clamp-1">{item.name || `Framework ${itemIndex + 1}`}</div>
@@ -3035,6 +3082,13 @@ export function ManageHome() {
                                             const selectedBlockKey = getSelectedStructureBlockKey(selected)
                                             const selectedHasBlockOrder = isReorderableStructureSection(selected)
                                             const selectedBlockOrder = selectedHasBlockOrder ? getStructureSectionBlockOrder(selected) : []
+                                            const selectedContentBlockId = selected === 'services'
+                                                ? 'grid'
+                                                : selected === 'products'
+                                                    ? 'cards'
+                                                    : selected === 'frameworks'
+                                                        ? 'items'
+                                                        : null
 
                                             return (
                                                 <>
@@ -3569,7 +3623,7 @@ export function ManageHome() {
                                                                     <div className="flex items-center justify-between gap-3">
                                                                         <div>
                                                                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Orden de bloques</div>
-                                                                            <div className="text-sm font-bold text-slate-900 mt-1">Drag & drop simplificado</div>
+                                                                            <div className="text-sm font-bold text-slate-900 mt-1">Drag & drop + presets</div>
                                                                         </div>
                                                                         <button
                                                                             type="button"
@@ -3580,13 +3634,56 @@ export function ManageHome() {
                                                                         </button>
                                                                     </div>
 
+                                                                    {selectedContentBlockId && (
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setStructureSectionBlockOrder(selected as ReorderableStructureSectionId, ['header', selectedContentBlockId])}
+                                                                                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left hover:border-brand-primary/40"
+                                                                            >
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Preset</div>
+                                                                                <div className="text-xs font-bold text-slate-900 mt-1">Header primero</div>
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setStructureSectionBlockOrder(selected as ReorderableStructureSectionId, [selectedContentBlockId, 'header'])}
+                                                                                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left hover:border-brand-primary/40"
+                                                                            >
+                                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Preset</div>
+                                                                                <div className="text-xs font-bold text-slate-900 mt-1">Contenido primero</div>
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+
                                                                     <div className="space-y-2">
                                                                         {selectedBlockOrder.map((blockId, blockIndex) => {
                                                                             const canMoveBlockUp = blockIndex > 0
                                                                             const canMoveBlockDown = blockIndex < selectedBlockOrder.length - 1
                                                                             const label = getStructureSectionBlockLabel(selected, blockId)
+                                                                            const isDragged = structureDraggedBlock === `${selected}:${blockId}`
                                                                             return (
-                                                                                <div key={`${selected}-order-${blockId}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
+                                                                                <div
+                                                                                    key={`${selected}-order-${blockId}`}
+                                                                                    draggable
+                                                                                    onDragStart={() => setStructureDraggedBlock(`${selected}:${blockId}`)}
+                                                                                    onDragEnd={() => setStructureDraggedBlock(null)}
+                                                                                    onDragOver={(e) => {
+                                                                                        if (!selectedHasBlockOrder) return
+                                                                                        e.preventDefault()
+                                                                                    }}
+                                                                                    onDrop={(e) => {
+                                                                                        e.preventDefault()
+                                                                                        if (!selectedHasBlockOrder || !structureDraggedBlock) return
+                                                                                        const [fromSection, fromBlock] = structureDraggedBlock.split(':')
+                                                                                        if (fromSection !== selected || !fromBlock) {
+                                                                                            setStructureDraggedBlock(null)
+                                                                                            return
+                                                                                        }
+                                                                                        reorderStructureSectionBlocks(selected as ReorderableStructureSectionId, fromBlock, blockId)
+                                                                                        setStructureDraggedBlock(null)
+                                                                                    }}
+                                                                                    className={`rounded-xl border bg-slate-50 p-3 flex items-center justify-between gap-3 transition-colors ${isDragged ? 'border-brand-primary/40 ring-2 ring-brand-primary/15' : 'border-slate-200'}`}
+                                                                                >
                                                                                     <button
                                                                                         type="button"
                                                                                         onClick={() => {
@@ -3594,12 +3691,15 @@ export function ManageHome() {
                                                                                             if (selected === 'products') selectProductsBlockFromCanvas(blockId as ProductsStructureBlock)
                                                                                             if (selected === 'frameworks') selectFrameworksBlockFromCanvas(blockId as FrameworksStructureBlock)
                                                                                         }}
-                                                                                        className="text-left min-w-0"
+                                                                                        className="text-left min-w-0 flex-1"
                                                                                     >
                                                                                         <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Posición {blockIndex + 1}</div>
                                                                                         <div className="text-sm font-bold text-slate-900">{label}</div>
                                                                                     </button>
-                                                                                    <div className="flex items-center gap-1">
+                                                                                    <div className="flex items-center gap-1 shrink-0">
+                                                                                        <span className="h-8 w-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-400 cursor-grab" title="Arrastra para reordenar">
+                                                                                            <GripVertical className="w-4 h-4" />
+                                                                                        </span>
                                                                                         <button
                                                                                             type="button"
                                                                                             onClick={() => moveStructureSectionBlock(selected as ReorderableStructureSectionId, blockId, -1)}
@@ -3828,6 +3928,14 @@ export function ManageHome() {
                                                                                     { value: '4', label: '4' },
                                                                                 ]}
                                                                             />
+                                                                            <RangeField
+                                                                                label={`Tarjetas visibles (${previewViewportLabel})`}
+                                                                                value={getSectionBlockItemLimitForViewport('services', 'grid', previewViewport, previewViewport === 'desktop' ? 6 : previewViewport === 'tablet' ? 6 : 4)}
+                                                                                onChange={(v) => setSectionBlockStyleString('services', 'grid', 'itemLimit', previewViewport, String(Math.round(v)))}
+                                                                                min={1}
+                                                                                max={12}
+                                                                                step={1}
+                                                                            />
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -3889,6 +3997,14 @@ export function ManageHome() {
                                                                                     { value: '3', label: '3' },
                                                                                     { value: '4', label: '4' },
                                                                                 ]}
+                                                                            />
+                                                                            <RangeField
+                                                                                label={`Cards visibles (${previewViewportLabel})`}
+                                                                                value={getSectionBlockItemLimitForViewport('products', 'cards', previewViewport, previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 3 : 2)}
+                                                                                onChange={(v) => setSectionBlockStyleString('products', 'cards', 'itemLimit', previewViewport, String(Math.round(v)))}
+                                                                                min={1}
+                                                                                max={12}
+                                                                                step={1}
                                                                             />
                                                                         </div>
                                                                     )}
@@ -3952,6 +4068,14 @@ export function ManageHome() {
                                                                                     { value: '3', label: '3' },
                                                                                     { value: '4', label: '4' },
                                                                                 ]}
+                                                                            />
+                                                                            <RangeField
+                                                                                label={`Items visibles (${previewViewportLabel})`}
+                                                                                value={getSectionBlockItemLimitForViewport('frameworks', 'items', previewViewport, previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 3 : 2)}
+                                                                                onChange={(v) => setSectionBlockStyleString('frameworks', 'items', 'itemLimit', previewViewport, String(Math.round(v)))}
+                                                                                min={1}
+                                                                                max={12}
+                                                                                step={1}
                                                                             />
                                                                         </div>
                                                                     )}

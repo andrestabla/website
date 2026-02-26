@@ -20,6 +20,7 @@ type ProductsProps = {
         }
         cards?: {
             columns?: string
+            itemLimit?: string
         }
     }
 }
@@ -70,6 +71,14 @@ export function Products({ visibleBlocks, blockOrder, viewport = 'desktop', styl
             Math.round(parseNum(styleOverrides?.cards?.columns, viewport === 'desktop' ? 3 : viewport === 'tablet' ? 2 : 1))
         )
     )
+    const cardsItemLimit = Math.max(
+        1,
+        Math.min(
+            12,
+            Math.round(parseNum(styleOverrides?.cards?.itemLimit, viewport === 'desktop' ? 3 : viewport === 'tablet' ? 3 : 2))
+        )
+    )
+    const visibleProducts = products.items.slice(0, cardsItemLimit)
     if (!blocks.header && !blocks.cards) return null
 
     return (
@@ -99,7 +108,7 @@ export function Products({ visibleBlocks, blockOrder, viewport = 'desktop', styl
 
                 {blocks.cards && (
                     <div className="grid gap-12" style={{ order: cardsOrder + 1, gridTemplateColumns: `repeat(${cardsColumns}, minmax(0, 1fr))` }}>
-                    {products.items.map((product, index) => {
+                    {visibleProducts.map((product, index) => {
                         const Icon = (product as any).icon
                         const detail = productsDetail[index]
                         const slug = detail ? detail.slug : 'diagnostico-md-ia'
