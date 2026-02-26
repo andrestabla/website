@@ -7,7 +7,7 @@ import { Frameworks } from '../sections/Frameworks/Frameworks'
 import { Contact } from '../sections/Contact/Contact'
 import { Layout } from '../components/layout/Layout'
 import { useLanguage } from '../context/LanguageContext'
-import type { HomeResponsiveViewport, HomeSectionId, HomeBlockStyleOverrides } from '../admin/context/CMSContext'
+import type { HomeResponsiveViewport, HomeSectionId, HomeBlockStyleOverrides, HomeBlockOrderMap } from '../admin/context/CMSContext'
 
 const HOME_SECTION_IDS: HomeSectionId[] = ['hero', 'services', 'products', 'frameworks', 'contact']
 
@@ -52,6 +52,7 @@ export function Home() {
     )
     const responsiveVisibility = rawLayout?.sectionVisibility
     const responsiveBlockVisibility = rawLayout?.blockVisibility
+    const responsiveBlockOrder = rawLayout?.blockOrder as Partial<HomeBlockOrderMap> | undefined
     const responsiveBlockStyles = rawLayout?.blockStyleOverrides as Partial<HomeBlockStyleOverrides> | undefined
     const isVisibleInViewport = (sectionId: HomeSectionId) => {
         if (hiddenSections.has(sectionId)) return false
@@ -74,6 +75,17 @@ export function Home() {
         const raw = (responsiveBlockStyles as any)?.[sectionId]?.[blockId]?.[prop]?.[viewport]
         return typeof raw === 'string' ? raw : fallback
     }
+    const normalizeBlockOrder = <T extends string>(raw: unknown, fallback: readonly T[]): T[] => {
+        const valid = new Set(fallback)
+        const fromRaw = Array.isArray(raw) ? raw.filter((value): value is T => typeof value === 'string' && valid.has(value as T)) : []
+        const unique = [...new Set(fromRaw)]
+        for (const value of fallback) {
+            if (!unique.includes(value)) unique.push(value)
+        }
+        return unique as T[]
+    }
+    const getBlockOrder = <T extends string>(sectionId: 'services' | 'products' | 'frameworks', fallback: readonly T[]) =>
+        normalizeBlockOrder((responsiveBlockOrder as any)?.[sectionId], fallback)
 
     const sectionRenderers: Record<HomeSectionId, () => ReactElement> = {
         hero: () => (
@@ -86,7 +98,7 @@ export function Home() {
                 <Services visibleBlocks={{
                     header: isBlockVisibleInViewport('services', 'header'),
                     grid: isBlockVisibleInViewport('services', 'grid'),
-                }} viewport={viewport} styleOverrides={{
+                }} blockOrder={getBlockOrder('services', ['header', 'grid'])} viewport={viewport} styleOverrides={{
                     header: {
                         titleSizeRem: getBlockStyleStringInViewport('services', 'header', 'titleSizeRem', viewport === 'desktop' ? '4.5rem' : viewport === 'tablet' ? '4rem' : '3rem'),
                     },
@@ -101,7 +113,7 @@ export function Home() {
                 <Products visibleBlocks={{
                     header: isBlockVisibleInViewport('products', 'header'),
                     cards: isBlockVisibleInViewport('products', 'cards'),
-                }} viewport={viewport} styleOverrides={{
+                }} blockOrder={getBlockOrder('products', ['header', 'cards'])} viewport={viewport} styleOverrides={{
                     header: {
                         titleSizeRem: getBlockStyleStringInViewport('products', 'header', 'titleSizeRem', viewport === 'desktop' ? '4.5rem' : viewport === 'tablet' ? '4rem' : '3rem'),
                     },
@@ -116,7 +128,7 @@ export function Home() {
                 <Frameworks visibleBlocks={{
                     header: isBlockVisibleInViewport('frameworks', 'header'),
                     items: isBlockVisibleInViewport('frameworks', 'items'),
-                }} viewport={viewport} styleOverrides={{
+                }} blockOrder={getBlockOrder('frameworks', ['header', 'items'])} viewport={viewport} styleOverrides={{
                     header: {
                         titleSizeRem: getBlockStyleStringInViewport('frameworks', 'header', 'titleSizeRem', viewport === 'desktop' ? '4.5rem' : viewport === 'tablet' ? '4rem' : '3rem'),
                     },

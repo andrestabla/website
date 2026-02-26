@@ -79,6 +79,11 @@ export type HomeBlockVisibilityMap = {
     frameworks: Record<'header' | 'items', HomeSectionVisibility>
     contact: Record<'header' | 'channels' | 'form', HomeSectionVisibility>
 }
+export type HomeBlockOrderMap = {
+    services: Array<'header' | 'grid'>
+    products: Array<'header' | 'cards'>
+    frameworks: Array<'header' | 'items'>
+}
 export const HOME_SECTION_BLOCK_IDS: { [K in HomeSectionId]: Array<keyof HomeBlockVisibilityMap[K]> } = {
     hero: ['headline', 'ctas', 'stats'],
     services: ['header', 'grid'],
@@ -113,6 +118,7 @@ export type HomePageContent = {
         hiddenSections: HomeSectionId[]
         sectionVisibility: Record<HomeSectionId, HomeSectionVisibility>
         blockVisibility: HomeBlockVisibilityMap
+        blockOrder: HomeBlockOrderMap
         blockStyleOverrides: HomeBlockStyleOverrides
     }
     hero: {
@@ -487,6 +493,11 @@ const staticHomePage: HomePageContent = {
                 ),
             ])
         ) as HomeBlockVisibilityMap,
+        blockOrder: {
+            services: ['header', 'grid'],
+            products: ['header', 'cards'],
+            frameworks: ['header', 'items'],
+        },
         blockStyleOverrides: {
             services: {
                 header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
@@ -664,6 +675,20 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
         ) as any
         return acc
     }, {} as HomeBlockVisibilityMap)
+    const normalizeBlockOrder = <T extends string>(rawValue: unknown, fallback: readonly T[]): T[] => {
+        const valid = new Set(fallback)
+        const fromRaw = Array.isArray(rawValue) ? rawValue.filter((value): value is T => typeof value === 'string' && valid.has(value as T)) : []
+        const unique = [...new Set(fromRaw)]
+        for (const value of fallback) {
+            if (!unique.includes(value)) unique.push(value)
+        }
+        return unique as T[]
+    }
+    const blockOrder = {
+        services: normalizeBlockOrder((rawLayout as any)?.blockOrder?.services, staticHomePage.layout.blockOrder.services),
+        products: normalizeBlockOrder((rawLayout as any)?.blockOrder?.products, staticHomePage.layout.blockOrder.products),
+        frameworks: normalizeBlockOrder((rawLayout as any)?.blockOrder?.frameworks, staticHomePage.layout.blockOrder.frameworks),
+    } as HomeBlockOrderMap
     const blockStyleOverrides = {
         services: {
             header: {
@@ -779,6 +804,7 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
                 hiddenSections: hiddenSections as HomeSectionId[],
                 sectionVisibility,
                 blockVisibility,
+                blockOrder,
                 blockStyleOverrides,
             },
             hero: {

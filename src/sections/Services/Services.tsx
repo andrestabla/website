@@ -10,6 +10,7 @@ type ServicesProps = {
         header?: boolean
         grid?: boolean
     }
+    blockOrder?: Array<'header' | 'grid'>
     viewport?: HomeResponsiveViewport
     styleOverrides?: {
         header?: {
@@ -21,7 +22,7 @@ type ServicesProps = {
     }
 }
 
-export function Services({ visibleBlocks, viewport = 'desktop', styleOverrides }: ServicesProps) {
+export function Services({ visibleBlocks, blockOrder, viewport = 'desktop', styleOverrides }: ServicesProps) {
     const { translatedState } = useLanguage()
     // CMS services are a flat ServiceItem[]; icons live in servicesDetail (React components can't be stored)
     const services = translatedState.services
@@ -38,6 +39,18 @@ export function Services({ visibleBlocks, viewport = 'desktop', styleOverrides }
         header: visibleBlocks?.header !== false,
         grid: visibleBlocks?.grid !== false,
     }
+    const normalizeBlockOrder = (raw: unknown, fallback: Array<'header' | 'grid'>): Array<'header' | 'grid'> => {
+        const valid = new Set(fallback)
+        const fromRaw = Array.isArray(raw) ? raw.filter((value): value is 'header' | 'grid' => typeof value === 'string' && valid.has(value as any)) : []
+        const unique = [...new Set(fromRaw)]
+        for (const value of fallback) {
+            if (!unique.includes(value)) unique.push(value)
+        }
+        return unique as Array<'header' | 'grid'>
+    }
+    const sectionBlockOrder = normalizeBlockOrder(blockOrder, ['header', 'grid'])
+    const headerOrder = sectionBlockOrder.indexOf('header')
+    const gridOrder = sectionBlockOrder.indexOf('grid')
     const parseNum = (value: string | undefined, fallback: number) => {
         const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
         return Number.isFinite(n) ? n : fallback
@@ -63,9 +76,12 @@ export function Services({ visibleBlocks, viewport = 'desktop', styleOverrides }
                 </div>
             )}
 
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto flex flex-col">
                 {blocks.header && (
-                    <div className="mb-32">
+                    <div
+                        className={headerOrder > gridOrder && blocks.grid ? 'mt-16' : 'mb-32'}
+                        style={{ order: headerOrder + 1 }}
+                    >
                     <div className="flex items-center gap-4 mb-6">
                         <span className="w-12 h-1 bg-brand-primary" />
                         <span className="text-sm font-black uppercase tracking-[0.4em] text-brand-primary">
@@ -82,7 +98,7 @@ export function Services({ visibleBlocks, viewport = 'desktop', styleOverrides }
                 )}
 
                 {blocks.grid && (
-                    <div className="grid gap-0 border-t border-l border-slate-200" style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}>
+                    <div className="grid gap-0 border-t border-l border-slate-200" style={{ order: gridOrder + 1, gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}>
                     {services.map((service, index) => {
                         // Get the icon from static data by matching slug
                         const staticDetail = servicesDetail.find(d => d.slug === service.slug) ?? servicesDetail[index]

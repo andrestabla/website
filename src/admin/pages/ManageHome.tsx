@@ -38,6 +38,7 @@ import {
     type HomeResponsiveViewport,
     type HomeSectionVisibility,
     type HomeBlockVisibilityMap,
+    type HomeBlockOrderMap,
     type HomeBlockStyleOverrides,
     HOME_SECTION_IDS,
     HOME_SECTION_BLOCK_IDS,
@@ -54,11 +55,17 @@ type ProductsStructureBlock = 'section' | 'header' | 'cards'
 type FrameworksStructureBlock = 'section' | 'header' | 'items'
 type ContactStructureBlock = 'section' | 'header' | 'channels' | 'form'
 type StructureBlockKey = string
+type ReorderableStructureSectionId = 'services' | 'products' | 'frameworks'
 
 const COLOR_SWATCHES = ['#ffffff', '#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#334155', '#0f172a', '#1a2d5a', '#2563eb', '#3b82f6', '#f97316']
 const FONT_PRESETS = ['Inter', 'Space Grotesk', 'Manrope', 'Sora', 'IBM Plex Sans', 'Montserrat', 'Poppins', 'system-ui']
 const CMS_RADIUS_VALUES: Record<string, string> = { none: '0px', sm: '4px', md: '8px', lg: '16px', full: '9999px' }
 const DEFAULT_HOME_SECTION_VISIBILITY: HomeSectionVisibility = { desktop: true, tablet: true, mobile: true }
+const DEFAULT_HOME_BLOCK_ORDER: HomeBlockOrderMap = {
+    services: ['header', 'grid'],
+    products: ['header', 'cards'],
+    frameworks: ['header', 'items'],
+}
 const DEFAULT_HOME_BLOCK_STYLE_OVERRIDES: HomeBlockStyleOverrides = {
     services: {
         header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
@@ -77,6 +84,25 @@ const DEFAULT_HOME_BLOCK_STYLE_OVERRIDES: HomeBlockStyleOverrides = {
         channels: { gapRem: { mobile: '2rem', tablet: '2.5rem', desktop: '3rem' } },
         form: { layoutMode: { mobile: 'stack', tablet: 'stack', desktop: 'split' } },
     },
+}
+
+function normalizeBlockOrder<T extends string>(raw: unknown, fallback: readonly T[]): T[] {
+    const valid = new Set(fallback)
+    const fromRaw = Array.isArray(raw) ? raw.filter((value): value is T => typeof value === 'string' && valid.has(value as T)) : []
+    const unique = [...new Set(fromRaw)]
+    for (const value of fallback) {
+        if (!unique.includes(value)) unique.push(value)
+    }
+    return unique as T[]
+}
+
+function normalizeHomeBlockOrder(raw: unknown): HomeBlockOrderMap {
+    const source = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {}
+    return {
+        services: normalizeBlockOrder(source.services, DEFAULT_HOME_BLOCK_ORDER.services),
+        products: normalizeBlockOrder(source.products, DEFAULT_HOME_BLOCK_ORDER.products),
+        frameworks: normalizeBlockOrder(source.frameworks, DEFAULT_HOME_BLOCK_ORDER.frameworks),
+    }
 }
 
 function normalizeResponsiveStringMap(
@@ -555,6 +581,7 @@ export function ManageHome() {
         hiddenSections: [],
         sectionVisibility: defaultSectionVisibilityMap,
         blockVisibility: defaultBlockVisibilityMap,
+        blockOrder: DEFAULT_HOME_BLOCK_ORDER,
         blockStyleOverrides: DEFAULT_HOME_BLOCK_STYLE_OVERRIDES,
     }
     const structureSectionOrder = [...new Set([...(homeLayout.sectionOrder ?? []), ...HOME_SECTION_IDS].filter((id): id is HomeSectionId => HOME_SECTION_IDS.includes(id as HomeSectionId)))]
@@ -578,6 +605,7 @@ export function ManageHome() {
         ) as any
         return acc
     }, {} as HomeBlockVisibilityMap)
+    const structureBlockOrder = normalizeHomeBlockOrder(homeLayout.blockOrder)
     const structureBlockStyleOverrides = normalizeHomeBlockStyleOverrides(homeLayout.blockStyleOverrides)
     const heroButtonRadius = CMS_RADIUS_VALUES[String(designDraft.borderRadius || 'none')] ?? '0px'
     const heroPrimaryCtaPreview = heroDraft.cta.trim() || 'Iniciar transformación'
@@ -653,6 +681,7 @@ export function ManageHome() {
         const nextHidden = patch.hiddenSections ?? homeLayout.hiddenSections
         const nextSectionVisibility = patch.sectionVisibility ?? homeLayout.sectionVisibility
         const nextBlockVisibility = patch.blockVisibility ?? homeLayout.blockVisibility
+        const nextBlockOrder = patch.blockOrder ?? homeLayout.blockOrder
         const nextBlockStyleOverrides = patch.blockStyleOverrides ?? homeLayout.blockStyleOverrides
         setHome({
             ...homeDraft,
@@ -680,6 +709,7 @@ export function ManageHome() {
                     ) as any
                     return acc
                 }, {} as HomeBlockVisibilityMap),
+                blockOrder: normalizeHomeBlockOrder(nextBlockOrder),
                 blockStyleOverrides: normalizeHomeBlockStyleOverrides(nextBlockStyleOverrides),
             },
         })
@@ -776,6 +806,41 @@ export function ManageHome() {
                 },
             } as any,
         })
+    }
+    const isReorderableStructureSection = (sectionId: HomeSectionId): sectionId is ReorderableStructureSectionId =>
+        sectionId === 'services' || sectionId === 'products' || sectionId === 'frameworks'
+    const getStructureSectionBlockOrder = (sectionId: HomeSectionId) => {
+        if (!isReorderableStructureSection(sectionId)) return [] as string[]
+        return structureBlockOrder[sectionId]
+    }
+    const getStructureSectionBlockLabel = (sectionId: HomeSectionId, blockId: string) => {
+        if (sectionId === 'services') return blockId === 'grid' ? 'Grid' : 'Header'
+        if (sectionId === 'products') return blockId === 'cards' ? 'Cards' : 'Header'
+        if (sectionId === 'frameworks') return blockId === 'items' ? 'Items' : 'Header'
+        return blockId
+    }
+    const setStructureSectionBlockOrder = (sectionId: ReorderableStructureSectionId, nextOrder: string[]) => {
+        const defaults = DEFAULT_HOME_BLOCK_ORDER[sectionId]
+        const normalized = normalizeBlockOrder(nextOrder, defaults)
+        setHomeLayout({
+            blockOrder: {
+                ...structureBlockOrder,
+                [sectionId]: normalized as any,
+            },
+        })
+    }
+    const moveStructureSectionBlock = (sectionId: ReorderableStructureSectionId, blockId: string, direction: -1 | 1) => {
+        const current = [...structureBlockOrder[sectionId]]
+        const fromIndex = current.indexOf(blockId as any)
+        if (fromIndex === -1) return
+        const toIndex = fromIndex + direction
+        if (toIndex < 0 || toIndex >= current.length) return
+        current.splice(fromIndex, 1)
+        current.splice(toIndex, 0, blockId as any)
+        setStructureSectionBlockOrder(sectionId, current)
+    }
+    const resetStructureSectionBlockOrder = (sectionId: ReorderableStructureSectionId) => {
+        setStructureSectionBlockOrder(sectionId, [...DEFAULT_HOME_BLOCK_ORDER[sectionId]])
     }
     const getSectionBlockStyleString = (
         sectionId: 'services' | 'products' | 'frameworks' | 'contact',
@@ -1312,6 +1377,13 @@ export function ManageHome() {
                                 previewViewport,
                                 previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2 : 1
                             )
+                            const servicesBlockOrder = structureBlockOrder.services
+                            const servicesTopBlock = servicesBlockOrder[0] ?? 'header'
+                            const servicesBottomBlock = servicesBlockOrder[1] ?? 'grid'
+                            const servicesHeaderOrder = servicesBlockOrder.indexOf('header')
+                            const servicesGridOrder = servicesBlockOrder.indexOf('grid')
+                            const servicesHeaderSpacing = servicesVisibleBlocks.header && servicesVisibleBlocks.grid && servicesHeaderOrder > servicesGridOrder
+                            const servicesGridSpacing = servicesVisibleBlocks.header && servicesVisibleBlocks.grid && servicesGridOrder > servicesHeaderOrder
                             return (
                                 <div
                                     key={`preview-${sectionId}`}
@@ -1330,10 +1402,8 @@ export function ManageHome() {
                                     <div className="absolute inset-0 pointer-events-none" style={{ background: isVisible ? 'linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.88))' : 'linear-gradient(180deg, rgba(248,250,252,0.92), rgba(248,250,252,0.96))' }} />
 
                                     <div className="absolute top-4 right-4 z-10 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
-                                        {([
-                                            { value: 'header', label: 'Header' },
-                                            { value: 'grid', label: 'Grid' },
-                                        ] as const).map((opt) => {
+                                        {servicesBlockOrder.map((blockId) => {
+                                            const opt = { value: blockId, label: getStructureSectionBlockLabel('services', blockId) } as const
                                             const active = isSelected && structureServicesBlock === opt.value
                                             return (
                                                 <button
@@ -1351,9 +1421,12 @@ export function ManageHome() {
                                         })}
                                     </div>
 
-                                    <div className="relative p-8 md:p-12">
+                                    <div className="relative p-8 md:p-12 flex flex-col">
                                         {servicesVisibleBlocks.header ? (
-                                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                            <div
+                                                className={`flex flex-col md:flex-row md:items-start md:justify-between gap-4 ${servicesHeaderSpacing ? 'mt-8' : ''}`}
+                                                style={{ order: servicesHeaderOrder + 1 }}
+                                            >
                                             <div className="flex items-start gap-3">
                                                 <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
                                                     <Icon className="w-4 h-4" />
@@ -1393,8 +1466,11 @@ export function ManageHome() {
 
                                         {servicesVisibleBlocks.grid ? (
                                             <div
-                                                className="mt-8 grid gap-4"
-                                                style={{ gridTemplateColumns: `repeat(${servicesGridColumns}, minmax(0, 1fr))` }}
+                                                className={`grid gap-4 ${servicesGridSpacing ? 'mt-8' : ''}`}
+                                                style={{
+                                                    order: servicesGridOrder + 1,
+                                                    gridTemplateColumns: `repeat(${servicesGridColumns}, minmax(0, 1fr))`,
+                                                }}
                                             >
                                             {Array.from({ length: Math.min(4, state.services.length || 4) }).map((_, cardIndex) => (
                                                 <div key={`services-card-preview-${cardIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4">
@@ -1418,25 +1494,29 @@ export function ManageHome() {
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    selectServicesBlockFromCanvas('header')
+                                                    selectServicesBlockFromCanvas(servicesTopBlock)
                                                 }}
-                                                className={`absolute left-6 right-6 top-14 h-[38%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureServicesBlock === 'header' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
-                                                aria-label="Seleccionar header de servicios"
-                                                title="Header servicios"
+                                                className={`absolute left-6 right-6 top-14 h-[38%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureServicesBlock === servicesTopBlock ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label={`Seleccionar ${getStructureSectionBlockLabel('services', servicesTopBlock)} de servicios`}
+                                                title={`${getStructureSectionBlockLabel('services', servicesTopBlock)} servicios`}
                                             >
-                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureServicesBlock === 'header' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Header</span>
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureServicesBlock === servicesTopBlock ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>
+                                                    {getStructureSectionBlockLabel('services', servicesTopBlock)}
+                                                </span>
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    selectServicesBlockFromCanvas('grid')
+                                                    selectServicesBlockFromCanvas(servicesBottomBlock)
                                                 }}
-                                                className={`absolute left-6 right-6 bottom-6 h-[35%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureServicesBlock === 'grid' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
-                                                aria-label="Seleccionar grid de servicios"
-                                                title="Grid servicios"
+                                                className={`absolute left-6 right-6 bottom-6 h-[35%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureServicesBlock === servicesBottomBlock ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label={`Seleccionar ${getStructureSectionBlockLabel('services', servicesBottomBlock)} de servicios`}
+                                                title={`${getStructureSectionBlockLabel('services', servicesBottomBlock)} servicios`}
                                             >
-                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureServicesBlock === 'grid' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Grid</span>
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureServicesBlock === servicesBottomBlock ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>
+                                                    {getStructureSectionBlockLabel('services', servicesBottomBlock)}
+                                                </span>
                                             </button>
                                         </>
                                     )}
@@ -1462,6 +1542,13 @@ export function ManageHome() {
                                 previewViewport,
                                 previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2 : 1
                             )
+                            const productsBlockOrder = structureBlockOrder.products
+                            const productsTopBlock = productsBlockOrder[0] ?? 'header'
+                            const productsBottomBlock = productsBlockOrder[1] ?? 'cards'
+                            const productsHeaderOrder = productsBlockOrder.indexOf('header')
+                            const productsCardsOrder = productsBlockOrder.indexOf('cards')
+                            const productsHeaderSpacing = productsVisibleBlocks.header && productsVisibleBlocks.cards && productsHeaderOrder > productsCardsOrder
+                            const productsCardsSpacing = productsVisibleBlocks.header && productsVisibleBlocks.cards && productsCardsOrder > productsHeaderOrder
                             return (
                                 <div
                                     key={`preview-${sectionId}`}
@@ -1480,10 +1567,8 @@ export function ManageHome() {
                                     <div className="absolute inset-0 pointer-events-none" style={{ background: isVisible ? 'linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.88))' : 'linear-gradient(180deg, rgba(248,250,252,0.92), rgba(248,250,252,0.96))' }} />
 
                                     <div className="absolute top-4 right-4 z-10 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
-                                        {([
-                                            { value: 'header', label: 'Header' },
-                                            { value: 'cards', label: 'Cards' },
-                                        ] as const).map((opt) => {
+                                        {productsBlockOrder.map((blockId) => {
+                                            const opt = { value: blockId, label: getStructureSectionBlockLabel('products', blockId) } as const
                                             const active = isSelected && structureProductsBlock === opt.value
                                             return (
                                                 <button
@@ -1501,9 +1586,12 @@ export function ManageHome() {
                                         })}
                                     </div>
 
-                                    <div className="relative p-8 md:p-12">
+                                    <div className="relative p-8 md:p-12 flex flex-col">
                                         {productsVisibleBlocks.header ? (
-                                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                            <div
+                                                className={`flex flex-col md:flex-row md:items-start md:justify-between gap-4 ${productsHeaderSpacing ? 'mt-8' : ''}`}
+                                                style={{ order: productsHeaderOrder + 1 }}
+                                            >
                                             <div className="flex items-start gap-3">
                                                 <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
                                                     <Icon className="w-4 h-4" />
@@ -1543,8 +1631,11 @@ export function ManageHome() {
 
                                         {productsVisibleBlocks.cards ? (
                                             <div
-                                                className="mt-8 grid gap-4"
-                                                style={{ gridTemplateColumns: `repeat(${productsCardsColumns}, minmax(0, 1fr))` }}
+                                                className={`grid gap-4 ${productsCardsSpacing ? 'mt-8' : ''}`}
+                                                style={{
+                                                    order: productsCardsOrder + 1,
+                                                    gridTemplateColumns: `repeat(${productsCardsColumns}, minmax(0, 1fr))`,
+                                                }}
                                             >
                                             {Array.from({ length: Math.min(3, state.products.length || 3) }).map((_, cardIndex) => (
                                                 <div key={`products-card-preview-${cardIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4 space-y-3">
@@ -1571,25 +1662,29 @@ export function ManageHome() {
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    selectProductsBlockFromCanvas('header')
+                                                    selectProductsBlockFromCanvas(productsTopBlock)
                                                 }}
-                                                className={`absolute left-6 right-6 top-14 h-[35%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureProductsBlock === 'header' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
-                                                aria-label="Seleccionar header de productos"
-                                                title="Header productos"
+                                                className={`absolute left-6 right-6 top-14 h-[35%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureProductsBlock === productsTopBlock ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label={`Seleccionar ${getStructureSectionBlockLabel('products', productsTopBlock)} de productos`}
+                                                title={`${getStructureSectionBlockLabel('products', productsTopBlock)} productos`}
                                             >
-                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureProductsBlock === 'header' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Header</span>
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureProductsBlock === productsTopBlock ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>
+                                                    {getStructureSectionBlockLabel('products', productsTopBlock)}
+                                                </span>
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    selectProductsBlockFromCanvas('cards')
+                                                    selectProductsBlockFromCanvas(productsBottomBlock)
                                                 }}
-                                                className={`absolute left-6 right-6 bottom-6 h-[38%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureProductsBlock === 'cards' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
-                                                aria-label="Seleccionar cards de productos"
-                                                title="Cards productos"
+                                                className={`absolute left-6 right-6 bottom-6 h-[38%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureProductsBlock === productsBottomBlock ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label={`Seleccionar ${getStructureSectionBlockLabel('products', productsBottomBlock)} de productos`}
+                                                title={`${getStructureSectionBlockLabel('products', productsBottomBlock)} productos`}
                                             >
-                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureProductsBlock === 'cards' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Cards</span>
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureProductsBlock === productsBottomBlock ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>
+                                                    {getStructureSectionBlockLabel('products', productsBottomBlock)}
+                                                </span>
                                             </button>
                                         </>
                                     )}
@@ -1615,6 +1710,13 @@ export function ManageHome() {
                                 previewViewport,
                                 previewViewport === 'desktop' ? 2 : previewViewport === 'tablet' ? 2 : 1
                             )
+                            const frameworksBlockOrder = structureBlockOrder.frameworks
+                            const frameworksTopBlock = frameworksBlockOrder[0] ?? 'header'
+                            const frameworksBottomBlock = frameworksBlockOrder[1] ?? 'items'
+                            const frameworksHeaderOrder = frameworksBlockOrder.indexOf('header')
+                            const frameworksItemsOrder = frameworksBlockOrder.indexOf('items')
+                            const frameworksHeaderSpacing = frameworksVisibleBlocks.header && frameworksVisibleBlocks.items && frameworksHeaderOrder > frameworksItemsOrder
+                            const frameworksItemsSpacing = frameworksVisibleBlocks.header && frameworksVisibleBlocks.items && frameworksItemsOrder > frameworksHeaderOrder
                             return (
                                 <div
                                     key={`preview-${sectionId}`}
@@ -1633,10 +1735,8 @@ export function ManageHome() {
                                     <div className="absolute inset-0 pointer-events-none" style={{ background: isVisible ? 'linear-gradient(180deg, rgba(255,255,255,0.76), rgba(255,255,255,0.88))' : 'linear-gradient(180deg, rgba(248,250,252,0.92), rgba(248,250,252,0.96))' }} />
 
                                     <div className="absolute top-4 right-4 z-10 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
-                                        {([
-                                            { value: 'header', label: 'Header' },
-                                            { value: 'items', label: 'Items' },
-                                        ] as const).map((opt) => {
+                                        {frameworksBlockOrder.map((blockId) => {
+                                            const opt = { value: blockId, label: getStructureSectionBlockLabel('frameworks', blockId) } as const
                                             const active = isSelected && structureFrameworksBlock === opt.value
                                             return (
                                                 <button
@@ -1654,9 +1754,12 @@ export function ManageHome() {
                                         })}
                                     </div>
 
-                                    <div className="relative p-8 md:p-12">
+                                    <div className="relative p-8 md:p-12 flex flex-col">
                                         {frameworksVisibleBlocks.header ? (
-                                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                            <div
+                                                className={`flex flex-col md:flex-row md:items-start md:justify-between gap-4 ${frameworksHeaderSpacing ? 'mt-8' : ''}`}
+                                                style={{ order: frameworksHeaderOrder + 1 }}
+                                            >
                                             <div className="flex items-start gap-3">
                                                 <div className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: `${meta.accent}33`, backgroundColor: `${meta.accent}14`, color: meta.accent }}>
                                                     <Icon className="w-4 h-4" />
@@ -1696,8 +1799,11 @@ export function ManageHome() {
 
                                         {frameworksVisibleBlocks.items ? (
                                             <div
-                                                className="mt-8 grid gap-4"
-                                                style={{ gridTemplateColumns: `repeat(${frameworksItemsColumns}, minmax(0, 1fr))` }}
+                                                className={`grid gap-4 ${frameworksItemsSpacing ? 'mt-8' : ''}`}
+                                                style={{
+                                                    order: frameworksItemsOrder + 1,
+                                                    gridTemplateColumns: `repeat(${frameworksItemsColumns}, minmax(0, 1fr))`,
+                                                }}
                                             >
                                             {homeDraft.frameworksSection.items.slice(0, 4).map((item, itemIndex) => (
                                                 <div key={`frameworks-item-preview-${itemIndex}`} className="rounded-xl border border-slate-200 bg-white/90 p-4">
@@ -1726,25 +1832,29 @@ export function ManageHome() {
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    selectFrameworksBlockFromCanvas('header')
+                                                    selectFrameworksBlockFromCanvas(frameworksTopBlock)
                                                 }}
-                                                className={`absolute left-6 right-6 top-14 h-[34%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureFrameworksBlock === 'header' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
-                                                aria-label="Seleccionar header de frameworks"
-                                                title="Header frameworks"
+                                                className={`absolute left-6 right-6 top-14 h-[34%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureFrameworksBlock === frameworksTopBlock ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label={`Seleccionar ${getStructureSectionBlockLabel('frameworks', frameworksTopBlock)} de frameworks`}
+                                                title={`${getStructureSectionBlockLabel('frameworks', frameworksTopBlock)} frameworks`}
                                             >
-                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureFrameworksBlock === 'header' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Header</span>
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureFrameworksBlock === frameworksTopBlock ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>
+                                                    {getStructureSectionBlockLabel('frameworks', frameworksTopBlock)}
+                                                </span>
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
                                                     e.stopPropagation()
-                                                    selectFrameworksBlockFromCanvas('items')
+                                                    selectFrameworksBlockFromCanvas(frameworksBottomBlock)
                                                 }}
-                                                className={`absolute left-6 right-6 bottom-6 h-[40%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureFrameworksBlock === 'items' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
-                                                aria-label="Seleccionar items de frameworks"
-                                                title="Items frameworks"
+                                                className={`absolute left-6 right-6 bottom-6 h-[40%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureFrameworksBlock === frameworksBottomBlock ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
+                                                aria-label={`Seleccionar ${getStructureSectionBlockLabel('frameworks', frameworksBottomBlock)} de frameworks`}
+                                                title={`${getStructureSectionBlockLabel('frameworks', frameworksBottomBlock)} frameworks`}
                                             >
-                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureFrameworksBlock === 'items' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Items</span>
+                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureFrameworksBlock === frameworksBottomBlock ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>
+                                                    {getStructureSectionBlockLabel('frameworks', frameworksBottomBlock)}
+                                                </span>
                                             </button>
                                         </>
                                     )}
@@ -2923,6 +3033,8 @@ export function ManageHome() {
                                             const canMoveUp = selectedIndex > 0
                                             const canMoveDown = selectedIndex < structureSectionOrder.length - 1
                                             const selectedBlockKey = getSelectedStructureBlockKey(selected)
+                                            const selectedHasBlockOrder = isReorderableStructureSection(selected)
+                                            const selectedBlockOrder = selectedHasBlockOrder ? getStructureSectionBlockOrder(selected) : []
 
                                             return (
                                                 <>
@@ -3448,6 +3560,68 @@ export function ManageHome() {
                                                                         >
                                                                             Ocultar bloque en mobile
                                                                         </button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {selectedHasBlockOrder && (
+                                                                <div className="rounded-xl border border-slate-200 p-3 bg-white space-y-3">
+                                                                    <div className="flex items-center justify-between gap-3">
+                                                                        <div>
+                                                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Orden de bloques</div>
+                                                                            <div className="text-sm font-bold text-slate-900 mt-1">Drag & drop simplificado</div>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => resetStructureSectionBlockOrder(selected as ReorderableStructureSectionId)}
+                                                                            className="px-3 py-2 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                                                                        >
+                                                                            Restablecer
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <div className="space-y-2">
+                                                                        {selectedBlockOrder.map((blockId, blockIndex) => {
+                                                                            const canMoveBlockUp = blockIndex > 0
+                                                                            const canMoveBlockDown = blockIndex < selectedBlockOrder.length - 1
+                                                                            const label = getStructureSectionBlockLabel(selected, blockId)
+                                                                            return (
+                                                                                <div key={`${selected}-order-${blockId}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between gap-3">
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => {
+                                                                                            if (selected === 'services') selectServicesBlockFromCanvas(blockId as ServicesStructureBlock)
+                                                                                            if (selected === 'products') selectProductsBlockFromCanvas(blockId as ProductsStructureBlock)
+                                                                                            if (selected === 'frameworks') selectFrameworksBlockFromCanvas(blockId as FrameworksStructureBlock)
+                                                                                        }}
+                                                                                        className="text-left min-w-0"
+                                                                                    >
+                                                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Posición {blockIndex + 1}</div>
+                                                                                        <div className="text-sm font-bold text-slate-900">{label}</div>
+                                                                                    </button>
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => moveStructureSectionBlock(selected as ReorderableStructureSectionId, blockId, -1)}
+                                                                                            disabled={!canMoveBlockUp}
+                                                                                            className={`h-8 w-8 rounded-lg border flex items-center justify-center ${canMoveBlockUp ? 'border-slate-200 bg-white text-slate-600 hover:text-brand-primary' : 'border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+                                                                                            aria-label={`Subir bloque ${label}`}
+                                                                                        >
+                                                                                            <ArrowUp className="w-4 h-4" />
+                                                                                        </button>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            onClick={() => moveStructureSectionBlock(selected as ReorderableStructureSectionId, blockId, 1)}
+                                                                                            disabled={!canMoveBlockDown}
+                                                                                            className={`h-8 w-8 rounded-lg border flex items-center justify-center ${canMoveBlockDown ? 'border-slate-200 bg-white text-slate-600 hover:text-brand-primary' : 'border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed'}`}
+                                                                                            aria-label={`Bajar bloque ${label}`}
+                                                                                        >
+                                                                                            <ArrowDown className="w-4 h-4" />
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )
+                                                                        })}
                                                                     </div>
                                                                 </div>
                                                             )}

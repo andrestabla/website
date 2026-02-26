@@ -12,6 +12,7 @@ type ProductsProps = {
         header?: boolean
         cards?: boolean
     }
+    blockOrder?: Array<'header' | 'cards'>
     viewport?: HomeResponsiveViewport
     styleOverrides?: {
         header?: {
@@ -23,7 +24,7 @@ type ProductsProps = {
     }
 }
 
-export function Products({ visibleBlocks, viewport = 'desktop', styleOverrides }: ProductsProps) {
+export function Products({ visibleBlocks, blockOrder, viewport = 'desktop', styleOverrides }: ProductsProps) {
     const { translatedState } = useLanguage()
     const sectionCfg = translatedState.homePage.productsSection
     const products = {
@@ -42,6 +43,18 @@ export function Products({ visibleBlocks, viewport = 'desktop', styleOverrides }
         header: visibleBlocks?.header !== false,
         cards: visibleBlocks?.cards !== false,
     }
+    const normalizeBlockOrder = (raw: unknown, fallback: Array<'header' | 'cards'>): Array<'header' | 'cards'> => {
+        const valid = new Set(fallback)
+        const fromRaw = Array.isArray(raw) ? raw.filter((value): value is 'header' | 'cards' => typeof value === 'string' && valid.has(value as any)) : []
+        const unique = [...new Set(fromRaw)]
+        for (const value of fallback) {
+            if (!unique.includes(value)) unique.push(value)
+        }
+        return unique as Array<'header' | 'cards'>
+    }
+    const sectionBlockOrder = normalizeBlockOrder(blockOrder, ['header', 'cards'])
+    const headerOrder = sectionBlockOrder.indexOf('header')
+    const cardsOrder = sectionBlockOrder.indexOf('cards')
     const parseNum = (value: string | undefined, fallback: number) => {
         const n = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
         return Number.isFinite(n) ? n : fallback
@@ -61,9 +74,12 @@ export function Products({ visibleBlocks, viewport = 'desktop', styleOverrides }
 
     return (
         <section style={sectionStyle} className="py-32 px-6 bg-white infra-grid">
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto flex flex-col">
                 {blocks.header && (
-                    <div className="mb-24 flex flex-col md:flex-row md:items-end justify-between gap-8">
+                    <div
+                        className={`flex flex-col md:flex-row md:items-end justify-between gap-8 ${headerOrder > cardsOrder && blocks.cards ? 'mt-16' : 'mb-24'}`}
+                        style={{ order: headerOrder + 1 }}
+                    >
                     <div>
                         <div className="flex items-center gap-3 mb-6">
                             <LayoutGrid className="w-5 h-5 text-brand-secondary" />
@@ -82,7 +98,7 @@ export function Products({ visibleBlocks, viewport = 'desktop', styleOverrides }
                 )}
 
                 {blocks.cards && (
-                    <div className="grid gap-12" style={{ gridTemplateColumns: `repeat(${cardsColumns}, minmax(0, 1fr))` }}>
+                    <div className="grid gap-12" style={{ order: cardsOrder + 1, gridTemplateColumns: `repeat(${cardsColumns}, minmax(0, 1fr))` }}>
                     {products.items.map((product, index) => {
                         const Icon = (product as any).icon
                         const detail = productsDetail[index]

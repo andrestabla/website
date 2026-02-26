@@ -101,6 +101,11 @@ export function getDefaultCmsSnapshot(): CMSState {
             Object.fromEntries(HOME_SECTION_BLOCK_IDS[sectionId].map((blockId) => [blockId, { desktop: true, tablet: true, mobile: true }]))
           ])
         ) as any,
+        blockOrder: {
+          services: ['header', 'grid'],
+          products: ['header', 'cards'],
+          frameworks: ['header', 'items'],
+        },
         blockStyleOverrides: {
           services: {
             header: { titleSizeRem: { mobile: '3rem', tablet: '4rem', desktop: '4.5rem' } },
@@ -267,6 +272,21 @@ export function sanitizeCmsSnapshot(input: unknown): CMSState {
       ]
     })
   )
+  const normalizeBlockOrder = <T extends string>(rawValue: unknown, fallback: readonly T[]): T[] => {
+    const valid = new Set(fallback)
+    const fromRaw = Array.isArray(rawValue) ? rawValue.filter((value): value is T => typeof value === 'string' && valid.has(value as T)) : []
+    const unique = [...new Set(fromRaw)]
+    for (const value of fallback) {
+      if (!unique.includes(value)) unique.push(value)
+    }
+    return unique as T[]
+  }
+  const baseBlockOrder = (base as any).homePage.layout.blockOrder
+  const blockOrder = {
+    services: normalizeBlockOrder(rawLayout?.blockOrder?.services, baseBlockOrder.services),
+    products: normalizeBlockOrder(rawLayout?.blockOrder?.products, baseBlockOrder.products),
+    frameworks: normalizeBlockOrder(rawLayout?.blockOrder?.frameworks, baseBlockOrder.frameworks),
+  }
   const baseBlockStyles = (base as any).homePage.layout.blockStyleOverrides
   const rawBlockStyles = rawLayout.blockStyleOverrides && typeof rawLayout.blockStyleOverrides === 'object'
     ? rawLayout.blockStyleOverrides
@@ -334,6 +354,7 @@ export function sanitizeCmsSnapshot(input: unknown): CMSState {
         hiddenSections,
         sectionVisibility,
         blockVisibility,
+        blockOrder,
         blockStyleOverrides,
       },
       hero: {
