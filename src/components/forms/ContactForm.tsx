@@ -5,6 +5,7 @@ import { Button } from '../ui/Button'
 import { Mail, User, MessageSquare, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react'
 import { useTranslatedStatic } from '../../hooks/useTranslatedStatic'
 import { useLanguage } from '../../context/LanguageContext'
+import { useCMS } from '../../admin/context/CMSContext'
 
 interface ContactFormProps {
     serviceSlug?: string
@@ -13,11 +14,10 @@ interface ContactFormProps {
 
 export function ContactForm({ serviceSlug, context = 'general' }: ContactFormProps) {
     const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+    const [form, setForm] = useState({ name: '', email: '', requirement: '' })
     const { uiText } = useLanguage()
+    const { state } = useCMS()
     const translatedMicrocopy = useTranslatedStatic('contact-form-microcopy', formMicrocopy)
-
-    // Use props to avoid TS6198
-    console.log(`Initializing form for ${serviceSlug || 'general'} in ${context} context`)
 
     // Randomly select microcopy variants for a "fresh" feel on each load
     const getRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]
@@ -30,11 +30,25 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setStatus('submitting')
-
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const response = await fetch('/api/contact-submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: form.name,
+                    email: form.email,
+                    requirement: form.requirement,
+                    serviceSlug: serviceSlug || undefined,
+                    context,
+                    path: window.location.pathname,
+                }),
+            })
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
             setStatus('success')
-        }, 1500)
+            setForm({ name: '', email: '', requirement: '' })
+        } catch {
+            setStatus('error')
+        }
     }
 
     if (status === 'success') {
@@ -51,7 +65,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                     {getRandom(translatedMicrocopy.success)}
                 </h3>
                 <p className="text-slate-500 mb-8 font-light">
-                    {uiText.form.successBlurb}
+                    {state.site.formSuccessMessage || uiText.form.successBlurb}
                 </p>
                 <Button
                     variant="outline"
@@ -75,9 +89,13 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                         <User className="w-5 h-5" />
                     </div>
                     <input
+                        name="name"
                         type="text"
                         required
                         placeholder={placeholders.name}
+                        value={form.name}
+                        onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                        autoComplete="name"
                         className="w-full bg-slate-50 border border-slate-200 py-6 pl-16 pr-6 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"
                     />
                 </div>
@@ -92,9 +110,13 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                         <Mail className="w-5 h-5" />
                     </div>
                     <input
+                        name="email"
                         type="email"
                         required
                         placeholder={placeholders.email}
+                        value={form.email}
+                        onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+                        autoComplete="email"
                         className="w-full bg-slate-50 border border-slate-200 py-6 pl-16 pr-6 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"
                     />
                 </div>
@@ -109,9 +131,12 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                         <MessageSquare className="w-5 h-5" />
                     </div>
                     <textarea
+                        name="requirement"
                         rows={4}
                         required
                         placeholder={uiText.form.placeholders.requirement}
+                        value={form.requirement}
+                        onChange={(e) => setForm((prev) => ({ ...prev, requirement: e.target.value }))}
                         className="w-full bg-slate-50 border border-slate-200 py-6 pl-16 pr-6 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium resize-none"
                     />
                 </div>
@@ -126,7 +151,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                         className="flex items-center gap-3 p-4 bg-red-50 text-red-600 text-sm font-bold border-l-4 border-red-600"
                     >
                         <AlertCircle className="w-5 h-5 shrink-0" />
-                        {getRandom(translatedMicrocopy.error)}
+                        {state.site.formErrorMessage || getRandom(translatedMicrocopy.error)}
                     </motion.div>
                 )}
             </AnimatePresence>

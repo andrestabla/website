@@ -192,6 +192,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         performTranslation(language, cmsState);
     }, [language, cmsState, performTranslation]);
 
+    useEffect(() => {
+        if (typeof document === 'undefined') return
+        document.documentElement.lang = language
+    }, [language])
+
     const setLanguage = (lang: Language) => {
         setLanguageState(lang);
         localStorage.setItem('algoritmot_lang', lang);

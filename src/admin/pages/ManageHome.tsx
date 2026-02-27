@@ -55,7 +55,14 @@ type ProductsStructureBlock = 'section' | 'header' | 'cards'
 type FrameworksStructureBlock = 'section' | 'header' | 'items'
 type ContactStructureBlock = 'section' | 'header' | 'channels' | 'form'
 type StructureBlockKey = string
-type ReorderableStructureSectionId = 'services' | 'products' | 'frameworks'
+type ReorderableStructureSectionId = 'services' | 'products' | 'frameworks' | 'contact'
+type HomeStructurePreset = {
+    id: string
+    label: string
+    description: string
+    sectionOrder: HomeSectionId[]
+    blockOrder: HomeBlockOrderMap
+}
 
 const COLOR_SWATCHES = ['#ffffff', '#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#334155', '#0f172a', '#1a2d5a', '#2563eb', '#3b82f6', '#f97316']
 const FONT_PRESETS = ['Inter', 'Space Grotesk', 'Manrope', 'Sora', 'IBM Plex Sans', 'Montserrat', 'Poppins', 'system-ui']
@@ -65,6 +72,7 @@ const DEFAULT_HOME_BLOCK_ORDER: HomeBlockOrderMap = {
     services: ['header', 'grid'],
     products: ['header', 'cards'],
     frameworks: ['header', 'items'],
+    contact: ['header', 'channels', 'form'],
 }
 const DEFAULT_HOME_BLOCK_STYLE_OVERRIDES: HomeBlockStyleOverrides = {
     services: {
@@ -94,6 +102,44 @@ const DEFAULT_HOME_BLOCK_STYLE_OVERRIDES: HomeBlockStyleOverrides = {
         form: { layoutMode: { mobile: 'stack', tablet: 'stack', desktop: 'split' } },
     },
 }
+const HOME_STRUCTURE_PRESETS: HomeStructurePreset[] = [
+    {
+        id: 'balanced',
+        label: 'Balanceado',
+        description: 'Orden base recomendado para Home corporativo.',
+        sectionOrder: ['hero', 'services', 'products', 'frameworks', 'contact'],
+        blockOrder: {
+            services: ['header', 'grid'],
+            products: ['header', 'cards'],
+            frameworks: ['header', 'items'],
+            contact: ['header', 'channels', 'form'],
+        },
+    },
+    {
+        id: 'conversion',
+        label: 'Conversión',
+        description: 'Prioriza oferta y formulario temprano.',
+        sectionOrder: ['hero', 'products', 'services', 'contact', 'frameworks'],
+        blockOrder: {
+            services: ['header', 'grid'],
+            products: ['cards', 'header'],
+            frameworks: ['items', 'header'],
+            contact: ['form', 'header', 'channels'],
+        },
+    },
+    {
+        id: 'trust-first',
+        label: 'Confianza',
+        description: 'Muestra credenciales antes del contacto.',
+        sectionOrder: ['hero', 'frameworks', 'services', 'products', 'contact'],
+        blockOrder: {
+            services: ['header', 'grid'],
+            products: ['header', 'cards'],
+            frameworks: ['items', 'header'],
+            contact: ['channels', 'header', 'form'],
+        },
+    },
+]
 
 function normalizeBlockOrder<T extends string>(raw: unknown, fallback: readonly T[]): T[] {
     const valid = new Set(fallback)
@@ -111,6 +157,7 @@ function normalizeHomeBlockOrder(raw: unknown): HomeBlockOrderMap {
         services: normalizeBlockOrder(source.services, DEFAULT_HOME_BLOCK_ORDER.services),
         products: normalizeBlockOrder(source.products, DEFAULT_HOME_BLOCK_ORDER.products),
         frameworks: normalizeBlockOrder(source.frameworks, DEFAULT_HOME_BLOCK_ORDER.frameworks),
+        contact: normalizeBlockOrder(source.contact, DEFAULT_HOME_BLOCK_ORDER.contact),
     }
 }
 
@@ -744,6 +791,29 @@ export function ManageHome() {
         if (targetIndex < 0 || targetIndex >= structureSectionOrder.length) return
         reorderStructureSections(sectionId, structureSectionOrder[targetIndex])
     }
+    const applyStructurePreset = (presetId: string) => {
+        const preset = HOME_STRUCTURE_PRESETS.find((entry) => entry.id === presetId)
+        if (!preset) return
+        setHomeLayout({
+            sectionOrder: [...preset.sectionOrder],
+            blockOrder: normalizeHomeBlockOrder(preset.blockOrder),
+        })
+        setStructureSelectedSection(preset.sectionOrder[0] ?? 'hero')
+        setStructureHeroBlock('section')
+        setStructureServicesBlock('section')
+        setStructureProductsBlock('section')
+        setStructureFrameworksBlock('section')
+        setStructureContactBlock('section')
+    }
+    const isStructurePresetActive = (preset: HomeStructurePreset) => {
+        const sameSectionOrder = HOME_SECTION_IDS.every((_, index) => structureSectionOrder[index] === preset.sectionOrder[index])
+        if (!sameSectionOrder) return false
+        return (['services', 'products', 'frameworks', 'contact'] as const).every((sectionId) => {
+            const currentOrder = structureBlockOrder[sectionId]
+            const presetOrder = preset.blockOrder[sectionId]
+            return currentOrder.length === presetOrder.length && currentOrder.every((blockId, idx) => blockId === presetOrder[idx])
+        })
+    }
     const toggleStructureSectionVisibility = (sectionId: HomeSectionId) => {
         const isHidden = hiddenSectionSet.has(sectionId)
         const hiddenSections = isHidden
@@ -821,7 +891,7 @@ export function ManageHome() {
         })
     }
     const isReorderableStructureSection = (sectionId: HomeSectionId): sectionId is ReorderableStructureSectionId =>
-        sectionId === 'services' || sectionId === 'products' || sectionId === 'frameworks'
+        sectionId === 'services' || sectionId === 'products' || sectionId === 'frameworks' || sectionId === 'contact'
     const getStructureSectionBlockOrder = (sectionId: HomeSectionId) => {
         if (!isReorderableStructureSection(sectionId)) return [] as string[]
         return structureBlockOrder[sectionId]
@@ -830,6 +900,7 @@ export function ManageHome() {
         if (sectionId === 'services') return blockId === 'grid' ? 'Grid' : 'Header'
         if (sectionId === 'products') return blockId === 'cards' ? 'Cards' : 'Header'
         if (sectionId === 'frameworks') return blockId === 'items' ? 'Items' : 'Header'
+        if (sectionId === 'contact') return blockId === 'channels' ? 'Canales' : blockId === 'form' ? 'Form' : 'Header'
         return blockId
     }
     const setStructureSectionBlockOrder = (sectionId: ReorderableStructureSectionId, nextOrder: string[]) => {
@@ -2046,7 +2117,10 @@ export function ManageHome() {
                                 channels: isSectionBlockVisibleInPreviewViewport('contact', 'channels', previewViewport),
                                 form: isSectionBlockVisibleInPreviewViewport('contact', 'form', previewViewport),
                             }
-                            const contactShowLeft = contactVisibleBlocks.header || contactVisibleBlocks.channels
+                            const contactBlockOrder = structureBlockOrder.contact
+                            const orderedContactBlocks = contactBlockOrder.filter((blockId) => (contactVisibleBlocks as any)[blockId] !== false) as Array<'header' | 'channels' | 'form'>
+                            const contactNonFormBlocks = orderedContactBlocks.filter((blockId) => blockId !== 'form')
+                            const contactFormIndex = orderedContactBlocks.indexOf('form')
                             const contactHeaderTitleSize = getSectionBlockStyleNumber(
                                 'contact',
                                 'header',
@@ -2062,7 +2136,76 @@ export function ManageHome() {
                                 previewViewport === 'desktop' ? 3 : previewViewport === 'tablet' ? 2.5 : 2
                             )
                             const contactFormLayoutMode = getContactFormLayoutModeForViewport(previewViewport)
-                            const contactPreviewSplitLayout = contactShowLeft && contactVisibleBlocks.form && contactFormLayoutMode === 'split'
+                            const contactPreviewSplitLayout = contactFormLayoutMode === 'split' && contactFormIndex !== -1 && contactNonFormBlocks.length > 0 && contactFormIndex === orderedContactBlocks.length - 1
+                            const renderContactPreviewBlock = (blockId: 'header' | 'channels' | 'form') => {
+                                const isBlockSelected = isSelected && structureContactBlock === blockId
+                                const shellClass = `w-full rounded-2xl border text-left transition-colors ${isBlockSelected ? 'border-brand-primary bg-blue-50/30 shadow-[0_0_0_4px_rgba(37,99,235,0.10)]' : 'border-slate-200 bg-white/90 hover:border-brand-primary/40'}`
+                                if (blockId === 'header') {
+                                    return (
+                                        <button
+                                            key="contact-preview-block-header"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                selectContactBlockFromCanvas('header')
+                                            }}
+                                            className={`${shellClass} p-5 space-y-3`}
+                                            aria-label="Seleccionar Header de contacto"
+                                        >
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Header</div>
+                                            <div className="h-4 rounded bg-slate-200 w-3/4" />
+                                            <div className="h-2 rounded bg-slate-100 w-5/6" />
+                                        </button>
+                                    )
+                                }
+                                if (blockId === 'channels') {
+                                    return (
+                                        <button
+                                            key="contact-preview-block-channels"
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                selectContactBlockFromCanvas('channels')
+                                            }}
+                                            className={`${shellClass} p-5 space-y-3`}
+                                            aria-label="Seleccionar Canales de contacto"
+                                        >
+                                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Canales</div>
+                                            <div className="grid" style={{ gap: `${contactChannelsGap}rem` }}>
+                                                {[
+                                                    homeDraft.contactSection.labels.officialChannel,
+                                                    homeDraft.contactSection.labels.hubHq,
+                                                    homeDraft.contactSection.labels.corporateNetwork,
+                                                    homeDraft.contactSection.labels.linkedinProtocol,
+                                                ].map((label, labelIndex) => (
+                                                    <div key={`contact-channel-preview-${labelIndex}`} className="rounded-xl border border-slate-200 bg-white p-3">
+                                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 line-clamp-1">{label || `Label ${labelIndex + 1}`}</div>
+                                                        <div className="h-2 rounded bg-slate-100 w-2/3 mt-2" />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </button>
+                                    )
+                                }
+                                return (
+                                    <button
+                                        key="contact-preview-block-form"
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            selectContactBlockFromCanvas('form')
+                                        }}
+                                        className={`${shellClass} p-4 space-y-3`}
+                                        aria-label="Seleccionar Formulario de contacto"
+                                    >
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Form</div>
+                                        <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
+                                        <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
+                                        <div className="h-24 rounded-xl bg-slate-100 border border-slate-200" />
+                                        <div className="h-10 rounded-xl bg-white border border-slate-200" />
+                                    </button>
+                                )
+                            }
                             return (
                                 <div
                                     key={`preview-${sectionId}`}
@@ -2081,23 +2224,19 @@ export function ManageHome() {
                                     <div className="absolute inset-0 pointer-events-none" style={{ background: isVisible ? 'linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.90))' : 'linear-gradient(180deg, rgba(248,250,252,0.92), rgba(248,250,252,0.96))' }} />
 
                                     <div className="absolute top-4 right-4 z-10 rounded-xl border border-slate-200 bg-white/90 backdrop-blur p-1 shadow-sm flex items-center gap-1">
-                                        {([
-                                            { value: 'header', label: 'Header' },
-                                            { value: 'channels', label: 'Canales' },
-                                            { value: 'form', label: 'Form' },
-                                        ] as const).map((opt) => {
-                                            const active = isSelected && structureContactBlock === opt.value
+                                        {contactBlockOrder.map((blockId) => {
+                                            const active = isSelected && structureContactBlock === blockId
                                             return (
                                                 <button
-                                                    key={`contact-pill-${opt.value}`}
+                                                    key={`contact-pill-${blockId}`}
                                                     type="button"
                                                     onClick={(e) => {
                                                         e.stopPropagation()
-                                                        selectContactBlockFromCanvas(opt.value)
+                                                        selectContactBlockFromCanvas(blockId)
                                                     }}
                                                     className={`h-8 px-2 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-colors ${active ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-900'}`}
                                                 >
-                                                    {opt.label}
+                                                    {getStructureSectionBlockLabel('contact', blockId)}
                                                 </button>
                                             )
                                         })}
@@ -2165,103 +2304,25 @@ export function ManageHome() {
                                             </div>
                                         </div>
 
-                                        <div
-                                            className="mt-8 grid gap-5"
-                                            style={{
-                                                gridTemplateColumns: contactPreviewSplitLayout
-                                                    ? 'minmax(0,1fr) minmax(0,0.9fr)'
-                                                    : 'minmax(0,1fr)',
-                                            }}
-                                        >
-                                            {contactShowLeft ? (
-                                                <div className="rounded-2xl border border-slate-200 bg-white/90 p-5 space-y-4">
-                                                    {contactVisibleBlocks.header ? (
-                                                        <div className="h-4 rounded bg-slate-200 w-3/4" />
-                                                    ) : (
-                                                        <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/70 px-3 py-2 text-[11px] font-semibold text-amber-800">
-                                                            Header oculto en {previewViewport}
-                                                        </div>
-                                                    )}
-                                                    {contactVisibleBlocks.channels ? (
-                                                        <div className="grid" style={{ gap: `${contactChannelsGap}rem` }}>
-                                                            {[
-                                                                homeDraft.contactSection.labels.officialChannel,
-                                                                homeDraft.contactSection.labels.hubHq,
-                                                                homeDraft.contactSection.labels.corporateNetwork,
-                                                                homeDraft.contactSection.labels.linkedinProtocol,
-                                                            ].map((label, labelIndex) => (
-                                                                <div key={`contact-channel-preview-${labelIndex}`} className="rounded-xl border border-slate-200 bg-white p-3">
-                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 line-clamp-1">{label || `Label ${labelIndex + 1}`}</div>
-                                                                    <div className="h-2 rounded bg-slate-100 w-2/3 mt-2" />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/70 px-3 py-2 text-[11px] font-semibold text-amber-800">
-                                                            Canales ocultos en {previewViewport}
-                                                        </div>
-                                                    )}
+                                        <div className="mt-8">
+                                            {orderedContactBlocks.length === 0 ? (
+                                                <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
+                                                    Todos los bloques de contacto están ocultos en {previewViewport}
+                                                </div>
+                                            ) : contactPreviewSplitLayout ? (
+                                                <div className="grid gap-5" style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,0.9fr)' }}>
+                                                    <div className="rounded-2xl border border-slate-200 bg-white/90 p-5 space-y-4">
+                                                        {contactNonFormBlocks.map((blockId) => renderContactPreviewBlock(blockId))}
+                                                    </div>
+                                                    {renderContactPreviewBlock('form')}
                                                 </div>
                                             ) : (
-                                                <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
-                                                    Columna izquierda oculta en {previewViewport}
-                                                </div>
-                                            )}
-                                            {contactVisibleBlocks.form ? (
-                                                <div className="rounded-2xl border border-slate-200 p-4 bg-white/90 space-y-3">
-                                                    <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
-                                                    <div className="h-9 rounded-xl bg-slate-100 border border-slate-200" />
-                                                    <div className="h-24 rounded-xl bg-slate-100 border border-slate-200" />
-                                                    <div className="h-10 rounded-xl bg-white border border-slate-200" />
-                                                </div>
-                                            ) : (
-                                                <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/70 p-4 text-xs font-semibold text-amber-800">
-                                                    Formulario oculto en {previewViewport}
+                                                <div className="grid grid-cols-1 gap-5">
+                                                    {orderedContactBlocks.map((blockId) => renderContactPreviewBlock(blockId))}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-
-                                    {isVisible && (
-                                        <>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    selectContactBlockFromCanvas('header')
-                                                }}
-                                                className={`absolute left-6 right-6 top-14 h-[26%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureContactBlock === 'header' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
-                                                aria-label="Seleccionar header de contacto"
-                                                title="Header contacto"
-                                            >
-                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureContactBlock === 'header' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Header</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    selectContactBlockFromCanvas('channels')
-                                                }}
-                                                className={`absolute left-6 bottom-6 w-[52%] h-[46%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureContactBlock === 'channels' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
-                                                aria-label="Seleccionar canales de contacto"
-                                                title="Canales contacto"
-                                            >
-                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureContactBlock === 'channels' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Canales</span>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    selectContactBlockFromCanvas('form')
-                                                }}
-                                                className={`absolute right-6 bottom-6 w-[40%] h-[46%] rounded-2xl border-2 border-dashed bg-transparent transition-all ${isSelected && structureContactBlock === 'form' ? 'border-brand-primary shadow-[0_0_0_6px_rgba(37,99,235,0.10)]' : 'border-white/70 hover:border-brand-primary/70'}`}
-                                                aria-label="Seleccionar formulario de contacto"
-                                                title="Formulario contacto"
-                                            >
-                                                <span className={`absolute -top-3 left-3 px-2 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${isSelected && structureContactBlock === 'form' ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white/95 text-slate-600'}`}>Form</span>
-                                            </button>
-                                        </>
-                                    )}
                                 </div>
                             )
                         }
@@ -3114,26 +3175,45 @@ export function ManageHome() {
                                                 <h3 className="text-lg font-black tracking-tight text-slate-900 mt-1">Arrastra para reordenar y haz clic para editar</h3>
                                                 <p className="text-xs text-slate-500 mt-1">Controla el orden y la visibilidad del Home desde una sola vista. El panel derecho funciona como inspector contextual.</p>
                                             </div>
-                                            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1">
-                                                {([
-                                                    { value: 'desktop', icon: Monitor, label: 'Desktop' },
-                                                    { value: 'tablet', icon: Tablet, label: 'Tablet' },
-                                                    { value: 'mobile', icon: Smartphone, label: 'Mobile' },
-                                                ] as const).map((opt) => {
-                                                    const Icon = opt.icon
-                                                    const active = previewViewport === opt.value
-                                                    return (
-                                                        <button
-                                                            key={opt.value}
-                                                            type="button"
-                                                            title={`Canvas ${opt.label}`}
-                                                            onClick={() => setPreviewViewport(opt.value)}
-                                                            className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${active ? 'bg-blue-50 text-brand-primary border border-blue-100' : 'text-slate-500 hover:text-slate-800'}`}
-                                                        >
-                                                            <Icon className="w-4 h-4" />
-                                                        </button>
-                                                    )
-                                                })}
+                                            <div className="flex flex-col items-stretch gap-2">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Plantillas de estructura</div>
+                                                <div className="flex flex-wrap items-center justify-end gap-2">
+                                                    {HOME_STRUCTURE_PRESETS.map((preset) => {
+                                                        const active = isStructurePresetActive(preset)
+                                                        return (
+                                                            <button
+                                                                key={`structure-preset-${preset.id}`}
+                                                                type="button"
+                                                                onClick={() => applyStructurePreset(preset.id)}
+                                                                className={`h-8 px-3 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-colors ${active ? 'border-brand-primary bg-blue-50 text-brand-primary' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-900'}`}
+                                                                title={preset.description}
+                                                            >
+                                                                {preset.label}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1 self-end">
+                                                    {([
+                                                        { value: 'desktop', icon: Monitor, label: 'Desktop' },
+                                                        { value: 'tablet', icon: Tablet, label: 'Tablet' },
+                                                        { value: 'mobile', icon: Smartphone, label: 'Mobile' },
+                                                    ] as const).map((opt) => {
+                                                        const Icon = opt.icon
+                                                        const active = previewViewport === opt.value
+                                                        return (
+                                                            <button
+                                                                key={opt.value}
+                                                                type="button"
+                                                                title={`Canvas ${opt.label}`}
+                                                                onClick={() => setPreviewViewport(opt.value)}
+                                                                className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${active ? 'bg-blue-50 text-brand-primary border border-blue-100' : 'text-slate-500 hover:text-slate-800'}`}
+                                                            >
+                                                                <Icon className="w-4 h-4" />
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -3241,13 +3321,28 @@ export function ManageHome() {
                                             const selectedBlockKey = getSelectedStructureBlockKey(selected)
                                             const selectedHasBlockOrder = isReorderableStructureSection(selected)
                                             const selectedBlockOrder = selectedHasBlockOrder ? getStructureSectionBlockOrder(selected) : []
-                                            const selectedContentBlockId = selected === 'services'
-                                                ? 'grid'
+                                            const selectedPresetOrders: Array<{ id: string; label: string; description: string; order: string[] }> = selected === 'services'
+                                                ? [
+                                                    { id: 'services-header-first', label: 'Header primero', description: 'Header seguido del grid', order: ['header', 'grid'] },
+                                                    { id: 'services-grid-first', label: 'Contenido primero', description: 'Grid antes del header', order: ['grid', 'header'] },
+                                                ]
                                                 : selected === 'products'
-                                                    ? 'cards'
+                                                    ? [
+                                                        { id: 'products-header-first', label: 'Header primero', description: 'Header seguido de cards', order: ['header', 'cards'] },
+                                                        { id: 'products-cards-first', label: 'Contenido primero', description: 'Cards antes del header', order: ['cards', 'header'] },
+                                                    ]
                                                     : selected === 'frameworks'
-                                                        ? 'items'
-                                                        : null
+                                                        ? [
+                                                            { id: 'frameworks-header-first', label: 'Header primero', description: 'Header seguido de items', order: ['header', 'items'] },
+                                                            { id: 'frameworks-items-first', label: 'Contenido primero', description: 'Items antes del header', order: ['items', 'header'] },
+                                                        ]
+                                                        : selected === 'contact'
+                                                            ? [
+                                                                { id: 'contact-header-first', label: 'Header primero', description: 'Header, canales y formulario', order: ['header', 'channels', 'form'] },
+                                                                { id: 'contact-channels-first', label: 'Canales primero', description: 'Canales antes del header', order: ['channels', 'header', 'form'] },
+                                                                { id: 'contact-form-first', label: 'Formulario primero', description: 'Formulario al inicio', order: ['form', 'header', 'channels'] },
+                                                            ]
+                                                            : []
 
                                             return (
                                                 <>
@@ -3793,24 +3888,22 @@ export function ManageHome() {
                                                                         </button>
                                                                     </div>
 
-                                                                    {selectedContentBlockId && (
-                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => setStructureSectionBlockOrder(selected as ReorderableStructureSectionId, ['header', selectedContentBlockId])}
-                                                                                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left hover:border-brand-primary/40"
-                                                                            >
-                                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Preset</div>
-                                                                                <div className="text-xs font-bold text-slate-900 mt-1">Header primero</div>
-                                                                            </button>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => setStructureSectionBlockOrder(selected as ReorderableStructureSectionId, [selectedContentBlockId, 'header'])}
-                                                                                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left hover:border-brand-primary/40"
-                                                                            >
-                                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Preset</div>
-                                                                                <div className="text-xs font-bold text-slate-900 mt-1">Contenido primero</div>
-                                                                            </button>
+                                                                    {selectedPresetOrders.length > 0 && (
+                                                                        <div className={`grid grid-cols-1 ${selectedPresetOrders.length > 2 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-2`}>
+                                                                            {selectedPresetOrders.map((preset) => (
+                                                                                <button
+                                                                                    key={`preset-${preset.id}`}
+                                                                                    type="button"
+                                                                                    onClick={() => setStructureSectionBlockOrder(selected as ReorderableStructureSectionId, preset.order)}
+                                                                                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left hover:border-brand-primary/40"
+                                                                                >
+                                                                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Preset</div>
+                                                                                    <div className="text-xs font-bold text-slate-900 mt-1">{preset.label}</div>
+                                                                                    <div className="text-[11px] text-slate-500 mt-1">
+                                                                                        {preset.description}
+                                                                                    </div>
+                                                                                </button>
+                                                                            ))}
                                                                         </div>
                                                                     )}
 
@@ -3849,6 +3942,7 @@ export function ManageHome() {
                                                                                             if (selected === 'services') selectServicesBlockFromCanvas(blockId as ServicesStructureBlock)
                                                                                             if (selected === 'products') selectProductsBlockFromCanvas(blockId as ProductsStructureBlock)
                                                                                             if (selected === 'frameworks') selectFrameworksBlockFromCanvas(blockId as FrameworksStructureBlock)
+                                                                                            if (selected === 'contact') selectContactBlockFromCanvas(blockId as ContactStructureBlock)
                                                                                         }}
                                                                                         className="text-left min-w-0 flex-1"
                                                                                     >

@@ -84,7 +84,7 @@ export function Home() {
         }
         return unique as T[]
     }
-    const getBlockOrder = <T extends string>(sectionId: 'services' | 'products' | 'frameworks', fallback: readonly T[]) =>
+    const getBlockOrder = <T extends string>(sectionId: 'services' | 'products' | 'frameworks' | 'contact', fallback: readonly T[]) =>
         normalizeBlockOrder((responsiveBlockOrder as any)?.[sectionId], fallback)
 
     const sectionRenderers: Record<HomeSectionId, () => ReactElement> = {
@@ -147,7 +147,7 @@ export function Home() {
                     header: isBlockVisibleInViewport('contact', 'header'),
                     channels: isBlockVisibleInViewport('contact', 'channels'),
                     form: isBlockVisibleInViewport('contact', 'form'),
-                }} viewport={viewport} styleOverrides={{
+                }} blockOrder={getBlockOrder('contact', ['header', 'channels', 'form'])} viewport={viewport} styleOverrides={{
                     header: {
                         titleSizeRem: getBlockStyleStringInViewport('contact', 'header', 'titleSizeRem', viewport === 'desktop' ? '6rem' : viewport === 'tablet' ? '5rem' : '3.5rem'),
                     },

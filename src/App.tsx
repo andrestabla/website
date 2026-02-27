@@ -22,8 +22,10 @@ import { CMSProvider, useCMS } from './admin/context/CMSContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { DataConsentModal } from './components/privacy/DataConsentModal'
 import { SiteTelemetry } from './components/analytics/SiteTelemetry'
+import { SmartPopup } from './components/marketing/SmartPopup'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { NotFound } from './pages/NotFound'
 
 function ScrollToTopOnRouteChange() {
   const { pathname, hash } = useLocation()
@@ -127,14 +129,32 @@ function GlobalBrandLoader() {
   )
 }
 
+function GlobalExperienceMode() {
+  const { state } = useCMS()
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.setAttribute('data-cms-performance-mode', state.site.performanceMode || 'standard')
+    root.setAttribute('data-cms-motion', state.site.motionPreference || 'system')
+    return () => {
+      root.removeAttribute('data-cms-performance-mode')
+      root.removeAttribute('data-cms-motion')
+    }
+  }, [state.site.motionPreference, state.site.performanceMode])
+
+  return null
+}
+
 function App() {
   return (
     <CMSProvider>
       <LanguageProvider>
         <AnimatePresence mode="wait">
           <ScrollToTopOnRouteChange />
+          <GlobalExperienceMode />
           <GlobalBrandLoader />
           <SiteTelemetry />
+          <SmartPopup />
           <DataConsentModal />
           <Routes>
             <Route path="/" element={<Home />} />
@@ -158,6 +178,7 @@ function App() {
             <Route path="/admin/seo" element={<ProtectedRoute><ManageSEO /></ProtectedRoute>} />
             <Route path="/admin/marketing" element={<ProtectedRoute><ManageMarketing /></ProtectedRoute>} />
             <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </AnimatePresence>
       </LanguageProvider>

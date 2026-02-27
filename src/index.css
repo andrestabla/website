@@ -13,6 +13,20 @@
 }
 
 @layer base {
+  html[data-cms-performance-mode="lite"] .dot-pattern,
+  html[data-cms-performance-mode="lite"] .infra-grid {
+    background-image: none !important;
+  }
+
+  html[data-cms-motion="always"] *,
+  html[data-cms-motion="always"] *::before,
+  html[data-cms-motion="always"] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
   body {
     font-family: var(--font-sans);
     @apply bg-white text-slate-900 antialiased selection:bg-brand-primary selection:text-white;

@@ -83,6 +83,7 @@ export type HomeBlockOrderMap = {
     services: Array<'header' | 'grid'>
     products: Array<'header' | 'cards'>
     frameworks: Array<'header' | 'items'>
+    contact: Array<'header' | 'channels' | 'form'>
 }
 export const HOME_SECTION_BLOCK_IDS: { [K in HomeSectionId]: Array<keyof HomeBlockVisibilityMap[K]> } = {
     hero: ['headline', 'ctas', 'stats'],
@@ -215,6 +216,41 @@ export type SiteConfig = {
     dataPolicyLinkLabel: string
     dataPolicyAcceptLabel: string
     dataPolicyRejectLabel: string
+    headerVariant: string
+    headerSticky: string
+    headerCtaEnabled: string
+    headerCtaLabel: string
+    headerCtaHref: string
+    footerVariant: string
+    announcementEnabled: string
+    announcementText: string
+    announcementHref: string
+    announcementBgColor: string
+    announcementTextColor: string
+    pageTemplateHome: string
+    pageTemplateService: string
+    pageTemplateProduct: string
+    pageTemplateProtocol: string
+    pageTemplatePolicy: string
+    performanceMode: string
+    motionPreference: string
+    popupEnabled: string
+    popupTrigger: string
+    popupDelaySeconds: string
+    popupScrollPercent: string
+    popupFrequency: string
+    popupPages: string
+    popupTitle: string
+    popupBody: string
+    popupCtaLabel: string
+    popupCtaHref: string
+    popupDismissLabel: string
+    formSuccessMessage: string
+    formErrorMessage: string
+    notFoundTitle: string
+    notFoundDescription: string
+    notFoundCtaLabel: string
+    notFoundCtaHref: string
 }
 
 export type DesignTokens = {
@@ -497,6 +533,7 @@ const staticHomePage: HomePageContent = {
             services: ['header', 'grid'],
             products: ['header', 'cards'],
             frameworks: ['header', 'items'],
+            contact: ['header', 'channels', 'form'],
         },
         blockStyleOverrides: {
             services: {
@@ -629,6 +666,41 @@ const staticSite: SiteConfig = {
     dataPolicyLinkLabel: 'Leer política',
     dataPolicyAcceptLabel: 'Aceptar',
     dataPolicyRejectLabel: 'Continuar sin analítica',
+    headerVariant: 'classic',
+    headerSticky: 'true',
+    headerCtaEnabled: 'true',
+    headerCtaLabel: 'Iniciar transformación',
+    headerCtaHref: '/#contacto',
+    footerVariant: 'detailed',
+    announcementEnabled: 'false',
+    announcementText: 'Nuevo: sesión de diagnóstico sin costo para equipos directivos.',
+    announcementHref: '/#contacto',
+    announcementBgColor: '#0f172a',
+    announcementTextColor: '#ffffff',
+    pageTemplateHome: 'immersive',
+    pageTemplateService: 'balanced',
+    pageTemplateProduct: 'balanced',
+    pageTemplateProtocol: 'immersive',
+    pageTemplatePolicy: 'compact',
+    performanceMode: 'standard',
+    motionPreference: 'system',
+    popupEnabled: 'false',
+    popupTrigger: 'time',
+    popupDelaySeconds: '8',
+    popupScrollPercent: '40',
+    popupFrequency: 'once_session',
+    popupPages: 'all',
+    popupTitle: 'Agenda una sesión estratégica',
+    popupBody: 'Te ayudamos a definir un roadmap realista de transformación digital en 30 minutos.',
+    popupCtaLabel: 'Quiero mi sesión',
+    popupCtaHref: '/#contacto',
+    popupDismissLabel: 'Ahora no',
+    formSuccessMessage: 'Gracias. Te responderemos en menos de 24 horas hábiles.',
+    formErrorMessage: 'No pudimos enviar tu solicitud. Inténtalo nuevamente en unos minutos.',
+    notFoundTitle: 'La página que buscas no está disponible.',
+    notFoundDescription: 'Es posible que haya cambiado de ruta o ya no exista. Te llevamos al inicio para continuar.',
+    notFoundCtaLabel: 'Volver al inicio',
+    notFoundCtaHref: '/',
 }
 
 function buildInitialState(): CMSState {
@@ -697,6 +769,7 @@ function normalizeCMSState(stored: Partial<CMSState> = {}): CMSState {
         services: normalizeBlockOrder((rawLayout as any)?.blockOrder?.services, staticHomePage.layout.blockOrder.services),
         products: normalizeBlockOrder((rawLayout as any)?.blockOrder?.products, staticHomePage.layout.blockOrder.products),
         frameworks: normalizeBlockOrder((rawLayout as any)?.blockOrder?.frameworks, staticHomePage.layout.blockOrder.frameworks),
+        contact: normalizeBlockOrder((rawLayout as any)?.blockOrder?.contact, staticHomePage.layout.blockOrder.contact),
     } as HomeBlockOrderMap
     const blockStyleOverrides = {
         services: {

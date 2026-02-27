@@ -152,12 +152,13 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
         },
         '/admin/marketing': {
             title: 'Marketing',
-            intro: 'Construye URLs/campañas y assets de crecimiento con datos reales del sitio.',
-            data: 'Fuente: CMS real (`site.url`, servicios, productos).',
+            intro: 'Gestiona popups de conversión, copy asistido por IA, formularios y URLs de campaña.',
+            data: 'Fuente: CMS real (`site`) + `/api/admin/ai-copy` + `/api/admin/accessibility-scan`.',
             steps: [
-                'Selecciona destino/campaña.',
-                'Completa UTM parameters.',
-                'Copia/valida la URL generada.',
+                'Configura Popup Builder (trigger, frecuencia, targeting, copy y CTA).',
+                'Usa Elementor AI para generar copy y aplícalo al popup.',
+                'Ajusta mensajes de formulario y guarda cambios.',
+                'Construye URLs UTM para servicios y ejecuta escaneo rápido de accesibilidad.',
             ],
         },
         '/admin/analytics': {
@@ -562,4 +563,3 @@ function StatusCard({ label, value, tone = 'slate' }: { label: string; value: st
         </div>
     )
 }
-
