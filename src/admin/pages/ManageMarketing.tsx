@@ -16,6 +16,11 @@ import {
     Plus,
     Trash2,
     WandSparkles,
+    GripVertical,
+    Monitor,
+    Tablet,
+    Smartphone,
+    LayoutTemplate,
 } from 'lucide-react'
 import { useCMS, type SiteConfig } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
@@ -67,6 +72,62 @@ type CampaignLanding = {
     accentColor: string
     backgroundStyle: string
 }
+
+type LandingViewport = 'desktop' | 'tablet' | 'mobile'
+
+type LandingWidgetTemplate = {
+    id: string
+    label: string
+    description: string
+    section: CampaignSection
+}
+
+const LANDING_WIDGET_TEMPLATES: LandingWidgetTemplate[] = [
+    {
+        id: 'pain-point',
+        label: 'Pain Point',
+        description: 'Expone el problema crítico del cliente ideal.',
+        section: {
+            id: 'pain-point',
+            title: 'El cuello de botella actual',
+            body: 'Tu operación exige resultados más rápidos, pero sin un flujo estandarizado cada iniciativa se vuelve más lenta y costosa.',
+            bullets: ['Demoras en ejecución', 'Poca visibilidad de avance', 'Dependencia de tareas manuales'],
+        },
+    },
+    {
+        id: 'solution',
+        label: 'Solución',
+        description: 'Muestra la propuesta y el método.',
+        section: {
+            id: 'solution',
+            title: 'Cómo resolvemos el reto',
+            body: 'Diseñamos e implementamos un plan accionable, con responsables y métricas, para generar impacto real en semanas.',
+            bullets: ['Roadmap por fases', 'Automatización de procesos clave', 'Acompañamiento operativo'],
+        },
+    },
+    {
+        id: 'proof',
+        label: 'Prueba',
+        description: 'Incluye señales de confianza y resultados.',
+        section: {
+            id: 'proof',
+            title: 'Resultados que puedes esperar',
+            body: 'El enfoque prioriza quick wins y mejoras sostenidas en productividad, control y capacidad de escalar.',
+            bullets: ['Menos fricción operativa', 'Más velocidad de entrega', 'Mejor experiencia del cliente interno'],
+        },
+    },
+    {
+        id: 'faq',
+        label: 'FAQ breve',
+        description: 'Responde objeciones principales.',
+        section: {
+            id: 'faq',
+            title: 'Preguntas frecuentes',
+            body: 'Aclaramos alcance, tiempos y forma de trabajo para facilitar la decisión.',
+            bullets: ['¿Cuánto tarda el diagnóstico?', '¿Qué equipo necesita participar?', '¿Cómo medimos resultados?'],
+        },
+    },
+]
 
 function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text).catch(() => { })
@@ -141,6 +202,18 @@ function slugify(input: string) {
         .slice(0, 80)
 }
 
+function ensureUniqueSectionId(baseId: string, sections: CampaignSection[]) {
+    const normalized = slugify(baseId) || `section-${sections.length + 1}`
+    if (!sections.some((section) => section.id === normalized)) return normalized
+    let suffix = 2
+    let next = `${normalized}-${suffix}`
+    while (sections.some((section) => section.id === next)) {
+        suffix += 1
+        next = `${normalized}-${suffix}`
+    }
+    return next
+}
+
 export function ManageMarketing() {
     const { state, updateSite } = useCMS()
     const [selected, setSelected] = useState<SelectedVariants>({})
@@ -192,6 +265,9 @@ export function ManageMarketing() {
     const [landingProviderUsed, setLandingProviderUsed] = useState<string | null>(null)
     const [landingListLoading, setLandingListLoading] = useState(false)
     const [landingListError, setLandingListError] = useState<string | null>(null)
+    const [landingViewport, setLandingViewport] = useState<LandingViewport>('desktop')
+    const [landingSelectedBlock, setLandingSelectedBlock] = useState<'hero' | 'offer' | 'form' | `section:${number}`>('hero')
+    const [landingDraggedSectionIndex, setLandingDraggedSectionIndex] = useState<number | null>(null)
 
     const pick = (serviceSlug: string, variant: string) => {
         setSelected((s) => ({ ...s, [serviceSlug]: variant }))
@@ -388,6 +464,105 @@ export function ManageMarketing() {
         })
     }
 
+    const getSelectedLandingSectionIndex = () => {
+        if (!landingSelectedBlock.startsWith('section:')) return -1
+        const parsed = Number(landingSelectedBlock.split(':')[1] ?? '')
+        if (!Number.isFinite(parsed)) return -1
+        return parsed
+    }
+
+    const reorderLandingSections = (fromIndex: number, toIndex: number) => {
+        if (fromIndex === toIndex) return
+        setLandingDraft((prev) => {
+            const items = [...prev.sections]
+            if (fromIndex < 0 || toIndex < 0 || fromIndex >= items.length || toIndex >= items.length) return prev
+            const [moved] = items.splice(fromIndex, 1)
+            items.splice(toIndex, 0, moved)
+            return { ...prev, sections: items }
+        })
+        const selectedIndex = getSelectedLandingSectionIndex()
+        if (selectedIndex === fromIndex) {
+            setLandingSelectedBlock(`section:${toIndex}`)
+        } else if (selectedIndex > fromIndex && selectedIndex <= toIndex) {
+            setLandingSelectedBlock(`section:${selectedIndex - 1}`)
+        } else if (selectedIndex < fromIndex && selectedIndex >= toIndex) {
+            setLandingSelectedBlock(`section:${selectedIndex + 1}`)
+        }
+    }
+
+    const addLandingSectionFromTemplate = (templateId: string) => {
+        setLandingError(null)
+        if (landingDraft.sections.length >= 6) {
+            setLandingError('Máximo de 6 secciones por landing.')
+            return
+        }
+        setLandingDraft((prev) => {
+            const template = LANDING_WIDGET_TEMPLATES.find((item) => item.id === templateId)
+            const seed = template?.section || {
+                id: 'section',
+                title: 'Nueva sección',
+                body: 'Describe un bloque de valor para esta campaña.',
+                bullets: ['Punto clave 1', 'Punto clave 2', 'Punto clave 3'],
+            }
+            const nextSection: CampaignSection = {
+                id: ensureUniqueSectionId(seed.id, prev.sections),
+                title: seed.title,
+                body: seed.body,
+                bullets: [...seed.bullets],
+            }
+            const nextSections = [...prev.sections, nextSection]
+            setLandingSelectedBlock(`section:${nextSections.length - 1}`)
+            return { ...prev, sections: nextSections }
+        })
+    }
+
+    const duplicateLandingSection = (index: number) => {
+        setLandingError(null)
+        if (landingDraft.sections.length >= 6) {
+            setLandingError('Máximo de 6 secciones por landing.')
+            return
+        }
+        setLandingDraft((prev) => {
+            const source = prev.sections[index]
+            if (!source) return prev
+            const duplicated: CampaignSection = {
+                ...source,
+                id: ensureUniqueSectionId(`${source.id}-copy`, prev.sections),
+                title: source.title ? `${source.title} (Copia)` : 'Sección (Copia)',
+                bullets: [...source.bullets],
+            }
+            const nextSections = [...prev.sections]
+            nextSections.splice(index + 1, 0, duplicated)
+            setLandingSelectedBlock(`section:${index + 1}`)
+            return { ...prev, sections: nextSections }
+        })
+    }
+
+    const removeLandingSectionAt = (index: number) => {
+        setLandingError(null)
+        const confirm = window.confirm('¿Eliminar esta sección del canvas?')
+        if (!confirm) return
+        setLandingDraft((prev) => {
+            const nextSections = prev.sections.filter((_, itemIndex) => itemIndex !== index)
+            return { ...prev, sections: nextSections }
+        })
+        const selectedIndex = getSelectedLandingSectionIndex()
+        if (selectedIndex === index) {
+            const nextLength = Math.max(landingDraft.sections.length - 1, 0)
+            setLandingSelectedBlock(nextLength > 0 ? `section:${Math.max(0, index - 1)}` : 'hero')
+        } else if (selectedIndex > index) {
+            setLandingSelectedBlock(`section:${selectedIndex - 1}`)
+        }
+    }
+
+    const moveLandingSelectedSection = (direction: -1 | 1) => {
+        const selectedIndex = getSelectedLandingSectionIndex()
+        if (selectedIndex < 0) return
+        const target = selectedIndex + direction
+        if (target < 0 || target >= landingDraft.sections.length) return
+        reorderLandingSections(selectedIndex, target)
+    }
+
     const generateAiLanding = async () => {
         setLandingLoading(true)
         setLandingError(null)
@@ -409,6 +584,7 @@ export function ManageMarketing() {
             if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`)
             setLandingProviderUsed(json.providerUsed || null)
             setLandingDraft(json.landing as CampaignLanding)
+            setLandingSelectedBlock('hero')
         } catch (error) {
             setLandingError(error instanceof Error ? error.message : 'No se pudo generar landing')
         } finally {
@@ -437,6 +613,7 @@ export function ManageMarketing() {
             if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`)
             const persisted = (json.landing || normalized) as CampaignLanding
             setLandingDraft(persisted)
+            setLandingSelectedBlock('hero')
             setLandingItems(Array.isArray(json.items) ? json.items : [])
         } catch (error) {
             setLandingError(error instanceof Error ? error.message : 'No se pudo guardar landing')
@@ -461,6 +638,7 @@ export function ManageMarketing() {
             setLandingItems(Array.isArray(json.items) ? json.items : [])
             if (landingDraft.id === idOrSlug || landingDraft.slug === idOrSlug) {
                 setLandingDraft(createEmptyLanding())
+                setLandingSelectedBlock('hero')
             }
         } catch (error) {
             setLandingError(error instanceof Error ? error.message : 'No se pudo eliminar landing')
@@ -475,6 +653,7 @@ export function ManageMarketing() {
         setLandingObjective(landing.objective)
         setLandingAudience(landing.audience)
         setLandingTone(landing.tone)
+        setLandingSelectedBlock('hero')
     }
 
     const resetLandingEditor = () => {
@@ -483,9 +662,18 @@ export function ManageMarketing() {
         setLandingObjective('Captar leads calificados para sesiones de diagnóstico.')
         setLandingAudience('Gerencias y dirección')
         setLandingTone('Ejecutivo y persuasivo')
+        setLandingSelectedBlock('hero')
     }
 
     const landingPreviewUrl = landingDraft.slug ? `/campanias/${landingDraft.slug}${landingDraft.status === 'draft' ? '?preview=1' : ''}` : null
+    const selectedLandingSectionIndex = getSelectedLandingSectionIndex()
+    const selectedLandingSection = selectedLandingSectionIndex >= 0 ? landingDraft.sections[selectedLandingSectionIndex] : null
+    const landingCanvasWidthClass =
+        landingViewport === 'mobile'
+            ? 'max-w-sm'
+            : landingViewport === 'tablet'
+                ? 'max-w-3xl'
+                : 'max-w-full'
 
     return (
         <div className="space-y-12 pb-20">
@@ -751,12 +939,15 @@ export function ManageMarketing() {
             </div>
 
             <div className="bg-white border border-slate-200 p-8 space-y-6">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <Rocket className="w-5 h-5 text-brand-primary" />
-                        <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">AI Landing Pages para campañas</h2>
+                        <div>
+                            <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Landing Builder Visual</h2>
+                            <p className="text-xs text-slate-500 mt-1">Experiencia tipo Elementor: widgets, canvas en vivo e inspector contextual.</p>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <button
                             type="button"
                             onClick={resetLandingEditor}
@@ -773,48 +964,98 @@ export function ManageMarketing() {
                             <RefreshCw className={`w-3 h-3 inline mr-1 ${landingListLoading ? 'animate-spin' : ''}`} />
                             Refrescar
                         </button>
+                        <button
+                            type="button"
+                            onClick={saveLanding}
+                            disabled={landingLoading}
+                            className="h-10 px-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-800 disabled:opacity-60"
+                        >
+                            Guardar landing
+                        </button>
+                        {landingPreviewUrl && (
+                            <a
+                                href={landingPreviewUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="h-10 px-3 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 inline-flex items-center"
+                            >
+                                <ExternalLink className="w-3 h-3 mr-1" />
+                                Ver preview
+                            </a>
+                        )}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-[0.8fr_1.2fr] gap-8">
+                <div className="grid grid-cols-1 2xl:grid-cols-[300px_minmax(0,1fr)_360px] gap-6">
                     <div className="space-y-4">
-                        <Field label="Nombre campaña">
-                            <Input value={landingCampaignName} onChange={(e) => setLandingCampaignName(e.target.value)} />
-                        </Field>
-                        <Field label="Objetivo (IA)">
-                            <Textarea rows={3} value={landingObjective} onChange={(e) => setLandingObjective(e.target.value)} />
-                        </Field>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="Audiencia">
-                                <Input value={landingAudience} onChange={(e) => setLandingAudience(e.target.value)} />
-                            </Field>
-                            <Field label="Tono">
-                                <Input value={landingTone} onChange={(e) => setLandingTone(e.target.value)} />
-                            </Field>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={generateAiLanding}
-                                disabled={landingLoading}
-                                className="h-11 px-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 disabled:opacity-60"
-                            >
-                                <WandSparkles className="w-4 h-4 inline mr-2" />
-                                Generar landing con IA
-                            </button>
-                            {landingProviderUsed && (
-                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
-                                    {landingProviderUsed}
-                                </div>
-                            )}
+                        <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50">
+                            <div className="flex items-center gap-2 mb-3">
+                                <LayoutTemplate className="w-4 h-4 text-brand-primary" />
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Widgets</div>
+                            </div>
+                            <p className="text-xs text-slate-500 mb-3">Agrega bloques al canvas. Límite: 6 secciones.</p>
+                            <div className="space-y-2">
+                                {LANDING_WIDGET_TEMPLATES.map((template) => (
+                                    <button
+                                        key={template.id}
+                                        type="button"
+                                        onClick={() => addLandingSectionFromTemplate(template.id)}
+                                        className="w-full text-left border border-slate-200 bg-white rounded-xl p-3 hover:border-brand-primary/30 transition-colors"
+                                    >
+                                        <div className="text-xs font-black uppercase tracking-wider text-slate-800">{template.label}</div>
+                                        <div className="text-[11px] text-slate-500 mt-1">{template.description}</div>
+                                    </button>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => addLandingSectionFromTemplate('blank')}
+                                    className="w-full h-10 border border-dashed border-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:border-brand-primary/40 hover:text-brand-primary"
+                                >
+                                    + Sección en blanco
+                                </button>
+                            </div>
                         </div>
 
-                        <div className="border border-slate-200 p-4 bg-slate-50">
-                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Landings guardadas</div>
+                        <div className="border border-slate-200 rounded-2xl p-4 bg-white space-y-3">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">AI Brief</div>
+                            <Field label="Nombre campaña">
+                                <Input value={landingCampaignName} onChange={(e) => setLandingCampaignName(e.target.value)} />
+                            </Field>
+                            <Field label="Objetivo">
+                                <Textarea rows={3} value={landingObjective} onChange={(e) => setLandingObjective(e.target.value)} />
+                            </Field>
+                            <div className="grid grid-cols-1 gap-3">
+                                <Field label="Audiencia">
+                                    <Input value={landingAudience} onChange={(e) => setLandingAudience(e.target.value)} />
+                                </Field>
+                                <Field label="Tono">
+                                    <Input value={landingTone} onChange={(e) => setLandingTone(e.target.value)} />
+                                </Field>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={generateAiLanding}
+                                    disabled={landingLoading}
+                                    className="h-10 px-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 disabled:opacity-60"
+                                >
+                                    <WandSparkles className="w-3 h-3 inline mr-1" />
+                                    Generar IA
+                                </button>
+                                {landingProviderUsed && (
+                                    <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                        {landingProviderUsed}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="border border-slate-200 rounded-2xl p-4 bg-white">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Landings guardadas</div>
                             {landingListError && <div className="text-sm text-red-700 mb-2">{landingListError}</div>}
-                            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                            <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
                                 {landingItems.map((item) => (
-                                    <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                                    <div key={item.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="min-w-0">
                                                 <div className="text-sm font-bold text-slate-900 truncate">{item.name || item.heroTitle || item.slug}</div>
@@ -859,148 +1100,327 @@ export function ManageMarketing() {
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="Slug">
-                                <Input value={landingDraft.slug} onChange={(e) => setLandingField('slug', e.target.value)} />
-                            </Field>
-                            <Field label="Estado">
-                                <SelectField
-                                    value={landingDraft.status}
-                                    onChange={(v) => setLandingField('status', v as CampaignLanding['status'])}
-                                    options={[
-                                        { value: 'draft', label: 'Draft' },
-                                        { value: 'published', label: 'Published' },
-                                    ]}
-                                />
-                            </Field>
-                        </div>
-                        <Field label="Nombre interno">
-                            <Input value={landingDraft.name} onChange={(e) => setLandingField('name', e.target.value)} />
-                        </Field>
-                        <Field label="Hero eyebrow">
-                            <Input value={landingDraft.heroEyebrow} onChange={(e) => setLandingField('heroEyebrow', e.target.value)} />
-                        </Field>
-                        <Field label="Hero title">
-                            <Input value={landingDraft.heroTitle} onChange={(e) => setLandingField('heroTitle', e.target.value)} />
-                        </Field>
-                        <Field label="Hero subtitle">
-                            <Textarea rows={3} value={landingDraft.heroSubtitle} onChange={(e) => setLandingField('heroSubtitle', e.target.value)} />
-                        </Field>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="CTA principal label">
-                                <Input value={landingDraft.primaryCtaLabel} onChange={(e) => setLandingField('primaryCtaLabel', e.target.value)} />
-                            </Field>
-                            <Field label="CTA principal href">
-                                <Input value={landingDraft.primaryCtaHref} onChange={(e) => setLandingField('primaryCtaHref', e.target.value)} />
-                            </Field>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="CTA secundario label">
-                                <Input value={landingDraft.secondaryCtaLabel} onChange={(e) => setLandingField('secondaryCtaLabel', e.target.value)} />
-                            </Field>
-                            <Field label="CTA secundario href">
-                                <Input value={landingDraft.secondaryCtaHref} onChange={(e) => setLandingField('secondaryCtaHref', e.target.value)} />
-                            </Field>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="SEO title">
-                                <Input value={landingDraft.seoTitle} onChange={(e) => setLandingField('seoTitle', e.target.value)} />
-                            </Field>
-                            <Field label="SEO description">
-                                <Input value={landingDraft.seoDescription} onChange={(e) => setLandingField('seoDescription', e.target.value)} />
-                            </Field>
+                    <div className="border border-slate-200 rounded-2xl overflow-hidden bg-slate-50">
+                        <div className="px-4 py-3 border-b border-slate-200 bg-white flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Canvas</div>
+                                <div className="text-sm font-bold text-slate-900">Drag & drop de secciones</div>
+                            </div>
+                            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1">
+                                {([
+                                    { value: 'desktop', icon: Monitor, label: 'Desktop' },
+                                    { value: 'tablet', icon: Tablet, label: 'Tablet' },
+                                    { value: 'mobile', icon: Smartphone, label: 'Mobile' },
+                                ] as const).map((option) => {
+                                    const Icon = option.icon
+                                    const active = landingViewport === option.value
+                                    return (
+                                        <button
+                                            key={option.value}
+                                            type="button"
+                                            onClick={() => setLandingViewport(option.value)}
+                                            title={`Vista ${option.label}`}
+                                            className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${active ? 'bg-blue-50 text-brand-primary border border-blue-100' : 'text-slate-500 hover:text-slate-800'}`}
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                        </button>
+                                    )
+                                })}
+                            </div>
                         </div>
 
-                        <div className="space-y-4">
-                            {landingDraft.sections.map((section, index) => (
-                                <div key={`${section.id}-${index}`} className="border border-slate-200 p-4 bg-slate-50 rounded-xl">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Sección {index + 1}</div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <Input
-                                            value={section.id}
-                                            onChange={(e) => setLandingSectionField(index, 'id', e.target.value)}
-                                            placeholder="id"
-                                        />
-                                        <Input
-                                            value={section.title}
-                                            onChange={(e) => setLandingSectionField(index, 'title', e.target.value)}
-                                            placeholder="Título"
-                                        />
-                                    </div>
-                                    <Textarea
-                                        rows={3}
-                                        value={section.body}
-                                        onChange={(e) => setLandingSectionField(index, 'body', e.target.value)}
-                                        placeholder="Cuerpo"
-                                        className="mt-3"
-                                    />
-                                    <Textarea
-                                        rows={4}
-                                        value={section.bullets.join('\n')}
-                                        onChange={(e) => setLandingSectionField(index, 'bullets', e.target.value.split('\n').map((line) => line.trim()).filter(Boolean))}
-                                        placeholder="Bullets (uno por línea)"
-                                        className="mt-3"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="Offer title">
-                                <Input value={landingDraft.offerTitle} onChange={(e) => setLandingField('offerTitle', e.target.value)} />
-                            </Field>
-                            <Field label="Form title">
-                                <Input value={landingDraft.formTitle} onChange={(e) => setLandingField('formTitle', e.target.value)} />
-                            </Field>
-                        </div>
-                        <Field label="Offer body">
-                            <Textarea rows={3} value={landingDraft.offerBody} onChange={(e) => setLandingField('offerBody', e.target.value)} />
-                        </Field>
-                        <Field label="Mensaje thank you">
-                            <Textarea rows={2} value={landingDraft.thankYouMessage} onChange={(e) => setLandingField('thankYouMessage', e.target.value)} />
-                        </Field>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="Accent color">
-                                <Input value={landingDraft.accentColor} onChange={(e) => setLandingField('accentColor', e.target.value)} />
-                            </Field>
-                            <Field label="Background style">
-                                <SelectField
-                                    value={landingDraft.backgroundStyle}
-                                    onChange={(v) => setLandingField('backgroundStyle', v)}
-                                    options={[
-                                        { value: 'dark-grid', label: 'Dark grid' },
-                                        { value: 'light-grid', label: 'Light grid' },
-                                    ]}
-                                />
-                            </Field>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={saveLanding}
-                                disabled={landingLoading}
-                                className="h-11 px-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-800 disabled:opacity-60"
-                            >
-                                Guardar landing
-                            </button>
-                            {landingPreviewUrl && (
-                                <a
-                                    href={landingPreviewUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="h-11 px-4 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 inline-flex items-center"
+                        <div className="p-4">
+                            <div className={`mx-auto space-y-3 ${landingCanvasWidthClass}`}>
+                                <button
+                                    type="button"
+                                    onClick={() => setLandingSelectedBlock('hero')}
+                                    className={`w-full text-left rounded-2xl border p-4 transition-all ${landingSelectedBlock === 'hero' ? 'border-brand-primary bg-white shadow-md shadow-blue-100' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                                 >
-                                    <ExternalLink className="w-3 h-3 mr-1" />
-                                    Ver preview
-                                </a>
-                            )}
-                            {landingLoading && <RefreshCw className="w-4 h-4 animate-spin text-slate-400" />}
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hero</div>
+                                    <div className="text-xl font-black tracking-tight text-slate-900 mt-2">{landingDraft.heroTitle || 'Titular principal de campaña'}</div>
+                                    <div className="text-sm text-slate-500 mt-2 line-clamp-2">{landingDraft.heroSubtitle || 'Subtítulo de apoyo para propuesta de valor.'}</div>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-white" style={{ backgroundColor: landingDraft.accentColor || '#2563eb' }}>
+                                            {landingDraft.primaryCtaLabel || 'CTA Principal'}
+                                        </span>
+                                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-300 text-slate-600">
+                                            {landingDraft.secondaryCtaLabel || 'CTA Secundario'}
+                                        </span>
+                                    </div>
+                                </button>
+
+                                {landingDraft.sections.map((section, index) => (
+                                    <div
+                                        key={`${section.id}-${index}`}
+                                        draggable
+                                        onDragStart={() => setLandingDraggedSectionIndex(index)}
+                                        onDragEnd={() => setLandingDraggedSectionIndex(null)}
+                                        onDragOver={(event) => {
+                                            event.preventDefault()
+                                            if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+                                        }}
+                                        onDrop={(event) => {
+                                            event.preventDefault()
+                                            if (landingDraggedSectionIndex === null) return
+                                            reorderLandingSections(landingDraggedSectionIndex, index)
+                                            setLandingDraggedSectionIndex(null)
+                                        }}
+                                        className={`rounded-2xl border p-4 bg-white transition-all ${landingSelectedBlock === `section:${index}` ? 'border-brand-primary shadow-md shadow-blue-100' : 'border-slate-200 hover:border-slate-300'} ${landingDraggedSectionIndex === index ? 'opacity-60' : ''}`}
+                                        onClick={() => setLandingSelectedBlock(`section:${index}`)}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className="pt-0.5 text-slate-300">
+                                                <GripVertical className="w-4 h-4" />
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sección {index + 1}</span>
+                                                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border border-slate-200 text-slate-500">{section.id || `section-${index + 1}`}</span>
+                                                </div>
+                                                <div className="text-base font-black text-slate-900 mt-2">{section.title || 'Título de bloque'}</div>
+                                                <div className="text-xs text-slate-500 mt-1 line-clamp-3">{section.body || 'Describe el contenido de esta sección.'}</div>
+                                                {section.bullets.length > 0 && (
+                                                    <div className="mt-2 flex flex-wrap gap-1">
+                                                        {section.bullets.slice(0, 3).map((bullet, bulletIndex) => (
+                                                            <span key={`${section.id}-bullet-${bulletIndex}`} className="text-[10px] px-2 py-0.5 border border-slate-200 rounded-full text-slate-600">
+                                                                {bullet}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation()
+                                                        duplicateLandingSection(index)
+                                                    }}
+                                                    className="h-7 px-2 border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-800"
+                                                >
+                                                    Copiar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation()
+                                                        removeLandingSectionAt(index)
+                                                    }}
+                                                    className="h-7 px-2 border border-red-200 bg-red-50 rounded-lg text-[10px] font-black uppercase tracking-widest text-red-700"
+                                                >
+                                                    Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                <button
+                                    type="button"
+                                    onClick={() => setLandingSelectedBlock('offer')}
+                                    className={`w-full text-left rounded-2xl border p-4 transition-all ${landingSelectedBlock === 'offer' ? 'border-brand-primary bg-slate-900 text-white shadow-md shadow-slate-300' : 'border-slate-200 bg-slate-900 text-white/90 hover:border-slate-400'}`}
+                                >
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-white/50">Oferta</div>
+                                    <div className="text-xl font-black tracking-tight mt-2">{landingDraft.offerTitle || 'Título de la oferta'}</div>
+                                    <div className="text-sm mt-2 text-white/70 line-clamp-2">{landingDraft.offerBody || 'Contenido de oferta para impulsar conversión.'}</div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setLandingSelectedBlock('form')}
+                                    className={`w-full text-left rounded-2xl border p-4 transition-all ${landingSelectedBlock === 'form' ? 'border-brand-primary bg-white shadow-md shadow-blue-100' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                                >
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Formulario</div>
+                                    <div className="text-lg font-black tracking-tight text-slate-900 mt-2">{landingDraft.formTitle || 'Título de formulario'}</div>
+                                    <div className="text-xs text-slate-500 mt-2 line-clamp-2">{landingDraft.thankYouMessage || 'Mensaje mostrado luego de enviar contacto.'}</div>
+                                </button>
+                            </div>
                         </div>
-                        {landingError && <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{landingError}</div>}
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="border border-slate-200 rounded-2xl p-4 bg-white">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Inspector</div>
+                            <h3 className="text-sm font-black tracking-tight text-slate-900 mt-1">Bloque seleccionado</h3>
+
+                            {landingSelectedBlock === 'hero' && (
+                                <div className="mt-4 space-y-3">
+                                    <Field label="Eyebrow">
+                                        <Input value={landingDraft.heroEyebrow} onChange={(e) => setLandingField('heroEyebrow', e.target.value)} />
+                                    </Field>
+                                    <Field label="Hero title">
+                                        <Input value={landingDraft.heroTitle} onChange={(e) => setLandingField('heroTitle', e.target.value)} />
+                                    </Field>
+                                    <Field label="Hero subtitle">
+                                        <Textarea rows={3} value={landingDraft.heroSubtitle} onChange={(e) => setLandingField('heroSubtitle', e.target.value)} />
+                                    </Field>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <Field label="CTA principal">
+                                            <Input value={landingDraft.primaryCtaLabel} onChange={(e) => setLandingField('primaryCtaLabel', e.target.value)} />
+                                        </Field>
+                                        <Field label="Href principal">
+                                            <Input value={landingDraft.primaryCtaHref} onChange={(e) => setLandingField('primaryCtaHref', e.target.value)} />
+                                        </Field>
+                                        <Field label="CTA secundario">
+                                            <Input value={landingDraft.secondaryCtaLabel} onChange={(e) => setLandingField('secondaryCtaLabel', e.target.value)} />
+                                        </Field>
+                                        <Field label="Href secundario">
+                                            <Input value={landingDraft.secondaryCtaHref} onChange={(e) => setLandingField('secondaryCtaHref', e.target.value)} />
+                                        </Field>
+                                    </div>
+                                </div>
+                            )}
+
+                            {landingSelectedBlock.startsWith('section:') && selectedLandingSection && (
+                                <div className="mt-4 space-y-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-slate-200 text-slate-500">
+                                            Sección {selectedLandingSectionIndex + 1}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => moveLandingSelectedSection(-1)}
+                                            disabled={selectedLandingSectionIndex <= 0}
+                                            className="h-8 px-2 border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 disabled:opacity-40"
+                                        >
+                                            Subir
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => moveLandingSelectedSection(1)}
+                                            disabled={selectedLandingSectionIndex >= landingDraft.sections.length - 1}
+                                            className="h-8 px-2 border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 disabled:opacity-40"
+                                        >
+                                            Bajar
+                                        </button>
+                                    </div>
+                                    <Field label="ID sección">
+                                        <Input
+                                            value={selectedLandingSection.id}
+                                            onChange={(event) => setLandingSectionField(selectedLandingSectionIndex, 'id', event.target.value)}
+                                        />
+                                    </Field>
+                                    <Field label="Título">
+                                        <Input
+                                            value={selectedLandingSection.title}
+                                            onChange={(event) => setLandingSectionField(selectedLandingSectionIndex, 'title', event.target.value)}
+                                        />
+                                    </Field>
+                                    <Field label="Cuerpo">
+                                        <Textarea
+                                            rows={4}
+                                            value={selectedLandingSection.body}
+                                            onChange={(event) => setLandingSectionField(selectedLandingSectionIndex, 'body', event.target.value)}
+                                        />
+                                    </Field>
+                                    <Field label="Bullets (uno por línea)">
+                                        <Textarea
+                                            rows={4}
+                                            value={selectedLandingSection.bullets.join('\n')}
+                                            onChange={(event) =>
+                                                setLandingSectionField(
+                                                    selectedLandingSectionIndex,
+                                                    'bullets',
+                                                    event.target.value.split('\n').map((line) => line.trim()).filter(Boolean)
+                                                )
+                                            }
+                                        />
+                                    </Field>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => duplicateLandingSection(selectedLandingSectionIndex)}
+                                            className="h-8 px-3 border border-slate-200 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500"
+                                        >
+                                            Duplicar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeLandingSectionAt(selectedLandingSectionIndex)}
+                                            className="h-8 px-3 border border-red-200 bg-red-50 rounded-lg text-[10px] font-black uppercase tracking-widest text-red-700"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {landingSelectedBlock === 'offer' && (
+                                <div className="mt-4 space-y-3">
+                                    <Field label="Offer title">
+                                        <Input value={landingDraft.offerTitle} onChange={(e) => setLandingField('offerTitle', e.target.value)} />
+                                    </Field>
+                                    <Field label="Offer body">
+                                        <Textarea rows={4} value={landingDraft.offerBody} onChange={(e) => setLandingField('offerBody', e.target.value)} />
+                                    </Field>
+                                </div>
+                            )}
+
+                            {landingSelectedBlock === 'form' && (
+                                <div className="mt-4 space-y-3">
+                                    <Field label="Form title">
+                                        <Input value={landingDraft.formTitle} onChange={(e) => setLandingField('formTitle', e.target.value)} />
+                                    </Field>
+                                    <Field label="Mensaje thank you">
+                                        <Textarea rows={3} value={landingDraft.thankYouMessage} onChange={(e) => setLandingField('thankYouMessage', e.target.value)} />
+                                    </Field>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="border border-slate-200 rounded-2xl p-4 bg-white">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ajustes de página</div>
+                            <h3 className="text-sm font-black tracking-tight text-slate-900 mt-1">SEO + publicación</h3>
+                            <div className="mt-4 space-y-3">
+                                <Field label="Slug">
+                                    <Input value={landingDraft.slug} onChange={(e) => setLandingField('slug', e.target.value)} />
+                                </Field>
+                                <Field label="Estado">
+                                    <SelectField
+                                        value={landingDraft.status}
+                                        onChange={(value) => setLandingField('status', value as CampaignLanding['status'])}
+                                        options={[
+                                            { value: 'draft', label: 'Draft' },
+                                            { value: 'published', label: 'Published' },
+                                        ]}
+                                    />
+                                </Field>
+                                <Field label="Nombre interno">
+                                    <Input value={landingDraft.name} onChange={(e) => setLandingField('name', e.target.value)} />
+                                </Field>
+                                <Field label="SEO title">
+                                    <Input value={landingDraft.seoTitle} onChange={(e) => setLandingField('seoTitle', e.target.value)} />
+                                </Field>
+                                <Field label="SEO description">
+                                    <Textarea rows={3} value={landingDraft.seoDescription} onChange={(e) => setLandingField('seoDescription', e.target.value)} />
+                                </Field>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <Field label="Accent color">
+                                        <Input value={landingDraft.accentColor} onChange={(e) => setLandingField('accentColor', e.target.value)} />
+                                    </Field>
+                                    <Field label="Background style">
+                                        <SelectField
+                                            value={landingDraft.backgroundStyle}
+                                            onChange={(value) => setLandingField('backgroundStyle', value)}
+                                            options={[
+                                                { value: 'dark-grid', label: 'Dark grid' },
+                                                { value: 'light-grid', label: 'Light grid' },
+                                            ]}
+                                        />
+                                    </Field>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                {landingLoading && (
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <RefreshCw className="w-4 h-4 animate-spin text-slate-400" />
+                        Procesando cambios de landing...
+                    </div>
+                )}
+                {landingError && <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{landingError}</div>}
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
