@@ -8,9 +8,9 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
-async function dispatchWebhook(payload: any) {
+async function dispatchWebhook(payload: any): Promise<{ sent: boolean; status: number | undefined }> {
   const url = process.env.CONTACT_FORM_WEBHOOK_URL
-  if (!url) return { sent: false }
+  if (!url) return { sent: false, status: undefined }
   const secret = process.env.CONTACT_FORM_WEBHOOK_SECRET || ''
   const response = await fetch(url, {
     method: 'POST',
