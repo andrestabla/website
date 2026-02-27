@@ -6,6 +6,7 @@ import { IngenieriaHumana } from './pages/IngenieriaHumana'
 import { DespliegueIA } from './pages/DespliegueIA'
 import { MadurezOrganica } from './pages/MadurezOrganica'
 import { DataPolicy } from './pages/DataPolicy'
+import { CampaignLandingPage } from './pages/CampaignLandingPage'
 import { LoginPage } from './admin/pages/LoginPage'
 import { Dashboard } from './admin/pages/Dashboard'
 import { ManageHome } from './admin/pages/ManageHome'
@@ -164,6 +165,7 @@ function App() {
             <Route path="/protocolos/despliegue-ia" element={<DespliegueIA />} />
             <Route path="/protocolos/madurez-organica" element={<MadurezOrganica />} />
             <Route path="/politica-tratamiento-datos" element={<DataPolicy />} />
+            <Route path="/campanias/:slug" element={<CampaignLandingPage />} />
 
             {/* Admin Routes */}
             <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

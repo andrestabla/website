@@ -121,6 +121,29 @@ export function applyServerEnv(state: IntegrationsState): IntegrationsState {
     next.openai.status = 'configured'
   }
 
+  const smtpHost = process.env.SMTP_HOST || ''
+  const smtpPort = process.env.SMTP_PORT || ''
+  const smtpUser = process.env.SMTP_USER || ''
+  const smtpPassword = process.env.SMTP_PASSWORD || ''
+  const smtpFromEmail = process.env.SMTP_FROM_EMAIL || ''
+  const smtpFromName = process.env.SMTP_FROM_NAME || ''
+  const smtpEncryption = process.env.SMTP_ENCRYPTION || ''
+  if (smtpHost || smtpUser || smtpPassword || smtpFromEmail) {
+    if (smtpHost) next.smtp.config.host = smtpHost
+    if (smtpPort) next.smtp.config.port = smtpPort
+    if (smtpUser) next.smtp.config.user = smtpUser
+    if (smtpPassword) next.smtp.config.password = smtpPassword
+    if (smtpFromEmail) next.smtp.config.fromEmail = smtpFromEmail
+    if (smtpFromName) next.smtp.config.fromName = smtpFromName
+    if (smtpEncryption === 'tls' || smtpEncryption === 'ssl' || smtpEncryption === 'none') {
+      next.smtp.config.encryption = smtpEncryption
+    }
+    if (isConfigured(next, 'smtp')) {
+      next.smtp.enabled = true
+      next.smtp.status = 'configured'
+    }
+  }
+
   return next
 }
 
@@ -138,4 +161,3 @@ export function maskSecrets(state: IntegrationsState): IntegrationsState {
   if (next.r2.config.accessKeyId) next.r2.config.accessKeyId = mask(next.r2.config.accessKeyId)
   return next
 }
-

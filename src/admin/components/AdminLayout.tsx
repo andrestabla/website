@@ -152,12 +152,13 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
         },
         '/admin/marketing': {
             title: 'Marketing',
-            intro: 'Gestiona popups de conversión, copy asistido por IA, formularios y URLs de campaña.',
-            data: 'Fuente: CMS real (`site`) + `/api/admin/ai-copy` + `/api/admin/accessibility-scan`.',
+            intro: 'Gestiona popups, email marketing, copy asistido por IA y landing pages de campañas focalizadas.',
+            data: 'Fuente: CMS real (`site`) + `/api/admin/ai-copy` + `/api/admin/ai-email` + `/api/admin/email-campaign` + `/api/admin/ai-landing` + `/api/admin/campaign-landings`.',
             steps: [
                 'Configura Popup Builder (trigger, frecuencia, targeting, copy y CTA).',
-                'Usa Elementor AI para generar copy y aplícalo al popup.',
-                'Ajusta mensajes de formulario y guarda cambios.',
+                'Genera copy con IA (OpenAI/Gemini) para popup y email de campaña.',
+                'Envía preview o campaña completa por SMTP desde el mismo módulo.',
+                'Genera y publica landing pages IA para campañas en `/campanias/:slug`.',
                 'Construye URLs UTM para servicios y ejecuta escaneo rápido de accesibilidad.',
             ],
         },
