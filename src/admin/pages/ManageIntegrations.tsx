@@ -422,6 +422,7 @@ export function ManageIntegrations() {
     const [isSaving, setIsSaving] = useState(false)
     const [isTesting, setIsTesting] = useState(false)
     const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+    const [testModal, setTestModal] = useState({ open: false, to: '', subject: '' })
     const [draftConfig, setDraftConfig] = useState<Record<string, unknown>>({})
 
     useEffect(() => {
@@ -491,10 +492,15 @@ export function ManageIntegrations() {
         setIsTesting(true)
         setTestResult(null)
         try {
-            const res = await fetch('/api/admin/smtp-test', { method: 'POST' })
+            const res = await fetch('/api/admin/smtp-test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: testModal.to, subject: testModal.subject }),
+            })
             const data = await res.json()
             if (data.ok) {
                 setTestResult({ ok: true, message: 'Correo de prueba enviado correctamente' })
+                setTestModal({ open: false, to: '', subject: '' })
             } else {
                 setTestResult({ ok: false, message: data.error || 'Error al enviar prueba' })
             }
@@ -623,11 +629,10 @@ export function ManageIntegrations() {
                                 <div className="flex items-center gap-3">
                                     {def.key === 'smtp' && configured && (
                                         <button
-                                            onClick={sendTestEmail}
-                                            disabled={isTesting}
-                                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary disabled:opacity-50 transition-colors"
+                                            onClick={() => setTestModal({ open: true, to: (state.config as SMTPConfig).fromEmail || '', subject: '' })}
+                                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary transition-colors"
                                         >
-                                            {isTesting ? 'Enviando...' : 'Enviar correo de prueba'}
+                                            Enviar correo de prueba
                                         </button>
                                     )}
                                     {configured && (
@@ -733,6 +738,53 @@ export function ManageIntegrations() {
                                     {isSaving ? 'Guardando...' : 'Guardar integración'}
                                 </button>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* ─── Test Email Modal ─── */}
+            {testModal.open && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setTestModal({ ...testModal, open: false })} />
+                    <div className="relative w-full max-w-md bg-white shadow-2xl border-t-8 border-amber-600 p-8 space-y-8">
+                        <div>
+                            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Enviar correo de prueba</h3>
+                            <p className="text-slate-500 text-sm font-light mt-1">Verifica tu configuración SMTP enviando un mensaje real.</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <FormField label="Destinatario" hint="Email que recibirá la prueba.">
+                                <TextInput
+                                    value={testModal.to}
+                                    onChange={v => setTestModal({ ...testModal, to: v })}
+                                    placeholder="ejemplo@correo.com"
+                                    type="email"
+                                />
+                            </FormField>
+                            <FormField label="Asunto (Opcional)" hint="Si lo dejas vacío, se usará uno por defecto.">
+                                <TextInput
+                                    value={testModal.subject}
+                                    onChange={v => setTestModal({ ...testModal, subject: v })}
+                                    placeholder="Mi prueba personalizada"
+                                />
+                            </FormField>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-4">
+                            <button
+                                onClick={() => setTestModal({ ...testModal, open: false })}
+                                className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={sendTestEmail}
+                                disabled={isTesting || !testModal.to.includes('@')}
+                                className="flex items-center gap-2 px-8 py-3 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                            >
+                                {isTesting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                                {isTesting ? 'Enviando...' : 'Enviar Prueba'}
+                            </button>
                         </div>
                     </div>
                 </div>

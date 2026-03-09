@@ -16,6 +16,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!session) return
 
   try {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
+    const customTo = typeof body.to === 'string' && body.to.includes('@') ? body.to : null
+    const customSubject = typeof body.subject === 'string' ? body.subject : null
+
     const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
     const integrations = applyServerEnv(sanitizeIntegrations(snapshot?.data))
     
@@ -45,9 +49,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     await transporter.sendMail({
       from,
-      to: smtp.fromEmail,
-      subject: 'Prueba de configuración SMTP - AlgoritmoT',
-      text: `Hola,\n\nEsta es una prueba de configuración exitosa para tu servidor de correo saliente en AlgoritmoT.\n\nProveedor: ${smtp.provider || 'Personalizado'}\nServidor: ${smtp.host}:${smtp.port}\nRemitente: ${from}\n\nSi has recibido este correo, la configuración es correcta.`,
+      to: customTo || smtp.fromEmail,
+      subject: customSubject || 'Prueba de configuración SMTP - AlgoritmoT',
+      text: `Hola,\n\nEsta es una prueba de configuración exitosa para tu servidor de correo saliente en AlgoritmoT.\n\nProveedor: ${smtp.provider || 'Personalizado'}\nServidor: ${smtp.host}:${smtp.port}\nRemitente: ${from}\nDestinatario: ${customTo || smtp.fromEmail}\n\nSi has recibido este correo, la configuración es correcta.`,
       html: `
         <div style="font-family: sans-serif; padding: 20px; color: #334155;">
           <h2 style="color: #059669;">✅ Configuración SMTP Correcta</h2>
@@ -58,6 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             <li><strong>Proveedor:</strong> ${smtp.provider || 'Personalizado'}</li>
             <li><strong>Servidor:</strong> ${smtp.host}:${smtp.port}</li>
             <li><strong>Remitente:</strong> ${from}</li>
+            <li><strong>Destinatario:</strong> ${customTo || smtp.fromEmail}</li>
           </ul>
           <p style="font-size: 12px; color: #64748b; margin-top: 30px;">Si has recibido este correo, la configuración es correcta y puedes empezar a enviar correos transaccionales.</p>
         </div>
