@@ -139,14 +139,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
 
         const fromName = smtp.fromName || 'AlgoritmoT'
-        const from = `"${fromName}" <${smtp.fromEmail}>`
+        const fromMail = `${fromName} <${smtp.fromEmail}>`
         
         // 1. Admin notification email
-        // Using a more specific display name for the admin notification to distinguish it from the user copy
-        const adminFromName = `Leads ${fromName}`
-        const adminFrom = `"${adminFromName}" <${smtp.fromEmail}>`
         const adminSubject = `[NUEVO LEAD] ${name} - AlgoritmoT`
-        
         const adminHtml = generateStyledEmail({
           title: 'Nuevo Lead de Contacto',
           preheader: `Nuevo mensaje de ${name} para AlgoritmoT`,
@@ -175,15 +171,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           `
         })
 
-        const adminRes = await transporter.sendMail({
-          from: adminFrom,
-          to: siteEmail,
-          replyTo: email,
-          subject: adminSubject,
-          html: adminHtml,
-          text: `Nuevo lead de: ${name}\nEmail: ${email}\n\nRequerimiento:\n${requirement}`,
-        })
-        console.log(`Admin email sent: ${adminRes.messageId}`)
+        try {
+          const res = await transporter.sendMail({
+            from: fromMail,
+            to: siteEmail,
+            subject: adminSubject,
+            html: adminHtml,
+            text: `Nuevo lead de: ${name}\nEmail: ${email}\n\nRequerimiento:\n${requirement}`,
+          })
+          console.log(`Admin notification sent to ${siteEmail}: ${res.messageId}`)
+          emailSent = true
+        } catch (adminErr) {
+          console.error('Failed to send admin notification:', adminErr)
+        }
 
         // 2. User confirmation email (copy)
         const userSubject = `Confirmación de solicitud - AlgoritmoT`
@@ -214,18 +214,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           `
         })
 
-        const userRes = await transporter.sendMail({
-          from, // General from
-          to: email,
-          subject: userSubject,
-          html: userHtml,
-        })
-        console.log(`User email sent: ${userRes.messageId}`)
-
-        emailSent = true
+        try {
+          const res = await transporter.sendMail({
+            from: fromMail,
+            to: email,
+            subject: userSubject,
+            html: userHtml,
+          })
+          console.log(`User confirmation sent to ${email}: ${res.messageId}`)
+        } catch (userErr) {
+          console.error('Failed to send user confirmation:', userErr)
+        }
       }
     } catch (err) {
-      console.error('SMTP notification failed in contact-submit:', err)
+      console.error('SMTP transport setup failed:', err)
     }
 
     return res.status(200).json({ ok: true, webhook, emailSent, leadId })
