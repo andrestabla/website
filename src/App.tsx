@@ -1,24 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { Home } from './pages/Home'
-import { ServicePage } from './pages/ServicePage'
-import { ProductPage } from './pages/ProductPage'
-import { IngenieriaHumana } from './pages/IngenieriaHumana'
-import { DespliegueIA } from './pages/DespliegueIA'
-import { MadurezOrganica } from './pages/MadurezOrganica'
-import { DataPolicy } from './pages/DataPolicy'
-import { CampaignLandingPage } from './pages/CampaignLandingPage'
-import { LoginPage } from './admin/pages/LoginPage'
-import { Dashboard } from './admin/pages/Dashboard'
-import { ManageHome } from './admin/pages/ManageHome'
-import { ManageDesign } from './admin/pages/ManageDesign'
-import { ManageIntegrations } from './admin/pages/ManageIntegrations'
-import { ManageServices } from './admin/pages/ManageServices'
-import { ManageProducts } from './admin/pages/ManageProducts'
-import { ManageSite } from './admin/pages/ManageSite'
-import { ManageSEO } from './admin/pages/ManageSEO'
-import { ManageMarketing } from './admin/pages/ManageMarketing'
-import { Analytics } from './admin/pages/Analytics'
-import { AdminLayout } from './admin/components/AdminLayout'
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react'
 import { CMSProvider, useCMS } from './admin/context/CMSContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { DataConsentModal } from './components/privacy/DataConsentModal'
@@ -26,7 +6,33 @@ import { SiteTelemetry } from './components/analytics/SiteTelemetry'
 import { SmartPopup } from './components/marketing/SmartPopup'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { NotFound } from './pages/NotFound'
+
+const Home = lazy(() => import('./pages/Home').then((module) => ({ default: module.Home })))
+const ServicePage = lazy(() => import('./pages/ServicePage').then((module) => ({ default: module.ServicePage })))
+const ProductPage = lazy(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })))
+const IngenieriaHumana = lazy(() => import('./pages/IngenieriaHumana').then((module) => ({ default: module.IngenieriaHumana })))
+const DespliegueIA = lazy(() => import('./pages/DespliegueIA').then((module) => ({ default: module.DespliegueIA })))
+const MadurezOrganica = lazy(() => import('./pages/MadurezOrganica').then((module) => ({ default: module.MadurezOrganica })))
+const DataPolicy = lazy(() => import('./pages/DataPolicy').then((module) => ({ default: module.DataPolicy })))
+const CampaignLandingPage = lazy(() => import('./pages/CampaignLandingPage').then((module) => ({ default: module.CampaignLandingPage })))
+const ServiciosLandingSimple = lazy(() => import('./pages/ServiciosLandingSimple').then((module) => ({ default: module.ServiciosLandingSimple })))
+const ManagedCustomPage = lazy(() => import('./pages/ManagedCustomPage').then((module) => ({ default: module.ManagedCustomPage })))
+const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })))
+
+const LoginPage = lazy(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
+const Dashboard = lazy(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
+const ManageHome = lazy(() => import('./admin/pages/ManageHome').then((module) => ({ default: module.ManageHome })))
+const ManageContentBuilder = lazy(() => import('./admin/pages/ManageContentBuilder').then((module) => ({ default: module.ManageContentBuilder })))
+const ManageSitePageEditor = lazy(() => import('./admin/pages/ManageSitePageEditor').then((module) => ({ default: module.ManageSitePageEditor })))
+const ManageDesign = lazy(() => import('./admin/pages/ManageDesign').then((module) => ({ default: module.ManageDesign })))
+const ManageIntegrations = lazy(() => import('./admin/pages/ManageIntegrations').then((module) => ({ default: module.ManageIntegrations })))
+const ManageServices = lazy(() => import('./admin/pages/ManageServices').then((module) => ({ default: module.ManageServices })))
+const ManageProducts = lazy(() => import('./admin/pages/ManageProducts').then((module) => ({ default: module.ManageProducts })))
+const ManageSite = lazy(() => import('./admin/pages/ManageSite').then((module) => ({ default: module.ManageSite })))
+const ManageSEO = lazy(() => import('./admin/pages/ManageSEO').then((module) => ({ default: module.ManageSEO })))
+const ManageMarketing = lazy(() => import('./admin/pages/ManageMarketing').then((module) => ({ default: module.ManageMarketing })))
+const Analytics = lazy(() => import('./admin/pages/Analytics').then((module) => ({ default: module.Analytics })))
+const AdminLayout = lazy(() => import('./admin/components/AdminLayout').then((module) => ({ default: module.AdminLayout })))
 
 function ScrollToTopOnRouteChange() {
   const { pathname, hash } = useLocation()
@@ -40,9 +46,12 @@ function ScrollToTopOnRouteChange() {
   return null
 }
 
-const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-  const [status, setStatus] = useState<'checking' | 'authenticated' | 'unauthenticated'>('checking')
-  const [sessionUser, setSessionUser] = useState<{ id: string; username: string; displayName: string; role: string } | null>(null)
+type AdminSessionStatus = 'checking' | 'authenticated' | 'unauthenticated'
+type AdminSessionUser = { id: string; username: string; displayName: string; role: string } | null
+
+function useAdminSessionGuard() {
+  const [status, setStatus] = useState<AdminSessionStatus>('checking')
+  const [sessionUser, setSessionUser] = useState<AdminSessionUser>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -71,40 +80,61 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  if (status === 'checking') {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Validando sesión...</div>
-      </div>
-    )
-  }
+  return { status, sessionUser }
+}
+
+function ProtectedRouteFrame({ status }: { status: AdminSessionStatus }) {
+  if (status !== 'checking') return null
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Validando sesión...</div>
+    </div>
+  )
+}
+
+function RouteLoader() {
+  return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Cargando página...</div>
+    </div>
+  )
+}
+
+const ProtectedRoute = ({ children }: { children: ReactNode }) => {
+  const { status, sessionUser } = useAdminSessionGuard()
+
+  if (status === 'checking') return <ProtectedRouteFrame status={status} />
   if (status === 'unauthenticated') return <Navigate to="/admin/login" replace />
   return <AdminLayout sessionUser={sessionUser}>{children}</AdminLayout>
+}
+
+const ProtectedRouteNoLayout = ({ children }: { children: ReactNode }) => {
+  const { status } = useAdminSessionGuard()
+
+  if (status === 'checking') return <ProtectedRouteFrame status={status} />
+  if (status === 'unauthenticated') return <Navigate to="/admin/login" replace />
+  return <>{children}</>
 }
 
 function GlobalBrandLoader() {
   const { pathname } = useLocation()
   const { state } = useCMS()
-  const [visible, setVisible] = useState(false)
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return sessionStorage.getItem('algoritmot_loader_seen_v1') === '1'
+  })
+  const visible = !pathname.startsWith('/admin') && state.design.loaderEnabled === 'true' && !dismissed
 
   useEffect(() => {
-    if (pathname.startsWith('/admin') || state.design.loaderEnabled !== 'true') {
-      setVisible(false)
-      return
-    }
+    if (!visible) return
     const seenKey = 'algoritmot_loader_seen_v1'
-    if (sessionStorage.getItem(seenKey)) {
-      setVisible(false)
-      return
-    }
-    setVisible(true)
     const duration = Math.max(300, Number(state.design.loaderDurationMs || '900'))
     const t = window.setTimeout(() => {
-      setVisible(false)
+      setDismissed(true)
       sessionStorage.setItem(seenKey, '1')
     }, duration)
     return () => window.clearTimeout(t)
-  }, [pathname, state.design.loaderDurationMs, state.design.loaderEnabled])
+  }, [visible, state.design.loaderDurationMs])
 
   if (!visible) return null
 
@@ -146,6 +176,39 @@ function GlobalExperienceMode() {
   return null
 }
 
+function SiteArchitectureFallbackRoute() {
+  const { pathname } = useLocation()
+  const { state } = useCMS()
+  const normalizedPath = pathname !== '/' && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+  const matchedPage = state.siteArchitecture.pages.find((page) => page.path === normalizedPath && !page.locked)
+  if (!matchedPage) return <NotFound />
+  return <ManagedCustomPage page={matchedPage} />
+}
+
+function normalizeManagedPath(path: string) {
+  const trimmed = path.trim()
+  if (!trimmed) return '/'
+  const withSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+  if (withSlash === '/') return '/'
+  return withSlash.endsWith('/') ? withSlash.slice(0, -1) : withSlash
+}
+
+function ManagedPublishedRoute({
+  routePath,
+  fallback,
+}: {
+  routePath: string
+  fallback: ReactNode
+}) {
+  const { state } = useCMS()
+  const normalizedRoutePath = normalizeManagedPath(routePath)
+  const managedPublishedPage = state.siteArchitecture.pages.find(
+    (page) => normalizeManagedPath(page.path) === normalizedRoutePath && page.status === 'published'
+  )
+  if (!managedPublishedPage) return <>{fallback}</>
+  return <ManagedCustomPage page={managedPublishedPage} />
+}
+
 function App() {
   return (
     <CMSProvider>
@@ -157,31 +220,39 @@ function App() {
           <SiteTelemetry />
           <SmartPopup />
           <DataConsentModal />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/servicios/:slug" element={<ServicePage />} />
-            <Route path="/productos/:slug" element={<ProductPage />} />
-            <Route path="/protocolos/ingenieria-humana" element={<IngenieriaHumana />} />
-            <Route path="/protocolos/despliegue-ia" element={<DespliegueIA />} />
-            <Route path="/protocolos/madurez-organica" element={<MadurezOrganica />} />
-            <Route path="/politica-tratamiento-datos" element={<DataPolicy />} />
-            <Route path="/campanias/:slug" element={<CampaignLandingPage />} />
+          <Suspense fallback={<RouteLoader />}>
+            <Routes>
+              <Route path="/" element={<ManagedPublishedRoute routePath="/" fallback={<ServiciosLandingSimple />} />} />
+              <Route path="/inicio" element={<ManagedPublishedRoute routePath="/inicio" fallback={<Home />} />} />
+              <Route path="/servicios/:slug" element={<ServicePage />} />
+              <Route path="/productos/:slug" element={<ProductPage />} />
+              <Route path="/protocolos/ingenieria-humana" element={<IngenieriaHumana />} />
+              <Route path="/protocolos/despliegue-ia" element={<DespliegueIA />} />
+              <Route path="/protocolos/madurez-organica" element={<MadurezOrganica />} />
+              <Route path="/politica-tratamiento-datos" element={<DataPolicy />} />
+              <Route path="/campanias/:slug" element={<CampaignLandingPage />} />
+              <Route path="/landing-servicios" element={<ManagedPublishedRoute routePath="/landing-servicios" fallback={<ServiciosLandingSimple />} />} />
 
-            {/* Admin Routes */}
-            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="/admin/login" element={<LoginPage />} />
-            <Route path="/admin/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/admin/home" element={<ProtectedRoute><ManageHome /></ProtectedRoute>} />
-            <Route path="/admin/services" element={<ProtectedRoute><ManageServices /></ProtectedRoute>} />
-            <Route path="/admin/products" element={<ProtectedRoute><ManageProducts /></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute><ManageSite /></ProtectedRoute>} />
-            <Route path="/admin/design" element={<ProtectedRoute><ManageDesign /></ProtectedRoute>} />
-            <Route path="/admin/integrations" element={<ProtectedRoute><ManageIntegrations /></ProtectedRoute>} />
-            <Route path="/admin/seo" element={<ProtectedRoute><ManageSEO /></ProtectedRoute>} />
-            <Route path="/admin/marketing" element={<ProtectedRoute><ManageMarketing /></ProtectedRoute>} />
-            <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* Admin Routes */}
+              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="/admin/login" element={<LoginPage />} />
+              <Route path="/admin/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/admin/home" element={<Navigate to="/admin/site-builder" replace />} />
+              <Route path="/admin/site-builder" element={<ProtectedRoute><ManageContentBuilder /></ProtectedRoute>} />
+              <Route path="/admin/home/editor/:pageId" element={<ProtectedRouteNoLayout><ManageSitePageEditor /></ProtectedRouteNoLayout>} />
+              <Route path="/admin/site-builder/editor/:pageId" element={<ProtectedRouteNoLayout><ManageSitePageEditor /></ProtectedRouteNoLayout>} />
+              <Route path="/admin/home-workspace" element={<ProtectedRoute><ManageHome /></ProtectedRoute>} />
+              <Route path="/admin/services" element={<ProtectedRoute><ManageServices /></ProtectedRoute>} />
+              <Route path="/admin/products" element={<ProtectedRoute><ManageProducts /></ProtectedRoute>} />
+              <Route path="/admin/settings" element={<ProtectedRoute><ManageSite /></ProtectedRoute>} />
+              <Route path="/admin/design" element={<ProtectedRoute><ManageDesign /></ProtectedRoute>} />
+              <Route path="/admin/integrations" element={<ProtectedRoute><ManageIntegrations /></ProtectedRoute>} />
+              <Route path="/admin/seo" element={<ProtectedRoute><ManageSEO /></ProtectedRoute>} />
+              <Route path="/admin/marketing" element={<ProtectedRoute><ManageMarketing /></ProtectedRoute>} />
+              <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="*" element={<SiteArchitectureFallbackRoute />} />
+            </Routes>
+          </Suspense>
         </AnimatePresence>
       </LanguageProvider>
     </CMSProvider>

@@ -40,10 +40,32 @@ export function Layout({ children }: LayoutProps) {
     const headerHeight = headerVariant === 'minimal' ? 64 : 80
     const headerHeightClass = headerHeight === 64 ? 'h-16' : 'h-20'
     const routeTemplate = useMemo(() => getRouteTemplate(location.pathname, site), [location.pathname, site])
+    const publishedHomePage = useMemo(
+        () => state.siteArchitecture.pages.find((page) => page.path === '/' && page.status === 'published') ?? null,
+        [state.siteArchitecture.pages]
+    )
+    const visibleHomeBlockIds = useMemo(
+        () => new Set((publishedHomePage?.blocks ?? []).filter((block) => block.visible).map((block) => block.id)),
+        [publishedHomePage]
+    )
+    const servicesHref = visibleHomeBlockIds.has('servicios') ? '/#servicios' : '/landing-servicios'
+    const productsHref = visibleHomeBlockIds.has('productos') ? '/#productos' : servicesHref
+    const contactHref = visibleHomeBlockIds.has('contacto') ? '/#contacto' : '/#contacto-simple'
+    const closeMobileMenu = () => setMobileMenuOpen(false)
 
     useEffect(() => {
-        setMobileMenuOpen(false)
-    }, [location.pathname, location.search, location.hash])
+        if (!location.hash) return
+        const anchorId = decodeURIComponent(location.hash.replace(/^#/, ''))
+        if (!anchorId) return
+        const timer = window.setTimeout(() => {
+            const target = document.getElementById(anchorId)
+            if (!target) return
+            const offset = isHeaderSticky ? announcementHeight + headerHeight + 12 : 12
+            const top = target.getBoundingClientRect().top + window.scrollY - offset
+            window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+        }, 40)
+        return () => window.clearTimeout(timer)
+    }, [location.pathname, location.hash, isHeaderSticky, announcementHeight, headerHeight])
 
     const navLinkClass = headerVariant === 'minimal'
         ? 'text-[11px] font-black uppercase tracking-[0.25em] text-slate-400 hover:text-brand-primary transition-colors'
@@ -103,9 +125,9 @@ export function Layout({ children }: LayoutProps) {
                     )}
                 </div>
                 <div className="flex flex-wrap items-center gap-6 text-xs font-black uppercase tracking-[0.22em] text-white/60">
-                    <Link to="/#servicios" className="hover:text-white transition-colors">{uiText.nav.services}</Link>
-                    <Link to="/#productos" className="hover:text-white transition-colors">{uiText.nav.products}</Link>
-                    <Link to="/#contacto" className="hover:text-white transition-colors">{uiText.nav.contact}</Link>
+                    <Link to={servicesHref} className="hover:text-white transition-colors">{uiText.nav.services}</Link>
+                    <Link to={productsHref} className="hover:text-white transition-colors">{uiText.nav.products}</Link>
+                    <Link to={contactHref} className="hover:text-white transition-colors">{uiText.nav.contact}</Link>
                     <Link to="/politica-tratamiento-datos" className="hover:text-white transition-colors">{site.dataPolicyTitle || 'Política de datos'}</Link>
                 </div>
             </div>
@@ -125,6 +147,12 @@ export function Layout({ children }: LayoutProps) {
 
     return (
         <div className="selection:bg-brand-primary selection:text-white min-h-screen bg-white flex flex-col">
+            <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[120] focus:border focus:border-brand-primary focus:bg-white focus:px-3 focus:py-2 focus:text-xs focus:font-black focus:uppercase focus:tracking-[0.2em] focus:text-slate-900"
+            >
+                Saltar al contenido
+            </a>
             {announcementEnabled && (
                 <div
                     className={isHeaderSticky ? 'fixed top-0 left-0 w-full z-[60] border-b border-white/15' : 'relative border-b border-white/15'}
@@ -163,9 +191,9 @@ export function Layout({ children }: LayoutProps) {
                     </Link>
 
                     <nav className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-7' : 'gap-12'} ${headerVariant === 'split' ? 'justify-center' : ''}`}>
-                        <Link to="/#servicios" className={navLinkClass}>{uiText.nav.services}</Link>
-                        <Link to="/#productos" className={navLinkClass}>{uiText.nav.products}</Link>
-                        <Link to="/#contacto" className={navLinkClass}>{uiText.nav.contact}</Link>
+                        <Link to={servicesHref} className={navLinkClass}>{uiText.nav.services}</Link>
+                        <Link to={productsHref} className={navLinkClass}>{uiText.nav.products}</Link>
+                        <Link to={contactHref} className={navLinkClass}>{uiText.nav.contact}</Link>
                     </nav>
 
                     <div className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-3' : 'gap-4'} ${headerVariant === 'split' ? 'justify-end' : ''}`}>
@@ -213,13 +241,13 @@ export function Layout({ children }: LayoutProps) {
                     style={isHeaderSticky ? { top: announcementHeight + headerHeight } : undefined}
                 >
                     <nav className="px-6 py-4 flex flex-col gap-2">
-                        <Link to="/#servicios" className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                        <Link to={servicesHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {uiText.nav.services}
                         </Link>
-                        <Link to="/#productos" className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                        <Link to={productsHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {uiText.nav.products}
                         </Link>
-                        <Link to="/#contacto" className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                        <Link to={contactHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {uiText.nav.contact}
                         </Link>
                         {headerCtaEnabled && (
@@ -235,13 +263,14 @@ export function Layout({ children }: LayoutProps) {
                             ) : (
                                 <Link
                                     to={headerCtaHref}
+                                    onClick={closeMobileMenu}
                                     className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-white bg-brand-primary hover:bg-blue-800"
                                 >
                                     {site.headerCtaLabel}
                                 </Link>
                             )
                         )}
-                        <Link to="/politica-tratamiento-datos" className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                        <Link to="/politica-tratamiento-datos" onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {site.dataPolicyTitle || 'Política de tratamiento de datos'}
                         </Link>
                     </nav>
@@ -249,6 +278,7 @@ export function Layout({ children }: LayoutProps) {
             )}
 
             <main
+                id="main-content"
                 className={`flex-grow ${routeTemplate === 'immersive' ? 'bg-slate-50/40' : 'bg-white'} ${routeTemplate === 'compact' ? 'text-[0.97rem]' : ''}`}
                 style={isHeaderSticky ? { paddingTop: `${announcementHeight + headerHeight}px` } : undefined}
                 data-page-template={routeTemplate}

@@ -48,7 +48,8 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
 
     const navigation = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms' },
-        { name: 'Home Editor', href: '/admin/home', icon: Home, group: 'cms' },
+        { name: 'Site Builder', href: '/admin/site-builder', icon: Home, group: 'cms' },
+        { name: 'Home Workspace', href: '/admin/home-workspace', icon: Home, group: 'cms' },
         { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms' },
         { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms' },
         { name: 'Diseño Global', href: '/admin/design', icon: Paintbrush, group: 'cms' },
@@ -87,8 +88,20 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                 'Usa “API Response Time” y “Global Node” para diagnosticar performance.',
             ],
         },
-        '/admin/home': {
-            title: 'Home',
+        '/admin/site-builder': {
+            title: 'Site Builder',
+            intro: 'Gestiona la arquitectura completa del sitio: estructura de páginas, rutas, estado, editor asociado y preview en vivo.',
+            data: 'Fuente: CMS real en `/api/cms` + Neon (sección `siteArchitecture`).',
+            steps: [
+                'Busca y selecciona una página desde el árbol de arquitectura.',
+                'Edita Layout, Contenido y Estilos en el workspace central.',
+                'Usa “Abrir editor” para ir al módulo específico (Home, Servicios, Productos, etc.).',
+                'Valida el resultado en el panel de preview antes de publicar.',
+            ],
+            notes: ['Las páginas generadas por servicios/productos se actualizan desde sus catálogos.', 'El guardado es automático vía CMS autosave.'],
+        },
+        '/admin/home-workspace': {
+            title: 'Home Workspace',
             intro: 'Edita contenido, estilos, imágenes/video y comportamiento visual del Home con vista previa real.',
             data: 'Fuente: CMS real en `/api/cms` + Neon. Uploads de assets pueden ir a R2.',
             steps: [

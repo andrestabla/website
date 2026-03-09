@@ -6,7 +6,7 @@ type VercelRequest = any
 type VercelResponse = any
 
 const SNAPSHOT_ID = 'main'
-const CMS_SECTIONS = ['hero', 'services', 'products', 'site', 'design', 'homePage'] as const
+const CMS_SECTIONS = ['hero', 'services', 'products', 'site', 'design', 'homePage', 'siteArchitecture'] as const
 type CmsSection = (typeof CMS_SECTIONS)[number]
 
 function parseJsonBody(req: VercelRequest) {

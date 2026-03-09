@@ -118,6 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const serviceCount = Array.isArray(cmsData.services) ? cmsData.services.length : 0
     const productCount = Array.isArray(cmsData.products) ? cmsData.products.length : 0
+    const architectureCount = Array.isArray(cmsData.siteArchitecture?.pages) ? cmsData.siteArchitecture.pages.length : 0
 
     const days = Array.from({ length: 14 }, (_, i) => {
       const d = startOfDay(new Date(Date.now() - (13 - i) * 86400000))
@@ -217,7 +218,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         cms: {
           serviceCount,
           productCount,
-          totalManagedRoutes: 1 + serviceCount + productCount,
+          totalManagedRoutes: Math.max(1, architectureCount) + serviceCount + productCount,
           lastUpdatedAt: cmsSnapshot?.updatedAt ?? null,
         },
         translations: {
