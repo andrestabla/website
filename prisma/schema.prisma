@@ -163,3 +163,23 @@ model AdminUser {
   updatedAt    DateTime  @updatedAt
   lastLoginAt  DateTime?
 }
+
+model ContactLead {
+  id           String   @id @default(cuid())
+  name         String
+  email        String
+  requirement  String
+  context      String?
+  serviceSlug  String?
+  path         String?
+  country      String?
+  region       String?
+  city         String?
+  status       String   @default("pending") // pending, read, replied, archived
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+  @@index([status])
+}

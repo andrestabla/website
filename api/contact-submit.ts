@@ -58,6 +58,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const geo = getGeoFromRequest(req)
+    
+    // Save Lead to Database for tracking
+    let leadId = null
+    try {
+      const lead = await prisma.contactLead.create({
+        data: {
+          name,
+          email,
+          requirement,
+          context,
+          serviceSlug: serviceSlug || null,
+          path: path || null,
+          country: geo.country,
+          region: geo.region,
+          city: geo.city,
+        }
+      })
+      leadId = lead.id
+    } catch (dbErr) {
+      console.error('Failed to save lead to DB:', dbErr)
+    }
+
     await prisma.analyticsEvent.create({
       data: {
         visitorId: safeString(body?.visitorId, 120) || `contact_${Date.now().toString(36)}`,
@@ -75,6 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           requirement,
           context,
           serviceSlug: serviceSlug || null,
+          leadId,
         },
       },
     })
@@ -90,6 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         serviceSlug: serviceSlug || null,
         path: path || null,
         geo,
+        leadId,
       })
     } catch {
       webhook = { sent: false, status: undefined }
@@ -115,10 +139,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
 
         const fromName = smtp.fromName || 'AlgoritmoT'
-        const from = `${fromName} <${smtp.fromEmail}>`
+        const from = `"${fromName}" <${smtp.fromEmail}>`
         
         // 1. Admin notification email
-        const adminSubject = `Nuevo mensaje de contacto: ${name}`
+        // Using a more specific display name for the admin notification to distinguish it from the user copy
+        const adminFromName = `Leads ${fromName}`
+        const adminFrom = `"${adminFromName}" <${smtp.fromEmail}>`
+        const adminSubject = `[NUEVO LEAD] ${name} - AlgoritmoT`
+        
         const adminHtml = generateStyledEmail({
           title: 'Nuevo Lead de Contacto',
           preheader: `Nuevo mensaje de ${name} para AlgoritmoT`,
@@ -133,6 +161,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               ${serviceSlug ? `<tr><td class="label">Servicio</td><td>${serviceSlug}</td></tr>` : ''}
               <tr><td class="label">Ubicación</td><td>${geo.city || 'Desconocida'}, ${geo.country || ''}</td></tr>
               <tr><td class="label">Página</td><td>${path || '/'}</td></tr>
+              ${leadId ? `<tr><td class="label">ID Registro</td><td>${leadId}</td></tr>` : ''}
             </table>
 
             <div style="margin-top: 32px; padding: 24px; background-color: #f1f5f9; border-left: 4px solid #2563eb;">
@@ -146,14 +175,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           `
         })
 
-        await transporter.sendMail({
-          from,
+        const adminRes = await transporter.sendMail({
+          from: adminFrom,
           to: siteEmail,
           replyTo: email,
           subject: adminSubject,
           html: adminHtml,
           text: `Nuevo lead de: ${name}\nEmail: ${email}\n\nRequerimiento:\n${requirement}`,
         })
+        console.log(`Admin email sent: ${adminRes.messageId}`)
 
         // 2. User confirmation email (copy)
         const userSubject = `Confirmación de solicitud - AlgoritmoT`
@@ -184,12 +214,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           `
         })
 
-        await transporter.sendMail({
-          from,
+        const userRes = await transporter.sendMail({
+          from, // General from
           to: email,
           subject: userSubject,
           html: userHtml,
         })
+        console.log(`User email sent: ${userRes.messageId}`)
 
         emailSent = true
       }
@@ -197,7 +228,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('SMTP notification failed in contact-submit:', err)
     }
 
-    return res.status(200).json({ ok: true, webhook, emailSent })
+    return res.status(200).json({ ok: true, webhook, emailSent, leadId })
   } catch (error) {
     console.error('api/contact-submit error', error)
     return res.status(500).json({ ok: false, error: 'Contact submit failed' })

@@ -25,7 +25,8 @@ import {
     History,
     RotateCcw,
     AlertTriangle,
-    Loader2
+    Loader2,
+    Mail
 } from 'lucide-react'
 import { useCMS } from '../context/CMSContext'
 
@@ -52,6 +53,7 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
         { name: 'Home Workspace', href: '/admin/home-workspace', icon: Home, group: 'cms' },
         { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms' },
         { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms' },
+        { name: 'Contactos', href: '/admin/leads', icon: Mail, group: 'cms' },
         { name: 'Diseño Global', href: '/admin/design', icon: Paintbrush, group: 'cms' },
         { name: 'SEO Manager', href: '/admin/seo', icon: SearchCheck, group: 'growth' },
         { name: 'Marketing', href: '/admin/marketing', icon: Megaphone, group: 'growth' },
@@ -99,6 +101,18 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                 'Valida el resultado en el panel de preview antes de publicar.',
             ],
             notes: ['Las páginas generadas por servicios/productos se actualizan desde sus catálogos.', 'El guardado es automático vía CMS autosave.'],
+        },
+        '/admin/leads': {
+            title: 'Contactos y Leads',
+            intro: 'Gestiona los mensajes recibidos a través de los formularios del sitio. Realiza seguimiento de clientes potenciales y responde directamente.',
+            data: 'Fuente: Tabla `ContactLead` en Neon DB.',
+            steps: [
+                'Visualiza la lista de mensajes recibidos con su estado (Pendiente, Respondido, etc.).',
+                'Haz clic en un mensaje para ver los detalles completos y la ubicación del usuario.',
+                'Usa el botón "Responder" para abrir tu cliente de correo predeterminado.',
+                'Cambia el estado del lead para mantener un orden en tu embudo de ventas.',
+            ],
+            notes: ['Los mensajes se guardan automáticamente incluso si falla el envío de correos de notificación.'],
         },
         '/admin/home-workspace': {
             title: 'Home Workspace',

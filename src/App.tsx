@@ -31,6 +31,7 @@ const ManageProducts = lazy(() => import('./admin/pages/ManageProducts').then((m
 const ManageSite = lazy(() => import('./admin/pages/ManageSite').then((module) => ({ default: module.ManageSite })))
 const ManageSEO = lazy(() => import('./admin/pages/ManageSEO').then((module) => ({ default: module.ManageSEO })))
 const ManageMarketing = lazy(() => import('./admin/pages/ManageMarketing').then((module) => ({ default: module.ManageMarketing })))
+const ManageLeads = lazy(() => import('./admin/pages/ManageLeads').then((module) => ({ default: module.ManageLeads })))
 const Analytics = lazy(() => import('./admin/pages/Analytics').then((module) => ({ default: module.Analytics })))
 const AdminLayout = lazy(() => import('./admin/components/AdminLayout').then((module) => ({ default: module.AdminLayout })))
 
@@ -249,6 +250,7 @@ function App() {
               <Route path="/admin/integrations" element={<ProtectedRoute><ManageIntegrations /></ProtectedRoute>} />
               <Route path="/admin/seo" element={<ProtectedRoute><ManageSEO /></ProtectedRoute>} />
               <Route path="/admin/marketing" element={<ProtectedRoute><ManageMarketing /></ProtectedRoute>} />
+              <Route path="/admin/leads" element={<ProtectedRoute><ManageLeads /></ProtectedRoute>} />
               <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
               <Route path="*" element={<SiteArchitectureFallbackRoute />} />
             </Routes>
