@@ -138,11 +138,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           tls: smtp.encryption === 'none' ? { rejectUnauthorized: false } : undefined,
         })
 
+        // Try to fetch the site email from the main snapshot
+        let siteEmail = 'hola@algoritmot.com'
+        try {
+          const mainSnapshot = await prisma.cmsSnapshot.findUnique({ where: { id: 'main' } })
+          if (mainSnapshot?.data && (mainSnapshot.data as any).site?.contactEmail) {
+            siteEmail = (mainSnapshot.data as any).site.contactEmail
+          }
+        } catch (e) {
+          console.error('Failed to fetch siteEmail from CMS:', e)
+        }
+
         const fromName = smtp.fromName || 'AlgoritmoT'
-        const fromMail = `${fromName} <${smtp.fromEmail}>`
+        const fromMail = `"${fromName}" <${smtp.fromEmail}>`
         
         // 1. Admin notification email
-        const adminSubject = `[NUEVO LEAD] ${name} - AlgoritmoT`
+        const adminSubject = `Nuevo mensaje de contacto: ${name}`
         const adminHtml = generateStyledEmail({
           title: 'Nuevo Lead de Contacto',
           preheader: `Nuevo mensaje de ${name} para AlgoritmoT`,
@@ -175,11 +186,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const res = await transporter.sendMail({
             from: fromMail,
             to: siteEmail,
+            bcc: smtp.fromEmail, // Diagnostic: see if it reaches the sender
+            replyTo: email,
             subject: adminSubject,
             html: adminHtml,
             text: `Nuevo lead de: ${name}\nEmail: ${email}\n\nRequerimiento:\n${requirement}`,
           })
-          console.log(`Admin notification sent to ${siteEmail}: ${res.messageId}`)
+          console.log(`Admin notification sent to ${siteEmail} (Bcc: ${smtp.fromEmail}): ${res.messageId}`)
           emailSent = true
         } catch (adminErr) {
           console.error('Failed to send admin notification:', adminErr)
