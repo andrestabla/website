@@ -145,30 +145,53 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
         setIsTranslating(true);
         isProcessing.current = true;
+        
+        const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+            let timeoutId: NodeJS.Timeout;
+            const timeoutPromise = new Promise<T>((resolve) => {
+                timeoutId = setTimeout(() => {
+                    console.warn(`Translation timed out after ${ms}ms`);
+                    resolve(fallback);
+                }, ms);
+            });
+            return Promise.race([
+                promise.then(result => {
+                    clearTimeout(timeoutId);
+                    return result;
+                }),
+                timeoutPromise
+            ]);
+        };
+
         try {
             // Split translation into smaller requests to reduce malformed/truncated JSON responses.
-            const [heroT, servicesT, productsT, siteT, homePageT] = await Promise.all([
-                translateObject(baseState.hero, targetLang),
-                translateCollection(baseState.services, targetLang),
-                translateCollection(baseState.products, targetLang),
-                translateObject({
-                    name: baseState.site.name,
-                    description: baseState.site.description,
-                    contactAddress: baseState.site.contactAddress
-                }, targetLang),
-                translateObject((baseState as any).homePage, targetLang)
-            ]);
+            const timeoutMs = 20000; // 20 seconds timeout per chunk
+            const heroT = await withTimeout(translateObject(baseState.hero, targetLang), timeoutMs, baseState.hero).catch(e => { console.error('Hero translate failed', e); return baseState.hero; });
+            const servicesT = await withTimeout(translateCollection(baseState.services, targetLang), timeoutMs, baseState.services).catch(e => { console.error('Services translate failed', e); return baseState.services; });
+            const productsT = await withTimeout(translateCollection(baseState.products, targetLang), timeoutMs, baseState.products).catch(e => { console.error('Products translate failed', e); return baseState.products; });
+            const siteT = await withTimeout(translateObject({
+                name: baseState.site.name,
+                description: baseState.site.description,
+                contactAddress: baseState.site.contactAddress
+            }, targetLang), timeoutMs, { name: baseState.site.name, description: baseState.site.description, contactAddress: baseState.site.contactAddress }).catch(e => { console.error('Site translate failed', e); return { name: baseState.site.name, description: baseState.site.description, contactAddress: baseState.site.contactAddress }; });
+            const homePageT = await withTimeout(translateObject((baseState as any).homePage, targetLang), timeoutMs, (baseState as any).homePage).catch(e => { console.error('HomePage translate failed', e); return (baseState as any).homePage; });
 
-            // Translate pages sequentially to avoid overloading the model and hitting payload limits
+            // Translate pages in small batches to improve speed without hitting payload limits
             const siteArchitecturePagesT = [];
-            for (const page of baseState.siteArchitecture.pages) {
-                // Skip translation for pages without content to save tokens
-                if (page.blocks && page.blocks.length > 0) {
-                     const translatedPage = await translateObject(page, targetLang);
-                     siteArchitecturePagesT.push(translatedPage);
-                } else {
-                     siteArchitecturePagesT.push(page);
-                }
+            const BATCH_SIZE = 3;
+            for (let i = 0; i < baseState.siteArchitecture.pages.length; i += BATCH_SIZE) {
+                const batch = baseState.siteArchitecture.pages.slice(i, i + BATCH_SIZE);
+                const batchPromises = batch.map(async (page) => {
+                    if (page.blocks && page.blocks.length > 0) {
+                        return withTimeout(translateObject(page, targetLang), timeoutMs, page).catch(err => {
+                            console.error(`Failed to translate page ${page.id}`, err);
+                            return page;
+                        });
+                    }
+                    return page;
+                });
+                const resolvedBatch = await Promise.all(batchPromises);
+                siteArchitecturePagesT.push(...resolvedBatch);
             }
 
             // Extremely defensive merging
@@ -194,8 +217,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                 },
             };
 
-            if (!cache[targetLang]) cache[targetLang] = {};
-            cache[targetLang]![hash] = newState;
+            const targetLangKey = targetLang as Language;
+            if (!cache[targetLangKey]) cache[targetLangKey] = {};
+            cache[targetLangKey]![hash] = newState;
             saveCache(cache);
 
             setTranslatedState(newState);
@@ -208,7 +232,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             setIsTranslating(false);
             isProcessing.current = false;
         }
-    }, [translateCollection]);
+    }, [translateCollection, language, cmsState]);
 
     // Effect: Handle CMS State changes or Language changes
     useEffect(() => {
@@ -216,9 +240,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }, [language, cmsState, performTranslation]);
 
     useEffect(() => {
-        if (typeof document === 'undefined') return
-        document.documentElement.lang = language
-    }, [language])
+        if (typeof document === 'undefined') return;
+        document.documentElement.lang = language;
+    }, [language]);
 
     const setLanguage = (lang: Language) => {
         setLanguageState(lang);
