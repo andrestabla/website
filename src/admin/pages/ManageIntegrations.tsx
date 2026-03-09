@@ -420,6 +420,8 @@ export function ManageIntegrations() {
     const [loadError, setLoadError] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
+    const [isTesting, setIsTesting] = useState(false)
+    const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
     const [draftConfig, setDraftConfig] = useState<Record<string, unknown>>({})
 
     useEffect(() => {
@@ -482,6 +484,25 @@ export function ManageIntegrations() {
             setLoadError(error instanceof Error ? error.message : 'No se pudo guardar')
         } finally {
             setIsSaving(false)
+        }
+    }
+
+    const sendTestEmail = async () => {
+        setIsTesting(true)
+        setTestResult(null)
+        try {
+            const res = await fetch('/api/admin/smtp-test', { method: 'POST' })
+            const data = await res.json()
+            if (data.ok) {
+                setTestResult({ ok: true, message: 'Correo de prueba enviado correctamente' })
+            } else {
+                setTestResult({ ok: false, message: data.error || 'Error al enviar prueba' })
+            }
+        } catch (error) {
+            setTestResult({ ok: false, message: 'Error de red al enviar prueba' })
+        } finally {
+            setIsTesting(false)
+            setTimeout(() => setTestResult(null), 5000)
         }
     }
 
@@ -550,6 +571,13 @@ export function ManageIntegrations() {
                 </div>
             )}
 
+            {testResult && (
+                <div className={`flex items-center gap-3 border px-6 py-4 font-bold text-sm ${testResult.ok ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                    {testResult.ok ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
+                    {testResult.message}
+                </div>
+            )}
+
             {/* Security notice */}
             <div className="flex items-start gap-4 bg-amber-50 border border-amber-200 px-6 py-5">
                 <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -593,6 +621,15 @@ export function ManageIntegrations() {
                             <div className="flex items-center justify-between">
                                 <StatusBadge status={state.status} enabled={state.enabled} />
                                 <div className="flex items-center gap-3">
+                                    {def.key === 'smtp' && configured && (
+                                        <button
+                                            onClick={sendTestEmail}
+                                            disabled={isTesting}
+                                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary disabled:opacity-50 transition-colors"
+                                        >
+                                            {isTesting ? 'Enviando...' : 'Enviar correo de prueba'}
+                                        </button>
+                                    )}
                                     {configured && (
                                         <a href={def.docs} target="_blank" rel="noreferrer" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-700 transition-colors">
                                             Docs
