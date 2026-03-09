@@ -123,7 +123,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let emailSent = false
     try {
       const smtp = await getSmtpConfig()
-      const siteEmail = 'hola@algoritmot.com'
 
       if (smtp) {
         const secure = smtp.encryption === 'ssl' || String(smtp.port) === '465'
@@ -139,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
 
         // Try to fetch the site email from the main snapshot
-        let siteEmail = 'hola@algoritmot.com'
+        let siteEmail = 'andrestablarico@gmail.com' 
         try {
           const mainSnapshot = await prisma.cmsSnapshot.findUnique({ where: { id: 'main' } })
           if (mainSnapshot?.data && (mainSnapshot.data as any).site?.contactEmail) {
@@ -183,15 +182,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
 
         try {
-          console.log(`Attempting admin send: FROM=${fromMail} TO=${siteEmail}`)
           const res = await transporter.sendMail({
             from: fromMail,
             to: siteEmail,
+            replyTo: email,
             subject: adminSubject,
             html: adminHtml,
             text: `Nuevo lead de: ${name}\nEmail: ${email}\n\nRequerimiento:\n${requirement}`,
           })
-          console.log(`Admin notification SENT: ${res.messageId}`)
+          console.log(`Admin notification SENT to ${siteEmail}: ${res.messageId}`)
           emailSent = true
         } catch (adminErr) {
           console.error('Failed to send admin notification:', adminErr)
