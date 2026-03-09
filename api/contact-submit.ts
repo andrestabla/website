@@ -1,5 +1,8 @@
+import nodemailer from 'nodemailer'
 import { prisma } from './_lib/prisma.js'
 import { getGeoFromRequest, safeString } from './_lib/analytics.js'
+import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, sanitizeIntegrations } from './_lib/integrations.js'
+import { generateStyledEmail } from './_lib/email-templates.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -21,6 +24,15 @@ async function dispatchWebhook(payload: any): Promise<{ sent: boolean; status: n
     body: JSON.stringify(payload),
   })
   return { sent: response.ok, status: response.status }
+}
+
+async function getSmtpConfig() {
+  const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
+  const integrations = applyServerEnv(sanitizeIntegrations(snapshot?.data))
+  if (!integrations.smtp.enabled) return null
+  const cfg = integrations.smtp.config
+  if (!cfg.host || !cfg.user || !cfg.password || !cfg.fromEmail) return null
+  return cfg
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -83,7 +95,109 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       webhook = { sent: false, status: undefined }
     }
 
-    return res.status(200).json({ ok: true, webhook })
+    // SMTP Notification
+    let emailSent = false
+    try {
+      const smtp = await getSmtpConfig()
+      const siteEmail = 'hola@algoritmot.com'
+
+      if (smtp) {
+        const secure = smtp.encryption === 'ssl' || String(smtp.port) === '465'
+        const transporter = nodemailer.createTransport({
+          host: smtp.host,
+          port: Number(smtp.port || '587'),
+          secure,
+          auth: {
+            user: smtp.user,
+            pass: smtp.password,
+          },
+          tls: smtp.encryption === 'none' ? { rejectUnauthorized: false } : undefined,
+        })
+
+        const fromName = smtp.fromName || 'AlgoritmoT'
+        const from = `${fromName} <${smtp.fromEmail}>`
+        
+        // 1. Admin notification email
+        const adminSubject = `Nuevo mensaje de contacto: ${name}`
+        const adminHtml = generateStyledEmail({
+          title: 'Nuevo Lead de Contacto',
+          preheader: `Nuevo mensaje de ${name} para AlgoritmoT`,
+          contentHtml: `
+            <p style="font-size: 18px; font-weight: bold; color: #0f172a; margin-bottom: 8px;">¡Nuevo contacto recibido!</p>
+            <p>Has recibido un nuevo mensaje a través del formulario del sitio web. Aquí tienes los detalles:</p>
+            
+            <table class="data-table">
+              <tr><td class="label">Nombre</td><td>${name}</td></tr>
+              <tr><td class="label">Email</td><td>${email}</td></tr>
+              <tr><td class="label">Contexto</td><td>${context}</td></tr>
+              ${serviceSlug ? `<tr><td class="label">Servicio</td><td>${serviceSlug}</td></tr>` : ''}
+              <tr><td class="label">Ubicación</td><td>${geo.city || 'Desconocida'}, ${geo.country || ''}</td></tr>
+              <tr><td class="label">Página</td><td>${path || '/'}</td></tr>
+            </table>
+
+            <div style="margin-top: 32px; padding: 24px; background-color: #f1f5f9; border-left: 4px solid #2563eb;">
+              <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; font-weight: bold; margin-bottom: 8px;">Mensaje / Requerimiento</p>
+              <p style="margin: 0; white-space: pre-wrap; color: #0f172a;">${requirement}</p>
+            </div>
+            
+            <div style="margin-top: 32px; text-align: center;">
+              <a href="mailto:${email}" class="button">Responder ahora</a>
+            </div>
+          `
+        })
+
+        await transporter.sendMail({
+          from,
+          to: siteEmail,
+          replyTo: email,
+          subject: adminSubject,
+          html: adminHtml,
+          text: `Nuevo lead de: ${name}\nEmail: ${email}\n\nRequerimiento:\n${requirement}`,
+        })
+
+        // 2. User confirmation email (copy)
+        const userSubject = `Confirmación de solicitud - AlgoritmoT`
+        const userHtml = generateStyledEmail({
+          title: 'Recibimos tu solicitud',
+          preheader: `Gracias por contactar con AlgoritmoT. Hemos recibido tu mensaje.`,
+          contentHtml: `
+            <p style="font-size: 18px; font-weight: bold; color: #0f172a; margin-bottom: 8px;">Hola ${name.split(' ')[0]},</p>
+            <p>Gracias por contactar con <span class="accent-text">AlgoritmoT</span>. Hemos recibido correctamente tu solicitud y un especialista se pondrá en contacto contigo pronto.</p>
+            
+            <p style="margin-top: 24px;">Adjuntamos una copia de la información que nos enviaste:</p>
+            
+            <table class="data-table">
+              <tr><td class="label">Nombre</td><td>${name}</td></tr>
+              <tr><td class="label">Email</td><td>${email}</td></tr>
+              <tr><td class="label">Contexto</td><td>${context}</td></tr>
+              ${serviceSlug ? `<tr><td class="label">Servicio de interés</td><td>${serviceSlug}</td></tr>` : ''}
+            </table>
+
+            <div style="margin-top: 32px; padding: 24px; background-color: #f8fafc; border: 1px dashed #e2e8f0;">
+              <p style="margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; font-weight: bold; margin-bottom: 8px;">Tu mensaje</p>
+              <p style="margin: 0; color: #475569; font-style: italic;">"${requirement}"</p>
+            </div>
+            
+            <p style="margin-top: 32px;">Si necesitas añadir algún detalle adicional, simplemente responde a este correo.</p>
+            
+            <p style="margin-top: 16px;">Atentamente,<br><strong>El equipo de AlgoritmoT</strong></p>
+          `
+        })
+
+        await transporter.sendMail({
+          from,
+          to: email,
+          subject: userSubject,
+          html: userHtml,
+        })
+
+        emailSent = true
+      }
+    } catch (err) {
+      console.error('SMTP notification failed in contact-submit:', err)
+    }
+
+    return res.status(200).json({ ok: true, webhook, emailSent })
   } catch (error) {
     console.error('api/contact-submit error', error)
     return res.status(500).json({ ok: false, error: 'Contact submit failed' })

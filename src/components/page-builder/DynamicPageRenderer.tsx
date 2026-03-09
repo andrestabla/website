@@ -29,6 +29,7 @@ import {
 } from 'lucide-react'
 import { type SiteArchitecturePage, type SitePageBlock } from '../../admin/context/CMSContext'
 import { HomeRootPageRenderer } from './HomeRootPageRenderer'
+import { ContactForm } from '../forms/ContactForm'
 
 type DynamicPageRendererProps = {
     page: SiteArchitecturePage
@@ -1142,18 +1143,14 @@ function renderBlockBody(block: SitePageBlock, accentColor: string) {
     }
 
     if (block.type === 'form') {
+        const serviceSlug = toText(block.content.serviceSlug)
+        const formVariant = toText(block.content.variant) === 'product' ? 'product' : toText(block.content.variant) === 'service' ? 'service' : 'general'
+        
         return (
-            <div className="w-full max-w-xl border border-current/20 bg-white/5 p-5">
-                <h3 className="text-xl font-black tracking-tight">{title || 'Formulario de contacto'}</h3>
-                <p className="mt-2 text-sm opacity-80">{body || 'Configura este bloque para capturar datos de clientes potenciales.'}</p>
-                <div className="mt-4 grid gap-3">
-                    <input disabled placeholder="Nombre" className="border border-current/20 bg-transparent px-3 py-2 text-sm" />
-                    <input disabled placeholder="Correo" className="border border-current/20 bg-transparent px-3 py-2 text-sm" />
-                    <textarea disabled placeholder="Mensaje" className="min-h-[120px] border border-current/20 bg-transparent px-3 py-2 text-sm" />
-                    <button type="button" className="border border-current/25 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.2em]">
-                        {toText(block.content.submitLabel, 'Enviar')}
-                    </button>
-                </div>
+            <div className="w-full max-w-xl border border-current/20 bg-white/5 p-8 lg:p-12 shadow-2xl">
+                {title && <h3 className="text-2xl font-black tracking-tight mb-2">{title}</h3>}
+                {body && <p className="mb-8 text-sm opacity-80 leading-relaxed">{body}</p>}
+                <ContactForm serviceSlug={serviceSlug} context={formVariant} />
             </div>
         )
     }

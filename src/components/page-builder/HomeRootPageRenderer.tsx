@@ -1,4 +1,5 @@
-import { ArrowRight, CheckCircle2, Code2, LineChart, Mail, MessageSquare, Network, Rocket, Search, UserRound, Users } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Code2, LineChart, Network, Rocket, Search, Users } from 'lucide-react'
+import { ContactForm } from '../forms/ContactForm'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { type SiteArchitecturePage, type SitePageBlock } from '../../admin/context/CMSContext'
 
@@ -312,7 +313,6 @@ function renderFaqBlock(block: SitePageBlock) {
 }
 
 function renderContactBlock(block: SitePageBlock) {
-    const primaryHref = normalizeCmsHref(block.content.primaryHref)
     const secondaryHref = normalizeCmsHref(block.content.secondaryHref)
     return (
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">
@@ -337,35 +337,9 @@ function renderContactBlock(block: SitePageBlock) {
                 )}
             </article>
 
-            <article className="border border-slate-200 bg-white px-8 py-10 md:px-10">
-                <label className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500">{toText(block.content.formNameLabel, 'Identificación')}</label>
-                <div className="mt-3 flex items-center gap-3 border border-slate-200 bg-slate-50 px-4 py-5 text-slate-400">
-                    <UserRound className="h-5 w-5" />
-                    <span className="text-lg">{toText(block.content.formNamePlaceholder, 'Tu nombre')}</span>
-                </div>
-
-                <label className="mt-7 block text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500">{toText(block.content.formEmailLabel, 'Canal de comunicación')}</label>
-                <div className="mt-3 flex items-center gap-3 border border-slate-200 bg-slate-50 px-4 py-5 text-slate-400">
-                    <Mail className="h-5 w-5" />
-                    <span className="text-lg">{toText(block.content.formEmailPlaceholder, 'email@ejemplo.com')}</span>
-                </div>
-
-                <label className="mt-7 block text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500">{toText(block.content.formRequirementLabel, 'Requerimiento técnico')}</label>
-                <div className="mt-3 flex min-h-[150px] items-start gap-3 border border-slate-200 bg-slate-50 px-4 py-5 text-slate-400">
-                    <MessageSquare className="mt-0.5 h-5 w-5" />
-                    <span className="text-lg">{toText(block.content.formRequirementPlaceholder, '¿En qué fase de tu transformación digital te encuentras?')}</span>
-                </div>
-
-                {toText(block.content.primaryLabel) && primaryHref && (
-                    <a
-                        href={primaryHref}
-                        className="mt-8 inline-flex w-full items-center justify-center gap-2 border border-blue-600 bg-blue-600 px-6 py-5 text-sm font-bold uppercase tracking-[0.24em] text-white transition-colors hover:border-blue-700 hover:bg-blue-700"
-                    >
-                        {toText(block.content.primaryLabel)}
-                        <ArrowRight className="h-4 w-4" />
-                    </a>
-                )}
-
+            <article className="border border-slate-200 bg-white px-8 py-10 shadow-2xl md:px-14 lg:px-16">
+                <ContactForm />
+                
                 {toText(block.content.complianceText) && (
                     <p className="mt-8 text-center text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400">{toText(block.content.complianceText)}</p>
                 )}

@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer'
 import { prisma } from '../_lib/prisma.js'
 import { requireAdminSession } from '../_lib/admin-auth.js'
 import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, sanitizeIntegrations } from '../_lib/integrations.js'
+import { generateStyledEmail } from '../_lib/email-templates.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -46,27 +47,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const fromName = smtp.fromName || 'Sistema'
     const from = `${fromName} <${smtp.fromEmail}>`
+    const to = customTo || smtp.fromEmail
     
+    const html = generateStyledEmail({
+      title: 'Prueba de Configuración SMTP',
+      preheader: 'Tu servidor de correo en AlgoritmoT está listo.',
+      contentHtml: `
+        <p style="font-size: 18px; font-weight: bold; color: #059669; margin-bottom: 8px;">✅ Conexión Exitosa</p>
+        <p>Esta es una prueba de configuración exitosa para tu servidor de correo saliente en <span class="accent-text">AlgoritmoT</span>.</p>
+        
+        <table class="data-table">
+          <tr><td class="label">Proveedor</td><td>${smtp.provider || 'Personalizado'}</td></tr>
+          <tr><td class="label">Servidor</td><td>${smtp.host}:${smtp.port}</td></tr>
+          <tr><td class="label">Remitente</td><td>${smtp.fromEmail}</td></tr>
+          <tr><td class="label">Destinatario</td><td>${to}</td></tr>
+        </table>
+
+        <p style="margin-top: 32px; font-size: 12px; color: #64748b;">Si has recibido este correo, la configuración es correcta y el sistema puede enviar notificaciones automáticamente.</p>
+      `
+    })
+
     await transporter.sendMail({
       from,
-      to: customTo || smtp.fromEmail,
+      to,
       subject: customSubject || 'Prueba de configuración SMTP - AlgoritmoT',
-      text: `Hola,\n\nEsta es una prueba de configuración exitosa para tu servidor de correo saliente en AlgoritmoT.\n\nProveedor: ${smtp.provider || 'Personalizado'}\nServidor: ${smtp.host}:${smtp.port}\nRemitente: ${from}\nDestinatario: ${customTo || smtp.fromEmail}\n\nSi has recibido este correo, la configuración es correcta.`,
-      html: `
-        <div style="font-family: sans-serif; padding: 20px; color: #334155;">
-          <h2 style="color: #059669;">✅ Configuración SMTP Correcta</h2>
-          <p>Esta es una prueba de configuración exitosa para tu servidor de correo saliente en <strong>AlgoritmoT</strong>.</p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p style="font-size: 14px;"><strong>Detalles técnicos:</strong></p>
-          <ul style="font-size: 14px; list-style: none; padding: 0;">
-            <li><strong>Proveedor:</strong> ${smtp.provider || 'Personalizado'}</li>
-            <li><strong>Servidor:</strong> ${smtp.host}:${smtp.port}</li>
-            <li><strong>Remitente:</strong> ${from}</li>
-            <li><strong>Destinatario:</strong> ${customTo || smtp.fromEmail}</li>
-          </ul>
-          <p style="font-size: 12px; color: #64748b; margin-top: 30px;">Si has recibido este correo, la configuración es correcta y puedes empezar a enviar correos transaccionales.</p>
-        </div>
-      `,
+      html,
+      text: `Configuración SMTP Correcta\n\nProveedor: ${smtp.provider || 'Personalizado'}\nServidor: ${smtp.host}:${smtp.port}`,
     })
 
     return res.status(200).json({ ok: true, message: 'Correo de prueba enviado correctamente' })
