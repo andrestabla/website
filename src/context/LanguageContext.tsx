@@ -76,6 +76,7 @@ function getCMSHash(state: CMSState): string {
             p: state.products,
             st: state.site,
             hp: (state as any).homePage,
+            sa: (state.siteArchitecture as any)?.pages,
         });
         let hash = 0;
         for (let i = 0; i < text.length; i++) {
@@ -133,6 +134,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                 site: mergeTranslated(baseState.site, cached.site),
                 design: baseState.design,
                 homePage: mergeTranslated((baseState as any).homePage, (cached as any).homePage),
+                siteArchitecture: {
+                    ...baseState.siteArchitecture,
+                    pages: mergeTranslated(baseState.siteArchitecture.pages, cached.siteArchitecture?.pages),
+                },
             });
             lastProcessed.current = hash;
             return;
@@ -151,8 +156,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                     description: baseState.site.description,
                     contactAddress: baseState.site.contactAddress
                 }, targetLang),
-                translateObject((baseState as any).homePage, targetLang),
+                translateObject((baseState as any).homePage, targetLang)
             ]);
+
+            // Translate pages sequentially to avoid overloading the model and hitting payload limits
+            const siteArchitecturePagesT = [];
+            for (const page of baseState.siteArchitecture.pages) {
+                // Skip translation for pages without content to save tokens
+                if (page.blocks && page.blocks.length > 0) {
+                     const translatedPage = await translateObject(page, targetLang);
+                     siteArchitecturePagesT.push(translatedPage);
+                } else {
+                     siteArchitecturePagesT.push(page);
+                }
+            }
 
             // Extremely defensive merging
             const t = {
@@ -161,7 +178,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                 products: productsT,
                 site: siteT,
                 homePage: homePageT,
+                siteArchitecturePages: siteArchitecturePagesT
             } as any;
+
             const newState: CMSState = {
                 ...baseState,
                 hero: mergeTranslated(baseState.hero, t.hero),
@@ -169,6 +188,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                 products: mergeTranslated(baseState.products, t.products),
                 site: mergeTranslated(baseState.site, { ...baseState.site, ...t.site }),
                 homePage: mergeTranslated((baseState as any).homePage, t.homePage),
+                siteArchitecture: {
+                    ...baseState.siteArchitecture,
+                    pages: mergeTranslated(baseState.siteArchitecture.pages, t.siteArchitecturePages),
+                },
             };
 
             if (!cache[targetLang]) cache[targetLang] = {};

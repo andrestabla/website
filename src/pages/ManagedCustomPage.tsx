@@ -1,20 +1,24 @@
-import { type SiteArchitecturePage, useCMS } from '../admin/context/CMSContext'
 import { DynamicPageRenderer } from '../components/page-builder/DynamicPageRenderer'
 import { Layout } from '../components/layout/Layout'
+import { useLanguage } from '../context/LanguageContext'
 
 type ManagedCustomPageProps = {
-    page: SiteArchitecturePage
+    page: any // Using any here to allow both initial and translated versions
 }
 
-export function ManagedCustomPage({ page }: ManagedCustomPageProps) {
-    const { state } = useCMS()
+export function ManagedCustomPage({ page: initialPage }: ManagedCustomPageProps) {
+    const { translatedState, language } = useLanguage()
+    const page = (translatedState.siteArchitecture.pages as any[])?.find(p => p.id === initialPage.id) || initialPage
+    
+    console.log(`[ManagedCustomPage] Lang: ${language}, Page ID: ${initialPage.id}, isTranslated:`, page !== initialPage, page.blocks?.[0]?.content?.title);
+    
     const hasBlocks = Array.isArray(page.blocks) && page.blocks.length > 0
     const accentColor = page.accentColor || '#2563eb'
 
     return (
         <Layout>
             {hasBlocks ? (
-                <DynamicPageRenderer page={page} />
+                <DynamicPageRenderer page={page as any} />
             ) : (
                 <section className="px-6 py-24">
                     <div className="mx-auto max-w-5xl border border-slate-200 bg-white p-10 md:p-14">
@@ -29,7 +33,7 @@ export function ManagedCustomPage({ page }: ManagedCustomPageProps) {
                             <p className="font-bold uppercase tracking-[0.2em] text-slate-400">Ruta</p>
                             <p className="mt-1 font-mono text-slate-600">{page.path}</p>
                             {page.notes && <p className="mt-4 whitespace-pre-wrap">{page.notes}</p>}
-                            <p className="mt-6">Gestionado por {state.site.name}.</p>
+                            <p className="mt-6">Gestionado por {translatedState.site.name}.</p>
                         </div>
                     </div>
                 </section>

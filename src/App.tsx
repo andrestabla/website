@@ -222,7 +222,7 @@ function App() {
           <DataConsentModal />
           <Suspense fallback={<RouteLoader />}>
             <Routes>
-              <Route path="/" element={<ManagedPublishedRoute routePath="/" fallback={<ServiciosLandingSimple />} />} />
+              <Route path="/" element={<ManagedPublishedRoute routePath="/" fallback={<Home />} />} />
               <Route path="/inicio" element={<ManagedPublishedRoute routePath="/inicio" fallback={<Home />} />} />
               <Route path="/servicios/:slug" element={<ServicePage />} />
               <Route path="/productos/:slug" element={<ProductPage />} />

@@ -1,10 +1,9 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, CheckCircle2, Clock3, Handshake, ShieldCheck, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useCMS } from '../admin/context/CMSContext'
+import { useLanguage } from '../context/LanguageContext'
 import { ContactForm } from '../components/forms/ContactForm'
 import { Layout } from '../components/layout/Layout'
-import { servicesDetail } from '../data/details'
 
 type PlainServiceCopy = {
     inSimpleWords: string
@@ -145,11 +144,11 @@ function getPlainServiceCopy(slug: string, fallbackDescription: string): PlainSe
 }
 
 export function ServiciosLandingSimple() {
-    const { state } = useCMS()
-    const email = state.site.contactEmail || 'hola@algoritmot.com'
-    const linkedin = state.site.linkedin || 'https://www.linkedin.com'
-    const companyName = state.site.name || 'tu compañía'
-    const plainServices = servicesDetail.map((service) => ({
+    const { translatedState } = useLanguage()
+    const email = translatedState.site.contactEmail || 'hola@algoritmot.com'
+    const linkedin = translatedState.site.linkedin || 'https://www.linkedin.com'
+    const companyName = translatedState.site.name || 'tu compañía'
+    const plainServices = translatedState.services.map((service) => ({
         ...service,
         plain: getPlainServiceCopy(service.slug, service.description),
     }))
