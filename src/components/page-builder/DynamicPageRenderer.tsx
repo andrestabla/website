@@ -1401,6 +1401,12 @@ export function DynamicPageRenderer({
                     __html: `
                     /* Force luxury styling on CMS blocks overriding database values */
                     .case-premium-theme [data-block-id="hero"] { background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%) !important; background-color: #020617 !important; color: #f8fafc !important; }
+                    .case-premium-theme [data-block-id="hero"] h1, 
+                    .case-premium-theme [data-block-id="hero"] h2, 
+                    .case-premium-theme [data-block-id="hero"] p,
+                    .case-premium-theme [data-block-id="hero"] span,
+                    .case-premium-theme [data-block-id="hero"] div { color: #f8fafc !important; }
+                    
                     .case-premium-theme [data-block-id="kpis-top"] { background-color: #020617 !important; color: #f8fbff !important; }
                     .case-premium-theme [data-block-id="caso-descripcion"] { background-color: #ffffff !important; color: #0f172a !important; }
                     .case-premium-theme [data-block-id="fotos-caso"] { background-color: transparent !important; color: #0f172a !important; }
