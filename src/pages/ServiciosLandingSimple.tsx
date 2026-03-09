@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, CheckCircle2, Clock3, Handshake, ShieldCheck, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'

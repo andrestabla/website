@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { X, ArrowRight, Loader2, Sparkles, Building2, Workflow, TrendingUp, CheckCircle2 } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
