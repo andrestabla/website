@@ -128,7 +128,7 @@ const integrationDefs = [
         color: 'bg-amber-600',
         tagline: 'Envío transaccional — formularios, notificaciones y alertas',
         docs: 'https://nodemailer.com/smtp/',
-        steps: ['Servidor', 'Autenticación', 'Remitente', 'Confirmar'],
+        steps: ['Proveedor', 'Servidor', 'Autenticación', 'Remitente', 'Confirmar'],
     },
     {
         key: 'r2' as IntegrationKey,
@@ -241,43 +241,85 @@ function OpenAIWizard({ step, config, onChange }: { step: number; config: OpenAI
     )
 }
 
+const PROVIDER_DEFAULTS: Record<string, Partial<SMTPConfig>> = {
+    'aws-ses': { host: 'email-smtp.us-east-1.amazonaws.com', port: '587', encryption: 'tls' },
+    'gmail': { host: 'smtp.gmail.com', port: '587', encryption: 'tls' },
+    'resend': { host: 'smtp.resend.com', port: '587', encryption: 'tls' },
+    'mailgun': { host: 'smtp.mailgun.org', port: '587', encryption: 'tls' },
+    'sendgrid': { host: 'smtp.sendgrid.net', port: '587', encryption: 'tls' },
+    'postmark': { host: 'smtp.postmarkapp.com', port: '587', encryption: 'tls' },
+    'custom': { host: '', port: '587', encryption: 'tls' },
+}
+
 function SMTPWizard({ step, config, onChange }: { step: number; config: SMTPConfig; onChange: (c: Partial<SMTPConfig>) => void }) {
     if (step === 0) return (
         <div className="space-y-6">
             <div className="bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
-                Compatible con Gmail, Resend, Mailgun, SendGrid, Postmark, o tu propio servidor SMTP.
+                Selecciona tu proveedor para autocompletar la configuración técnica del servidor.
             </div>
-            <FormField label="Host SMTP" hint="Ej: smtp.gmail.com | smtp.resend.com | mail.dominio.com">
-                <TextInput value={config.host} onChange={v => onChange({ host: v })} placeholder="smtp.ejemplo.com" />
+            <FormField label="Proveedor de correo">
+                <SelectInput
+                    value={config.provider || 'aws-ses'}
+                    onChange={v => {
+                        const defaults = PROVIDER_DEFAULTS[v] || {}
+                        onChange({ provider: v, ...defaults })
+                    }}
+                    options={[
+                        { value: 'aws-ses', label: 'AWS SES (Recomendado)' },
+                        { value: 'gmail', label: 'Gmail / Google Workspace' },
+                        { value: 'resend', label: 'Resend' },
+                        { value: 'mailgun', label: 'Mailgun' },
+                        { value: 'sendgrid', label: 'SendGrid' },
+                        { value: 'postmark', label: 'Postmark' },
+                        { value: 'custom', label: 'Otro servidor (Custom SMTP)' },
+                    ]}
+                />
             </FormField>
-            <FormField label="Puerto" hint="587 para TLS (recomendado) • 465 para SSL • 25 sin cifrado">
-                <SelectInput value={config.port} onChange={v => onChange({ port: v })} options={[
-                    { value: '587', label: '587 — TLS/STARTTLS (recomendado)' },
-                    { value: '465', label: '465 — SSL/SMTPS' },
-                    { value: '25', label: '25 — Sin cifrado' },
-                    { value: '2525', label: '2525 — Alternativo' },
-                ]} />
-            </FormField>
-            <FormField label="Cifrado">
-                <SelectInput value={config.encryption} onChange={v => onChange({ encryption: v as SMTPConfig['encryption'] })} options={[
-                    { value: 'tls', label: 'STARTTLS (recomendado)' },
-                    { value: 'ssl', label: 'SSL' },
-                    { value: 'none', label: 'Sin cifrado' },
-                ]} />
-            </FormField>
+            {config.provider === 'aws-ses' && (
+                <div className="text-xs text-slate-500 bg-slate-50 p-3 border border-slate-100 italic">
+                    Nota: Asegúrate de usar las credenciales de un usuario IAM con permisos 'ses:SendRawEmail' y que tu identidad esté verificada en la consola de AWS.
+                </div>
+            )}
         </div>
     )
     if (step === 1) return (
         <div className="space-y-6">
-            <FormField label="Usuario SMTP" hint="Generalmente tu dirección de correo">
+            <div className="bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+                Configuración técnica del servidor de salida.
+            </div>
+            <FormField label="Host SMTP" hint="Ej: smtp.gmail.com | smtp.resend.com | mail.dominio.com">
+                <TextInput value={config.host} onChange={v => onChange({ host: v })} placeholder="smtp.ejemplo.com" />
+            </FormField>
+            <div className="grid grid-cols-2 gap-4">
+                <FormField label="Puerto" hint="587 (TLS) | 465 (SSL)">
+                    <SelectInput value={config.port} onChange={v => onChange({ port: v })} options={[
+                        { value: '587', label: '587 — TLS' },
+                        { value: '465', label: '465 — SSL' },
+                        { value: '25', label: '25' },
+                        { value: '2525', label: '2525' },
+                    ]} />
+                </FormField>
+                <FormField label="Cifrado">
+                    <SelectInput value={config.encryption} onChange={v => onChange({ encryption: v as SMTPConfig['encryption'] })} options={[
+                        { value: 'tls', label: 'STARTTLS' },
+                        { value: 'ssl', label: 'SSL' },
+                        { value: 'none', label: 'Sin cifrado' },
+                    ]} />
+                </FormField>
+            </div>
+        </div>
+    )
+    if (step === 2) return (
+        <div className="space-y-6">
+            <FormField label="Usuario SMTP" hint="Generalmente tu dirección de correo o API Key">
                 <TextInput value={config.user} onChange={v => onChange({ user: v })} placeholder="usuario@dominio.com" type="email" />
             </FormField>
-            <FormField label="Contraseña / App Password" hint="Para Gmail, usa una contraseña de aplicación, no la contraseña normal.">
+            <FormField label="Contraseña / SMTP Password" hint="Para SES, usa las credenciales SMTP de IAM. Para Gmail, usa App Password.">
                 <SecretInput value={config.password} onChange={v => onChange({ password: v })} placeholder="••••••••••••••••" />
             </FormField>
         </div>
     )
-    if (step === 2) return (
+    if (step === 3) return (
         <div className="space-y-6">
             <FormField label="Nombre del Remitente" hint="Ej: AlgoritmoT — aparecerá en el campo 'De:'">
                 <TextInput value={config.fromName} onChange={v => onChange({ fromName: v })} placeholder="AlgoritmoT" />
@@ -290,6 +332,7 @@ function SMTPWizard({ step, config, onChange }: { step: number; config: SMTPConf
     return (
         <div className="space-y-4">
             <div className="bg-slate-50 border border-slate-200 p-6 space-y-3 font-mono text-sm">
+                <ConfirmRow label="Proveedor" value={config.provider ? config.provider.toUpperCase() : 'AWS-SES'} />
                 <ConfirmRow label="Servidor" value={`${config.host}:${config.port}`} />
                 <ConfirmRow label="Cifrado" value={config.encryption.toUpperCase()} />
                 <ConfirmRow label="Usuario" value={config.user || '—'} />

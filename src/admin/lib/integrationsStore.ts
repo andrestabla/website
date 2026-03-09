@@ -20,6 +20,7 @@ export type OpenAIConfig = {
 }
 
 export type SMTPConfig = {
+  provider: string
   host: string
   port: string
   user: string
@@ -59,7 +60,7 @@ export const defaultIntegrations: IntegrationsState = {
   smtp: {
     enabled: false,
     status: 'unconfigured',
-    config: { host: '', port: '587', user: '', password: '', fromName: '', fromEmail: '', encryption: 'tls' },
+    config: { provider: 'aws-ses', host: '', port: '587', user: '', password: '', fromName: '', fromEmail: '', encryption: 'tls' },
   },
   r2: {
     enabled: false,
