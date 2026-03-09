@@ -1439,11 +1439,11 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 secondaryHref: '#resultados-caso',
             },
             style: {
-                backgroundColor: '#e2ece7',
-                backgroundGradient: 'linear-gradient(120deg, rgba(226,236,231,0.96) 0%, rgba(245,248,246,0.94) 58%, rgba(255,248,224,0.76) 100%)',
-                textColor: '#0b1323',
+                backgroundColor: '#020617',
+                backgroundGradient: 'linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%)',
+                textColor: '#f8fafc',
                 align: 'left',
-                paddingY: '7rem',
+                paddingY: '7.5rem',
             },
         },
         {
@@ -1484,7 +1484,7 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#0b1530',
+                backgroundColor: '#020617',
                 textColor: '#f8fbff',
                 align: 'left',
                 paddingY: '3.5rem',
@@ -1502,9 +1502,9 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
             },
             style: {
                 backgroundColor: '#ffffff',
-                textColor: '#243448',
+                textColor: '#0f172a',
                 align: 'left',
-                paddingY: '4rem',
+                paddingY: '5rem',
             },
         },
         {
@@ -1535,11 +1535,11 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#ffffff',
+                backgroundColor: 'transparent',
                 textColor: '#0f172a',
                 align: 'left',
-                radius: '0.75rem',
-                paddingY: '4rem',
+                radius: '1.5rem',
+                paddingY: '5rem',
             },
         },
         {
@@ -1555,10 +1555,10 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 body: 'Cuando se presentaba un incidente, el reporte podía llegar por cualquier canal. Luego alguien lo transcribía manualmente a Excel o lo reenviaba por correo. Desde ahí, cada responsable seguía el caso desde su propia lógica, con formatos distintos y evidencia dispersa.',
             },
             style: {
-                backgroundColor: '#f8fbfa',
+                backgroundColor: '#f8fafc',
                 textColor: '#334155',
                 align: 'left',
-                paddingY: '3.5rem',
+                paddingY: '4.5rem',
             },
         },
         {
@@ -1580,11 +1580,11 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#eef4f2',
+                backgroundColor: '#f1f5f9',
                 textColor: '#0f172a',
                 align: 'left',
                 columns: '2',
-                paddingY: '4rem',
+                paddingY: '5rem',
             },
         },
         {
@@ -1598,10 +1598,10 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 body: 'Pasamos de una gestión fragmentada a un flujo digital único de incidentes, con estados visibles, responsables definidos, evidencias centralizadas, alertas automáticas y tablero en vivo para seguimiento operativo y toma de decisiones.',
             },
             style: {
-                backgroundColor: '#ffffff',
+                backgroundColor: 'transparent',
                 textColor: '#0f172a',
                 align: 'left',
-                paddingY: '3.5rem',
+                paddingY: '4.5rem',
             },
         },
         {
@@ -1633,7 +1633,7 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 textColor: '#0f172a',
                 align: 'left',
                 columns: '2',
-                paddingY: '4rem',
+                paddingY: '5.5rem',
             },
         },
         {
@@ -1648,11 +1648,11 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 items: serviceJourneyItems,
             },
             style: {
-                backgroundColor: '#e9f1ee',
+                backgroundColor: 'transparent',
                 textColor: '#0f172a',
                 align: 'left',
                 columns: '2',
-                paddingY: '4.5rem',
+                paddingY: '5.5rem',
             },
         },
         {
@@ -1670,10 +1670,10 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 })),
             },
             style: {
-                backgroundColor: '#f7faf9',
+                backgroundColor: '#f8fafc',
                 textColor: '#0f172a',
                 align: 'left',
-                paddingY: '4.5rem',
+                paddingY: '6rem',
             },
         },
         {
@@ -1700,7 +1700,7 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 textColor: '#0f172a',
                 align: 'left',
                 columns: '2',
-                paddingY: '4.5rem',
+                paddingY: '5.5rem',
             },
         },
         {
@@ -1720,11 +1720,11 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 })),
             },
             style: {
-                backgroundColor: '#eef4f2',
+                backgroundColor: '#f1f5f9',
                 textColor: '#0f172a',
                 align: 'left',
                 columns: '2',
-                paddingY: '4rem',
+                paddingY: '5rem',
             },
         },
         {
@@ -1748,11 +1748,11 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#ffffff',
+                backgroundColor: 'transparent',
                 textColor: '#0f172a',
                 align: 'left',
                 columns: '4',
-                paddingY: '4rem',
+                paddingY: '6rem',
             },
         },
         {
@@ -1794,9 +1794,9 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 backgroundColor: '#ffffff',
                 textColor: '#0f172a',
                 align: 'left',
-                radius: '0.75rem',
+                radius: '1.5rem',
                 maxHeight: '560px',
-                paddingY: '4rem',
+                paddingY: '5.5rem',
             },
         },
         {
@@ -1820,10 +1820,10 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#f8fbfa',
+                backgroundColor: '#f8fafc',
                 textColor: '#0f172a',
                 align: 'left',
-                paddingY: '4rem',
+                paddingY: '5rem',
             },
         },
         {
@@ -1846,11 +1846,11 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#ffffff',
+                backgroundColor: 'transparent',
                 textColor: '#0f172a',
                 align: 'left',
                 columns: '3',
-                paddingY: '4rem',
+                paddingY: '5.5rem',
             },
         },
         {
@@ -1894,10 +1894,10 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#0b1530',
+                backgroundColor: '#020617',
                 textColor: '#f8fbff',
                 align: 'left',
-                paddingY: '4rem',
+                paddingY: '5.5rem',
             },
         },
         {
@@ -1922,11 +1922,11 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#081026',
+                backgroundColor: '#000000',
                 textColor: '#f8fbff',
                 align: 'left',
                 columns: '4',
-                paddingY: '4rem',
+                paddingY: '5rem',
             },
         },
         {
@@ -1953,7 +1953,7 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 backgroundColor: '#ffffff',
                 textColor: '#0f172a',
                 align: 'left',
-                paddingY: '4rem',
+                paddingY: '5.5rem',
             },
         },
         {
@@ -1972,10 +1972,10 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#e8f2ef',
+                backgroundColor: '#f1f5f9',
                 textColor: '#0f172a',
                 align: 'left',
-                paddingY: '4rem',
+                paddingY: '5rem',
             },
         },
         {
@@ -2002,10 +2002,10 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 ],
             },
             style: {
-                backgroundColor: '#ffffff',
+                backgroundColor: 'transparent',
                 textColor: '#0f172a',
                 align: 'left',
-                paddingY: '4rem',
+                paddingY: '6rem',
             },
         },
         {
@@ -2025,7 +2025,7 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 backgroundColor: '#ffffff',
                 textColor: '#0f172a',
                 align: 'left',
-                paddingY: '3.5rem',
+                paddingY: '5rem',
             },
         },
         {
@@ -2042,11 +2042,11 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
                 primaryHref: '#contacto',
             },
             style: {
-                backgroundColor: '#0b1530',
-                backgroundGradient: 'linear-gradient(115deg, #081026 0%, #0f214a 100%)',
-                textColor: '#f8fbff',
+                backgroundColor: '#020617',
+                backgroundGradient: 'linear-gradient(115deg, #020617 0%, #0f172a 100%)',
+                textColor: '#f8fafc',
                 align: 'center',
-                paddingY: '4rem',
+                paddingY: '6.5rem',
             },
         },
     ]

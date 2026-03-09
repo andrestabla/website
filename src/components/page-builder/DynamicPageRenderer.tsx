@@ -1397,6 +1397,34 @@ export function DynamicPageRenderer({
 
         return (
             <div ref={wrapperRef} className={wrapperClass} data-page-id={page.id} data-page-theme={pageTheme}>
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    /* Force luxury styling on CMS blocks overriding database values */
+                    .case-premium-theme [data-block-id="hero"] { background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%) !important; background-color: #020617 !important; color: #f8fafc !important; }
+                    .case-premium-theme [data-block-id="kpis-top"] { background-color: #020617 !important; color: #f8fbff !important; }
+                    .case-premium-theme [data-block-id="caso-descripcion"] { background-color: #ffffff !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="fotos-caso"] { background-color: transparent !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="situacion-inicial"] { background-color: #f8fafc !important; color: #334155 !important; }
+                    .case-premium-theme [data-block-id="consecuencias"] { background-color: #f1f5f9 !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="transformacion"] { background-color: transparent !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="antes-despues"] { background-color: #ffffff !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="servicios-aplicados"] { background-color: transparent !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="flujo-operativo"] { background-color: #f8fafc !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="productos-generados"] { background-color: #ffffff !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="servicio-producto"] { background-color: #f1f5f9 !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="arquitectura-simple"] { background-color: transparent !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="vista-ejecutiva"] { background-color: #ffffff !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="resultados-comparativos"] { background-color: #f8fafc !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="semaforo-sedes"] { background-color: transparent !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="donut-operacion"] { background-color: #020617 !important; color: #f8fbff !important; }
+                    .case-premium-theme [data-block-id="heatmap-riesgo"] { background-color: #000000 !important; color: #f8fbff !important; }
+                    .case-premium-theme [data-block-id="embudo-operativo"] { background-color: #ffffff !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="evolucion-mensual"] { background-color: #f1f5f9 !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="faq-caso"] { background-color: transparent !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="contacto"] { background-color: #ffffff !important; color: #0f172a !important; }
+                    .case-premium-theme [data-block-id="cta-final"] { background: linear-gradient(115deg, #020617 0%, #0f172a 100%) !important; background-color: #020617 !important; color: #f8fafc !important; }
+                    `
+                }} />
                 {heroBlock ? renderBlock(heroBlock) : null}
                 <div className="case-premium-editorial-shell">
                     <aside className="case-premium-sticky-rail">
