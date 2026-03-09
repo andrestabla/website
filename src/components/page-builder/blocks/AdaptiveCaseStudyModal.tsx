@@ -18,16 +18,16 @@ const INDUSTRIES = [
     'Otro'
 ]
 
-const PROCESSES = [
-    'Operaciones y Cadena de Suministro',
-    'Ventas y Marketing',
-    'Recursos Humanos',
-    'Atención al Cliente',
-    'TI y Desarrollo',
-    'Gestión Financiera',
-    'Gestión Documental',
-    'Otro'
-]
+const PROCESSES_MAP: Record<string, string[]> = {
+    'Finanzas y Banca': ['Fraude y Riesgo', 'Atención al Cliente', 'Automatización de Cumplimiento', 'Análisis de Inversiones', 'Procesamiento de Créditos'],
+    'Salud y Medicina': ['Gestión de Turnos', 'Triaje de Pacientes', 'Análisis de Historial Clínico', 'Optimización de Inventario', 'Facturación Médica'],
+    'Retail y Comercio Electrónico': ['Recomendación de Productos', 'Precios Dinámicos', 'Gestión de Inventario', 'Soporte y Chatbots', 'Logística de Última Milla'],
+    'Manufactura y Logística': ['Mantenimiento Predictivo', 'Optimización de Rutas', 'Control de Calidad AI', 'Cadena de Suministro', 'Gestión de Almacenes'],
+    'Tecnología y Software': ['Generación de Código', 'QA Técnico Automático', 'Soporte Nivel 1 y 2', 'Análisis de Logs', 'Documentación Automática'],
+    'Educación': ['Tutoría Personalizada', 'Calificación Automática', 'Análisis de Rendimiento', 'Creación de Contenidos', 'Gestión de Admisiones'],
+    'Servicios Profesionales': ['Generación de Propuestas', 'Revisión Legal de Contratos', 'Organización de Agendas', 'Onboarding de Clientes', 'Análisis Competitivo'],
+    'Otro': ['Planificación Estratégica', 'Experiencia de Usuario', 'Operaciones Base', 'Recursos Humanos', 'Ventas']
+}
 
 const MATURITIES = [
     { value: 'Inicial', label: 'Inicial (Procesos manuales o no documentados)' },
@@ -82,8 +82,19 @@ export function AdaptiveCaseStudyModal({ isOpen, onClose }: AdaptiveCaseStudyMod
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ industry, processName, maturity })
             })
-            const data = await res.json()
+            
+            const textResponse = await res.text()
+            let data: any
+            
+            try {
+                data = JSON.parse(textResponse)
+            } catch (jsonError) {
+                console.error('Non-JSON response from API:', textResponse)
+                throw new Error('El servidor tardó demasiado en responder o devolvió un formato inválido. Por favor, intenta de nuevo.')
+            }
+
             if (!res.ok) throw new Error(data.error || 'Failed to generate case study')
+            
             setResult(data.caseStudy)
             setStep('result')
         } catch (err: any) {
@@ -97,7 +108,7 @@ export function AdaptiveCaseStudyModal({ isOpen, onClose }: AdaptiveCaseStudyMod
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md transition-opacity duration-300">
-            <div className="case-premium-theme relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="case-premium-theme relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-700 bg-[#020617] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                 
                 {/* Close Button */}
                 <button
@@ -107,7 +118,7 @@ export function AdaptiveCaseStudyModal({ isOpen, onClose }: AdaptiveCaseStudyMod
                     <X className="h-5 w-5" />
                 </button>
 
-                <div className="p-8 md:p-12">
+                <div className="p-8 md:p-12 text-slate-200">
                     {/* Header Tracker */}
                     {step !== 'result' && step !== 'loading' && (
                         <div className="mb-10 flex items-center gap-2">
@@ -147,7 +158,7 @@ export function AdaptiveCaseStudyModal({ isOpen, onClose }: AdaptiveCaseStudyMod
                                             setIndustry(ind)
                                             setStep('process')
                                         }}
-                                        className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 px-5 py-4 text-left text-sm font-medium text-slate-200 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-white active:scale-95"
+                                        className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-5 py-4 text-left text-sm font-medium text-slate-300 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-white active:scale-95"
                                     >
                                         {ind}
                                         <ArrowRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -167,14 +178,14 @@ export function AdaptiveCaseStudyModal({ isOpen, onClose }: AdaptiveCaseStudyMod
                             <h2 className="mb-4 text-3xl font-black text-white">¿Qué área o proceso buscas mejorar?</h2>
                             <p className="mb-8 text-lg text-slate-400">Identifica el proceso core que requiere optimización o automatización.</p>
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                {PROCESSES.map((proc) => (
+                                {(PROCESSES_MAP[industry] || PROCESSES_MAP['Otro']).map((proc: string) => (
                                     <button
                                         key={proc}
                                         onClick={() => {
                                             setProcessName(proc)
                                             setStep('maturity')
                                         }}
-                                        className="flex items-center justify-between rounded-xl border border-white/5 bg-white/5 px-5 py-4 text-left text-sm font-medium text-slate-200 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-white active:scale-95"
+                                        className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/50 px-5 py-4 text-left text-sm font-medium text-slate-300 transition-all hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-white active:scale-95"
                                     >
                                         {proc}
                                         <ArrowRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -210,7 +221,7 @@ export function AdaptiveCaseStudyModal({ isOpen, onClose }: AdaptiveCaseStudyMod
                                         className={`flex items-center justify-between rounded-xl border px-6 py-5 text-left transition-all active:scale-95 ${
                                             maturity === mat.value 
                                             ? 'border-emerald-500/50 bg-emerald-500/10 text-white' 
-                                            : 'border-white/5 bg-white/5 text-slate-300 hover:bg-slate-800'
+                                            : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:bg-slate-700 hover:text-white'
                                         }`}
                                     >
                                         <span className="text-base font-medium">{mat.label}</span>

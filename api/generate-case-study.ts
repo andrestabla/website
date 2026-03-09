@@ -1,5 +1,10 @@
 import { generateJsonWithAI } from './_lib/ai.js'
 
+// Allow up to 60 seconds for the AI generation to complete (Vercel maxDuration)
+export const config = {
+    maxDuration: 60,
+}
+
 export default async function handler(req: Request) {
     if (req.method !== 'POST') {
         return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 })
