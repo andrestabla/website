@@ -3,7 +3,8 @@ import type { Language } from '../context/LanguageContext'
 type UIStrings = {
   nav: {
     services: string
-    products: string
+    workflow: string
+    faq: string
     contact: string
   }
   footer: {
@@ -86,7 +87,7 @@ type UIStrings = {
 
 const UI_COPY: Record<Language, UIStrings> = {
   es: {
-    nav: { services: 'Servicios', products: 'Productos', contact: 'Contacto' },
+    nav: { services: 'Servicios', workflow: '¿Cómo trabajamos?', faq: 'Preguntas', contact: 'Contacto' },
     footer: {
       protocols: 'Protocolos',
       connection: 'Conexión',
@@ -162,7 +163,7 @@ const UI_COPY: Record<Language, UIStrings> = {
     },
   },
   en: {
-    nav: { services: 'Services', products: 'Products', contact: 'Contact' },
+    nav: { services: 'Services', workflow: 'How we work', faq: 'FAQ', contact: 'Contact' },
     footer: {
       protocols: 'Protocols',
       connection: 'Connect',
@@ -238,7 +239,7 @@ const UI_COPY: Record<Language, UIStrings> = {
     },
   },
   fr: {
-    nav: { services: 'Services', products: 'Produits', contact: 'Contact' },
+    nav: { services: 'Services', workflow: 'Comment on travaille', faq: 'FAQ', contact: 'Contact' },
     footer: {
       protocols: 'Protocoles',
       connection: 'Connexion',

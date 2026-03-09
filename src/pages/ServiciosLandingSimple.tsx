@@ -203,14 +203,14 @@ export function ServiciosLandingSimple() {
                             className="mt-10 flex flex-wrap gap-4"
                         >
                             <a
-                                href="#servicios-explicados"
+                                href="#servicios"
                                 className="inline-flex items-center gap-2 border border-slate-900 bg-slate-900 px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors hover:bg-emerald-800 hover:border-emerald-800"
                             >
                                 Ver servicios
                                 <ArrowRight className="h-4 w-4" />
                             </a>
                             <a
-                                href="#contacto-simple"
+                                href="#contacto"
                                 className="inline-flex items-center gap-2 border border-slate-300 bg-white px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-slate-800 transition-colors hover:border-slate-900 hover:text-slate-900"
                             >
                                 Quiero asesoría
@@ -237,7 +237,7 @@ export function ServiciosLandingSimple() {
                     </div>
                 </section>
 
-                <section id="servicios-explicados" className="px-6 py-20">
+                <section id="servicios" className="px-6 py-20">
                     <div className="mx-auto max-w-6xl">
                         <div className="max-w-3xl">
                             <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-900">Servicios de punta a punta</p>
@@ -311,7 +311,7 @@ export function ServiciosLandingSimple() {
                     </div>
                 </section>
 
-                <section className="px-6 pb-20">
+                <section id="beneficios" className="px-6 pb-20">
                     <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[1.1fr_1fr]">
                         <div className="services-card-shadow border border-slate-200 bg-white p-7 md:p-9">
                             <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-emerald-900">Lo que puedes esperar</p>
@@ -367,7 +367,7 @@ export function ServiciosLandingSimple() {
                     </div>
                 </section>
 
-                <section className="px-6 pb-20">
+                <section id="faq" className="px-6 pb-20">
                     <div className="mx-auto max-w-6xl services-card-shadow border border-slate-200 bg-white p-7 md:p-10">
                         <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-emerald-900">Preguntas frecuentes</p>
                         <h2 className="services-landing-display mt-4 text-4xl text-slate-900 md:text-5xl">
@@ -384,7 +384,7 @@ export function ServiciosLandingSimple() {
                     </div>
                 </section>
 
-                <section id="contacto-simple" className="px-6 pb-24">
+                <section id="contacto" className="px-6 pb-24">
                     <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-[0.95fr_1.05fr]">
                         <div className="services-card-shadow border border-slate-200 bg-white p-7 md:p-10">
                             <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-emerald-900">Hablemos de tu caso</p>

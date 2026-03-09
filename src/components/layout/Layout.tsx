@@ -48,9 +48,10 @@ export function Layout({ children }: LayoutProps) {
         () => new Set((publishedHomePage?.blocks ?? []).filter((block) => block.visible).map((block) => block.id)),
         [publishedHomePage]
     )
-    const servicesHref = visibleHomeBlockIds.has('servicios') ? '/#servicios' : '/landing-servicios'
-    const productsHref = visibleHomeBlockIds.has('productos') ? '/#productos' : servicesHref
-    const contactHref = visibleHomeBlockIds.has('contacto') ? '/#contacto' : '/#contacto-simple'
+    const servicesHref = visibleHomeBlockIds.has('servicios') ? '/#servicios' : '/landing-servicios#servicios'
+    const workflowHref = visibleHomeBlockIds.has('beneficios') ? '/#beneficios' : '/landing-servicios#beneficios'
+    const faqHref = visibleHomeBlockIds.has('faq') ? '/#faq' : '/landing-servicios#faq'
+    const contactHref = visibleHomeBlockIds.has('contacto') ? '/#contacto' : '/#contacto'
     const closeMobileMenu = () => setMobileMenuOpen(false)
 
     useEffect(() => {
@@ -126,7 +127,8 @@ export function Layout({ children }: LayoutProps) {
                 </div>
                 <div className="flex flex-wrap items-center gap-6 text-xs font-black uppercase tracking-[0.22em] text-white/60">
                     <Link to={servicesHref} className="hover:text-white transition-colors">{uiText.nav.services}</Link>
-                    <Link to={productsHref} className="hover:text-white transition-colors">{uiText.nav.products}</Link>
+                    <Link to={workflowHref} className="hover:text-white transition-colors">{uiText.nav.workflow}</Link>
+                    <Link to={faqHref} className="hover:text-white transition-colors">{uiText.nav.faq}</Link>
                     <Link to={contactHref} className="hover:text-white transition-colors">{uiText.nav.contact}</Link>
                     <Link to="/politica-tratamiento-datos" className="hover:text-white transition-colors">{site.dataPolicyTitle || 'Política de datos'}</Link>
                 </div>
@@ -192,7 +194,8 @@ export function Layout({ children }: LayoutProps) {
 
                     <nav className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-7' : 'gap-12'} ${headerVariant === 'split' ? 'justify-center' : ''}`}>
                         <Link to={servicesHref} className={navLinkClass}>{uiText.nav.services}</Link>
-                        <Link to={productsHref} className={navLinkClass}>{uiText.nav.products}</Link>
+                        <Link to={workflowHref} className={navLinkClass}>{uiText.nav.workflow}</Link>
+                        <Link to={faqHref} className={navLinkClass}>{uiText.nav.faq}</Link>
                         <Link to={contactHref} className={navLinkClass}>{uiText.nav.contact}</Link>
                     </nav>
 
@@ -244,8 +247,11 @@ export function Layout({ children }: LayoutProps) {
                         <Link to={servicesHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {uiText.nav.services}
                         </Link>
-                        <Link to={productsHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
-                            {uiText.nav.products}
+                        <Link to={workflowHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                            {uiText.nav.workflow}
+                        </Link>
+                        <Link to={faqHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                            {uiText.nav.faq}
                         </Link>
                         <Link to={contactHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {uiText.nav.contact}
