@@ -277,6 +277,16 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
                             ))}
                         </div>
                     )}
+
+                    <div className="mt-10">
+                        <a
+                            href="/caso-transversal"
+                            className="inline-flex items-center gap-2 border border-emerald-400/30 bg-emerald-400/10 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-200 transition-all hover:bg-emerald-400/20 hover:border-emerald-400/50"
+                        >
+                            Ver caso de éxito
+                            <ArrowRight className="h-4 w-4" />
+                        </a>
+                    </div>
                 </article>
             )}
         </div>
