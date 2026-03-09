@@ -96,7 +96,7 @@ export function MadurezOrganica() {
                             {copy.heroTitle1}<br />
                             <span className="text-brand-secondary">{copy.heroTitle2}</span>
                         </h1>
-                        <p className="text-2xl text-white/75 font-light max-w-2xl leading-relaxed border-l-4 border-brand-primary pl-10">
+                        <p className="text-2xl text-white/75 font-light max-w-2xl leading-relaxed border-l-4 border-brand-secondary pl-10">
                             {copy.heroSubtitle}
                         </p>
                     </motion.div>
@@ -188,7 +188,7 @@ export function MadurezOrganica() {
                         <div>
                             <div className="flex items-center gap-4 mb-8">
                                 <span className="w-12 h-1 bg-brand-primary" />
-                                <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-primary">{copy.outcomesEyebrow}</span>
+                                <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-secondary">{copy.outcomesEyebrow}</span>
                             </div>
                             <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-8">{copy.outcomesTitle}</h2>
                             <div className="space-y-6">
@@ -203,9 +203,9 @@ export function MadurezOrganica() {
                         <div className="bg-brand-primary p-16 text-white relative overflow-hidden">
                             <div className="absolute -bottom-12 -right-12 text-[12rem] font-black text-white/5 leading-none">5</div>
                             <div className="relative z-10">
-                                <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/50 mb-6">{copy.durationEyebrow}</div>
-                                <div className="text-7xl font-black mb-4">6–12<br /><span className="text-4xl">{copy.monthsLabel}</span></div>
-                                <p className="text-white/70 font-light leading-relaxed">
+                                <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/70 mb-6">{copy.durationEyebrow}</div>
+                                <div className="text-7xl font-black mb-4">6–12<br /><span className="text-4xl text-white">{copy.monthsLabel}</span></div>
+                                <p className="text-white/90 font-light leading-relaxed">
                                     {copy.durationBlurb}
                                 </p>
                             </div>

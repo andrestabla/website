@@ -128,11 +128,11 @@ export function ServicePageView({
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
               <div className="lg:col-span-4">
-                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-primary mb-4">{uiText.outcomesEyebrow}</div>
+                <div className="text-[11px] font-black uppercase tracking-[0.4em] text-brand-secondary mb-4">{uiText.outcomesEyebrow}</div>
                 <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-6">
                   {uiText.outcomesTitle}
                 </h2>
-                <p className="text-white/70 font-light leading-relaxed mb-8">
+                <p className="text-slate-200 font-light leading-relaxed mb-8">
                   {uiText.outcomesSubtitle}
                 </p>
                 <Link to={`mailto:hola@algoritmot.com?subject=Consulta%20${encodeURIComponent(service.title)}`}>
@@ -146,10 +146,10 @@ export function ServicePageView({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {outcomes.map((outcome, i) => (
                     <div key={i} className="flex items-start gap-4 p-6 border border-white/10 hover:border-brand-primary/50 transition-colors group">
-                      <div className="w-8 h-8 bg-brand-primary/20 text-brand-primary flex items-center justify-center shrink-0 font-black text-sm group-hover:bg-brand-primary group-hover:text-white transition-all">
+                      <div className="w-8 h-8 bg-brand-secondary/30 text-white flex items-center justify-center shrink-0 font-black text-sm group-hover:bg-brand-primary group-hover:text-white transition-all">
                         {String(i + 1).padStart(2, '0')}
                       </div>
-                      <p className="text-white/90 font-light text-sm leading-relaxed group-hover:text-white transition-colors">
+                      <p className="text-white font-light text-sm leading-relaxed group-hover:text-white transition-colors">
                         {outcome}
                       </p>
                     </div>

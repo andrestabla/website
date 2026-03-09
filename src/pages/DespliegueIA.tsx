@@ -84,7 +84,7 @@ export function DespliegueIA() {
                             {copy.heroTitle1}<br />
                             <span className="text-brand-secondary">{copy.heroTitle2}</span>
                         </h1>
-                        <p className="text-2xl text-white/75 font-light max-w-2xl leading-relaxed border-l-4 border-brand-primary pl-10">
+                        <p className="text-2xl text-white/75 font-light max-w-2xl leading-relaxed border-l-4 border-brand-secondary pl-10">
                             {copy.heroSubtitle}
                         </p>
                     </motion.div>
@@ -102,7 +102,7 @@ export function DespliegueIA() {
                         <div>
                             <div className="flex items-center gap-4 mb-8">
                                 <span className="w-12 h-1 bg-brand-primary" />
-                                <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-primary">{copy.problemEyebrow}</span>
+                                <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-secondary">{copy.problemEyebrow}</span>
                             </div>
                             <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-8 leading-tight">
                                 {copy.problemTitle}
@@ -116,7 +116,7 @@ export function DespliegueIA() {
                         </div>
                         <div className="bg-slate-950 p-16 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10" />
-                            <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40 mb-8">{copy.expectedResults}</div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/70 mb-8">{copy.expectedResults}</div>
                             <div className="space-y-8 relative z-10">
                                 {copy.outcomes.map((o, i) => (
                                     <div key={i} className="flex items-start gap-4">
@@ -136,7 +136,7 @@ export function DespliegueIA() {
                     <div className="mb-24">
                         <div className="flex items-center gap-4 mb-6">
                             <span className="w-12 h-1 bg-brand-primary" />
-                            <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-primary">{copy.phasesEyebrow}</span>
+                            <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-secondary">{copy.phasesEyebrow}</span>
                         </div>
                         <h2 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter">
                             {copy.phasesTitleLine1}<br />{copy.phasesTitleLine2}

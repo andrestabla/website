@@ -79,7 +79,7 @@ export function IngenieriaHumana() {
                             {copy.heroTitle1}<br />
                             <span className="text-brand-secondary">{copy.heroTitle2}</span>
                         </h1>
-                        <p className="text-2xl text-white/75 font-light max-w-2xl leading-relaxed border-l-4 border-brand-primary pl-10">
+                        <p className="text-2xl text-white/75 font-light max-w-2xl leading-relaxed border-l-4 border-brand-secondary pl-10">
                             {copy.heroSubtitle}
                         </p>
                     </motion.div>
@@ -98,7 +98,7 @@ export function IngenieriaHumana() {
                         <div>
                             <div className="flex items-center gap-4 mb-8">
                                 <span className="w-12 h-1 bg-brand-primary" />
-                                <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-primary">{copy.defEyebrow}</span>
+                                <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-secondary">{copy.defEyebrow}</span>
                             </div>
                             <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-8 leading-tight">
                                 {copy.defTitle}
@@ -131,7 +131,7 @@ export function IngenieriaHumana() {
                     <div className="mb-24">
                         <div className="flex items-center gap-4 mb-6">
                             <span className="w-12 h-1 bg-brand-primary" />
-                            <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-primary">{copy.pillarsEyebrow}</span>
+                            <span className="text-xs font-black uppercase tracking-[0.4em] text-brand-secondary">{copy.pillarsEyebrow}</span>
                         </div>
                         <h2 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter">
                             {copy.pillarsTitle}
