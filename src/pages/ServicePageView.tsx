@@ -132,7 +132,7 @@ export function ServicePageView({
                 <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-6">
                   {uiText.outcomesTitle}
                 </h2>
-                <p className="text-white/50 font-light leading-relaxed mb-8">
+                <p className="text-white/70 font-light leading-relaxed mb-8">
                   {uiText.outcomesSubtitle}
                 </p>
                 <Link to={`mailto:hola@algoritmot.com?subject=Consulta%20${encodeURIComponent(service.title)}`}>
@@ -149,7 +149,7 @@ export function ServicePageView({
                       <div className="w-8 h-8 bg-brand-primary/20 text-brand-primary flex items-center justify-center shrink-0 font-black text-sm group-hover:bg-brand-primary group-hover:text-white transition-all">
                         {String(i + 1).padStart(2, '0')}
                       </div>
-                      <p className="text-white/70 font-light text-sm leading-relaxed group-hover:text-white transition-colors">
+                      <p className="text-white/90 font-light text-sm leading-relaxed group-hover:text-white transition-colors">
                         {outcome}
                       </p>
                     </div>

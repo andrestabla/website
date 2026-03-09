@@ -84,7 +84,7 @@ export function MadurezOrganica() {
 
                 <div className="max-w-7xl mx-auto w-full relative z-10">
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-                        <Link to="/" className="inline-flex items-center gap-2 text-white/30 hover:text-white/60 text-xs font-black uppercase tracking-widest mb-12 transition-colors">
+                        <Link to="/" className="inline-flex items-center gap-2 text-white/50 hover:text-white/80 text-xs font-black uppercase tracking-widest mb-12 transition-colors">
                             <ChevronLeft className="w-4 h-4" />
                             {copy.back}
                         </Link>
@@ -96,7 +96,7 @@ export function MadurezOrganica() {
                             {copy.heroTitle1}<br />
                             <span className="text-brand-secondary">{copy.heroTitle2}</span>
                         </h1>
-                        <p className="text-2xl text-white/50 font-light max-w-2xl leading-relaxed border-l-4 border-brand-primary pl-10">
+                        <p className="text-2xl text-white/75 font-light max-w-2xl leading-relaxed border-l-4 border-brand-primary pl-10">
                             {copy.heroSubtitle}
                         </p>
                     </motion.div>
@@ -128,12 +128,12 @@ export function MadurezOrganica() {
                                 transition={{ delay: i * 0.1 }}
                                 className={`flex-1 p-10 border-r border-slate-200 last:border-r-0 relative ${i >= 3 ? 'bg-brand-primary' : 'bg-white hover:bg-slate-50'} transition-colors`}
                             >
-                                <div className={`text-5xl font-black mb-4 ${i >= 3 ? 'text-white/20' : 'text-slate-100'}`}>{level.num}</div>
+                                <div className={`text-5xl font-black mb-4 ${i >= 3 ? 'text-white/40' : 'text-slate-100'}`}>{level.num}</div>
                                 <div className={`text-sm font-black uppercase tracking-widest mb-3 ${i >= 3 ? 'text-white' : 'text-slate-900'}`}>{copy.maturityLevels[i]?.label ?? level.label}</div>
-                                <div className={`text-xs font-light leading-relaxed ${i >= 3 ? 'text-white/60' : 'text-slate-400'}`}>{copy.maturityLevels[i]?.desc ?? level.desc}</div>
+                                <div className={`text-xs font-light leading-relaxed ${i >= 3 ? 'text-white/80' : 'text-slate-400'}`}>{copy.maturityLevels[i]?.desc ?? level.desc}</div>
                                 {i >= 3 && (
                                     <div className="absolute top-4 right-4">
-                                        <div className="text-[8px] font-black uppercase tracking-widest text-white/30">{copy.targetLabel}</div>
+                                        <div className="text-[8px] font-black uppercase tracking-widest text-white/50">{copy.targetLabel}</div>
                                     </div>
                                 )}
                             </motion.div>
@@ -203,9 +203,9 @@ export function MadurezOrganica() {
                         <div className="bg-brand-primary p-16 text-white relative overflow-hidden">
                             <div className="absolute -bottom-12 -right-12 text-[12rem] font-black text-white/5 leading-none">5</div>
                             <div className="relative z-10">
-                                <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/30 mb-6">{copy.durationEyebrow}</div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/50 mb-6">{copy.durationEyebrow}</div>
                                 <div className="text-7xl font-black mb-4">6–12<br /><span className="text-4xl">{copy.monthsLabel}</span></div>
-                                <p className="text-white/50 font-light leading-relaxed">
+                                <p className="text-white/70 font-light leading-relaxed">
                                     {copy.durationBlurb}
                                 </p>
                             </div>

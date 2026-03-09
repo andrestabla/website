@@ -72,7 +72,7 @@ export function DespliegueIA() {
 
                 <div className="max-w-7xl mx-auto w-full relative z-10">
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-                        <Link to="/" className="inline-flex items-center gap-2 text-white/30 hover:text-white/60 text-xs font-black uppercase tracking-widest mb-12 transition-colors">
+                        <Link to="/" className="inline-flex items-center gap-2 text-white/50 hover:text-white/80 text-xs font-black uppercase tracking-widest mb-12 transition-colors">
                             <ChevronLeft className="w-4 h-4" />
                             {copy.back}
                         </Link>
@@ -84,7 +84,7 @@ export function DespliegueIA() {
                             {copy.heroTitle1}<br />
                             <span className="text-brand-secondary">{copy.heroTitle2}</span>
                         </h1>
-                        <p className="text-2xl text-white/50 font-light max-w-2xl leading-relaxed border-l-4 border-brand-primary pl-10">
+                        <p className="text-2xl text-white/75 font-light max-w-2xl leading-relaxed border-l-4 border-brand-primary pl-10">
                             {copy.heroSubtitle}
                         </p>
                     </motion.div>
@@ -116,12 +116,12 @@ export function DespliegueIA() {
                         </div>
                         <div className="bg-slate-950 p-16 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-primary/10" />
-                            <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/20 mb-8">{copy.expectedResults}</div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40 mb-8">{copy.expectedResults}</div>
                             <div className="space-y-8 relative z-10">
                                 {copy.outcomes.map((o, i) => (
                                     <div key={i} className="flex items-start gap-4">
                                         <CheckCircle2 className="w-6 h-6 text-brand-secondary shrink-0 mt-0.5" />
-                                        <p className="text-white/70 font-light leading-relaxed">{o}</p>
+                                        <p className="text-white/90 font-light leading-relaxed">{o}</p>
                                     </div>
                                 ))}
                             </div>
@@ -191,7 +191,7 @@ export function DespliegueIA() {
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12">
                     <div>
                         <h2 className="text-5xl font-black text-white tracking-tighter mb-4">{copy.ctaTitle}</h2>
-                        <p className="text-xl text-white/40 font-light">{copy.ctaSubtitle}</p>
+                        <p className="text-xl text-white/60 font-light">{copy.ctaSubtitle}</p>
                     </div>
                     <div className="flex items-center gap-4 shrink-0">
                         <Link to="/#contacto" className="flex items-center gap-2 px-10 py-5 bg-brand-secondary text-white font-black text-xs uppercase tracking-widest hover:bg-brand-primary transition-colors">

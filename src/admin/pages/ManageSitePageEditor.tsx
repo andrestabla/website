@@ -367,7 +367,7 @@ function createDefaultBlockByType(type: SitePageBlockType, order: number, accent
                 title: '¿Listo para empezar?',
                 body: 'Agenda una sesión para diseñar la siguiente fase.',
                 primaryLabel: 'Hablar con un asesor',
-                primaryHref: '/#contacto',
+                primaryHref: 'https://wa.me/573044544525',
             },
             style: {
                 backgroundColor: accentColor,

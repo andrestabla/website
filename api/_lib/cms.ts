@@ -132,7 +132,7 @@ function createDefaultBlocks(title: string, description: string, accentColor: st
         title: '¿Listo para avanzar?',
         body: 'Podemos ayudarte a definir el siguiente paso para tu organización.',
         primaryLabel: 'Hablar con un asesor',
-        primaryHref: '/#contacto',
+        primaryHref: 'https://wa.me/573044544525',
       },
       style: {
         backgroundColor: accentColor || '#2563eb',
@@ -414,7 +414,7 @@ function createServicesLandingBlocks(_pageTitle: string, siteEmail: string) {
         title: '¿Listo para avanzar?',
         body: 'Agenda una conversación para priorizar decisiones y próximos pasos.',
         primaryLabel: 'Hablar con un asesor',
-        primaryHref: '/#contacto',
+        primaryHref: 'https://wa.me/573044544525',
       },
       style: {
         backgroundColor: 'transparent',
@@ -554,7 +554,7 @@ function createClassicHomeBlocks(pageTitle: string, pageDescription: string, acc
         title: 'Iniciar transformación',
         body: 'Activa la siguiente etapa con un plan claro de ejecución.',
         primaryLabel: 'Hablar con un asesor',
-        primaryHref: '/#contacto',
+        primaryHref: 'https://wa.me/573044544525',
       },
       style: {
         backgroundColor: accentColor || '#2563eb',

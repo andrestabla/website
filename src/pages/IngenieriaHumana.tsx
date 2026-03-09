@@ -67,7 +67,7 @@ export function IngenieriaHumana() {
 
                 <div className="max-w-7xl mx-auto w-full relative z-10">
                     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-                        <Link to="/" className="inline-flex items-center gap-2 text-white/30 hover:text-white/60 text-xs font-black uppercase tracking-widest mb-12 transition-colors">
+                        <Link to="/" className="inline-flex items-center gap-2 text-white/50 hover:text-white/80 text-xs font-black uppercase tracking-widest mb-12 transition-colors">
                             <ChevronLeft className="w-4 h-4" />
                             {copy.back}
                         </Link>
@@ -79,7 +79,7 @@ export function IngenieriaHumana() {
                             {copy.heroTitle1}<br />
                             <span className="text-brand-secondary">{copy.heroTitle2}</span>
                         </h1>
-                        <p className="text-2xl text-white/50 font-light max-w-2xl leading-relaxed border-l-4 border-brand-primary pl-10">
+                        <p className="text-2xl text-white/75 font-light max-w-2xl leading-relaxed border-l-4 border-brand-primary pl-10">
                             {copy.heroSubtitle}
                         </p>
                     </motion.div>
@@ -116,7 +116,7 @@ export function IngenieriaHumana() {
                                 {copy.outcomes.map((o, i) => (
                                     <div key={i} className="flex items-start gap-4">
                                         <CheckCircle2 className="w-6 h-6 text-brand-secondary shrink-0 mt-0.5" />
-                                        <p className="text-white/70 font-light leading-relaxed">{o}</p>
+                                        <p className="text-white/90 font-light leading-relaxed">{o}</p>
                                     </div>
                                 ))}
                             </div>
