@@ -1,21 +1,19 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { generateJsonWithAI } from './_lib/ai.js'
 
-// Allow up to 60 seconds for the AI generation to complete (Vercel maxDuration)
-export const config = {
-    maxDuration: 60,
-}
+export const maxDuration = 60; // Allow 60s in production
 
-export default async function handler(req: Request) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
-        return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 })
+        return res.status(405).json({ error: 'Method not allowed' })
     }
 
     try {
-        const body = await req.json()
+        const body = req.body || {}
         const { industry, processName, maturity } = body
 
         if (!industry || !processName || !maturity) {
-            return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 })
+            return res.status(400).json({ error: 'Missing required fields' })
         }
 
         const prompt = `
@@ -37,17 +35,14 @@ Debes devolver ÚNICAMENTE un objeto JSON válido con la siguiente estructura ex
 
         const { data, providerUsed } = await generateJsonWithAI({
             prompt,
-            temperature: 0.7, // slightly more creative for storytelling
+            temperature: 0.7, 
             maxTokens: 1000,
         })
 
-        return new Response(JSON.stringify({ success: true, caseStudy: data, providerUsed }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        })
+        return res.status(200).json({ success: true, caseStudy: data, providerUsed })
 
     } catch (error: any) {
         console.error('generate-case-study API Error:', error)
-        return new Response(JSON.stringify({ error: error.message || 'Internal server error' }), { status: 500 })
+        return res.status(500).json({ error: error.message || 'Internal server error' })
     }
 }

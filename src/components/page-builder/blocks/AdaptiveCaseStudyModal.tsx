@@ -108,7 +108,7 @@ export function AdaptiveCaseStudyModal({ isOpen, onClose }: AdaptiveCaseStudyMod
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md transition-opacity duration-300">
-            <div className="case-premium-theme relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-700 bg-[#020617] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-700 bg-[#020617] shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                 
                 {/* Close Button */}
                 <button
