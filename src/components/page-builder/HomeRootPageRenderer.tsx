@@ -1,7 +1,8 @@
 import { ArrowRight, CheckCircle2, Code2, LineChart, Network, Rocket, Search, Users } from 'lucide-react'
 import { ContactForm } from '../forms/ContactForm'
-import type { MouseEvent as ReactMouseEvent } from 'react'
+import React, { useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { type SiteArchitecturePage, type SitePageBlock } from '../../admin/context/CMSContext'
+import { AdaptiveCaseStudyModal } from './blocks/AdaptiveCaseStudyModal'
 
 type HomeRootPageRendererProps = {
     page: SiteArchitecturePage
@@ -227,7 +228,7 @@ function renderServicesGridBlock(block: SitePageBlock) {
     )
 }
 
-function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePageBlock | null, selectable: boolean, selectedBlockId: string | null, onSelectBlock?: (blockId: string) => void) {
+function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePageBlock | null, selectable: boolean, selectedBlockId: string | null, onSelectBlock?: (blockId: string) => void, setIsCaseModalOpen?: React.Dispatch<React.SetStateAction<boolean>>) {
     const benefitItems = ensureObjectItems(benefitsBlock.content.items)
     const flowItems = flowBlock ? ensureObjectItems(flowBlock.content.items) : []
     const flowBadges = flowBlock ? ensureStringArray(flowBlock.content.badges) : []
@@ -280,13 +281,13 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
                     )}
 
                     <div className="mt-10">
-                        <a
-                            href="/caso-transversal"
+                        <button
+                            onClick={() => setIsCaseModalOpen?.(true)}
                             className="inline-flex items-center gap-2 border border-emerald-400/30 bg-emerald-400/10 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-200 transition-all hover:bg-emerald-400/20 hover:border-emerald-400/50"
                         >
-                            Ver caso de éxito
+                            Ver casos en mi industria
                             <ArrowRight className="h-4 w-4" />
-                        </a>
+                        </button>
                     </div>
                 </article>
             )}
@@ -402,6 +403,8 @@ export function HomeRootPageRenderer({
     const benefitsBlock = sortedBlocks.find((block) => block.id === 'beneficios') ?? null
     const flowBlock = sortedBlocks.find((block) => block.id === 'flujo') ?? null
 
+    const [isCaseModalOpen, setIsCaseModalOpen] = useState(false)
+
     return (
         <div className={`services-landing-theme ${className}`.trim()}>
             {sortedBlocks.map((block) => {
@@ -448,7 +451,7 @@ export function HomeRootPageRenderer({
                         {block.id === 'hero' && renderHeroBlock(block)}
                         {block.id === 'promesas' && renderPromisesBlock(block)}
                         {block.id === 'servicios' && renderServicesGridBlock(block)}
-                        {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, onSelectBlock)}
+                        {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, onSelectBlock, setIsCaseModalOpen)}
                         {block.id === 'faq' && renderFaqBlock(block)}
                         {block.id === 'contacto' && renderContactBlock(block)}
                         {block.id === 'cta' && renderCtaBlock(block)}
@@ -456,6 +459,7 @@ export function HomeRootPageRenderer({
                     </section>
                 )
             })}
+            <AdaptiveCaseStudyModal isOpen={isCaseModalOpen} onClose={() => setIsCaseModalOpen(false)} />
         </div>
     )
 }
