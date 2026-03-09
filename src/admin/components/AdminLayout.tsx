@@ -50,7 +50,6 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
     const navigation = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms' },
         { name: 'Site Builder', href: '/admin/site-builder', icon: Home, group: 'cms' },
-        { name: 'Home Workspace', href: '/admin/home-workspace', icon: Home, group: 'cms' },
         { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms' },
         { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms' },
         { name: 'Contactos', href: '/admin/leads', icon: Mail, group: 'cms' },
@@ -113,18 +112,6 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                 'Cambia el estado del lead para mantener un orden en tu embudo de ventas.',
             ],
             notes: ['Los mensajes se guardan automáticamente incluso si falla el envío de correos de notificación.'],
-        },
-        '/admin/home-workspace': {
-            title: 'Home Workspace',
-            intro: 'Edita contenido, estilos, imágenes/video y comportamiento visual del Home con vista previa real.',
-            data: 'Fuente: CMS real en `/api/cms` + Neon. Uploads de assets pueden ir a R2.',
-            steps: [
-                'Selecciona una pestaña (Hero, Servicios, Productos, Frameworks, Contacto, Visual Global).',
-                'Modifica campos y valida en la “vista previa real” (mismo render del sitio).',
-                'Usa “Subir a R2” para imágenes/branding y luego “Guardar Todo”.',
-                'Verifica en “Ver Home” que el resultado publicado coincide.',
-            ],
-            notes: ['La preview del Hero ya usa el mismo componente del sitio público.', 'YouTube en fondo de Hero está soportado.'],
         },
         '/admin/services': {
             title: 'Servicios',

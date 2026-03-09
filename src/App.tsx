@@ -21,7 +21,6 @@ const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ defau
 
 const LoginPage = lazy(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const Dashboard = lazy(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
-const ManageHome = lazy(() => import('./admin/pages/ManageHome').then((module) => ({ default: module.ManageHome })))
 const ManageContentBuilder = lazy(() => import('./admin/pages/ManageContentBuilder').then((module) => ({ default: module.ManageContentBuilder })))
 const ManageSitePageEditor = lazy(() => import('./admin/pages/ManageSitePageEditor').then((module) => ({ default: module.ManageSitePageEditor })))
 const ManageDesign = lazy(() => import('./admin/pages/ManageDesign').then((module) => ({ default: module.ManageDesign })))
@@ -242,7 +241,6 @@ function App() {
               <Route path="/admin/site-builder" element={<ProtectedRoute><ManageContentBuilder /></ProtectedRoute>} />
               <Route path="/admin/home/editor/:pageId" element={<ProtectedRouteNoLayout><ManageSitePageEditor /></ProtectedRouteNoLayout>} />
               <Route path="/admin/site-builder/editor/:pageId" element={<ProtectedRouteNoLayout><ManageSitePageEditor /></ProtectedRouteNoLayout>} />
-              <Route path="/admin/home-workspace" element={<ProtectedRoute><ManageHome /></ProtectedRoute>} />
               <Route path="/admin/services" element={<ProtectedRoute><ManageServices /></ProtectedRoute>} />
               <Route path="/admin/products" element={<ProtectedRoute><ManageProducts /></ProtectedRoute>} />
               <Route path="/admin/settings" element={<ProtectedRoute><ManageSite /></ProtectedRoute>} />
