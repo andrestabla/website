@@ -20,7 +20,7 @@ const ManagedCustomPage = lazy(() => import('./pages/ManagedCustomPage').then((m
 const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })))
 const GeneradorCasosAI = lazy(() => import('./pages/GeneradorCasosAI').then((module) => ({ default: module.GeneradorCasosAI })))
 const NavigationSelector = lazy(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
-const HomeEducacion = lazy(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
+// const HomeEducacion = lazy(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
 
 const LoginPage = lazy(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const Dashboard = lazy(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
@@ -227,7 +227,7 @@ function App() {
             <Routes>
               <Route path="/" element={<ManagedPublishedRoute routePath="/" fallback={<NavigationSelector />} />} />
               <Route path="/empresas" element={<ManagedPublishedRoute routePath="/empresas" fallback={<Home />} />} />
-              <Route path="/educacion" element={<HomeEducacion />} />
+              <Route path="/educacion" element={<ManagedPublishedRoute routePath="/educacion" fallback={<div className="min-h-screen flex items-center justify-center">Cargando Educación...</div>} />} />
               <Route path="/inicio" element={<Navigate to="/empresas" replace />} />
               <Route path="/servicios/:slug" element={<ServicePage />} />
               <Route path="/productos/:slug" element={<ProductPage />} />

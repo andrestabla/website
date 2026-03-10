@@ -1373,7 +1373,7 @@ export function DynamicPageRenderer({
     const wrapperRef = useRef<HTMLDivElement | null>(null)
     const [caseProgress, setCaseProgress] = useState(0)
     const normalizedPath = page.path !== '/' && page.path.endsWith('/') ? page.path.slice(0, -1) : page.path
-    const isHomeRootPage = page.id === 'home-root'
+    const isHomeRootPage = page.id === 'home-root' || page.id === 'home-edu'
     const pageTheme: PageThemeVariant = page.id === 'case-transversal' || normalizedPath === '/caso-transversal'
         ? 'case-premium'
         : 'default'

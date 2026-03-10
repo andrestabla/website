@@ -2080,9 +2080,129 @@ function createNavigationSelectorBlocks(): SitePageBlock[] {
     ]
 }
 
+function createEducationLandingBlocks(): SitePageBlock[] {
+    const blocks: SitePageBlock[] = [
+        {
+            id: 'hero',
+            type: 'hero',
+            name: 'Hero Principal',
+            visible: true,
+            order: 0,
+            content: {
+                eyebrow: 'Soluciones para universidades',
+                title: 'Experiencias de aprendizaje auténticas',
+                body: 'Diseñando programas académicos, formando docentes, produciendo contenidos educativos y optimizando la operación académico-administrativa.',
+                primaryLabel: 'Conoce nuestra plataforma',
+                primaryHref: '#servicios',
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0b1323',
+                align: 'left',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'promesas',
+            type: 'feature-list',
+            name: 'Cifras de Impacto',
+            visible: true,
+            order: 1,
+            content: {
+                title: 'Experiencia y resultados',
+                items: [
+                    '500+ Docentes formados',
+                    '10+ Plataformas implementadas',
+                    '100+ Programas diseñados',
+                    '500+ Cursos producidos'
+                ],
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0b1323',
+                align: 'left',
+                columns: '4',
+                paddingY: '2rem',
+            },
+        },
+        {
+            id: 'servicios',
+            type: 'grid',
+            name: 'Servicios Educación',
+            visible: true,
+            order: 2,
+            content: {
+                eyebrow: 'Nuestras Soluciones',
+                title: 'Programas y plataformas de aprendizaje',
+                body: 'Desarrollamos ecosistemas educativos que promueven la interacción y el aprendizaje activo.',
+                items: [
+                    {
+                        id: 'edu-digital',
+                        title: 'Programa Educación digital',
+                        eyebrow: 'Formación continua',
+                        inSimpleWords: 'Capacitación integral para el cuerpo docente sobre herramientas y metodologías del siglo XXI.',
+                        businessBenefit: 'Mejora en la calidad educativa y adopción tecnológica institucional.',
+                        idealWhen: 'Se requiere actualizar las competencias digitales de los profesores.',
+                        label: 'Conocer más',
+                        url: '#contacto',
+                    },
+                    {
+                        id: 'plataformas-lms',
+                        title: 'Plataformas de aprendizaje',
+                        eyebrow: 'Infraestructura flexible',
+                        inSimpleWords: 'Implementación de entornos virtuales que posibilitan experiencias de aprendizaje auténticas y escalables.',
+                        businessBenefit: 'Centralización de la operación académica y trazabilidad de procesos.',
+                        idealWhen: 'La institución necesita robustecer su presencia digital.',
+                        label: 'Conocer más',
+                        url: '#contacto',
+                    },
+                    {
+                        id: 'virtualizacion',
+                        title: 'Virtualización de programas',
+                        eyebrow: 'Co-creación de contenidos',
+                        inSimpleWords: 'Diseño de contenidos y programas mediados digitalmente con foco en el aprendizaje activo.',
+                        businessBenefit: 'Oferta académica moderna, atractiva y de alta calidad pedagógica.',
+                        idealWhen: 'Se busca transformar un programa presencial a una modalidad híbrida o virtual.',
+                        label: 'Conocer más',
+                        url: '#contacto',
+                    }
+                ],
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0f172a',
+                align: 'left',
+                columns: '3',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'contacto',
+            type: 'contact',
+            name: 'Contacto Educación',
+            visible: true,
+            order: 3,
+            content: {
+                eyebrow: 'Iniciemos tu proyecto',
+                title: 'Hablemos de tus objetivos educativos',
+                body: 'Cuéntanos sobre tus retos en formación y tecnología para diseñar una solución a medida.',
+                email: 'andrestabla@algoritmot.com',
+                secondaryLabel: 'WhatsApp Directo',
+                secondaryHref: 'https://wa.me/573044544525',
+            },
+            style: {
+                backgroundColor: '#ffffff',
+                textColor: '#0f172a',
+            },
+        }
+    ]
+    return blocks
+}
+
 function createDefaultBlocksByPage(pageId: string, title: string, description: string, accentColor: string): SitePageBlock[] {
     if (pageId === 'home-nav') return createNavigationSelectorBlocks()
     if (pageId === 'home-root') return createServicesLandingBlocks(title)
+    if (pageId === 'home-edu') return createEducationLandingBlocks()
     if (pageId === 'home-inicio') return createClassicHomeBlocks(title, description, accentColor)
     if (pageId === 'case-transversal') return createTransversalCaseBlocks()
     return createDefaultBlocks(title, description, accentColor)
@@ -2264,6 +2384,24 @@ const staticSiteArchitecture: SiteArchitecture = {
             order: 1,
             locked: true,
             blocks: createDefaultBlocksByPage('home-root', 'Home (Landing principal)', 'Página principal pública del sitio.', '#2563eb'),
+        },
+        {
+            id: 'home-edu',
+            title: 'Educación',
+            path: '/educacion',
+            description: 'Soluciones digitales para el sector educativo.',
+            category: 'principal',
+            status: 'published',
+            editor: 'home',
+            template: 'immersive',
+            navLabel: 'Educación',
+            showInNavigation: true,
+            previewPath: '/educacion',
+            accentColor: '#10b981',
+            notes: 'Página de educación con estilo premium.',
+            order: 2,
+            locked: true,
+            blocks: createDefaultBlocksByPage('home-edu', 'Educación', 'Soluciones digitales para el sector educativo.', '#10b981'),
         },
         {
             id: 'home-inicio',

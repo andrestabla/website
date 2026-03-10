@@ -31,7 +31,7 @@ function toText(value: unknown, fallback = '') {
     return typeof value === 'string' ? value : fallback
 }
 
-function normalizeCmsHref(value: unknown, fallback = '') {
+function normalizeCmsHref(value: unknown, fallback = '', currentPath = '/empresas') {
     if (typeof value !== 'string') return fallback
     const trimmed = value.trim()
     if (!trimmed) return fallback
@@ -42,9 +42,9 @@ function normalizeCmsHref(value: unknown, fallback = '') {
     if (trimmed.startsWith('https:/') && !trimmed.startsWith('https://')) return `https://${trimmed.slice('https:/'.length)}`
     if (trimmed.startsWith('http:/') && !trimmed.startsWith('http://')) return `http://${trimmed.slice('http:/'.length)}`
     
-    // Prefix internal anchors with /empresas for cross-page compatibility
-    if (trimmed.startsWith('#')) return `/empresas${trimmed}`
-    if (trimmed.startsWith('/#')) return `/empresas${trimmed.slice(1)}`
+    // Prefix internal anchors with current page path for cross-page compatibility
+    if (trimmed.startsWith('#')) return `${currentPath}${trimmed}`
+    if (trimmed.startsWith('/#')) return `${currentPath}${trimmed.slice(1)}`
     
     return trimmed
 }
@@ -95,8 +95,8 @@ function resolveBlockAnchors(block: SitePageBlock) {
     return Array.from(anchors).filter(Boolean)
 }
 
-function renderHeroBlock(block: SitePageBlock) {
-    const primaryHref = normalizeCmsHref(block.content.primaryHref)
+function renderHeroBlock(block: SitePageBlock, currentPath: string) {
+    const primaryHref = normalizeCmsHref(block.content.primaryHref, '', currentPath)
     return (
         <div className="relative mx-auto max-w-6xl">
             <div className="pointer-events-none absolute inset-0 services-grid-pattern opacity-35" />
@@ -157,7 +157,7 @@ function renderPromisesBlock(block: SitePageBlock) {
     )
 }
 
-function renderServicesGridBlock(block: SitePageBlock) {
+function renderServicesGridBlock(block: SitePageBlock, currentPath: string) {
     const items = ensureObjectItems(block.content.items)
     return (
         <div className="mx-auto max-w-6xl">
@@ -214,7 +214,7 @@ function renderServicesGridBlock(block: SitePageBlock) {
 
                             {toText(item.label) && toText(item.url) && (
                                 <a
-                                    href={normalizeCmsHref(item.url)}
+                                    href={normalizeCmsHref(item.url, '', currentPath)}
                                     className="mt-7 inline-flex items-center gap-2 border border-slate-300 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-800 transition-colors hover:border-slate-900 hover:text-slate-900"
                                 >
                                     {toText(item.label)}
@@ -316,8 +316,8 @@ function renderFaqBlock(block: SitePageBlock) {
     )
 }
 
-function renderContactBlock(block: SitePageBlock) {
-    const secondaryHref = normalizeCmsHref(block.content.secondaryHref)
+function renderContactBlock(block: SitePageBlock, currentPath: string) {
+    const secondaryHref = normalizeCmsHref(block.content.secondaryHref, '', currentPath)
     return (
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">
             <article className="border border-slate-200 bg-white px-8 py-10 md:px-10">
@@ -352,8 +352,8 @@ function renderContactBlock(block: SitePageBlock) {
     )
 }
 
-function renderCtaBlock(block: SitePageBlock) {
-    const primaryHref = normalizeCmsHref(block.content.primaryHref)
+function renderCtaBlock(block: SitePageBlock, currentPath: string) {
+    const primaryHref = normalizeCmsHref(block.content.primaryHref, '', currentPath)
     return (
         <div className="mx-auto max-w-6xl border border-slate-200 bg-white px-8 py-12 text-center md:px-10">
             <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-900">{toText(block.content.eyebrow, 'Cierre')}</p>
@@ -449,13 +449,13 @@ export function HomeRootPageRenderer({
                             </div>
                         )}
 
-                        {block.id === 'hero' && renderHeroBlock(block)}
+                        {block.id === 'hero' && renderHeroBlock(block, page.path)}
                         {block.id === 'promesas' && renderPromisesBlock(block)}
-                        {block.id === 'servicios' && renderServicesGridBlock(block)}
+                        {block.id === 'servicios' && renderServicesGridBlock(block, page.path)}
                         {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, onSelectBlock)}
                         {block.id === 'faq' && renderFaqBlock(block)}
-                        {block.id === 'contacto' && renderContactBlock(block)}
-                        {block.id === 'cta' && renderCtaBlock(block)}
+                        {block.id === 'contacto' && renderContactBlock(block, page.path)}
+                        {block.id === 'cta' && renderCtaBlock(block, page.path)}
                         {!['hero', 'promesas', 'servicios', 'beneficios', 'faq', 'contacto', 'cta'].includes(block.id) && renderFallbackBlock(block)}
                     </section>
                 )
