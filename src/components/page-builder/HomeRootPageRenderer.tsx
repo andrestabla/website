@@ -152,30 +152,31 @@ function resolveBlockAnchors(block: SitePageBlock) {
 function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
     const primaryHref = normalizeCmsHref(block.content.primaryHref, '', currentPath)
     const bgImage = block.style?.backgroundImageUrl
+    const isDark = toText(block.style.textColor) === '#ffffff' || toText(block.style.backgroundColor) === '#0b1323'
 
     return (
         <div className="relative mx-auto max-w-6xl">
             {bgImage && (
                 <div className="absolute inset-x-0 -top-20 bottom-0 -z-10 overflow-hidden rounded-3xl" style={{ margin: '0 -2rem' }}>
                     <img src={bgImage} alt="" className="h-full w-full object-cover opacity-20" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent" />
+                    <div className={`absolute inset-0 bg-gradient-to-t ${isDark ? 'from-[#0b1323] via-[#0b1323]/80' : 'from-white via-white/80'} to-transparent`} />
                 </div>
             )}
-            {!bgImage && <div className="pointer-events-none absolute inset-0 services-grid-pattern opacity-35" />}
+            {!bgImage && <div className={`pointer-events-none absolute inset-0 services-grid-pattern opacity-35 ${isDark ? 'invert opacity-10' : ''}`} />}
             
             <div className={`pointer-events-none absolute left-[8%] top-20 h-28 w-28 rounded-full blur-2xl services-float-slow ${theme.gradientStart}`} />
             <div className={`pointer-events-none absolute right-[10%] top-32 h-36 w-36 rounded-full blur-2xl services-float-slow-delay ${theme.gradientEnd}`} />
 
             <div className={`relative ${bgImage ? 'pt-8' : ''}`}>
-                <p className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] bg-white/80 ${theme.border} ${theme.textAccent}`}>
+                <p className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] ${isDark ? 'bg-slate-800/80 text-emerald-300 border-slate-700' : `bg-white/80 ${theme.border} ${theme.textAccent}`}`}>
                     {toText(block.content.eyebrow, 'Servicios explicados sin tecnicismos')}
                 </p>
 
-                <h1 className="mt-6 max-w-5xl text-5xl font-black leading-[0.95] tracking-tight text-slate-900 md:text-7xl">
+                <h1 className={`mt-6 max-w-5xl text-5xl font-black leading-[0.95] tracking-tight md:text-7xl ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {toText(block.content.title, 'Te ayudamos a modernizar tu empresa paso a paso, con decisiones simples y enfocadas en resultados.')}
                 </h1>
 
-                <p className="mt-6 max-w-4xl text-lg leading-relaxed text-slate-700 md:text-xl">
+                <p className={`mt-6 max-w-4xl text-lg leading-relaxed md:text-xl ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                     {toText(block.content.body, 'Diseñamos e implementamos mejoras reales para tu compañía: menos fricción operativa, más orden interno y un mejor servicio para tus clientes.')}
                 </p>
 
@@ -183,7 +184,7 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: Theme
                     {toText(block.content.primaryLabel) && primaryHref && (
                         <a
                             href={primaryHref}
-                            className={`inline-flex items-center gap-2 border px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors border-slate-900 bg-slate-900 ${theme.primaryHover}`}
+                            className={`inline-flex items-center gap-2 border px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] transition-colors ${isDark ? 'text-slate-900 bg-emerald-500 border-emerald-500 hover:bg-emerald-400' : `text-white border-slate-900 bg-slate-900 ${theme.primaryHover}`}`}
                         >
                             {toText(block.content.primaryLabel)}
                             <ArrowRight className="h-4 w-4" />
@@ -191,7 +192,7 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: Theme
                     )}
                     <Link
                         to="/generador-casos"
-                        className="inline-flex items-center gap-2 border border-slate-300 bg-white px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-slate-800 transition-colors hover:border-slate-900 hover:text-slate-900"
+                        className={`inline-flex items-center gap-2 border px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] transition-colors ${isDark ? 'border-slate-700 bg-slate-800/50 text-white hover:border-slate-500 hover:bg-slate-800' : 'border-slate-300 bg-white text-slate-800 hover:border-slate-900 hover:text-slate-900'}`}
                     >
                         Ver casos en mi industria
                     </Link>
@@ -204,6 +205,7 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: Theme
 function renderPromisesBlock(block: SitePageBlock, theme: ThemeColors) {
     const items = ensureObjectItems(block.content.items)
     const bgImage = block.style?.backgroundImageUrl
+    const isDark = toText(block.style.textColor) === '#ffffff' || toText(block.style.backgroundColor) === '#0b1323' || bgImage
 
     return (
         <div className="relative mx-auto max-w-6xl">
@@ -214,18 +216,18 @@ function renderPromisesBlock(block: SitePageBlock, theme: ThemeColors) {
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/90" />
                 </div>
             )}
-            <div className={`relative ${bgImage ? 'rounded-3xl p-8 md:p-12 text-white' : ''}`}>
+            <div className={`relative p-8 md:p-12 ${bgImage ? 'rounded-3xl' : ''}`}>
                 {toText(block.content.title) && (
-                    <h2 className={`mb-3 text-2xl font-black tracking-tight ${bgImage ? 'text-white' : 'text-slate-900'}`}>{toText(block.content.title)}</h2>
+                    <h2 className={`mb-3 text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{toText(block.content.title)}</h2>
                 )}
-                {toText(block.content.body) && <p className={`mb-8 max-w-3xl text-lg ${bgImage ? 'text-slate-200' : 'text-slate-700'}`}>{toText(block.content.body)}</p>}
+                {toText(block.content.body) && <p className={`mb-8 max-w-3xl text-lg ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{toText(block.content.body)}</p>}
                 <div className="grid gap-4 md:grid-cols-3">
                 {items.map((item, index) => (
-                    <article key={`${item.id || index}`} className={`border px-6 py-5 ${theme.border} ${theme.bgLight}`}>
-                        <div className={`mb-3 flex h-8 w-8 items-center justify-center rounded-full ${theme.bgHighlight} ${theme.textAccent}`}>
-                            <CheckCircle2 className="h-5 w-5" />
+                    <article key={`${item.id || index}`} className={`border px-6 py-6 rounded-2xl ${isDark ? 'border-slate-800 bg-slate-800/50 backdrop-blur' : `${theme.border} ${theme.bgLight}`}`}>
+                        <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${isDark ? 'bg-emerald-500/20 text-emerald-400' : `${theme.bgHighlight} ${theme.textAccent}`}`}>
+                            <CheckCircle2 className="h-6 w-6" />
                         </div>
-                        <p className="font-bold text-slate-900">{toText(item.title || item.label || item.body)}</p>
+                        <p className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{toText(item.title || item.label || item.body)}</p>
                     </article>
                 ))}
                 </div>
@@ -741,12 +743,12 @@ export function HomeRootPageRenderer({
                         {block.id === 'flujo' && !benefitsBlock && renderStandaloneFlowBlock(block, selectable, selectedBlockId, currentTheme, onSelectBlock)}
                         {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, currentTheme, onSelectBlock)}
                         {block.id === 'funcionalidades' && block.type === 'feature-list' && renderFeatureListBlock(block, currentTheme)}
-                        {block.id === 'clientes' && renderClientCarouselBlock(block, page.path)}
-                        {block.id === 'tuprofe' && renderTuProfeBlock(block)}
+                        {block.type === 'carousel' && renderClientCarouselBlock(block, page.path)}
+                        {block.type === 'tuprofe' && renderTuProfeBlock(block)}
                         {block.id === 'faq' && renderFaqBlock(block, currentTheme)}
                         {block.id === 'contacto' && renderContactBlock(block, page.path, currentTheme)}
                         {block.id === 'cta' && renderCtaBlock(block, page.path, currentTheme)}
-                        {!['hero', 'promesas', 'servicios', 'flujo', 'beneficios', 'funcionalidades', 'clientes', 'tuprofe', 'faq', 'contacto', 'cta'].includes(block.id) && renderFallbackBlock(block, currentTheme)}
+                        {!['hero', 'promesas', 'servicios', 'flujo', 'beneficios', 'funcionalidades', 'faq', 'contacto', 'cta'].includes(block.id) && block.type !== 'carousel' && block.type !== 'tuprofe' && renderFallbackBlock(block, currentTheme)}
                     </section>
                 )
             })}
