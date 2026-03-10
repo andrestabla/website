@@ -30,14 +30,23 @@ export function Layout({ children }: LayoutProps) {
     const headerVariant = site.headerVariant || 'classic'
     const footerVariant = site.footerVariant || 'detailed'
     const isHeaderSticky = site.headerSticky !== 'false'
+    const currentPath = location.pathname
+    const baseCandidate = ['/educacion', '/plataformas-de-aprendizaje', '/empresas'].find(p => currentPath.startsWith(p)) || '/empresas'
+
     const normalizeLocalAnchor = (url: string) => {
         const trimmed = (url || '').trim()
-        if (trimmed.startsWith('#')) return `/empresas${trimmed}`
-        if (trimmed.startsWith('/#')) return `/empresas${trimmed.slice(1)}`
+        if (trimmed.startsWith('#')) return `${baseCandidate}${trimmed}`
+        if (trimmed.startsWith('/#')) return `${baseCandidate}${trimmed.slice(1)}`
+        
+        // If it starts with /empresas# but we are in another context, relink it
+        if (trimmed.startsWith('/empresas#') && baseCandidate !== '/empresas') {
+            return trimmed.replace('/empresas#', `${baseCandidate}#`)
+        }
+        
         return trimmed
     }
-    const headerCtaHref = normalizeLocalAnchor(site.headerCtaHref || '/empresas#contacto')
-    const announcementHref = normalizeLocalAnchor(site.announcementHref || '/empresas#contacto')
+    const headerCtaHref = normalizeLocalAnchor(site.headerCtaHref || '#contacto')
+    const announcementHref = normalizeLocalAnchor(site.announcementHref || '#contacto')
     const isExternalHeaderCta = /^https?:\/\//i.test(headerCtaHref)
     const isExternalAnnouncement = /^https?:\/\//i.test(announcementHref)
     const headerCtaEnabled = site.headerCtaEnabled === 'true' && !!site.headerCtaLabel?.trim() && !!headerCtaHref.trim()
@@ -46,10 +55,10 @@ export function Layout({ children }: LayoutProps) {
     const headerHeight = headerVariant === 'minimal' ? 64 : 80
     const headerHeightClass = headerHeight === 64 ? 'h-16' : 'h-20'
     const routeTemplate = useMemo(() => getRouteTemplate(location.pathname, site), [location.pathname, site])
-    const servicesHref = '/empresas#servicios'
-    const workflowHref = '/empresas#beneficios'
-    const faqHref = '/empresas#faq'
-    const contactHref = '/empresas#contacto'
+    const servicesHref = `${baseCandidate}#servicios`
+    const workflowHref = `${baseCandidate}#beneficios`
+    const faqHref = `${baseCandidate}#faq`
+    const contactHref = `${baseCandidate}#contacto`
     const closeMobileMenu = () => setMobileMenuOpen(false)
 
     useEffect(() => {
