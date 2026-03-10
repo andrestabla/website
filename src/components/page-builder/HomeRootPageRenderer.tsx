@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Code2, LineChart, Network, Rocket, Search, Users } from 'lucide-react'
+import { ArrowRight, BookOpenText, Boxes, CheckCircle2, Code2, Laptop, Layout, LineChart, Network, Rocket, Search, Target, Users } from 'lucide-react'
 import { ContactForm } from '../forms/ContactForm'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { type SiteArchitecturePage, type SitePageBlock } from '../../admin/context/CMSContext'
@@ -192,7 +192,7 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: Theme
                     )}
                     <Link
                         to="/generador-casos"
-                        className={`inline-flex items-center gap-2 border px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] transition-colors ${isDark ? 'border-slate-700 bg-slate-800/50 text-white hover:border-slate-500 hover:bg-slate-800' : 'border-slate-300 bg-white text-slate-800 hover:border-slate-900 hover:text-slate-900'}`}
+                        className={`inline-flex items-center gap-2 border px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] transition-all ${isDark ? 'border-slate-700 bg-slate-800/40 text-white hover:border-emerald-500/50 hover:bg-slate-800/80' : 'border-slate-300 bg-white text-slate-800 hover:border-slate-900 hover:text-slate-900 shadow-sm'}`}
                     >
                         Ver casos en mi industria
                     </Link>
@@ -210,26 +210,68 @@ function renderPromisesBlock(block: SitePageBlock, theme: ThemeColors) {
     return (
         <div className="relative mx-auto max-w-6xl">
             {bgImage && (
-                <div className="absolute inset-0 -z-10 overflow-hidden rounded-3xl">
-                    <img src={bgImage} alt="" className="h-full w-full object-cover opacity-15" />
-                    <div className="absolute inset-0 bg-slate-900/40 mix-blend-multiply" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/90" />
+                <div className="absolute inset-0 -z-10 overflow-hidden rounded-[2.5rem]">
+                    <img src={bgImage} alt="" className="h-full w-full object-cover opacity-10" />
+                    <div className="absolute inset-0 bg-slate-950/60 mix-blend-multiply" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-950/90" />
                 </div>
             )}
-            <div className={`relative p-8 md:p-12 ${bgImage ? 'rounded-3xl' : ''}`}>
+            <div className={`relative px-6 py-12 md:px-10 md:py-16 ${bgImage ? 'rounded-[2.5rem] bg-slate-900/20 backdrop-blur-sm' : ''}`}>
                 {toText(block.content.title) && (
-                    <h2 className={`mb-3 text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{toText(block.content.title)}</h2>
+                    <h2 className={`mb-4 text-3xl font-black tracking-tight md:text-4xl ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {toText(block.content.title)}
+                    </h2>
                 )}
-                {toText(block.content.body) && <p className={`mb-8 max-w-3xl text-lg ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{toText(block.content.body)}</p>}
-                <div className="grid gap-4 md:grid-cols-3">
-                {items.map((item, index) => (
-                    <article key={`${item.id || index}`} className={`border px-6 py-6 rounded-2xl ${isDark ? 'border-slate-800 bg-slate-800/50 backdrop-blur' : `${theme.border} ${theme.bgLight}`}`}>
-                        <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${isDark ? 'bg-emerald-500/20 text-emerald-400' : `${theme.bgHighlight} ${theme.textAccent}`}`}>
-                            <CheckCircle2 className="h-6 w-6" />
-                        </div>
-                        <p className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{toText(item.title || item.label || item.body)}</p>
-                    </article>
-                ))}
+                {toText(block.content.body) && (
+                    <p className={`mb-12 max-w-3xl text-lg leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {toText(block.content.body)}
+                    </p>
+                )}
+                
+                <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+                    {items.map((item, index) => {
+                        // Attempt to resolve stylized icons based on title keywords
+                        const title = toText(item.title || item.label || item.body).toLowerCase()
+                        let Icon = CheckCircle2
+                        if (title.includes('campus') || title.includes('virtual') || title.includes('aula')) Icon = Laptop
+                        if (title.includes('plataforma') || title.includes('software') || title.includes('sistema')) Icon = Layout
+                        if (title.includes('complemento') || title.includes('integración') || title.includes('api')) Icon = Boxes
+                        if (title.includes('trazabilidad') || title.includes('seguimiento') || title.includes('datos')) Icon = Target
+                        if (title.includes('pedagógica') || title.includes('aprendizaje') || title.includes('docente')) Icon = BookOpenText
+
+                        return (
+                            <article 
+                                key={`${item.id || index}`} 
+                                className={`group relative flex flex-col gap-4 overflow-hidden rounded-2xl border p-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+                                    isDark 
+                                    ? 'border-slate-800 bg-slate-900/40 hover:border-emerald-500/30 hover:bg-slate-800/40' 
+                                    : `bg-white ${theme.border} hover:border-slate-400 shadow-sm`
+                                }`}
+                            >
+                                <div className={`flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-500 group-hover:scale-110 ${
+                                    isDark 
+                                    ? 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20' 
+                                    : `${theme.bgHighlight} ${theme.textAccent}`
+                                }`}>
+                                    <Icon className="h-6 w-6" />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <h3 className={`text-xl font-bold leading-snug ${isDark ? 'text-white group-hover:text-emerald-300' : 'text-slate-900'} transition-colors`}>
+                                        {toText(item.title || item.label || item.body)}
+                                    </h3>
+                                    {toText(item.body) && item.body !== item.title && (
+                                        <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                            {toText(item.body)}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Premium Accent Line */}
+                                <div className={`absolute bottom-0 left-0 h-1 w-0 transition-all duration-500 group-hover:w-full ${isDark ? 'bg-emerald-500/50' : `bg-slate-900/10`}`} />
+                            </article>
+                        )
+                    })}
                 </div>
             </div>
         </div>
