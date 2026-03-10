@@ -821,8 +821,8 @@ const staticSite: SiteConfig = {
     notFoundCtaHref: '/',
 }
 
-const defaultServicePreviewPath = staticServices[0]?.slug ? `/servicios/${staticServices[0].slug}` : '/servicios/captura-adn'
-const defaultProductPreviewPath = staticProducts[0]?.slug ? `/productos/${staticProducts[0].slug}` : '/productos/diagnostico-md-ia'
+const defaultServicePreviewPath = '/empresas/servicios/captura-adn'
+const defaultProductPreviewPath = '/empresas/productos/diagnostico-md-ia'
 
 const SERVICES_LANDING_RESULTS = [
     { title: 'Menos costos ocultos', body: 'Detectamos tareas repetitivas y errores operativos que hoy consumen tiempo y presupuesto.' },
@@ -2205,15 +2205,15 @@ const staticSiteArchitecture: SiteArchitecture = {
         {
             id: 'home-root',
             title: 'Home (Landing principal)',
-            path: '/',
-            description: 'Página principal pública del sitio.',
+            path: '/empresas',
+            description: 'Página principal de Empresas.',
             category: 'principal',
             status: 'published',
             editor: 'home',
             template: 'immersive',
-            navLabel: 'Inicio',
+            navLabel: 'Empresas',
             showInNavigation: true,
-            previewPath: '/',
+            previewPath: '/empresas',
             accentColor: '#2563eb',
             notes: 'Render principal del sitio.',
             order: 0,
@@ -2282,7 +2282,7 @@ const staticSiteArchitecture: SiteArchitecture = {
         {
             id: 'services-template',
             title: 'Detalle de servicios (dinámico)',
-            path: '/servicios/:slug',
+            path: '/empresas/servicios/:slug',
             description: 'Plantilla para páginas de detalle de cada servicio.',
             category: 'servicios',
             status: 'published',
@@ -2300,7 +2300,7 @@ const staticSiteArchitecture: SiteArchitecture = {
         {
             id: 'products-template',
             title: 'Detalle de productos (dinámico)',
-            path: '/productos/:slug',
+            path: '/empresas/productos/:slug',
             description: 'Plantilla para páginas de detalle de productos.',
             category: 'productos',
             status: 'published',
