@@ -30,8 +30,14 @@ export function Layout({ children }: LayoutProps) {
     const headerVariant = site.headerVariant || 'classic'
     const footerVariant = site.footerVariant || 'detailed'
     const isHeaderSticky = site.headerSticky !== 'false'
-    const headerCtaHref = site.headerCtaHref || '/#contacto'
-    const announcementHref = site.announcementHref || '/#contacto'
+    const normalizeLocalAnchor = (url: string) => {
+        const trimmed = (url || '').trim()
+        if (trimmed.startsWith('#')) return `/empresas${trimmed}`
+        if (trimmed.startsWith('/#')) return `/empresas${trimmed.slice(1)}`
+        return trimmed
+    }
+    const headerCtaHref = normalizeLocalAnchor(site.headerCtaHref || '/empresas#contacto')
+    const announcementHref = normalizeLocalAnchor(site.announcementHref || '/empresas#contacto')
     const isExternalHeaderCta = /^https?:\/\//i.test(headerCtaHref)
     const isExternalAnnouncement = /^https?:\/\//i.test(announcementHref)
     const headerCtaEnabled = site.headerCtaEnabled === 'true' && !!site.headerCtaLabel?.trim() && !!headerCtaHref.trim()
@@ -40,18 +46,10 @@ export function Layout({ children }: LayoutProps) {
     const headerHeight = headerVariant === 'minimal' ? 64 : 80
     const headerHeightClass = headerHeight === 64 ? 'h-16' : 'h-20'
     const routeTemplate = useMemo(() => getRouteTemplate(location.pathname, site), [location.pathname, site])
-    const publishedHomePage = useMemo(
-        () => state.siteArchitecture.pages.find((page) => page.path === '/' && page.status === 'published') ?? null,
-        [state.siteArchitecture.pages]
-    )
-    const visibleHomeBlockIds = useMemo(
-        () => new Set((publishedHomePage?.blocks ?? []).filter((block) => block.visible).map((block) => block.id)),
-        [publishedHomePage]
-    )
-    const servicesHref = visibleHomeBlockIds.has('servicios') ? '/#servicios' : '/landing-servicios#servicios'
-    const workflowHref = visibleHomeBlockIds.has('beneficios') ? '/#beneficios' : '/landing-servicios#beneficios'
-    const faqHref = visibleHomeBlockIds.has('faq') ? '/#faq' : '/landing-servicios#faq'
-    const contactHref = visibleHomeBlockIds.has('contacto') ? '/#contacto' : '/#contacto'
+    const servicesHref = '/empresas#servicios'
+    const workflowHref = '/empresas#beneficios'
+    const faqHref = '/empresas#faq'
+    const contactHref = '/empresas#contacto'
     const closeMobileMenu = () => setMobileMenuOpen(false)
 
     useEffect(() => {
@@ -184,7 +182,7 @@ export function Layout({ children }: LayoutProps) {
 
             <header className={headerShellClass} style={isHeaderSticky ? { top: announcementHeight } : undefined}>
                 <div className={`px-6 ${headerHeightClass} ${headerVariant === 'split' ? 'max-w-7xl mx-auto w-full grid grid-cols-[auto_1fr_auto] items-center gap-6' : 'flex items-center justify-between'}`}>
-                    <Link to="/" className="text-2xl font-black tracking-tighter text-slate-900 inline-flex items-center">
+                    <Link to="/empresas" className="text-2xl font-black tracking-tighter text-slate-900 inline-flex items-center">
                         {useImageLogo ? (
                             <img src={design.logoUrl} alt={design.logoAlt || site.name} className="h-10 w-auto object-contain" />
                         ) : (

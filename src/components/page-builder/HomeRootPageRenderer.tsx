@@ -41,6 +41,11 @@ function normalizeCmsHref(value: unknown, fallback = '') {
     if (trimmed.startsWith('/http:/')) return `http://${trimmed.slice('/http:/'.length)}`
     if (trimmed.startsWith('https:/') && !trimmed.startsWith('https://')) return `https://${trimmed.slice('https:/'.length)}`
     if (trimmed.startsWith('http:/') && !trimmed.startsWith('http://')) return `http://${trimmed.slice('http:/'.length)}`
+    
+    // Prefix internal anchors with /empresas for cross-page compatibility
+    if (trimmed.startsWith('#')) return `/empresas${trimmed}`
+    if (trimmed.startsWith('/#')) return `/empresas${trimmed.slice(1)}`
+    
     return trimmed
 }
 
