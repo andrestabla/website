@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ArrowRight, Loader2, Sparkles, Building2, Workflow, TrendingUp, CheckCircle2, ChevronLeft, Package, GitMerge } from 'lucide-react'
+import { ArrowRight, Loader2, Sparkles, Building2, Workflow, TrendingUp, CheckCircle2, ChevronLeft, Package, GitMerge, Mail, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import mermaid from 'mermaid'
 
@@ -228,10 +228,46 @@ export function GeneradorCasosAI() {
     const [maturity, setMaturity] = useState('')
     const [result, setResult] = useState<CaseStudyResult | null>(null)
     const [error, setError] = useState<string | null>(null)
+    const [emailModalOpen, setEmailModalOpen] = useState(false)
+    const [userEmail, setUserEmail] = useState('')
+    const [sendingEmail, setSendingEmail] = useState(false)
+    const [emailSuccess, setEmailSuccess] = useState(false)
 
     useEffect(() => {
         window.scrollTo(0, 0)
     }, [step])
+
+    const handleSendEmail = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!userEmail || !result) return
+        
+        setSendingEmail(true)
+        setError(null)
+        try {
+            const res = await fetch('/api/send-case-study', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email: userEmail, 
+                    caseStudy: result,
+                    industry,
+                    processName
+                })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Error al enviar el correo')
+            
+            setEmailSuccess(true)
+            setTimeout(() => {
+                setEmailModalOpen(false)
+                setEmailSuccess(false)
+            }, 3000)
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setSendingEmail(false)
+        }
+    }
 
     const handleGenerate = async () => {
         setStep('loading')
@@ -498,6 +534,12 @@ export function GeneradorCasosAI() {
                                             Agendar Consulta <ArrowRight className="h-4 w-4" />
                                         </a>
                                         <button
+                                            onClick={() => setEmailModalOpen(true)}
+                                            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-center text-sm font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/10"
+                                        >
+                                            <Mail className="h-4 w-4" /> Enviar por Correo
+                                        </button>
+                                        <button
                                             onClick={() => {
                                                 setResult(null)
                                                 setIndustry('')
@@ -505,7 +547,7 @@ export function GeneradorCasosAI() {
                                                 setMaturity('')
                                                 setStep('industry')
                                             }}
-                                            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-center text-sm font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/10"
+                                            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-center text-sm font-black uppercase tracking-[0.2em] text-white/50 transition-colors hover:bg-white/10"
                                         >
                                             Recalcular Demo
                                         </button>
@@ -513,6 +555,71 @@ export function GeneradorCasosAI() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Email Modal */}
+                        {emailModalOpen && (
+                            <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
+                                <div className="absolute inset-0 bg-[#020617]/90 backdrop-blur-sm" onClick={() => setEmailModalOpen(false)} />
+                                <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-300">
+                                    <button 
+                                        onClick={() => setEmailModalOpen(false)}
+                                        className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors"
+                                    >
+                                        <X className="h-6 w-6" />
+                                    </button>
+                                    
+                                    <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                        <Mail className="h-8 w-8" />
+                                    </div>
+                                    
+                                    <h3 className="mb-2 text-2xl font-black text-white">Recibe tu propuesta</h3>
+                                    <p className="mb-8 text-slate-400">Ingresa tu correo electrónico para enviarte los detalles técnicos de esta arquitectura.</p>
+                                    
+                                    {emailSuccess ? (
+                                        <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-6 text-emerald-400 text-center animate-in fade-in duration-500">
+                                            <CheckCircle2 className="h-10 w-10 mx-auto mb-4" />
+                                            <p className="font-bold">¡Enviado con éxito!</p>
+                                            <p className="text-sm mt-1 text-emerald-400/70">Revisa tu bandeja de entrada en unos instantes.</p>
+                                        </div>
+                                    ) : (
+                                        <form onSubmit={handleSendEmail} className="space-y-6">
+                                            <div>
+                                                <input 
+                                                    type="email" 
+                                                    required
+                                                    placeholder="tu@correo.com"
+                                                    value={userEmail}
+                                                    onChange={(e) => setUserEmail(e.target.value)}
+                                                    className="w-full rounded-2xl border border-slate-700 bg-slate-800/50 px-6 py-4 text-white placeholder:text-slate-500 focus:border-emerald-500/50 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all font-medium"
+                                                />
+                                            </div>
+                                            
+                                            {error && (
+                                                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+                                                    {error}
+                                                </p>
+                                            )}
+
+                                            <button
+                                                type="submit"
+                                                disabled={sendingEmail}
+                                                className="w-full flex items-center justify-center gap-3 rounded-2xl bg-emerald-500 px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-emerald-400 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {sendingEmail ? (
+                                                    <>
+                                                        <Loader2 className="h-5 w-5 animate-spin" /> Enviando...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Enviar Propuesta <ArrowRight className="h-4 w-4" />
+                                                    </>
+                                                )}
+                                            </button>
+                                        </form>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>
