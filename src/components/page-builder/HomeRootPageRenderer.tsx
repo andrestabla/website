@@ -419,41 +419,69 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
     )
 }
 
-function renderStandaloneFlowBlock(block: SitePageBlock, selectable: boolean, selectedBlockId: string | null, theme: ThemeColors, onSelectBlock?: (blockId: string) => void) {
+function renderStandaloneFlowBlock(block: SitePageBlock) {
     const items = ensureObjectItems(block.content.items)
     const badges = ensureStringArray(block.content.badges)
 
     return (
-        <div className="mx-auto max-w-6xl">
-            <article
-                data-block-id={block.id}
-                onClickCapture={(event) => handleSelectableBlockClick(event, selectable, block.id, onSelectBlock)}
-                className={`border border-slate-700 bg-slate-950 px-8 py-14 text-white md:px-16 ${selectable ? 'cursor-pointer' : ''} ${selectedBlockId === block.id ? `ring-2 ring-offset-2 ring-offset-slate-100 ${theme.primary}` : ''}`}
-            >
-                <div className="text-center">
-                    <p className={`text-[11px] font-bold uppercase tracking-[0.3em] text-white/70`}>{toText(block.content.eyebrow, 'Cómo trabajamos')}</p>
-                    <h3 className="mx-auto mt-5 max-w-3xl text-4xl font-black tracking-tight text-white md:text-5xl">{toText(block.content.title, 'Cómo trabajamos')}</h3>
-                </div>
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-slate-950 px-6 py-20 md:px-12 md:py-24 shadow-2xl">
+            {/* Background elements */}
+            <div className="pointer-events-none absolute left-1/4 top-0 h-96 w-96 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-[100px]" />
+            <div className="pointer-events-none absolute right-1/4 bottom-0 h-96 w-96 translate-y-1/2 rounded-full bg-blue-500/10 blur-[100px]" />
 
-                <div className="mx-auto mt-14 grid max-w-5xl gap-10 md:grid-cols-2 lg:gap-16">
+            <div className="relative text-center">
+                <p className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/5 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/80">
+                    {toText(block.content.eyebrow, 'Cómo trabajamos')}
+                </p>
+                <h3 className="mx-auto mt-6 max-w-3xl text-4xl font-black leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">
+                    {toText(block.content.title, 'Tu plataforma en 4 pasos')}
+                </h3>
+            </div>
+
+            <div className="relative mx-auto mt-20 max-w-6xl">
+                {/* Horizontal flow line for desktop */}
+                <div className="absolute left-0 right-0 top-1/2 hidden h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-slate-800 to-transparent lg:block" />
+
+                <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">
                     {items.map((item, index) => (
-                        <div key={`${item.id || index}`}>
-                            <p className={`text-4xl font-black leading-none ${theme.textHighlight} opacity-90`}>{toText(item.title || item.label || `Paso ${index + 1}`)}</p>
-                            <p className="mt-4 text-lg leading-relaxed text-slate-300">{toText(item.body || item.description)}</p>
+                        <div key={`${item.id || index}`} className="group relative">
+                            {/* Decorative numbering behind */}
+                            <span className="absolute -top-10 left-0 select-none text-8xl font-black text-white/[0.03] transition-colors group-hover:text-emerald-500/[0.05]">
+                                {index + 1}
+                            </span>
+                            
+                            <article className="relative flex h-full flex-col rounded-3xl border border-slate-800 bg-slate-900/40 p-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-2 hover:border-emerald-500/30 hover:bg-slate-900/60 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl font-black text-emerald-400 ring-1 ring-emerald-500/20 transition-transform duration-500 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-slate-950">
+                                    {index + 1}
+                                </div>
+                                <h4 className="text-xl font-bold leading-tight text-white transition-colors group-hover:text-emerald-300">
+                                    {toText(item.title || item.label || `Paso ${index + 1}`)}
+                                </h4>
+                                <p className="mt-4 text-sm leading-relaxed text-slate-400">
+                                    {toText(item.body || item.description)}
+                                </p>
+
+                                {/* Connecting dot for desktop timeline */}
+                                <div className="absolute -right-3 top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center lg:flex">
+                                    {index < items.length - 1 && (
+                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-700 transition-colors group-hover:bg-emerald-500" />
+                                    )}
+                                </div>
+                            </article>
                         </div>
                     ))}
                 </div>
+            </div>
 
-                {badges.length > 0 && (
-                    <div className="mx-auto mt-16 flex max-w-4xl flex-wrap justify-center gap-4">
-                        {badges.map((badge) => (
-                            <div key={badge} className="border border-white/20 bg-white/5 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-white/80">
-                                {badge}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </article>
+            {badges.length > 0 && (
+                <div className="mx-auto mt-20 flex max-w-4xl flex-wrap justify-center gap-4">
+                    {badges.map((badge) => (
+                        <div key={badge} className="rounded-lg border border-slate-800 bg-slate-900/50 px-6 py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 transition-colors hover:border-emerald-500/30 hover:text-emerald-400">
+                            {badge}
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }
@@ -791,7 +819,7 @@ export function HomeRootPageRenderer({
                         {block.id === 'hero' && renderHeroBlock(block, page.path, currentTheme)}
                         {block.id === 'promesas' && renderPromisesBlock(block, currentTheme)}
                         {block.id === 'servicios' && renderServicesGridBlock(block, page.path, currentTheme)}
-                        {block.id === 'flujo' && !benefitsBlock && renderStandaloneFlowBlock(block, selectable, selectedBlockId, currentTheme, onSelectBlock)}
+                        {block.id === 'flujo' && !benefitsBlock && renderStandaloneFlowBlock(block)}
                         {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, currentTheme, onSelectBlock)}
                         {block.id === 'funcionalidades' && block.type === 'feature-list' && renderFeatureListBlock(block, currentTheme)}
                         {block.type === 'carousel' && renderClientCarouselBlock(block, page.path)}
