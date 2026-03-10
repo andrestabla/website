@@ -233,6 +233,7 @@ export type SitePageBlockType =
     | 'progressbar'
     | 'grid'
     | 'timeline'
+    | 'tuprofe'
     | 'bento'
     | 'loopgrid'
     | 'portfolio'
@@ -882,6 +883,29 @@ const EDUCATION_LANDING_FAQ = [
         title: '¿Ofrecen soporte técnico post-implementación?',
         body: 'No solo soporte técnico, sino acompañamiento en la adopción del modelo educativo para garantizar que la inversión genere impacto real.',
     },
+]
+
+const PLATAFORMAS_LANDING_WORKFLOW = [
+    { title: '1. Despliegue', body: 'Instalación y configuración de la infraestructura tecnológica base de acuerdo con los requerimientos operativos y de seguridad.' },
+    { title: '2. Personalización', body: 'Adaptación de la interfaz gráfica al libro de marca y configuración de reglas funcionales específicas del modelo.' },
+    { title: '3. Documentación y transferencia', body: 'Entrega de manuales técnicos, guías de usuario y capacitación a los roles clave para asegurar independencia técnica.' },
+    { title: '4. Administración y soporte', body: 'Servicio de mantenimiento, monitoreo y soporte a usuarios para garantizar la continuidad y evolución del sistema.' },
+]
+
+const PLATAFORMAS_LANDING_FEATURES = [
+    'Reportes y analíticas de aprendizaje',
+    'Control del progreso de avance por curso',
+    'Experiencia de usuario personalizada según roles',
+    'Flujo de certificación automática',
+    'Pasarela de pagos',
+    'Herramienta de autoría de contenidos integrada',
+    'Rutas de aprendizaje personalizadas',
+    'Sistemas de videoconferencias integrados',
+    'Sistema de notificaciones personalizadas',
+    'Gamificación configurable por grupos o cursos',
+    'Bloques de valoración de cursos y contenidos',
+    'Sistema de recomendación de cursos',
+    'Más de 50 funcionalidades adicionales...'
 ]
 
 type PlainServiceCopy = {
@@ -2262,10 +2286,190 @@ function createEducationLandingBlocks(): SitePageBlock[] {
     return blocks
 }
 
+function createPlataformasLandingBlocks(): SitePageBlock[] {
+    const blocks: SitePageBlock[] = [
+        {
+            id: 'hero',
+            type: 'hero',
+            name: 'Hero Servicio',
+            visible: true,
+            order: 0,
+            content: {
+                eyebrow: 'Plataformas de aprendizaje',
+                title: 'Implementa o evoluciona tu ecosistema digital para el aprendizaje',
+                body: '',
+                primaryLabel: 'Hablar con un consultor',
+                primaryHref: '#contacto',
+            },
+            style: {
+                backgroundColor: 'transparent',
+                backgroundImageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1600&q=80',
+                textColor: '#0b1323',
+                align: 'left',
+                paddingY: '8rem',
+            },
+        },
+        {
+            id: 'promesas',
+            type: 'grid', // Will map to a grid essentially, or rely on renderPromisesBlock logic if it matches
+            name: 'Tecnologías',
+            visible: true,
+            order: 1,
+            content: {
+                eyebrow: 'Tecnologías que posibilitan experiencias',
+                items: [
+                    { title: 'Campus virtual', body: 'Para el desarrollo de procesos de formación 100% en línea.' },
+                    { title: 'Plataforma de aprendizaje', body: 'Para procesos de formación virtuales, presenciales o híbridos.' },
+                    { title: 'Complementos', body: 'Tecnológicos que contribuyen al aprendizaje activo y en comunidad.' },
+                ]
+            },
+            style: {
+                backgroundColor: '#ffffff', // Fallback
+                backgroundImageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1600&q=80',
+                textColor: '#ffffff',
+                align: 'left',
+                columns: '3',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'funcionalidades',
+            type: 'feature-list',
+            name: 'Funcionalidades',
+            visible: true,
+            order: 2,
+            content: {
+                title: 'Más que una plataforma...',
+                items: PLATAFORMAS_LANDING_FEATURES.map((feat) => ({ title: feat }))
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0f172a',
+                align: 'left',
+                columns: '2',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'clientes',
+            type: 'carousel',
+            name: 'Experiencias de Éxito',
+            visible: true,
+            order: 3,
+            content: {
+                title: 'Instituciones que confían en nosotros',
+                body: 'Descubre cómo han transformado su operación educativa.',
+                items: [
+                    {
+                        title: 'Universidad de la Innovación',
+                        body: 'Implementación core de campus virtual para 5,000 estudiantes con analítica avanzada.',
+                        url: '#caso-1',
+                        imageUrl: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80',
+                    },
+                    {
+                        title: 'Instituto Tecnológico Superior',
+                        body: 'Virtualización de 15 programas técnicos con laboratorios remotos y simuladores.',
+                        url: '#caso-2',
+                        imageUrl: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&q=80',
+                    },
+                    {
+                        title: 'Colegio Bilingüe Internacional',
+                        body: 'Sistema híbrido K-12 con gamificación y seguimiento personalizado para padres.',
+                        url: '#caso-3',
+                        imageUrl: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80',
+                    },
+                    {
+                        title: 'Red de Educación Continua',
+                        body: 'Portal de lifelong learning con pasarela de pagos, suscripciones y certificaciones.',
+                        url: '#caso-4',
+                        imageUrl: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&q=80',
+                    },
+                    {
+                        title: 'Academia Corporativa',
+                        body: 'Entorno de capacitación B2B para desarrollo de talento y planes de carrera.',
+                        url: '#caso-5',
+                        imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80',
+                    }
+                ],
+            },
+            style: {
+                backgroundColor: '#ffffff',
+                textColor: '#0f172a',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'flujo',
+            type: 'timeline', // Maps to standalone flow
+            name: 'Pasos de entrega',
+            visible: true,
+            order: 4,
+            content: {
+                eyebrow: 'Cómo trabajamos',
+                title: 'Tu plataforma en 4 pasos:',
+                items: PLATAFORMAS_LANDING_WORKFLOW,
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0f172a',
+                align: 'left',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'tuprofe',
+            type: 'tuprofe' as SitePageBlockType, // Will need to define or alias this. We'll use a generic matching. Or add it to enums.
+            name: 'Metodología Divergente',
+            visible: true,
+            order: 5,
+            content: {
+                eyebrow: 'Educación por proyectos',
+                title: 'Metodología divergente impulsada por TuProfe',
+                body: 'Conectamos diseño pedagógico, mentorías, evidencias y analítica en un ecosistema que prioriza el aprendizaje auténtico sobre la gestión de contenidos.',
+                primaryLabel: 'Conoce TuProfe',
+                primaryHref: 'https://profetabla.com/',
+                items: [
+                    { title: 'Operación conectada', body: 'Planeación, tareas, mentorías y evaluación en un mismo flujo.' },
+                    { title: 'Seguimiento preciso', body: 'Visibilidad de avance por estudiante y equipo para intervenir a tiempo.' },
+                    { title: 'Reconocimientos reales', body: 'Insignias y certificados vinculados 100% a evidencias prácticas.' },
+                    { title: 'Aprendizaje activo', body: 'Ruta clara de avance donde el estudiante aprende haciendo.' },
+                ]
+            },
+            style: {
+                backgroundColor: '#0f172a',
+                textColor: '#ffffff',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'contacto',
+            type: 'contact',
+            name: 'Contacto Servicio',
+            visible: true,
+            order: 6,
+            content: {
+                eyebrow: 'Iniciemos tu proyecto',
+                title: 'Hablemos de tus necesidades de plataforma',
+                body: 'Escríbenos para conversar sobre configuraciones, integraciones y modelos de servicio.',
+                email: 'andrestabla@algoritmot.com',
+                secondaryLabel: 'WhatsApp Directo',
+                secondaryHref: 'https://wa.me/573044544525',
+            },
+            style: {
+                backgroundColor: '#ffffff',
+                textColor: '#0f172a',
+            },
+        }
+    ]
+    return blocks
+}
+
+
 function createDefaultBlocksByPage(pageId: string, title: string, description: string, accentColor: string): SitePageBlock[] {
     if (pageId === 'home-nav') return createNavigationSelectorBlocks()
     if (pageId === 'home-root') return createServicesLandingBlocks(title)
     if (pageId === 'home-edu') return createEducationLandingBlocks()
+    if (pageId === 'servicio-plataformas') return createPlataformasLandingBlocks()
     if (pageId === 'home-inicio') return createClassicHomeBlocks(title, description, accentColor)
     if (pageId === 'case-transversal') return createTransversalCaseBlocks()
     return createDefaultBlocks(title, description, accentColor)
@@ -2465,6 +2669,24 @@ const staticSiteArchitecture: SiteArchitecture = {
             order: 2,
             locked: true,
             blocks: createDefaultBlocksByPage('home-edu', 'Educación', 'Soluciones digitales para el sector educativo.', '#10b981'),
+        },
+        {
+            id: 'servicio-plataformas',
+            title: 'Plataformas de Aprendizaje',
+            path: '/plataformas-de-aprendizaje',
+            description: 'Implementa o evoluciona tu ecosistema digital para el aprendizaje.',
+            category: 'servicios',
+            status: 'published',
+            editor: 'home',
+            template: 'immersive',
+            navLabel: 'Plataformas',
+            showInNavigation: false,
+            previewPath: '/plataformas-de-aprendizaje',
+            accentColor: '#10b981',
+            notes: 'Página de servicio usando el tema Emerald.',
+            order: 3,
+            locked: false,
+            blocks: createDefaultBlocksByPage('servicio-plataformas', 'Plataformas de Aprendizaje', 'Implementa o evoluciona tu ecosistema digital para el aprendizaje.', '#10b981'),
         },
         {
             id: 'home-inicio',

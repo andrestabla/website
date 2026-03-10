@@ -50,6 +50,18 @@ const THEMES: Record<string, ThemeColors> = {
         bgHighlight: 'bg-emerald-100',
         gradientStart: 'bg-emerald-200/40',
         gradientEnd: 'bg-teal-100/40',
+    },
+    '/plataformas-de-aprendizaje': {
+        primary: 'bg-emerald-700',
+        primaryHover: 'hover:bg-emerald-800 hover:border-emerald-800',
+        secondary: 'text-emerald-700',
+        textAccent: 'text-emerald-900',
+        textHighlight: 'text-emerald-800',
+        border: 'border-emerald-200',
+        bgLight: 'bg-emerald-50/50',
+        bgHighlight: 'bg-emerald-100',
+        gradientStart: 'bg-emerald-200/40',
+        gradientEnd: 'bg-teal-100/40',
     }
 }
 
@@ -139,13 +151,22 @@ function resolveBlockAnchors(block: SitePageBlock) {
 
 function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
     const primaryHref = normalizeCmsHref(block.content.primaryHref, '', currentPath)
+    const bgImage = block.style?.backgroundImageUrl
+
     return (
         <div className="relative mx-auto max-w-6xl">
-            <div className="pointer-events-none absolute inset-0 services-grid-pattern opacity-35" />
+            {bgImage && (
+                <div className="absolute inset-x-0 -top-20 bottom-0 -z-10 overflow-hidden rounded-3xl" style={{ margin: '0 -2rem' }}>
+                    <img src={bgImage} alt="" className="h-full w-full object-cover opacity-20" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white via-white/80 to-transparent" />
+                </div>
+            )}
+            {!bgImage && <div className="pointer-events-none absolute inset-0 services-grid-pattern opacity-35" />}
+            
             <div className={`pointer-events-none absolute left-[8%] top-20 h-28 w-28 rounded-full blur-2xl services-float-slow ${theme.gradientStart}`} />
             <div className={`pointer-events-none absolute right-[10%] top-32 h-36 w-36 rounded-full blur-2xl services-float-slow-delay ${theme.gradientEnd}`} />
 
-            <div className="relative">
+            <div className={`relative ${bgImage ? 'pt-8' : ''}`}>
                 <p className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] bg-white/80 ${theme.border} ${theme.textAccent}`}>
                     {toText(block.content.eyebrow, 'Servicios explicados sin tecnicismos')}
                 </p>
@@ -182,13 +203,23 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: Theme
 
 function renderPromisesBlock(block: SitePageBlock, theme: ThemeColors) {
     const items = ensureObjectItems(block.content.items)
+    const bgImage = block.style?.backgroundImageUrl
+
     return (
-        <div className="mx-auto max-w-6xl">
-            {toText(block.content.title) && (
-                <h2 className="mb-3 text-2xl font-black tracking-tight text-slate-900">{toText(block.content.title)}</h2>
+        <div className="relative mx-auto max-w-6xl">
+            {bgImage && (
+                <div className="absolute inset-0 -z-10 overflow-hidden rounded-3xl">
+                    <img src={bgImage} alt="" className="h-full w-full object-cover opacity-15" />
+                    <div className="absolute inset-0 bg-slate-900/40 mix-blend-multiply" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/90" />
+                </div>
             )}
-            {toText(block.content.body) && <p className="mb-6 text-slate-700">{toText(block.content.body)}</p>}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className={`relative ${bgImage ? 'rounded-3xl p-8 md:p-12 text-white' : ''}`}>
+                {toText(block.content.title) && (
+                    <h2 className={`mb-3 text-2xl font-black tracking-tight ${bgImage ? 'text-white' : 'text-slate-900'}`}>{toText(block.content.title)}</h2>
+                )}
+                {toText(block.content.body) && <p className={`mb-8 max-w-3xl text-lg ${bgImage ? 'text-slate-200' : 'text-slate-700'}`}>{toText(block.content.body)}</p>}
+                <div className="grid gap-4 md:grid-cols-3">
                 {items.map((item, index) => (
                     <article key={`${item.id || index}`} className={`border px-6 py-5 ${theme.border} ${theme.bgLight}`}>
                         <div className={`mb-3 flex h-8 w-8 items-center justify-center rounded-full ${theme.bgHighlight} ${theme.textAccent}`}>
@@ -197,6 +228,7 @@ function renderPromisesBlock(block: SitePageBlock, theme: ThemeColors) {
                         <p className="font-bold text-slate-900">{toText(item.title || item.label || item.body)}</p>
                     </article>
                 ))}
+                </div>
             </div>
         </div>
     )
@@ -479,6 +511,138 @@ function renderFallbackBlock(block: SitePageBlock, theme: ThemeColors) {
     )
 }
 
+function renderFeatureListBlock(block: SitePageBlock, theme: ThemeColors) {
+    const title = toText(block.content.title)
+    const items = ensureObjectItems(block.content.items)
+    const columnCount = block.style?.columns === '3' ? 'md:grid-cols-3' : 'md:grid-cols-2'
+
+    return (
+        <div className="mx-auto max-w-6xl">
+            {title && <h2 className="mb-10 text-center text-4xl font-black tracking-tight md:text-5xl">{title}</h2>}
+            <div className={`grid gap-4 sm:grid-cols-2 ${columnCount}`}>
+                {items.map((item, index) => (
+                    <div key={`${item.id || index}`} className={`flex items-start gap-3 rounded-lg border p-4 transition-all hover:-translate-y-1 hover:shadow-lg ${theme.border} ${theme.bgLight}`}>
+                        <div className={`mt-0.5 flex-shrink-0 rounded-full p-1 bg-white ${theme.secondary}`}>
+                            <CheckCircle2 className="h-4 w-4" />
+                        </div>
+                        <p className="text-sm font-medium text-slate-800 leading-snug">
+                            {toText(item.title || item.label || item.value || `Funcionalidad ${index + 1}`)}
+                        </p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+function renderClientCarouselBlock(block: SitePageBlock, currentPath: string) {
+    const title = toText(block.content.title)
+    const body = toText(block.content.body)
+    const items = ensureObjectItems(block.content.items)
+
+    return (
+        <div className="mx-auto max-w-screen-2xl overflow-hidden px-4 md:px-8">
+            <div className="mx-auto mb-10 max-w-6xl text-center">
+                {title && <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl">{title}</h2>}
+                {body && <p className="mt-4 text-lg text-slate-600">{body}</p>}
+            </div>
+            
+            {/* Simple CSS scroll snap carousel */}
+            <div className="flex w-full gap-6 overflow-x-auto snap-x snap-mandatory pb-8 pt-4 hide-scrollbar">
+                {items.map((item, index) => {
+                    const imageUrl = toText(item.imageUrl) || `https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80`
+                    const itemUrl = normalizeCmsHref(item.url, '', currentPath)
+                    
+                    return (
+                        <a 
+                            key={`${item.id || index}`} 
+                            href={itemUrl || '#'}
+                            className="group relative flex w-[85vw] max-w-[400px] shrink-0 snap-center flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-900/5 transition-all hover:-translate-y-2 hover:shadow-2xl sm:w-[350px]"
+                        >
+                            <div className="relative h-48 w-full overflow-hidden">
+                                <img 
+                                    src={imageUrl} 
+                                    alt={toText(item.title)} 
+                                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
+                            </div>
+                            <div className="flex flex-1 flex-col p-6">
+                                <h3 className="text-xl font-bold leading-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
+                                    {toText(item.title)}
+                                </h3>
+                                <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-600">
+                                    {toText(item.body || item.description)}
+                                </p>
+                                <div className="mt-auto pt-6 flex items-center font-bold text-sm tracking-widest uppercase text-emerald-700">
+                                    Ver caso <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                </div>
+                            </div>
+                        </a>
+                    )
+                })}
+            </div>
+        </div>
+    )
+}
+
+function renderTuProfeBlock(block: SitePageBlock) {
+    const title = toText(block.content.title)
+    const eyebrow = toText(block.content.eyebrow)
+    const body = toText(block.content.body)
+    const items = ensureObjectItems(block.content.items)
+    const primaryHref = normalizeCmsHref(block.content.primaryHref, 'https://profetabla.com/', '/')
+
+    return (
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#0b1323] px-8 py-16 md:px-16 md:py-24 shadow-2xl">
+            <div className="pointer-events-none absolute right-0 top-0 h-[800px] w-[800px] -translate-y-1/3 translate-x-1/3 rounded-full bg-emerald-900/20 blur-[120px]" />
+            <div className="pointer-events-none absolute bottom-0 left-0 h-[600px] w-[600px] -translate-x-1/3 translate-y-1/3 rounded-full bg-emerald-600/10 blur-[100px]" />
+            
+            <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
+                <div className="max-w-xl">
+                    {eyebrow && (
+                        <div className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+                            <span className="mr-2 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            {eyebrow}
+                        </div>
+                    )}
+                    {title && <h2 className="mt-6 text-4xl font-black leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">{title}</h2>}
+                    {body && <p className="mt-6 text-lg leading-relaxed text-slate-300 md:text-xl">{body}</p>}
+                    
+                    <div className="mt-10">
+                        {primaryHref && (
+                            <a
+                                href={primaryHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-8 py-4 text-sm font-bold uppercase tracking-[0.2em] text-slate-900 transition-all hover:bg-emerald-400 hover:scale-105 hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
+                            >
+                                {toText(block.content.primaryLabel, 'Conoce TuProfe')}
+                                <ArrowRight className="h-5 w-5" />
+                            </a>
+                        )}
+                    </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 w-full">
+                    {items.map((item, index) => (
+                        <div 
+                            key={index}
+                            className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur transition-colors hover:border-emerald-500/50 hover:bg-slate-800/80"
+                        >
+                            <div className="mb-4 inline-flex rounded-lg bg-slate-800 p-2 text-emerald-400 group-hover:bg-emerald-500/10">
+                                <Code2 className="h-6 w-6" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white">{toText(item.title)}</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-slate-400">{toText(item.body)}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 export function HomeRootPageRenderer({
     page,
     selectable = false,
@@ -540,10 +704,13 @@ export function HomeRootPageRenderer({
                         {block.id === 'servicios' && renderServicesGridBlock(block, page.path, currentTheme)}
                         {block.id === 'flujo' && !benefitsBlock && renderStandaloneFlowBlock(block, selectable, selectedBlockId, currentTheme, onSelectBlock)}
                         {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, currentTheme, onSelectBlock)}
+                        {block.id === 'funcionalidades' && block.type === 'feature-list' && renderFeatureListBlock(block, currentTheme)}
+                        {block.id === 'clientes' && renderClientCarouselBlock(block, page.path)}
+                        {block.id === 'tuprofe' && renderTuProfeBlock(block)}
                         {block.id === 'faq' && renderFaqBlock(block, currentTheme)}
                         {block.id === 'contacto' && renderContactBlock(block, page.path, currentTheme)}
                         {block.id === 'cta' && renderCtaBlock(block, page.path, currentTheme)}
-                        {!['hero', 'promesas', 'servicios', 'flujo', 'beneficios', 'faq', 'contacto', 'cta'].includes(block.id) && renderFallbackBlock(block, currentTheme)}
+                        {!['hero', 'promesas', 'servicios', 'flujo', 'beneficios', 'funcionalidades', 'clientes', 'tuprofe', 'faq', 'contacto', 'cta'].includes(block.id) && renderFallbackBlock(block, currentTheme)}
                     </section>
                 )
             })}

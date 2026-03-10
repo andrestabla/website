@@ -76,6 +76,7 @@ const BLOCK_TYPE_LABEL: Record<SitePageBlockType, string> = {
     progressbar: 'Progress bars (legacy)',
     grid: 'Cuadrícula',
     timeline: 'Línea de tiempo',
+    tuprofe: 'Metodología',
     bento: 'Bento Grid',
     loopgrid: 'Posts dinámicos',
     portfolio: 'Portafolio',

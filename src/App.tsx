@@ -228,6 +228,7 @@ function App() {
               <Route path="/" element={<ManagedPublishedRoute routePath="/" fallback={<NavigationSelector />} />} />
               <Route path="/empresas" element={<ManagedPublishedRoute routePath="/empresas" fallback={<Home />} />} />
               <Route path="/educacion" element={<ManagedPublishedRoute routePath="/educacion" fallback={<div className="min-h-screen flex items-center justify-center">Cargando Educación...</div>} />} />
+              <Route path="/plataformas-de-aprendizaje" element={<ManagedPublishedRoute routePath="/plataformas-de-aprendizaje" fallback={<div className="min-h-screen flex items-center justify-center">Cargando Plataformas...</div>} />} />
               <Route path="/inicio" element={<Navigate to="/empresas" replace />} />
               <Route path="/servicios/:slug" element={<ServicePage />} />
               <Route path="/productos/:slug" element={<ProductPage />} />
