@@ -469,14 +469,14 @@ export function GeneradorCasosAI() {
                             <div className="space-y-8">
                                 <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 md:p-10 backdrop-blur-sm">
                                     <h4 className="flex items-center gap-2 mb-4 text-sm font-bold uppercase tracking-widest text-slate-500 pb-4 border-b border-white/5">
-                                        <TrendingUp className="w-4 h-4" /> Contexto y Desafío
+                                        <TrendingUp className="w-4 h-4" /> Contexto
                                     </h4>
                                     <p className="text-slate-300 leading-relaxed text-lg">{result.challenge}</p>
                                 </div>
                                 
                                 <div className="rounded-3xl border border-emerald-500/20 bg-emerald-950/20 p-8 md:p-10 backdrop-blur-sm">
                                     <h4 className="flex items-center gap-2 mb-4 text-sm font-bold uppercase tracking-widest text-emerald-500/70 pb-4 border-b border-emerald-500/10">
-                                        <CheckCircle2 className="w-4 h-4" /> Solución Algoritmo T
+                                        <CheckCircle2 className="w-4 h-4" /> Esbozo de propuesta
                                     </h4>
                                     <p className="text-slate-200 leading-relaxed text-lg">{result.solution}</p>
                                 </div>
@@ -494,7 +494,7 @@ export function GeneradorCasosAI() {
                                 {result.tangibleProducts && result.tangibleProducts.length > 0 && (
                                     <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 md:p-10 backdrop-blur-sm">
                                         <h4 className="flex items-center gap-2 mb-6 text-sm font-bold uppercase tracking-widest text-slate-400 pb-4 border-b border-white/5">
-                                            <Package className="w-4 h-4" /> Productos Tangibles a Entregar
+                                            <Package className="w-4 h-4" /> Productos tangibles
                                         </h4>
                                         <ul className="flex flex-col gap-4">
                                             {result.tangibleProducts.map((product, idx) => (
@@ -512,7 +512,7 @@ export function GeneradorCasosAI() {
                                 {result.mermaidDiagram && (
                                     <div className="rounded-3xl border border-white/5 bg-white p-8 md:p-10 shadow-[0_0_40px_rgba(255,255,255,0.05)] overflow-hidden flex flex-col">
                                         <h4 className="flex items-center gap-2 mb-6 text-sm font-bold uppercase tracking-widest text-slate-500 pb-4 border-b border-slate-100">
-                                            <GitMerge className="w-4 h-4" /> Arquitectura Propuesta
+                                            <GitMerge className="w-4 h-4" /> Arquitectura del proceso propuesta
                                         </h4>
                                         <div className="flex-1 w-full bg-slate-50 rounded-2xl border border-slate-100 p-4 flex items-center justify-center">
                                             <Mermaid chart={result.mermaidDiagram} />

@@ -55,12 +55,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <p>Aquí tienes la propuesta de arquitectura y transformación digital generada específicamente para tu caso en el sector <strong>${industry}</strong> para el proceso de <strong>${processName}</strong>.</p>
         
         <div style="margin-top: 32px; padding: 24px; background-color: #f8fafc; border-left: 4px solid #10b981;">
-          <h2 style="margin: 0 0 16px 0; color: #0f172a; font-size: 20px;">${caseStudy.title}</h2>
+          <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b;">Contexto</h3>
           <p style="color: #475569; line-height: 1.6;">${caseStudy.challenge}</p>
         </div>
 
         <div style="margin-top: 24px; padding: 24px; background-color: #f1f5f9; border-radius: 12px;">
-          <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b;">Nuestra Solución Sugerida</h3>
+          <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b;">Esbozo de propuesta</h3>
           <p style="color: #0f172a; line-height: 1.6;">${caseStudy.solution}</p>
         </div>
 
@@ -71,7 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         ${caseStudy.tangibleProducts ? `
           <div style="margin-top: 32px;">
-            <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; margin-bottom: 16px;">Productos Tangibles a Entregar</h3>
+            <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; margin-bottom: 16px;">Productos tangibles</h3>
             <ul style="padding-left: 20px; color: #475569;">
               ${caseStudy.tangibleProducts.map((p: string) => `<li style="margin-bottom: 8px;">${p}</li>`).join('')}
             </ul>

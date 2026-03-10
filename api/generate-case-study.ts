@@ -17,29 +17,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const prompt = `
-Eres un socio consultor de Algoritmo T (Partner-level Digital Strategist). Tu objetivo es generar una propuesta de transformación digital de ALTA PERTINENCIA, RIGOR TÉCNICO y EXHAUSTIVIDAD.
+Eres un consultor experto de Algoritmo T. Tu tono es académico, directo, simple, pero técnico y contundente.
 
-CONTEXTO METODOLÓGICO DE ALGORITMO T (DEBES APLICAR ESTOS MARCOS):
-- **Protocolo 01: Ingeniería Humana**: Ciencia de la adopción. Se enfoca en arquitectura cognitiva, diseño de hábitos digitales y redes de influencia interna para reducir la resistencia al cambio (que suele ser del 60-70% en proyectos fallidos).
-- **Protocolo 02: Despliegue IA**: Fases de Evaluación de Readiness, Arquitectura de Solución (NIST AI RMF e ISO 42001), Despliegue Controlado (Pilotos medibles) y Sostenibilidad técnica.
-- **Protocolo 03: Madurez Orgánica**: Modelo de 5 niveles (Inicial a Optimizado). Dimensiones: Estrategia Coherente, Procesos Vivos (automatización), Datos como Activo y Capacidad de Cambio Continuo.
+OBJETIVO:
+Generar una propuesta de optimización para el proceso "${processName}" en la industria "${industry}".
 
-ESTADÍSTICAS Y BENCHMARKS (ÚSALOS PARA SUSTENTAR EL DESAFÍO):
-- Gartner: 80% de las organizaciones que intentan escalar negocios digitales fallarán hasta 2025 por falta de alineación.
-- McKinsey: 70% de las transformaciones digitales fallan por cultura y procesos mal diseñados.
-- NIST AI RMF: Referente obligado para gobernanza de IA responsable.
-
-REQUISITOS DE CONTENIDO (MÁXIMA EXHAUSTIVIDAD):
-1. "title": Título consultivo sofisticado.
-2. "challenge": (Extensión: 100-150 palabras). Explica la ineficiencia técnica/operativa específica del proceso "${processName}" en la industria "${industry}". SUSTENTA con datos de mercado (simula o cita benchmarks de Gartner/McKinsey/NIST) y explica por qué el enfoque tradicional falla.
-3. "solution": (Extensión: 150-200 palabras). Detalla la intervención bajo la metodología de Algoritmo T. Menciona específicamente cómo aplicarías Protocolo 01 (Ingeniería Humana) para la adopción y Protocolo 02 (Despliegue IA) para la infraestructura. Habla de orquestación, capas de datos, gobernanza y arquitectura técnica detallada.
-4. "results": (Extensión: 100-150 palabras). Habla en FUTURO. Proyecta KPIs específicos (ej: reducción de latencia operativa, ROI en <120 días, incremento en la tasa de adopción digital) y cómo esto mueve la empresa en el modelo de Madurez Orgánica.
-5. "tangibleProducts": Lista 4 activos de alto valor (ej: "Framework de Gobernanza NIST-aligned", "Pipeline ETL con validación cognitiva", etc.).
-6. "mermaidDiagram": Diagrama Mermaid.js (flowchart TD) de ALTA COMPLEJIDAD. Debe mostrar el flujo desde el diagnóstico de readiness hasta la operación escalable, incluyendo bucles de retroalimentación y capas metodológicas de Algoritmo T.
+REQUISITOS DE CONTENIDO:
+1. "title": Optimización de ${processName} en ${industry}.
+2. "challenge": (Contexto) Explica en qué consiste el proceso y por qué es necesario intervenirlo digitalmente. Usa un tono positivo y argumentos basados en fuentes referentes del sector.
+3. "solution": (Esbozo de propuesta) Explica el proceso, resultado y cómo se aseguraría su implementación, seguimiento y control. 
+   DEBES USAR ESTE FORMATO EXACTO: "Podríamos implementar... [detalle técnico] a partir del mapeo y rediseño de... [proceso]. De tal modo que... [resultado]. Para asegurar su implementación haríamos... [acción]. Posteriormente, haríamos seguimiento y control para... [métrica/control]."
+4. "results": (Impacto proyectado) Proyecta tres cifras de impacto específicas. Ejemplo: "[cifra de impacto 1], [cifra de impacto 2], [cifra de impacto 3]".
+5. "tangibleProducts": Lista de productos generados, teniendo en cuenta los servicios empresariales de Algoritmo T (Ingeniería Humana, Despliegue IA, Madurez Orgánica).
+6. "mermaidDiagram": (Arquitectura del proceso propuesta) Esquematiza cómo funcionaría la nueva versión del proceso, destacando exactamente dónde entrarían las tecnologías y cómo contribuirían. Usa Mermaid.js (flowchart TD).
 
 RESTRICCIONES:
-- Lenguaje ACADÉMICO, SOBRIO y FORMAL.
-- PROHIBIDAS las metáforas (niebla, marea, etc.).
+- Tono experto y contundente.
+- Sin rodeos.
 - Respuesta en JSON PURO.
 
 Contexto del usuario:
