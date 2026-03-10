@@ -573,9 +573,9 @@ function renderClientCarouselBlock(block: SitePageBlock, currentPath: string) {
                                         alt={toText(item.title)} 
                                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
-                                    <div className="absolute inset-0 z-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent" />
+                                    <div className="absolute inset-0 z-0 bg-gradient-to-t from-slate-900/95 via-slate-900/50 to-transparent" />
                                     <div className="absolute bottom-6 left-6 right-6 z-20">
-                                        <h3 className="text-2xl font-bold leading-tight text-white group-hover:text-emerald-300 transition-colors">
+                                        <h3 className="text-xl font-bold leading-tight text-white group-hover:text-emerald-400 transition-colors drop-shadow-md">
                                             {toText(item.title)}
                                         </h3>
                                     </div>
@@ -603,7 +603,7 @@ function renderTuProfeBlock(block: SitePageBlock) {
     const body = toText(block.content.body)
     const items = ensureObjectItems(block.content.items)
     const primaryHref = normalizeCmsHref(block.content.primaryHref, 'https://profetabla.com/', '/')
-    const imageUrl = toText(block.content.imageUrl) || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80'
+    const imageUrl = toText(block.content.imageUrl) || 'https://images.unsplash.com/photo-1531482128466-a22ad36a6660?w=800&q=80'
 
     return (
         <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-[#0b1323] px-6 py-16 md:px-12 md:py-24 lg:px-20 shadow-2xl">
@@ -613,26 +613,26 @@ function renderTuProfeBlock(block: SitePageBlock) {
             <div className="relative grid gap-16 lg:grid-cols-2 lg:items-center">
                 <div className="max-w-xl order-2 lg:order-1">
                     {eyebrow && (
-                        <div className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
-                            <span className="mr-2 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <div className="inline-flex items-center rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+                            <span className="mr-2 flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)] animate-pulse"></span>
                             {eyebrow}
                         </div>
                     )}
-                    {title && <h2 className="mt-6 text-4xl font-black leading-[1.1] tracking-tight text-white md:text-5xl">{title}</h2>}
+                    {title && <h2 className="mt-6 text-4xl font-black leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">{title}</h2>}
                     {body && <p className="mt-6 text-lg leading-relaxed text-slate-300 md:text-xl">{body}</p>}
                     
                     <div className="mt-12 grid gap-6 sm:grid-cols-1">
                         {items.map((item, index) => (
                             <div 
                                 key={index}
-                                className="group relative flex items-start gap-4 rounded-xl border border-slate-800/60 bg-slate-900/40 p-5 transition-colors hover:border-emerald-500/40 hover:bg-slate-800/80"
+                                className="group relative flex items-start gap-4 rounded-xl border border-slate-700/50 bg-slate-800/20 p-5 transition-all hover:border-emerald-400/50 hover:bg-slate-800/60"
                             >
-                                <div className="mt-1 shrink-0 rounded-lg bg-emerald-500/10 p-2 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-slate-900 transition-colors">
+                                <div className="mt-1 shrink-0 rounded-lg bg-emerald-400/10 p-2 text-emerald-400 group-hover:bg-emerald-400 group-hover:text-slate-900 transition-colors">
                                     <Code2 className="h-5 w-5" />
                                 </div>
-                                <div>
+                                <div className="space-y-1">
                                     <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">{toText(item.title)}</h3>
-                                    <p className="mt-1 text-sm leading-relaxed text-slate-400">{toText(item.body)}</p>
+                                    <p className="text-sm leading-relaxed text-slate-300">{toText(item.body)}</p>
                                 </div>
                             </div>
                         ))}

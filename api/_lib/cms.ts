@@ -45,7 +45,7 @@ const SITE_PAGE_EDITORS = ['home', 'services', 'products', 'design', 'site', 'ma
 const SITE_PAGE_BLOCK_TYPES = [
   'hero', 'text', 'richtext', 'feature-list', 'cta', 'contact', 'spacer',
   'heading', 'button', 'image', 'video', 'embed', 'divider',
-  'form', 'social', 'tabs', 'toggle', 'gallery', 'counter', 'lottie', 'accordion', 'carousel',
+  'form', 'social', 'tabs', 'toggle', 'gallery', 'counter', 'lottie', 'accordion', 'carousel', 'tuprofe',
   'map', 'testimonial', 'progress', 'progressbar',
   'grid', 'timeline', 'bento', 'loopgrid', 'portfolio', 'pricing', 'flipbox', 'hotspots', 'navmenu',
   'icon', 'stats', 'navigation-selector',
