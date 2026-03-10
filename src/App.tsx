@@ -225,24 +225,19 @@ function App() {
           <DataConsentModal />
           <Suspense fallback={<RouteLoader />}>
             <Routes>
-              <Route path="/" element={<NavigationSelector />} />
-              <Route path="/empresas" element={<ManagedPublishedRoute routePath="/empresas" fallback={<Home />} />} />
-              <Route path="/empresas/servicios/:slug" element={<ServicePage />} />
-              <Route path="/empresas/productos/:slug" element={<ProductPage />} />
+              <Route path="/" element={<ManagedPublishedRoute routePath="/" fallback={<NavigationSelector />} />} />
+              <Route path="/empresas" element={<ManagedPublishedRoute routePath="/" fallback={<Home />} />} />
               <Route path="/educacion" element={<HomeEducacion />} />
               <Route path="/inicio" element={<Navigate to="/empresas" replace />} />
+              <Route path="/servicios/:slug" element={<ServicePage />} />
+              <Route path="/productos/:slug" element={<ProductPage />} />
               <Route path="/protocolos/ingenieria-humana" element={<IngenieriaHumana />} />
               <Route path="/protocolos/despliegue-ia" element={<DespliegueIA />} />
               <Route path="/protocolos/madurez-organica" element={<MadurezOrganica />} />
               <Route path="/politica-tratamiento-datos" element={<DataPolicy />} />
               <Route path="/campanias/:slug" element={<CampaignLandingPage />} />
               <Route path="/landing-servicios" element={<ManagedPublishedRoute routePath="/landing-servicios" fallback={<ServiciosLandingSimple />} />} />
-              <Route path="/caso-transversal" element={<ManagedPublishedRoute routePath="/caso-transversal" fallback={<ServiciosLandingSimple />} />} />
               <Route path="/generador-casos" element={<GeneradorCasosAI />} />
-
-              {/* Redirections for backward compatibility */}
-              <Route path="/servicios/:slug" element={<Navigate to="/empresas/servicios/:slug" replace />} />
-              <Route path="/productos/:slug" element={<Navigate to="/empresas/productos/:slug" replace />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
