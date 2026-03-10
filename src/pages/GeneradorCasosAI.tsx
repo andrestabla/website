@@ -22,21 +22,141 @@ const INDUSTRIES = [
 ]
 
 const PROCESSES_MAP: Record<string, string[]> = {
-    'Finanzas y Banca': ['Fraude y Riesgo (IA)', 'Atención al Cliente (Chatbots)', 'Automatización de Cumplimiento (RPA)', 'Análisis de Inversiones', 'Procesamiento de Créditos', 'Conciliación Bancaria Automática'],
-    'Salud y Medicina': ['Gestión de Turnos Inteligente', 'Triaje de Pacientes AI', 'Análisis de Historial Clínico', 'Optimización de Inventario Médico', 'Facturación Médica Automatizada', 'Telemedicina y Soporte'],
-    'Retail y Comercio Electrónico': ['Recomendación de Productos', 'Precios Dinámicos AI', 'Gestión de Inventario (BPMN)', 'Soporte y Chatbots 24/7', 'Logística de Última Milla', 'Predicción de Demanda'],
-    'Manufactura y Logística': ['Mantenimiento Predictivo (IoT)', 'Optimización de Rutas (IA)', 'Control de Calidad (Visión)', 'Cadena de Suministro', 'Gestión de Almacenes Inteligente', 'Robótica en Ensamblaje'],
-    'Tecnología y Software': ['Generación de Código Asistida', 'QA Técnico Automático', 'Soporte Nivel 1 y 2 (LLMs)', 'Análisis de Logs Centralizado', 'Documentación Automática', 'DevOps Continuous Deployment'],
-    'Educación': ['Tutoría Personalizada AI', 'Calificación Automática', 'Análisis de Rendimiento', 'Creación de Contenidos a Medida', 'Gestión de Admisiones', 'Retención de Alumnos (Predictiva)'],
-    'Servicios Profesionales': ['Generación de Propuestas (LLMs)', 'Revisión Legal de Contratos (NLP)', 'Organización de Agendas', 'Onboarding de Clientes', 'Análisis Competitivo', 'Gestión Financiera Interna'],
-    'Bienes Raíces y Construcción': ['Valoración Predictiva de Propiedades', 'Recorridos Virtuales (Integración)', 'Gestión de Proyectos de Obra', 'Administración de Contratos', 'Mantenimiento de Edificios', 'Análisis de Zonas de Inversión'],
-    'Energía y Servicios Públicos': ['Monitoreo Inteligente de Redes', 'Predicción de Consumos', 'Atención Automática a Cortes', 'Mantenimiento de Infraestructuras', 'Cumplimiento Normativo Energético', 'Facturación Dinámica'],
-    'Agricultura y Tecnología Global': ['Monitoreo Satelital Inteligente', 'Predicción de Cosechas', 'Automatización de Riego', 'Gestión de Cadena de Frío', 'Trazabilidad con Blockchain', 'Optimización de Maquinaria'],
-    'Entretenimiento y Medios': ['Personalización de Contenidos', 'Análisis de Audiencias', 'Moderación Automática (IA)', 'Producción Asistida', 'Gestión de Derechos', 'Predicción de Tendencias'],
-    'Transporte y Movilidad': ['Enrutamiento Dinámico', 'Gestión Inteligente de Flotas', 'Precios de Billetaje Dinámico', 'Soporte al Pasajero', 'Mantenimiento Preventivo de Vehículos', 'Logística Autónoma'],
-    'Hostelería y Turismo': ['Precios Dinámicos en Reservas', 'Check-in/Check-out Automatizado', 'Soporte Concierge 24/7', 'Gestión de Personal', 'Análisis de Sentimiento (Reviews)', 'Optimización Energética'],
-    'Telecomunicaciones': ['Prevención de Churn (Predicción)', 'Optimización de Redes AI', 'Soporte Técnico Bot', 'Facturación y Cobranza', 'Activación de Nuevos Servicios', 'Detección de Fraude'],
-    'Otro': ['Planificación Estratégica AI', 'Experiencia de Usuario Analítica', 'Operaciones Base (RPA)', 'Recursos Humanos y Reclutamiento', 'Ventas y CRM Automatizado', 'Control Financiero Ágil']
+    'Finanzas y Banca': [
+        'Detección de Fraude en Tiempo Real (IA)', 'Evaluación de Riesgo Crediticio (ML)', 'Automatización de Cumplimiento (KYC/AML)', 
+        'Optimización de Tesorería', 'Conciliación Bancaria Automatizada', 'Procesamiento de Hipotecas (OCR)', 
+        'Chatbots de Atención 24/7', 'Análisis de Sentimiento de Inversores', 'Gestión de Activos Inteligente',
+        'Prevención de Lavado de Activos', 'Seguridad en Transacciones Digitales', 'Automatización de Auditoría Interna',
+        'Sistemas de Recomendación de Productos', 'Mapeo de Customer Journey Bancario', 'Optimización de Cajeros (IoT)',
+        'Personalización de Ofertas en App', 'Reporting Regulatorio Automático', 'Gestión de Reclamaciones (IA)',
+        'Análisis de Churn de Clientes', 'Ciberseguridad Proactiva', 'Modernización de Core Bancario'
+    ],
+    'Salud y Medicina': [
+        'Triaje de Pacientes Asistido por IA', 'Análisis de Imágenes Diagnósticas (Visión)', 'Gestión de Historias Clínicas Electrónicas',
+        'Optimización de Turnos Quirúrgicos', 'Seguimiento Remoto de Pacientes (IoT)', 'Automatización de Facturación Médica',
+        'Gestión de Suministros Hospitalarios', 'Predicción de Reingresos Hospitalarios', 'Análisis Genómico de Datos',
+        'Telemedicina y Videoconsulta', 'Soporte a la Decisión Clínica', 'Automatización de Farmacia y Recetas',
+        'Monitorización de Signos Vitales', 'Gestión de Biobancos', 'Optimización de Logística de Ambulancias',
+        'Análisis de Satisfacción del Paciente', 'Cumplimiento Normativo (HIPAA)', 'Marketing de Salud Personalizado',
+        'Mantenimiento de Equipos Médicos', 'Investigación Clínica Digitalizada', 'Onboarding de Personal Sanitario'
+    ],
+    'Retail y Comercio Electrónico': [
+        'Personalización de Recomendaciones (IA)', 'Precios Dinámicos y Competitivos', 'Gestión de Inventario Predictiva',
+        'Optimización de Logística de Última Milla', 'Chatbots de Venta y Soporte', 'Análisis de Tráfico en Tiendas Físicas',
+        'Detección de Fraude en Pagos', 'Gestión de Devoluciones Automatizada', 'Sistemas de Fidelización Inteligentes',
+        'Búsqueda Visual de Productos', 'Optimización de Campañas de Email', 'Prevención de Quiebre de Stock',
+        'Análisis de Cesta de la Compra', 'Automatización de Almacenes', 'Sistemas de POS en la Nube',
+        'Omnicanalidad (Click & Collect)', 'Gestión de Marketplace de Terceros', 'Procesamiento de Pedidos (RPA)',
+        'Análisis de Reseñas y Feedback', 'Planificación de Espacio (Planogramas)', 'Segmentación de Audiencias'
+    ],
+    'Manufactura y Logística': [
+        'Mantenimiento Predictivo de Maquinaria', 'Optimización de Rutas de Transporte', 'Control de Calidad por Visión Artificial',
+        'Planificación de la Producción (BPMN)', 'Gestión de Inventarios (WMS)', 'Trazabilidad de Cadena de Suministro',
+        'Automatización de Líneas de Ensamblaje', 'Seguridad Industrial (IoT)', 'Gestión de Flotas con Telemetría',
+        'Análisis de Eficiencia Energética', 'Diseño de Productos Asistido (CIM)', 'Gemelos Digitales (Digital Twins)',
+        'Gestión de Compras y Sourcing', 'Optimización de Carga de Vehículos', 'Sistemas de Alerta Temprana',
+        'Reporte de Sostenibilidad Automático', 'Onboarding de Operarios', 'Gestión de Documentación de Aduana',
+        'Monitorización de Condiciones de Carga', 'Predicción de Demanda de Materia Prima', 'Lean Manufacturing Digital'
+    ],
+    'Tecnología y Software': [
+        'Generación de Código Asistida (IA)', 'QA y Pruebas Automatizadas', 'Gestión de Incidentes (SRE)',
+        'Optimización de Infraestructura Cloud', 'Documentación de Código Automática', 'Análisis de Ciberseguridad Proactiva',
+        'Soporte Técnico de Nivel 1 (LLMs)', 'Monitoreo de Performance (APM)', 'Gestión de Ciclo de Vida de API',
+        'Análisis de Uso de Producto', 'Automatización de Pipelines CI/CD', 'Onboarding de Desarrolladores',
+        'Gestión de Cumplimiento (SOC2/GDPR)', 'Modernización de Aplicaciones Legacy', 'Sistemas de Recomendación SaaS',
+        'Facturación por Consumo (Billing)', 'Gestión de Backlog de Producto', 'Análisis de Sentimiento en GitHub',
+        'Predicción de Capacidad de Servidores', 'Automatización de Ventas B2B', 'Arquitectura de Microservicios'
+    ],
+    'Educación': [
+        'Plataformas de Aprendizaje Adaptativo', 'Calificación Automática de Ensayos', 'Sistemas de Gestión Escolar (LMS)',
+        'Análisis de Riesgo de Deserción', 'Tutoría Virtual 24/7 (AI)', 'Gestión de Admisiones Automatizada',
+        'Creación de Contenidos Educativos', 'Certificación con Blockchain', 'Optimización de Horarios Docentes',
+        'Bibliotecas Digitales Inteligentes', 'Seguimiento de Egresados', 'Marketing para Captación de Alumnos',
+        'Sistemas de Pagos de Colegiaturas', 'Evaluaciones de Desempeño Docente', 'Inclusión y Accesibilidad Digital',
+        'Gestión de Investigaciones Académicas', 'Gamificación del Aprendizaje', 'Análisis de Feedback de Alumnos',
+        'Optimización de Mantenimiento de Campus', 'Realidad Virtual en el Aula', 'Onboarding de Nuevos Estudiantes'
+    ],
+    'Servicios Profesionales': [
+        'Generación de Propuestas de Consultoría', 'Revisión Legal Automática de Contratos', 'Gestión de Proyectos (PMO Digital)',
+        'Facturación y Seguimiento de Tiempos', 'Análisis de Rentabilidad por Cliente', 'Onboarding de Clientes (Digital)',
+        'Automatización de Auditorías Fiscales', 'Búsqueda de Talentos (Recruiting AI)', 'Asistentes de Agenda Inteligentes',
+        'Gestión de Documentos y Archivos', 'Business Intelligence para Decisores', 'Sistemas de Gestión del Conocimiento',
+        'Automatización de Marketing de Contenidos', 'Gestión de Alianzas y Partners', 'Análisis de Riesgo Regulatorio',
+        'Reporting para Clientes Automático', 'Colaboración en Remoto Segura', 'Investigación de Mercado Digital',
+        'Optimización de Estrategia de Precios', 'Soporte Multi-idioma para Clientes', 'Transformación Cultural Digital'
+    ],
+    'Bienes Raíces y Construcción': [
+        'Valoración Predictiva de Inmuebles', 'Gestión de Proyectos de Construcción', 'Marketing Digital Inmobiliario',
+        'Administración de Propiedades (PropTech)', 'Automatización de Contratos de Arrendamiento', 'Sistemas de Recorridos 3D',
+        'Análisis de Inversión Inmobiliaria', 'Mantenimiento de Edificios (BIM)', 'CRM para Agentes Inmobiliarios',
+        'Seguridad en Obras (Visión Artificial)', 'Gestión de Permisos y Licencias', 'Optimización Energética de Edificios',
+        'Logística de Materiales de Obra', 'Reporting de Avance a Inversores', 'Análisis de Zonas de Desarrollo',
+        'Firma Digital de Escrituras', 'Gestión de Postventa y Garantías', 'Sistemas de Control de Acceso',
+        'Venta de Propiedades sobre Planos', 'Modelado 4D de Construcción', 'Automatización de Presupuestos'
+    ],
+    'Energía y Servicios Públicos': [
+        'Gestión de Redes Eléctricas Inteligentes', 'Mantenimiento de Infraestructura Crítica', 'Predicción de Demanda Energética',
+        'Facturación y Lectura de Medidores', 'Atención a Cortes de Servicio (IA)', 'Gestión de Energías Renovables',
+        'Cumplimiento Normativo Ambiental', 'Optimización de Plantas de Tratamiento', 'Seguridad en Instalaciones (Drones)',
+        'Análisis de Pérdidas no Técnicas', 'Mercados de Energía en Tiempo Real', 'Movilidad Eléctrica y Carga',
+        'Gestión de Residuos Urbanos', 'Sistemas de Alerta por Emergencias', 'Monitoreo de Tuberías y Fugas',
+        'Onboarding de Clientes de Servicios', 'Reporting de Impacto de Carbono', 'Automatización de Despacho',
+        'Mantenimiento de Parques Eólicos/Solares', 'Educación al Usuario en Consumo', 'Ciberseguridad en OT/IT'
+    ],
+    'Agricultura y Tecnología Global': [
+        'Agricultura de Precisión (Sensores/GPS)', 'Predicción de Cosechas por Clima', 'Monitorización de Suelos Digital',
+        'Automatización de Riego Inteligente', 'Gestión de Maquinaria Autónoma', 'Trazabilidad con Blockchain',
+        'Control de Plagas y Enfermedades (IA)', 'Gestión de Mercados de Commodities', 'Logística de Perecederos',
+        'Análisis Satelital de Cultivos', 'Seguros Agrícolas Basados en Índices', 'Bienestar Animal (Monitoreo IoT)',
+        'Gestión de Recursos Hídricos', 'Cumplimiento de Estándares de Exportación', 'Optimización de Fertilizantes',
+        'E-commerce Directo del Productor', 'Onboarding de Trabajadores Agrícolas', 'Gestión Documental de Exportación',
+        'Desarrollo de Invernaderos Inteligentes', 'Análisis Genético de Semillas', 'Sostenibilidad de Cadenas de Valor'
+    ],
+    'Entretenimiento y Medios': [
+        'Recomendación de Contenido Personalizada', 'Moderación de Comentarios (NLP)', 'Optimización de Publicidad Digital',
+        'Producción de Video Asistida por IA', 'Gestión de Derechos de Autor (Rights)', 'Análisis de Tendencias de Audiencia',
+        'Distribución de Contenido Multiplataforma', 'Periodismo de Datos Automatizado', 'Personalización de Eventos Digitales',
+        'Venta de Entradas y Ticketing', 'Detección de Piratería Digital', 'Traducción y Doblaje Automático',
+        'Análisis de Sentimiento en Redes Sociales', 'Gestión de Activos Digitales (DAM)', 'Optimización de Streaming (Video)',
+        'Influencer Marketing Analítico', 'Creación de Guiones con IA', 'Realidad Aumentada para Fan Engagement',
+        'Gamificación de Experiencias de Marca', 'Monetización de Contenidos (Paywalls)', 'Estrategia de Suscripciones'
+    ],
+    'Transporte y Movilidad': [
+        'Optimización de Rutas Urbanas', 'Gestión de Flotas Públicas', 'Sistemas de Pago sin Contacto',
+        'Mantenimiento Preventivo de Autobuses', 'Análisis de Demanda en Tiempo Real', 'Movilidad como Servicio (MaaS)',
+        'Control de Tráfico Inteligente', 'Gestión de Logística Aeroportuaria', 'Seguridad Vial y Monitoreo (IA)',
+        'Atención al Pasajero Multicanal', 'Gestión de Puertos y Terminales', 'Micro-movilidad (Scooters/Bicis)',
+        'Optimización de Almacenamiento Ferroviario', 'Facturación Automática de Peajes', 'Reporte de Huella de Carbono',
+        'Gestión de Entregas con Drones', 'Mantenimiento de Vías e Infraestructura', 'Analítica de Desempeño de Conductores',
+        'Onboarding de Choferes y Personal', 'Sistemas de Navegación de Flota', 'Optimización de Carga y Descarga'
+    ],
+    'Hostelería y Turismo': [
+        'Revenue Management (Precios Dinámicos)', 'Check-in y Check-out Digital', 'Personalización de Experiencias de Huésped',
+        'Gestión de Reservas y Sincronización', 'Atención al Cliente vía WhatsApp/Bot', 'Optimización de Limpieza y Habitaciones',
+        'Análisis de Reseñas (Reputación Online)', 'Gestión de Inventario de F&B', 'Sistemas de Recomendación Turística',
+        'Marketing de Destinos Digital', 'Programas de Lealtad Inteligentes', 'Optimización de Energía en Hoteles',
+        'Onboarding de Personal Estacional', 'Gestión de Eventos y Convenciones', 'Análisis de Sentimiento del Turista',
+        'Sistemas de Seguridad y Acceso', 'Tour Virtuales por Instalaciones', 'Gestión de Compras y Proveedores',
+        'Digitalización de Menús y Pedidos', 'Control de Costos Operativos', 'Sostenibilidad en Operación Turística'
+    ],
+    'Telecomunicaciones': [
+        'Prevención de Fuga de Clientes (Churn)', 'Optimización de Redes 5G (IA)', 'Soporte Técnico Especializado (Bots)',
+        'Análisis de Experiencia del Usuario (QoE)', 'Detección de Fraude en Llamadas/Datos', 'Automatización de Facturación',
+        'Gestión de Inventario de Red', 'Mantenimiento Preventivo de Antenas', 'Marketing de Ofertas en Tiempo Real',
+        'Onboarding de Nuevos Abonados', 'Gestión de Cumplimiento Regulatorio', 'Sistemas de Cobranza Inteligentes',
+        'Análisis de Tráfico de Datos', 'Despliegue de Infraestructura (Planificación)', 'Optimización de Contact Center',
+        'Venta Cruzada de Servicios Digitales', 'Gestión de Interconexión', 'Análisis de Competencia en Tarifas',
+        'Ciberseguridad de Red Core', 'Soporte a Operadores Virtuales (MVNO)', 'Transformación hacia Telco Cloud'
+    ],
+    'Otro': [
+        'Planificación Estratégica Digital', 'Optimización de Operaciones Internas', 'Automatización de Flujos Documentales',
+        'Análisis de Datos para Toma de Decisiones', 'Implementación de IA en Procesos Base', 'Gestión de Talento y Cultura Digital',
+        'Marketing y Ventas Automatizadas', 'Control de Gestión Financiera', 'Gestión de Riesgos y Cumplimiento',
+        'Mejora de la Experiencia del Cliente', 'Modernización de Infraestructura IT', 'Migración a la Nube (Cloud)',
+        'Gestión de Proyectos Ágiles', 'Seguridad de la Información', 'Desarrollo de Nuevos Productos Digitales',
+        'Automatización de Reportes Gerenciales', 'Análisis de Viabilidad de Innovación', 'Onboarding Digital General',
+        'Optimización de Canales de Comunicación', 'Diseño de Arquitectura Empresarial', 'Estrategia de Transformación Digital'
+    ]
 }
 
 const MATURITIES = [
@@ -68,7 +188,7 @@ function Mermaid({ chart }: { chart?: string }) {
 
         mermaid.initialize({
             startOnLoad: false,
-            theme: 'dark',
+            theme: 'default',
             securityLevel: 'loose',
             fontFamily: 'Inter, sans-serif'
         })
@@ -95,7 +215,7 @@ function Mermaid({ chart }: { chart?: string }) {
 
     return (
         <div 
-            className="flex justify-center w-full overflow-x-auto py-8 text-white [&>svg]:max-w-full [&>svg]:h-auto"
+            className="flex justify-center w-full overflow-x-auto py-8 text-slate-900 [&>svg]:max-w-full [&>svg]:h-auto"
             dangerouslySetInnerHTML={{ __html: svgData }}
         />
     )
@@ -354,11 +474,11 @@ export function GeneradorCasosAI() {
                                 )}
 
                                 {result.mermaidDiagram && (
-                                    <div className="rounded-3xl border border-white/5 bg-slate-950 p-8 md:p-10 backdrop-blur-sm overflow-hidden flex flex-col">
-                                        <h4 className="flex items-center gap-2 mb-6 text-sm font-bold uppercase tracking-widest text-slate-400 pb-4 border-b border-white/5">
+                                    <div className="rounded-3xl border border-white/5 bg-white p-8 md:p-10 shadow-[0_0_40px_rgba(255,255,255,0.05)] overflow-hidden flex flex-col">
+                                        <h4 className="flex items-center gap-2 mb-6 text-sm font-bold uppercase tracking-widest text-slate-500 pb-4 border-b border-slate-100">
                                             <GitMerge className="w-4 h-4" /> Arquitectura Propuesta
                                         </h4>
-                                        <div className="flex-1 w-full bg-white/5 rounded-2xl border border-white/5 p-4 flex items-center justify-center">
+                                        <div className="flex-1 w-full bg-slate-50 rounded-2xl border border-slate-100 p-4 flex items-center justify-center">
                                             <Mermaid chart={result.mermaidDiagram} />
                                         </div>
                                     </div>
@@ -368,13 +488,23 @@ export function GeneradorCasosAI() {
                                     <p className="mb-6 text-sm font-bold uppercase tracking-widest text-slate-500">¿Listo para avanzar?</p>
                                     <div className="flex flex-col gap-4 sm:flex-row">
                                         <a
-                                            href="/#contacto"
+                                            href={`https://wa.me/573044544525?text=${encodeURIComponent(
+                                                `Hola, estoy interesado(a) en digitalización para el sector ${industry}. Específicamente en el proceso de ${processName}.\n\nVi la propuesta generada por IA: "${result.title}" y me gustaría agendar una consulta para profundizar en esta arquitectura.`
+                                            )}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                             className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-white px-8 py-5 text-center text-sm font-black uppercase tracking-[0.2em] text-slate-950 transition-colors hover:bg-slate-200"
                                         >
                                             Agendar Consulta <ArrowRight className="h-4 w-4" />
                                         </a>
                                         <button
-                                            onClick={() => setStep('industry')}
+                                            onClick={() => {
+                                                setResult(null)
+                                                setIndustry('')
+                                                setProcessName('')
+                                                setMaturity('')
+                                                setStep('industry')
+                                            }}
                                             className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-center text-sm font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/10"
                                         >
                                             Recalcular Demo
