@@ -858,6 +858,32 @@ const SERVICES_LANDING_FAQ = [
     },
 ]
 
+const EDUCATION_LANDING_WORKFLOW = [
+    { title: '1. Diagnóstico y Análisis', body: 'Evaluamos el ecosistema digital actual y las necesidades pedagógicas de la institución.' },
+    { title: '2. Diseño de Solución', body: 'Co-creamos una hoja de ruta que integre tecnología, metodología activa y formación docente.' },
+    { title: '3. Implementación Estratégica', body: 'Desplegamos plataformas, producimos contenidos y certificamos competencias digitales.' },
+    { title: '4. Seguimiento y Evolución', body: 'Acompañamos la adopción del modelo para asegurar resultados académicos y operativos.' },
+]
+
+const EDUCATION_LANDING_FAQ = [
+    {
+        title: '¿Cómo aseguran la calidad pedagógica en la virtualización?',
+        body: 'Trabajamos con expertos en diseño instruccional que aseguran que el contenido sea efectivo, motivador y centrado en el estudiante.',
+    },
+    {
+        title: '¿Sus plataformas son compatibles con sistemas que ya usamos?',
+        body: 'Sí, implementamos soluciones que se integran con sus sistemas académico-administrativos existentes mediante estándares abiertos.',
+    },
+    {
+        title: '¿En qué consiste la formación para docentes?',
+        body: 'Es un acompañamiento práctico donde los docentes aprenden a usar herramientas digitales mientras rediseñan sus propias experiencias de aprendizaje.',
+    },
+    {
+        title: '¿Ofrecen soporte técnico post-implementación?',
+        body: 'No solo soporte técnico, sino acompañamiento en la adopción del modelo educativo para garantizar que la inversión genere impacto real.',
+    },
+]
+
 type PlainServiceCopy = {
     inSimpleWords: string
     businessBenefit: string
@@ -2185,8 +2211,8 @@ function createEducationLandingBlocks(): SitePageBlock[] {
             content: {
                 eyebrow: 'Cómo trabajamos',
                 title: 'Cómo trabajamos',
-                items: SERVICES_LANDING_WORKFLOW,
-                badges: ['Rapidez', 'Acompañamiento', 'Control'],
+                items: EDUCATION_LANDING_WORKFLOW,
+                badges: ['Metodología', 'Acompañamiento', 'Innovación'],
             },
             style: {
                 backgroundColor: '#0f172a',
@@ -2204,7 +2230,7 @@ function createEducationLandingBlocks(): SitePageBlock[] {
             content: {
                 eyebrow: 'Preguntas frecuentes',
                 title: 'Respuestas claras para tomar decisiones',
-                items: SERVICES_LANDING_FAQ,
+                items: EDUCATION_LANDING_FAQ,
             },
             style: {
                 backgroundColor: 'transparent',
