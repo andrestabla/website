@@ -92,7 +92,6 @@ function resolveBlockAnchors(block: SitePageBlock) {
 
 function renderHeroBlock(block: SitePageBlock) {
     const primaryHref = normalizeCmsHref(block.content.primaryHref)
-    const secondaryHref = normalizeCmsHref(block.content.secondaryHref)
     return (
         <div className="relative mx-auto max-w-6xl">
             <div className="pointer-events-none absolute inset-0 services-grid-pattern opacity-35" />
@@ -122,14 +121,12 @@ function renderHeroBlock(block: SitePageBlock) {
                             <ArrowRight className="h-4 w-4" />
                         </a>
                     )}
-                    {toText(block.content.secondaryLabel) && secondaryHref && (
-                        <a
-                            href={secondaryHref}
-                            className="inline-flex items-center gap-2 border border-slate-300 bg-white px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-slate-800 transition-colors hover:border-slate-900 hover:text-slate-900"
-                        >
-                            {toText(block.content.secondaryLabel)}
-                        </a>
-                    )}
+                    <Link
+                        to="/generador-casos"
+                        className="inline-flex items-center gap-2 border border-slate-300 bg-white px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-slate-800 transition-colors hover:border-slate-900 hover:text-slate-900"
+                    >
+                        Ver casos en mi industria
+                    </Link>
                 </div>
             </div>
         </div>
@@ -280,13 +277,15 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
                     )}
 
                     <div className="mt-10">
-                        <Link
-                            to="/generador-casos"
+                        <a
+                            href="https://www.algoritmot.com/caso-transversal"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 border border-emerald-400/30 bg-emerald-400/10 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-200 transition-all hover:bg-emerald-400/20 hover:border-emerald-400/50"
                         >
-                            Ver casos en mi industria
+                            Ver caso de éxito
                             <ArrowRight className="h-4 w-4" />
-                        </Link>
+                        </a>
                     </div>
                 </article>
             )}
