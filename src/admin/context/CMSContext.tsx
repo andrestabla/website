@@ -242,13 +242,14 @@ export type SitePageBlockType =
     | 'navmenu'
     | 'icon'
     | 'stats'
+    | 'navigation-selector'
 export const SITE_PAGE_BLOCK_TYPES: SitePageBlockType[] = [
     'hero', 'text', 'richtext', 'feature-list', 'cta', 'contact', 'spacer',
     'heading', 'button', 'image', 'video', 'embed', 'divider',
     'form', 'social', 'tabs', 'toggle', 'gallery', 'counter', 'lottie', 'accordion', 'carousel',
     'map', 'testimonial', 'progress', 'progressbar',
     'grid', 'timeline', 'bento', 'loopgrid', 'portfolio', 'pricing', 'flipbox', 'hotspots', 'navmenu',
-    'icon', 'stats',
+    'icon', 'stats', 'navigation-selector'
 ]
 
 export type SitePageBlockContent = {
@@ -2054,7 +2055,33 @@ function createTransversalCaseBlocks(): SitePageBlock[] {
     return blocks.map((block, index) => ({ ...block, order: index }))
 }
 
+function createNavigationSelectorBlocks(): SitePageBlock[] {
+    return [
+        {
+            id: 'selector',
+            type: 'navigation-selector',
+            name: 'Selector de Navegación',
+            visible: true,
+            order: 0,
+            content: {
+                corporateTitle: 'SOLUCIONES PARA EMPRESA',
+                corporateDescription: 'Optimización operativa, automatización de procesos y despliegue estratégico de IA.',
+                corporateCta: 'INGRESAR',
+                educationTitle: 'SOLUCIONES EDUCATIVAS',
+                educationDescription: 'Transformación digital para instituciones, colegios y centros de formación técnica.',
+                educationCta: 'INGRESAR',
+                logoText: 'ALGORITMOT'
+            },
+            style: {
+                backgroundColor: '#0f172a',
+                paddingY: '0',
+            }
+        }
+    ]
+}
+
 function createDefaultBlocksByPage(pageId: string, title: string, description: string, accentColor: string): SitePageBlock[] {
+    if (pageId === 'home-nav') return createNavigationSelectorBlocks()
     if (pageId === 'home-root') return createServicesLandingBlocks(title)
     if (pageId === 'home-inicio') return createClassicHomeBlocks(title, description, accentColor)
     if (pageId === 'case-transversal') return createTransversalCaseBlocks()
@@ -2203,9 +2230,27 @@ function normalizeSitePageBlocks(rawBlocks: unknown, fallbackBlocks: SitePageBlo
 const staticSiteArchitecture: SiteArchitecture = {
     pages: [
         {
+            id: 'home-nav',
+            title: 'Selector de Navegación',
+            path: '/',
+            description: 'Pantalla inicial de selección: Empresas o Educación.',
+            category: 'principal',
+            status: 'published',
+            editor: 'home',
+            template: 'immersive',
+            navLabel: 'Selector',
+            showInNavigation: false,
+            previewPath: '/',
+            accentColor: '#0f172a',
+            notes: 'Página de entrada al sitio.',
+            order: 0,
+            locked: true,
+            blocks: createDefaultBlocksByPage('home-nav', 'Selector de Navegación', 'Pantalla inicial de selección: Empresas o Educación.', '#0f172a'),
+        },
+        {
             id: 'home-root',
             title: 'Home (Landing principal)',
-            path: '/',
+            path: '/empresas',
             description: 'Página principal pública del sitio.',
             category: 'principal',
             status: 'published',
@@ -2213,10 +2258,10 @@ const staticSiteArchitecture: SiteArchitecture = {
             template: 'immersive',
             navLabel: 'Inicio',
             showInNavigation: true,
-            previewPath: '/',
+            previewPath: '/empresas',
             accentColor: '#2563eb',
             notes: 'Render principal del sitio.',
-            order: 0,
+            order: 1,
             locked: true,
             blocks: createDefaultBlocksByPage('home-root', 'Home (Landing principal)', 'Página principal pública del sitio.', '#2563eb'),
         },
