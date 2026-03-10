@@ -7,6 +7,7 @@ import { SmartPopup } from './components/marketing/SmartPopup'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 
+const Home = lazy(() => import('./pages/Home').then((module) => ({ default: module.Home })))
 const ServicePage = lazy(() => import('./pages/ServicePage').then((module) => ({ default: module.ServicePage })))
 const ProductPage = lazy(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })))
 const IngenieriaHumana = lazy(() => import('./pages/IngenieriaHumana').then((module) => ({ default: module.IngenieriaHumana })))
@@ -20,7 +21,6 @@ const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ defau
 const GeneradorCasosAI = lazy(() => import('./pages/GeneradorCasosAI').then((module) => ({ default: module.GeneradorCasosAI })))
 const NavigationSelector = lazy(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
 const HomeEducacion = lazy(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
-const CorporateHome = lazy(() => import('./pages/CorporateHome').then((module) => ({ default: module.CorporateHome })))
 
 const LoginPage = lazy(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const Dashboard = lazy(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
@@ -226,23 +226,18 @@ function App() {
           <Suspense fallback={<RouteLoader />}>
             <Routes>
               <Route path="/" element={<NavigationSelector />} />
-              <Route path="/empresas" element={<CorporateHome />} />
-              <Route path="/empresas/servicios/:slug" element={<ServicePage />} />
-              <Route path="/empresas/productos/:slug" element={<ProductPage />} />
+              <Route path="/empresas" element={<ManagedPublishedRoute routePath="/" fallback={<Home />} />} />
               <Route path="/educacion" element={<HomeEducacion />} />
               <Route path="/inicio" element={<Navigate to="/empresas" replace />} />
+              <Route path="/servicios/:slug" element={<ServicePage />} />
+              <Route path="/productos/:slug" element={<ProductPage />} />
               <Route path="/protocolos/ingenieria-humana" element={<IngenieriaHumana />} />
               <Route path="/protocolos/despliegue-ia" element={<DespliegueIA />} />
               <Route path="/protocolos/madurez-organica" element={<MadurezOrganica />} />
               <Route path="/politica-tratamiento-datos" element={<DataPolicy />} />
               <Route path="/campanias/:slug" element={<CampaignLandingPage />} />
               <Route path="/landing-servicios" element={<ManagedPublishedRoute routePath="/landing-servicios" fallback={<ServiciosLandingSimple />} />} />
-              <Route path="/caso-transversal" element={<ManagedPublishedRoute routePath="/caso-transversal" fallback={<ServiciosLandingSimple />} />} />
               <Route path="/generador-casos" element={<GeneradorCasosAI />} />
-
-              {/* Redirections for backward compatibility */}
-              <Route path="/servicios/:slug" element={<Navigate to="/empresas/servicios/:slug" replace />} />
-              <Route path="/productos/:slug" element={<Navigate to="/empresas/productos/:slug" replace />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

@@ -147,7 +147,7 @@ export function Products({ visibleBlocks, blockOrder, viewport = 'desktop', styl
                                     <div className="text-2xl font-black mb-10 tracking-tight">
                                         {product.price}
                                     </div>
-                                    <Link to={`/empresas/productos/${slug}`}>
+                                    <Link to={`/productos/${slug}`}>
                                         <Button
                                             variant={index === 1 ? 'secondary' : 'primary'}
                                             className="w-full"
