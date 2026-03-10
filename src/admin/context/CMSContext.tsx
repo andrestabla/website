@@ -2303,7 +2303,6 @@ function createPlataformasLandingBlocks(): SitePageBlock[] {
             },
             style: {
                 backgroundColor: 'transparent',
-                backgroundImageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1600&q=80',
                 textColor: '#0b1323',
                 align: 'left',
                 paddingY: '8rem',
@@ -2325,7 +2324,6 @@ function createPlataformasLandingBlocks(): SitePageBlock[] {
             },
             style: {
                 backgroundColor: '#ffffff', // Fallback
-                backgroundImageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1600&q=80',
                 textColor: '#ffffff',
                 align: 'left',
                 columns: '3',
@@ -2399,11 +2397,38 @@ function createPlataformasLandingBlocks(): SitePageBlock[] {
             },
         },
         {
-            id: 'flujo',
-            type: 'timeline', // Maps to standalone flow
-            name: 'Pasos de entrega',
+            id: 'tuprofe',
+            type: 'tuprofe' as SitePageBlockType,
+            name: 'Metodología Divergente',
             visible: true,
             order: 4,
+            content: {
+                eyebrow: 'Educación por proyectos',
+                title: 'Metodología divergente impulsada por TuProfe',
+                body: 'Conectamos diseño pedagógico, mentorías, evidencias y analítica en un ecosistema que prioriza el aprendizaje auténtico sobre la simple revisión de contenidos.',
+                primaryLabel: 'Conoce TuProfe',
+                primaryHref: 'https://profetabla.com/',
+                imageUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80',
+                items: [
+                    { title: 'Operación conectada', body: 'Planeación, entregas, correcciones grupales, mentorías y rúbricas en el mismo flujo visual.' },
+                    { title: 'Métricas predictivas', body: 'Análisis del histórico de entregas y el "engagement" real (no solo clicks, sino interacción colaborativa).' },
+                    { title: 'Gamificación de alto nivel', body: 'Economía de aprendizaje ligada a insignias públicas, validables e integradas con perfiles.' },
+                    { title: 'Retroalimentación humana inteligente', body: 'Bancos de feedback reutilizables, comentarios de audio o video integrados sobre los entregables.' },
+                    { title: 'Autonomía guiada', body: 'Las "etapas" se abren si y sólo si demuestras suficiencia, asegurando el desarrollo de competencias.' }
+                ]
+            },
+            style: {
+                backgroundColor: '#0f172a',
+                textColor: '#ffffff',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'flujo',
+            type: 'timeline',
+            name: 'Pasos de entrega',
+            visible: true,
+            order: 5,
             content: {
                 eyebrow: 'Cómo trabajamos',
                 title: 'Tu plataforma en 4 pasos:',
@@ -2413,31 +2438,6 @@ function createPlataformasLandingBlocks(): SitePageBlock[] {
                 backgroundColor: 'transparent',
                 textColor: '#0f172a',
                 align: 'left',
-                paddingY: '6rem',
-            },
-        },
-        {
-            id: 'tuprofe',
-            type: 'tuprofe' as SitePageBlockType, // Will need to define or alias this. We'll use a generic matching. Or add it to enums.
-            name: 'Metodología Divergente',
-            visible: true,
-            order: 5,
-            content: {
-                eyebrow: 'Educación por proyectos',
-                title: 'Metodología divergente impulsada por TuProfe',
-                body: 'Conectamos diseño pedagógico, mentorías, evidencias y analítica en un ecosistema que prioriza el aprendizaje auténtico sobre la gestión de contenidos.',
-                primaryLabel: 'Conoce TuProfe',
-                primaryHref: 'https://profetabla.com/',
-                items: [
-                    { title: 'Operación conectada', body: 'Planeación, tareas, mentorías y evaluación en un mismo flujo.' },
-                    { title: 'Seguimiento preciso', body: 'Visibilidad de avance por estudiante y equipo para intervenir a tiempo.' },
-                    { title: 'Reconocimientos reales', body: 'Insignias y certificados vinculados 100% a evidencias prácticas.' },
-                    { title: 'Aprendizaje activo', body: 'Ruta clara de avance donde el estudiante aprende haciendo.' },
-                ]
-            },
-            style: {
-                backgroundColor: '#0f172a',
-                textColor: '#ffffff',
                 paddingY: '6rem',
             },
         },

@@ -547,40 +547,49 @@ function renderClientCarouselBlock(block: SitePageBlock, currentPath: string) {
                 {body && <p className="mt-4 text-lg text-slate-600">{body}</p>}
             </div>
             
-            {/* Simple CSS scroll snap carousel */}
-            <div className="flex w-full gap-6 overflow-x-auto snap-x snap-mandatory pb-8 pt-4 hide-scrollbar">
-                {items.map((item, index) => {
-                    const imageUrl = toText(item.imageUrl) || `https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80`
-                    const itemUrl = normalizeCmsHref(item.url, '', currentPath)
-                    
-                    return (
-                        <a 
-                            key={`${item.id || index}`} 
-                            href={itemUrl || '#'}
-                            className="group relative flex w-[85vw] max-w-[400px] shrink-0 snap-center flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-slate-900/5 transition-all hover:-translate-y-2 hover:shadow-2xl sm:w-[350px]"
-                        >
-                            <div className="relative h-48 w-full overflow-hidden">
-                                <img 
-                                    src={imageUrl} 
-                                    alt={toText(item.title)} 
-                                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
-                            </div>
-                            <div className="flex flex-1 flex-col p-6">
-                                <h3 className="text-xl font-bold leading-tight text-slate-900 group-hover:text-emerald-700 transition-colors">
-                                    {toText(item.title)}
-                                </h3>
-                                <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-slate-600">
-                                    {toText(item.body || item.description)}
-                                </p>
-                                <div className="mt-auto pt-6 flex items-center font-bold text-sm tracking-widest uppercase text-emerald-700">
-                                    Ver caso <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            {/* Premium CSS scroll snap carousel */}
+            <div className="relative mt-12 w-full">
+                {/* Fade edges to suggest scroll */}
+                <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-8 bg-gradient-to-r from-[#f8fafc] to-transparent md:w-24" />
+                <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-8 bg-gradient-to-l from-[#f8fafc] to-transparent md:w-24" />
+                
+                <div className="flex w-full gap-6 overflow-x-auto snap-x snap-mandatory px-8 pb-12 pt-4 hide-scrollbar md:px-24">
+                    {items.map((item, index) => {
+                        const imageUrl = toText(item.imageUrl) || `https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80`
+                        const itemUrl = normalizeCmsHref(item.url, '', currentPath)
+                        
+                        return (
+                            <a 
+                                key={`${item.id || index}`} 
+                                href={itemUrl || '#'}
+                                className="group relative flex w-[85vw] max-w-[420px] shrink-0 snap-center flex-col overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl sm:w-[380px]"
+                            >
+                                <div className="relative h-56 w-full overflow-hidden">
+                                    <div className="absolute inset-0 z-10 bg-emerald-900/20 mix-blend-multiply opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                                    <img 
+                                        src={imageUrl} 
+                                        alt={toText(item.title)} 
+                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 z-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent" />
+                                    <div className="absolute bottom-6 left-6 right-6 z-20">
+                                        <h3 className="text-2xl font-bold leading-tight text-white group-hover:text-emerald-300 transition-colors">
+                                            {toText(item.title)}
+                                        </h3>
+                                    </div>
                                 </div>
-                            </div>
-                        </a>
-                    )
-                })}
+                                <div className="flex flex-1 flex-col p-8">
+                                    <p className="line-clamp-4 text-base leading-relaxed text-slate-600">
+                                        {toText(item.body || item.description)}
+                                    </p>
+                                    <div className="mt-8 flex items-center font-bold text-sm tracking-widest uppercase text-emerald-600">
+                                        Ver caso de éxito <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                    </div>
+                                </div>
+                            </a>
+                        )
+                    })}
+                </div>
             </div>
         </div>
     )
@@ -592,24 +601,42 @@ function renderTuProfeBlock(block: SitePageBlock) {
     const body = toText(block.content.body)
     const items = ensureObjectItems(block.content.items)
     const primaryHref = normalizeCmsHref(block.content.primaryHref, 'https://profetabla.com/', '/')
+    const imageUrl = toText(block.content.imageUrl) || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80'
 
     return (
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2.5rem] bg-[#0b1323] px-8 py-16 md:px-16 md:py-24 shadow-2xl">
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-[#0b1323] px-6 py-16 md:px-12 md:py-24 lg:px-20 shadow-2xl">
             <div className="pointer-events-none absolute right-0 top-0 h-[800px] w-[800px] -translate-y-1/3 translate-x-1/3 rounded-full bg-emerald-900/20 blur-[120px]" />
             <div className="pointer-events-none absolute bottom-0 left-0 h-[600px] w-[600px] -translate-x-1/3 translate-y-1/3 rounded-full bg-emerald-600/10 blur-[100px]" />
             
-            <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
-                <div className="max-w-xl">
+            <div className="relative grid gap-16 lg:grid-cols-2 lg:items-center">
+                <div className="max-w-xl order-2 lg:order-1">
                     {eyebrow && (
                         <div className="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
                             <span className="mr-2 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             {eyebrow}
                         </div>
                     )}
-                    {title && <h2 className="mt-6 text-4xl font-black leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">{title}</h2>}
+                    {title && <h2 className="mt-6 text-4xl font-black leading-[1.1] tracking-tight text-white md:text-5xl">{title}</h2>}
                     {body && <p className="mt-6 text-lg leading-relaxed text-slate-300 md:text-xl">{body}</p>}
                     
-                    <div className="mt-10">
+                    <div className="mt-12 grid gap-6 sm:grid-cols-1">
+                        {items.map((item, index) => (
+                            <div 
+                                key={index}
+                                className="group relative flex items-start gap-4 rounded-xl border border-slate-800/60 bg-slate-900/40 p-5 transition-colors hover:border-emerald-500/40 hover:bg-slate-800/80"
+                            >
+                                <div className="mt-1 shrink-0 rounded-lg bg-emerald-500/10 p-2 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-slate-900 transition-colors">
+                                    <Code2 className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">{toText(item.title)}</h3>
+                                    <p className="mt-1 text-sm leading-relaxed text-slate-400">{toText(item.body)}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-12">
                         {primaryHref && (
                             <a
                                 href={primaryHref}
@@ -624,19 +651,28 @@ function renderTuProfeBlock(block: SitePageBlock) {
                     </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 w-full">
-                    {items.map((item, index) => (
-                        <div 
-                            key={index}
-                            className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur transition-colors hover:border-emerald-500/50 hover:bg-slate-800/80"
-                        >
-                            <div className="mb-4 inline-flex rounded-lg bg-slate-800 p-2 text-emerald-400 group-hover:bg-emerald-500/10">
-                                <Code2 className="h-6 w-6" />
+                <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none order-1 lg:order-2">
+                    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-slate-800 shadow-2xl lg:aspect-[3/4]">
+                        <img 
+                            src={imageUrl} 
+                            alt="Plataforma Mockup" 
+                            className="h-full w-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1323] via-transparent to-transparent opacity-60" />
+                        <div className="absolute bottom-0 left-0 right-0 p-8">
+                            <div className="backdrop-blur-md bg-white/10 rounded-2xl border border-white/20 p-6 shadow-2xl">
+                                <div className="flex items-center gap-4">
+                                    <div className="h-12 w-12 rounded-full bg-emerald-500 flex items-center justify-center text-slate-900">
+                                        <Code2 className="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white tracking-widest uppercase">Operacional</p>
+                                        <p className="text-emerald-400 text-sm mt-1">Conectado al 100%</p>
+                                    </div>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-bold text-white">{toText(item.title)}</h3>
-                            <p className="mt-2 text-sm leading-relaxed text-slate-400">{toText(item.body)}</p>
                         </div>
-                    ))}
+                    </div>
                 </div>
             </div>
         </div>
