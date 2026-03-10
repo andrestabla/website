@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpenText, Boxes, CheckCircle2, Code2, Laptop, Layout, LineChart, Network, Rocket, Search, Target, Users } from 'lucide-react'
+import { Activity, ArrowRight, BarChart3, BookOpenText, Boxes, CheckCircle2, Code2, Laptop, Layers, Layout, LayoutDashboard, LineChart, Network, Rocket, Search, ShieldCheck, Target, Users } from 'lucide-react'
 import { ContactForm } from '../forms/ContactForm'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { type SiteArchitecturePage, type SitePageBlock } from '../../admin/context/CMSContext'
@@ -645,7 +645,7 @@ function renderTuProfeBlock(block: SitePageBlock) {
     const body = toText(block.content.body)
     const items = ensureObjectItems(block.content.items)
     const primaryHref = normalizeCmsHref(block.content.primaryHref, 'https://profetabla.com/', '/')
-    const imageUrl = toText(block.content.imageUrl) || 'https://images.unsplash.com/photo-1531482128466-a22ad36a6660?w=800&q=80'
+    const imageUrl = toText(block.content.imageUrl) || '/assets/landing/tuprofe-mockup.png'
 
     return (
         <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-[#0b1323] px-6 py-16 md:px-12 md:py-24 lg:px-20 shadow-2xl">
@@ -664,20 +664,29 @@ function renderTuProfeBlock(block: SitePageBlock) {
                     {body && <p className="mt-6 text-lg leading-relaxed text-slate-300 md:text-xl">{body}</p>}
                     
                     <div className="mt-12 grid gap-6 sm:grid-cols-1">
-                        {items.map((item, index) => (
-                            <div 
-                                key={index}
-                                className="group relative flex items-start gap-4 rounded-xl border border-slate-700/50 bg-slate-800/20 p-5 transition-all hover:border-emerald-400/50 hover:bg-slate-800/60"
-                            >
-                                <div className="mt-1 shrink-0 rounded-lg bg-emerald-400/10 p-2 text-emerald-400 group-hover:bg-emerald-400 group-hover:text-slate-900 transition-colors">
-                                    <Code2 className="h-5 w-5" />
+                        {items.map((item, index) => {
+                            const itemTitle = toText(item.title).toLowerCase()
+                            let Icon = Code2
+                            if (itemTitle.includes('operación') || itemTitle.includes('conectada')) Icon = Layers
+                            if (itemTitle.includes('proyecto') || itemTitle.includes('reto')) Icon = LayoutDashboard
+                            if (itemTitle.includes('reconocimiento') || itemTitle.includes('verificable') || itemTitle.includes('insignia')) Icon = ShieldCheck
+                            if (itemTitle.includes('dashboard') || itemTitle.includes('analítica') || itemTitle.includes('métrica')) Icon = BarChart3
+
+                            return (
+                                <div 
+                                    key={index}
+                                    className="group relative flex items-start gap-4 rounded-xl border border-slate-700/50 bg-slate-800/20 p-5 transition-all hover:border-emerald-400/50 hover:bg-slate-800/60"
+                                >
+                                    <div className="mt-1 shrink-0 rounded-lg bg-emerald-400/10 p-2 text-emerald-400 group-hover:bg-emerald-400 group-hover:text-slate-900 transition-colors">
+                                        <Icon className="h-5 w-5" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">{toText(item.title)}</h3>
+                                        <p className="text-sm leading-relaxed text-slate-300">{toText(item.body)}</p>
+                                    </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">{toText(item.title)}</h3>
-                                    <p className="text-sm leading-relaxed text-slate-300">{toText(item.body)}</p>
-                                </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
 
                     <div className="mt-12">
@@ -706,8 +715,8 @@ function renderTuProfeBlock(block: SitePageBlock) {
                         <div className="absolute bottom-0 left-0 right-0 p-8">
                             <div className="backdrop-blur-md bg-white/10 rounded-2xl border border-white/20 p-6 shadow-2xl">
                                 <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-full bg-emerald-500 flex items-center justify-center text-slate-900">
-                                        <Code2 className="h-6 w-6" />
+                                    <div className="h-12 w-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/30">
+                                        <Activity className="h-6 w-6 animate-pulse" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-white tracking-widest uppercase">Operacional</p>
