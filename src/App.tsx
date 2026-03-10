@@ -236,14 +236,13 @@ function App() {
               <Route path="/protocolos/madurez-organica" element={<MadurezOrganica />} />
               <Route path="/politica-tratamiento-datos" element={<DataPolicy />} />
               <Route path="/campanias/:slug" element={<CampaignLandingPage />} />
-              <Route path="/landing-servicios" element={<ServiciosLandingSimple />} />
-              <Route path="/caso-transversal" element={<ServiciosLandingSimple />} />
+              <Route path="/landing-servicios" element={<ManagedPublishedRoute routePath="/landing-servicios" fallback={<ServiciosLandingSimple />} />} />
+              <Route path="/caso-transversal" element={<ManagedPublishedRoute routePath="/caso-transversal" fallback={<ServiciosLandingSimple />} />} />
+              <Route path="/generador-casos" element={<GeneradorCasosAI />} />
 
               {/* Redirections for backward compatibility */}
               <Route path="/servicios/:slug" element={<Navigate to="/empresas/servicios/:slug" replace />} />
               <Route path="/productos/:slug" element={<Navigate to="/empresas/productos/:slug" replace />} />
-              <Route path="/landing-servicios" element={<ManagedPublishedRoute routePath="/landing-servicios" fallback={<ServiciosLandingSimple />} />} />
-              <Route path="/generador-casos" element={<GeneradorCasosAI />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
