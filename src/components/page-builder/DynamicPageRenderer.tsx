@@ -505,7 +505,7 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
     } = block.content
 
     return (
-        <div className="flex flex-col lg:flex-row h-screen w-full overflow-hidden bg-slate-900 font-sans">
+        <div className="flex flex-col lg:flex-row min-h-screen lg:h-screen w-full overflow-hidden bg-slate-900 font-sans">
             {/* Corporate Section */}
             <a 
                 href="/empresas"
@@ -518,7 +518,7 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
                 <div className="absolute inset-0 bg-blue-900/40 mix-blend-multiply transition-colors group-hover:bg-blue-800/20" />
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-950 via-transparent to-transparent opacity-80" />
                 
-                <div className="relative h-full flex flex-col items-center justify-center text-center px-8 pt-20 lg:pt-0">
+                <div className="relative h-full flex flex-col items-center justify-center text-center px-6 py-16 lg:px-8 lg:py-0">
                     <div className="mb-4 lg:mb-6 p-3 lg:p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 group-hover:scale-110 transition-transform">
                         <Building2 className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
                     </div>
@@ -546,7 +546,7 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
                 <div className="absolute inset-0 bg-emerald-950/40 mix-blend-multiply transition-colors group-hover:bg-emerald-800/20" />
                 <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-transparent to-transparent opacity-80" />
                 
-                <div className="relative h-full flex flex-col items-center justify-center text-center px-8 pt-10 lg:pt-0">
+                <div className="relative h-full flex flex-col items-center justify-center text-center px-6 py-16 lg:px-8 lg:py-0">
                     <div className="mb-4 lg:mb-6 p-3 lg:p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 group-hover:scale-110 transition-transform">
                         <GraduationCap className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
                     </div>
@@ -1285,7 +1285,7 @@ function PageBlock({
 
     const backgroundColor = toText(block.style.backgroundColor) || (block.type === 'cta' ? pageAccentColor : '#ffffff')
     const textColor = toText(block.style.textColor) || (block.type === 'cta' || block.type === 'contact' ? '#ffffff' : '#0f172a')
-    const paddingY = toCssLength(block.style.paddingY, block.type === 'hero' ? '5rem' : '3.5rem')
+    const paddingY = toCssLength(block.style.paddingY, block.type === 'navigation-selector' ? '0' : (block.type === 'hero' ? '5rem' : '3.5rem'))
     const alignment = textAlignClass(block.style.align)
     const borderRadius = toCssLength(block.style.radius, '0px')
     const backgroundGradient = toText(block.style.backgroundGradient)
@@ -1335,16 +1335,22 @@ function PageBlock({
                     aria-hidden="true"
                 />
             ))}
-            <div className="relative mx-auto flex max-w-6xl flex-col px-6">
-                {selectable && (
-                    <div className="mb-3 inline-flex w-fit items-center gap-2 border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">
-                        {block.name || block.type}
-                    </div>
-                )}
-                <div className={`flex w-full flex-col ${alignment}`} style={{ gap: toCssLength(block.style.gap, '0rem') }}>
+            {block.type === 'navigation-selector' ? (
+                <div className="w-full">
                     {renderBlockBody(block, pageAccentColor)}
                 </div>
-            </div>
+            ) : (
+                <div className="relative mx-auto flex max-w-6xl flex-col px-6">
+                    {selectable && (
+                        <div className="mb-3 inline-flex w-fit items-center gap-2 border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">
+                            {block.name || block.type}
+                        </div>
+                    )}
+                    <div className={`flex w-full flex-col ${alignment}`} style={{ gap: toCssLength(block.style.gap, '0rem') }}>
+                        {renderBlockBody(block, pageAccentColor)}
+                    </div>
+                </div>
+            )}
         </section>
     )
 }
