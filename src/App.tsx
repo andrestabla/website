@@ -19,6 +19,8 @@ const ServiciosLandingSimple = lazy(() => import('./pages/ServiciosLandingSimple
 const ManagedCustomPage = lazy(() => import('./pages/ManagedCustomPage').then((module) => ({ default: module.ManagedCustomPage })))
 const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })))
 const GeneradorCasosAI = lazy(() => import('./pages/GeneradorCasosAI').then((module) => ({ default: module.GeneradorCasosAI })))
+const NavigationSelector = lazy(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
+const HomeEducacion = lazy(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
 
 const LoginPage = lazy(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const Dashboard = lazy(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
@@ -223,8 +225,10 @@ function App() {
           <DataConsentModal />
           <Suspense fallback={<RouteLoader />}>
             <Routes>
-              <Route path="/" element={<ManagedPublishedRoute routePath="/" fallback={<Home />} />} />
-              <Route path="/inicio" element={<ManagedPublishedRoute routePath="/inicio" fallback={<Home />} />} />
+              <Route path="/" element={<NavigationSelector />} />
+              <Route path="/empresas" element={<ManagedPublishedRoute routePath="/" fallback={<Home />} />} />
+              <Route path="/educacion" element={<HomeEducacion />} />
+              <Route path="/inicio" element={<Navigate to="/empresas" replace />} />
               <Route path="/servicios/:slug" element={<ServicePage />} />
               <Route path="/productos/:slug" element={<ProductPage />} />
               <Route path="/protocolos/ingenieria-humana" element={<IngenieriaHumana />} />
