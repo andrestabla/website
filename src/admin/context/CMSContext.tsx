@@ -2248,16 +2248,6 @@ function createEducationLandingBlocks(): SitePageBlock[] {
                 body: 'Desarrollamos ecosistemas educativos que promueven la interacción y el aprendizaje activo.',
                 items: [
                     {
-                        id: 'edu-digital',
-                        title: 'Programa Educación digital',
-                        eyebrow: 'Formación continua',
-                        inSimpleWords: 'Capacitación integral para el cuerpo docente sobre herramientas y metodologías del siglo XXI.',
-                        businessBenefit: 'Mejora en la calidad educativa y adopción tecnológica institucional.',
-                        idealWhen: 'Se requiere actualizar las competencias digitales de los profesores.',
-                        label: 'Conocer más',
-                        url: '#contacto',
-                    },
-                    {
                         id: 'plataformas-lms',
                         title: 'Plataformas de aprendizaje',
                         eyebrow: 'Infraestructura flexible',
@@ -2278,12 +2268,22 @@ function createEducationLandingBlocks(): SitePageBlock[] {
                         url: '#contacto',
                     },
                     {
-                        id: 'fabrica-contenidos',
-                        title: 'Fábrica de contenidos',
-                        eyebrow: 'Producción ágil',
-                        inSimpleWords: 'Producción masiva de materiales educativos digitales con altos estándares de calidad.',
-                        businessBenefit: 'Reducción de costos de producción y tiempos de salida a mercado.',
-                        idealWhen: 'Se requiere virtualizar un gran volumen de cursos en tiempo récord.',
+                        id: 'auditoria-qm',
+                        title: 'Auditoría de programas virtuales',
+                        eyebrow: 'Calidad internacional',
+                        inSimpleWords: 'Evaluación y certificación de la calidad pedagógica y técnica de tus cursos virtuales bajo estándares globales QM (Quality Matters).',
+                        businessBenefit: 'Aseguramiento de la esencia académica y mejora en los índices de retención.',
+                        idealWhen: 'Buscas validar la efectividad de tus programas o prepararte para acreditaciones.',
+                        label: 'Conocer más',
+                        url: '#contacto',
+                    },
+                    {
+                        id: 'edu-digital',
+                        title: 'Programa Educación digital',
+                        eyebrow: 'Formación continua',
+                        inSimpleWords: 'Capacitación integral para el cuerpo docente sobre herramientas y metodologías del siglo XXI.',
+                        businessBenefit: 'Mejora en la calidad educativa y adopción tecnológica institucional.',
+                        idealWhen: 'Se requiere actualizar las competencias digitales de los profesores.',
                         label: 'Conocer más',
                         url: '#contacto',
                     }
@@ -2709,7 +2709,11 @@ function isOutdatedEducationBlocks(blocks: SitePageBlock[]) {
     const servicesBlock = blocks.find((block) => block.id === 'servicios')
     if (!servicesBlock) return true
     const items = Array.isArray(servicesBlock.content?.items) ? servicesBlock.content.items : []
-    return items.length < 4
+    if (items.length < 4) return true
+    
+    // Check if the first item is 'plataformas-lms' to ensure the new order is applied
+    const firstItem = items[0] as any
+    return firstItem?.id !== 'plataformas-lms' || firstItem?.id === 'edu-digital'
 }
 
 function isOutdatedVirtualizacionBlocks(blocks: SitePageBlock[]) {
