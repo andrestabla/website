@@ -233,8 +233,8 @@ function renderPromisesBlock(block: SitePageBlock, theme: ThemeColors) {
                         // Attempt to resolve stylized icons based on title keywords
                         const title = toText(item.title || item.label || item.body).toLowerCase()
                         let Icon = CheckCircle2
-                        if (title.includes('campus') || title.includes('virtual') || title.includes('aula')) Icon = Laptop
-                        if (title.includes('plataforma') || title.includes('software') || title.includes('sistema')) Icon = Layout
+                        if (title.includes('campus virtual') || title.includes('aula')) Icon = Laptop
+                        if (title.includes('plataforma de aprendizaje') || title.includes('software') || title.includes('sistema')) Icon = Layout
                         if (title.includes('complemento') || title.includes('integración') || title.includes('api')) Icon = Boxes
                         if (title.includes('trazabilidad') || title.includes('seguimiento') || title.includes('datos')) Icon = Target
                         if (title.includes('pedagógica') || title.includes('aprendizaje') || title.includes('docente')) Icon = BookOpenText
