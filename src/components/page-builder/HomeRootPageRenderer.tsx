@@ -1,4 +1,6 @@
 import { Activity, ArrowRight, BarChart3, BookOpenText, Boxes, CheckCircle2, Code2, Laptop, Layers, Layout, LayoutDashboard, LineChart, Network, Rocket, Search, ShieldCheck, Target, Users } from 'lucide-react'
+import { motion, useMotionValue, useTransform, animate, useInView } from 'framer-motion'
+import { useEffect, useRef } from 'react'
 import { ContactForm } from '../forms/ContactForm'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { type SiteArchitecturePage, type SitePageBlock } from '../../admin/context/CMSContext'
@@ -144,6 +146,39 @@ function normalizeAnchorId(value: string) {
     return trimmed.replace(/^\/?#/, '').trim()
 }
 
+function AnimatedNumber({ value, duration = 2 }: { value: number; duration?: number }) {
+    const count = useMotionValue(0)
+    const rounded = useTransform(count, (latest) => Math.round(latest))
+    const ref = useRef(null)
+    const isInView = useInView(ref, { once: true, margin: "-100px" })
+
+    useEffect(() => {
+        if (isInView) {
+            animate(count, value, { duration, ease: "easeOut" })
+        }
+    }, [isInView, count, value, duration])
+
+    return <motion.span ref={ref}>{rounded}</motion.span>
+}
+
+function CountingNumber({ text }: { text: string }) {
+    // Regex to find numbers (possibly with commas) inside the string
+    // This allows strings like "500+ Docentes" or "1,200 Projects"
+    const parts = text.split(/(\d+(?:,\d+)*)/)
+    
+    return (
+        <>
+            {parts.map((part, i) => {
+                const num = parseInt(part.replace(/,/g, ''), 10)
+                if (!isNaN(num)) {
+                    return <AnimatedNumber key={i} value={num} />
+                }
+                return <span key={i}>{part}</span>
+            })}
+        </>
+    )
+}
+
 function resolveBlockAnchors(block: SitePageBlock) {
     const anchors = new Set<string>()
     const idAnchor = normalizeAnchorId(block.id)
@@ -270,7 +305,11 @@ function renderPromisesBlock(block: SitePageBlock, theme: ThemeColors) {
                                 
                                 <div className="space-y-2">
                                     <h3 className={`text-xl font-bold leading-snug ${isDark ? 'text-white group-hover:text-emerald-300' : 'text-slate-900'} transition-colors`}>
-                                        {toText(item.title || item.label || item.body)}
+                                        {theme.textHighlight === 'text-emerald-800' ? (
+                                            <CountingNumber text={toText(item.title || item.label || item.body)} />
+                                        ) : (
+                                            toText(item.title || item.label || item.body)
+                                        )}
                                     </h3>
                                     {toText(item.body) && item.body !== item.title && (
                                         <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>

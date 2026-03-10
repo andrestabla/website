@@ -2225,7 +2225,7 @@ function createEducationLandingBlocks(): SitePageBlock[] {
                     '500+ Docentes formados',
                     '10+ Plataformas implementadas',
                     '100+ Programas diseñados',
-                    '500+ Cursos producidos'
+                    '1500+ Cursos producidos'
                 ],
             },
             style: {
