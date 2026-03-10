@@ -29,3 +29,6 @@ dist-ssr
 .env.*
 .env*.local
 !.env.example
+
+.next/
+next-env.d.ts

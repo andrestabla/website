@@ -1,12 +1,9 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, CheckCircle2, Clock3, Handshake, ShieldCheck, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../context/LanguageContext'
 import { ContactForm } from '../components/forms/ContactForm'
 import { Layout } from '../components/layout/Layout'
-import { AdaptiveCaseStudyModal } from '../components/page-builder/blocks/AdaptiveCaseStudyModal'
-
 type PlainServiceCopy = {
     inSimpleWords: string
     businessBenefit: string
@@ -147,7 +144,6 @@ function getPlainServiceCopy(slug: string, fallbackDescription: string): PlainSe
 
 export function ServiciosLandingSimple() {
     const { translatedState } = useLanguage()
-    const [isCaseModalOpen, setIsCaseModalOpen] = useState(false)
     const email = translatedState.site.contactEmail || 'hola@algoritmot.com'
     const linkedin = translatedState.site.linkedin || 'https://www.linkedin.com'
     const companyName = translatedState.site.name || 'tu compañía'
@@ -357,13 +353,13 @@ export function ServiciosLandingSimple() {
                             </div>
 
                             <div className="mt-10">
-                                <button
-                                    onClick={() => setIsCaseModalOpen(true)}
+                                <Link
+                                    to="/generador-casos"
                                     className="inline-flex items-center gap-2 border border-emerald-400/30 bg-emerald-400/10 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-200 transition-all hover:bg-emerald-400/20 hover:border-emerald-400/50"
                                 >
                                     Ver casos en mi industria
                                     <ArrowRight className="h-4 w-4" />
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -414,7 +410,6 @@ export function ServiciosLandingSimple() {
                     </div>
                 </section>
             </div>
-            <AdaptiveCaseStudyModal isOpen={isCaseModalOpen} onClose={() => setIsCaseModalOpen(false)} />
         </Layout>
     )
 }
