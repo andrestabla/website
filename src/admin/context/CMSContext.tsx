@@ -2705,6 +2705,17 @@ function isOutdatedHomeRootBlocks(blocks: SitePageBlock[]) {
     return !('inSimpleWords' in firstObjectItem) || !('businessBenefit' in firstObjectItem) || !('idealWhen' in firstObjectItem)
 }
 
+function isOutdatedEducationBlocks(blocks: SitePageBlock[]) {
+    const servicesBlock = blocks.find((block) => block.id === 'servicios')
+    if (!servicesBlock) return true
+    const items = Array.isArray(servicesBlock.content?.items) ? servicesBlock.content.items : []
+    return items.length < 4
+}
+
+function isOutdatedVirtualizacionBlocks(blocks: SitePageBlock[]) {
+    return !blocks.some((block) => block.id === 'experiencias')
+}
+
 function isOutdatedCaseTransversalBlocks(blocks: SitePageBlock[]) {
     if (!Array.isArray(blocks) || blocks.length === 0) return true
     const heroBlock = blocks.find((block) => block.id === 'hero')
@@ -2738,6 +2749,12 @@ function isOutdatedCaseTransversalBlocks(blocks: SitePageBlock[]) {
 
 function migrateLegacyBuilderPage(pageId: string, title: string, description: string, accentColor: string, blocks: SitePageBlock[]) {
     if (pageId === 'home-root' && isOutdatedHomeRootBlocks(blocks)) {
+        return createDefaultBlocksByPage(pageId, title, description, accentColor)
+    }
+    if (pageId === 'home-edu' && isOutdatedEducationBlocks(blocks)) {
+        return createDefaultBlocksByPage(pageId, title, description, accentColor)
+    }
+    if (pageId === 'virtualizacion-programas' && isOutdatedVirtualizacionBlocks(blocks)) {
         return createDefaultBlocksByPage(pageId, title, description, accentColor)
     }
     if (pageId === 'case-transversal' && isOutdatedCaseTransversalBlocks(blocks)) {
