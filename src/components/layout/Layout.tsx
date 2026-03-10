@@ -10,9 +10,9 @@ interface LayoutProps {
 }
 
 function getRouteTemplate(pathname: string, site: ReturnType<typeof useCMS>['state']['site']) {
-    if (pathname === '/') return site.pageTemplateHome || 'immersive'
-    if (pathname.startsWith('/servicios')) return site.pageTemplateService || 'balanced'
-    if (pathname.startsWith('/productos')) return site.pageTemplateProduct || 'balanced'
+    if (pathname === '/' || pathname === '/empresas') return site.pageTemplateHome || 'immersive'
+    if (pathname.includes('/servicios/')) return site.pageTemplateService || 'balanced'
+    if (pathname.includes('/productos/')) return site.pageTemplateProduct || 'balanced'
     if (pathname.startsWith('/protocolos')) return site.pageTemplateProtocol || 'immersive'
     if (pathname.startsWith('/politica-tratamiento-datos')) return site.pageTemplatePolicy || 'compact'
     return 'balanced'

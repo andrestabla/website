@@ -149,7 +149,7 @@ export function Services({ visibleBlocks, blockOrder, viewport = 'desktop', styl
                                 </div>
 
                                 <Link
-                                    to={`/servicios/${service.slug}`}
+                                    to={`/empresas/servicios/${service.slug}`}
                                     className="flex items-center text-sm font-black uppercase tracking-[0.2em] text-brand-primary hover:text-slate-900 transition-colors group/btn"
                                 >
                                     {service.ctaPrimary}
