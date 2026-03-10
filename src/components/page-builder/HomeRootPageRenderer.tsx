@@ -13,6 +13,48 @@ type HomeRootPageRendererProps = {
 
 type ItemObject = Record<string, unknown>
 
+type ThemeColors = {
+    primary: string
+    primaryHover: string
+    secondary: string
+    textAccent: string
+    textHighlight: string
+    border: string
+    bgLight: string
+    bgHighlight: string
+    gradientStart: string
+    gradientEnd: string
+}
+
+const THEMES: Record<string, ThemeColors> = {
+    '/empresas': {
+        primary: 'bg-blue-600',
+        primaryHover: 'hover:bg-blue-700 hover:border-blue-700',
+        secondary: 'text-blue-600',
+        textAccent: 'text-blue-900',
+        textHighlight: 'text-blue-700',
+        border: 'border-blue-200',
+        bgLight: 'bg-blue-50/50',
+        bgHighlight: 'bg-blue-100',
+        gradientStart: 'bg-blue-200/40',
+        gradientEnd: 'bg-amber-100/40',
+    },
+    '/educacion': {
+        primary: 'bg-emerald-700',
+        primaryHover: 'hover:bg-emerald-800 hover:border-emerald-800',
+        secondary: 'text-emerald-700',
+        textAccent: 'text-emerald-900',
+        textHighlight: 'text-emerald-800',
+        border: 'border-emerald-200',
+        bgLight: 'bg-emerald-50/50',
+        bgHighlight: 'bg-emerald-100',
+        gradientStart: 'bg-emerald-200/40',
+        gradientEnd: 'bg-teal-100/40',
+    }
+}
+
+const DEFAULT_THEME = THEMES['/empresas']
+
 const SERVICE_CARD_ICONS = [Search, Network, Users, Code2, Rocket, LineChart]
 
 function handleSelectableBlockClick(
@@ -95,16 +137,16 @@ function resolveBlockAnchors(block: SitePageBlock) {
     return Array.from(anchors).filter(Boolean)
 }
 
-function renderHeroBlock(block: SitePageBlock, currentPath: string) {
+function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
     const primaryHref = normalizeCmsHref(block.content.primaryHref, '', currentPath)
     return (
         <div className="relative mx-auto max-w-6xl">
             <div className="pointer-events-none absolute inset-0 services-grid-pattern opacity-35" />
-            <div className="pointer-events-none absolute left-[8%] top-20 h-28 w-28 rounded-full bg-emerald-200/40 blur-2xl services-float-slow" />
-            <div className="pointer-events-none absolute right-[10%] top-32 h-36 w-36 rounded-full bg-amber-200/40 blur-2xl services-float-slow-delay" />
+            <div className={`pointer-events-none absolute left-[8%] top-20 h-28 w-28 rounded-full blur-2xl services-float-slow ${theme.gradientStart}`} />
+            <div className={`pointer-events-none absolute right-[10%] top-32 h-36 w-36 rounded-full blur-2xl services-float-slow-delay ${theme.gradientEnd}`} />
 
             <div className="relative">
-                <p className="inline-flex items-center gap-2 rounded-full border border-emerald-700/20 bg-white/80 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] text-emerald-900">
+                <p className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] bg-white/80 ${theme.border} ${theme.textAccent}`}>
                     {toText(block.content.eyebrow, 'Servicios explicados sin tecnicismos')}
                 </p>
 
@@ -120,7 +162,7 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string) {
                     {toText(block.content.primaryLabel) && primaryHref && (
                         <a
                             href={primaryHref}
-                            className="inline-flex items-center gap-2 border border-slate-900 bg-slate-900 px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors hover:border-emerald-800 hover:bg-emerald-800"
+                            className={`inline-flex items-center gap-2 border px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors border-slate-900 bg-slate-900 ${theme.primaryHover}`}
                         >
                             {toText(block.content.primaryLabel)}
                             <ArrowRight className="h-4 w-4" />
@@ -138,7 +180,7 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string) {
     )
 }
 
-function renderPromisesBlock(block: SitePageBlock) {
+function renderPromisesBlock(block: SitePageBlock, theme: ThemeColors) {
     const items = ensureObjectItems(block.content.items)
     return (
         <div className="mx-auto max-w-6xl">
@@ -148,21 +190,24 @@ function renderPromisesBlock(block: SitePageBlock) {
             {toText(block.content.body) && <p className="mb-6 text-slate-700">{toText(block.content.body)}</p>}
             <div className="grid gap-4 md:grid-cols-3">
                 {items.map((item, index) => (
-                    <div key={`${item.id || index}`} className="services-card-shadow border border-slate-200 bg-white/95 px-5 py-4">
-                        <p className="text-sm font-semibold text-slate-700">{toText(item.label || item.title || item.body || `Promesa ${index + 1}`)}</p>
-                    </div>
+                    <article key={`${item.id || index}`} className={`border px-6 py-5 ${theme.border} ${theme.bgLight}`}>
+                        <div className={`mb-3 flex h-8 w-8 items-center justify-center rounded-full ${theme.bgHighlight} ${theme.textAccent}`}>
+                            <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                        <p className="font-bold text-slate-900">{toText(item.title || item.label || item.body)}</p>
+                    </article>
                 ))}
             </div>
         </div>
     )
 }
 
-function renderServicesGridBlock(block: SitePageBlock, currentPath: string) {
+function renderServicesGridBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
     const items = ensureObjectItems(block.content.items)
     return (
         <div className="mx-auto max-w-6xl">
             <div className="max-w-4xl">
-                <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-900">{toText(block.content.eyebrow, 'Servicios de punta a punta')}</p>
+                <p className={`text-[11px] font-bold uppercase tracking-[0.3em] ${theme.textAccent}`}>{toText(block.content.eyebrow, 'Servicios de punta a punta')}</p>
                 <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900 md:text-6xl">{toText(block.content.title, 'Qué hacemos y cómo beneficia a tu empresa')}</h2>
                 {toText(block.content.body) && <p className="mt-5 text-lg text-slate-700">{toText(block.content.body)}</p>}
             </div>
@@ -174,9 +219,9 @@ function renderServicesGridBlock(block: SitePageBlock, currentPath: string) {
                     const iconText = toText(item.icon)
 
                     return (
-                        <article key={`${item.id || index}`} className="services-card-shadow border border-slate-200 bg-white/95 px-8 py-8">
+                        <article key={`${item.id || index}`} className={`services-card-shadow border bg-white/95 px-8 py-8 ${theme.border}`}>
                             <div className="flex items-start gap-3">
-                                <div className="mt-0.5 flex h-12 w-12 items-center justify-center border border-emerald-100 bg-emerald-50 text-emerald-900">
+                                <div className={`mt-0.5 flex h-12 w-12 items-center justify-center border ${theme.border} ${theme.bgLight} ${theme.textAccent}`}>
                                     {iconText ? (
                                         <span className="text-lg leading-none">{iconText}</span>
                                     ) : (
@@ -204,7 +249,7 @@ function renderServicesGridBlock(block: SitePageBlock, currentPath: string) {
                                     <ul className="mt-4 space-y-2 text-lg text-slate-700">
                                         {outcomes.map((outcome) => (
                                             <li key={outcome} className="flex items-start gap-2">
-                                                <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-emerald-700" />
+                                                <CheckCircle2 className={`mt-1 h-5 w-5 shrink-0 ${theme.textHighlight}`} />
                                                 <span>{outcome}</span>
                                             </li>
                                         ))}
@@ -229,7 +274,7 @@ function renderServicesGridBlock(block: SitePageBlock, currentPath: string) {
     )
 }
 
-function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePageBlock | null, selectable: boolean, selectedBlockId: string | null, onSelectBlock?: (blockId: string) => void) {
+function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePageBlock | null, selectable: boolean, selectedBlockId: string | null, theme: ThemeColors, onSelectBlock?: (blockId: string) => void) {
     const benefitItems = ensureObjectItems(benefitsBlock.content.items)
     const flowItems = flowBlock ? ensureObjectItems(flowBlock.content.items) : []
     const flowBadges = flowBlock ? ensureStringArray(flowBlock.content.badges) : []
@@ -239,9 +284,9 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
             <article
                 data-block-id={benefitsBlock.id}
                 onClickCapture={(event) => handleSelectableBlockClick(event, selectable, benefitsBlock.id, onSelectBlock)}
-                className={`border border-slate-200 bg-white px-8 py-10 md:px-10 ${selectable ? 'cursor-pointer' : ''} ${selectedBlockId === benefitsBlock.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-100' : ''}`}
+                className={`border border-slate-200 bg-white px-8 py-10 md:px-10 ${selectable ? 'cursor-pointer' : ''} ${selectedBlockId === benefitsBlock.id ? `ring-2 ring-offset-2 ring-offset-slate-100 ${theme.primary}` : ''}`}
             >
-                <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-900">{toText(benefitsBlock.content.eyebrow, 'Lo que puedes esperar')}</p>
+                <p className={`text-[11px] font-bold uppercase tracking-[0.3em] ${theme.textAccent}`}>{toText(benefitsBlock.content.eyebrow, 'Lo que puedes esperar')}</p>
                 <h2 className="mt-5 text-5xl font-black leading-[0.95] tracking-tight text-slate-900 md:text-6xl">{toText(benefitsBlock.content.title, 'Beneficios directos para el negocio')}</h2>
 
                 <div className="mt-8 space-y-7">
@@ -259,14 +304,14 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
                 <article
                     data-block-id={flowBlock.id}
                     onClickCapture={(event) => handleSelectableBlockClick(event, selectable, flowBlock.id, onSelectBlock)}
-                    className={`border border-slate-700 bg-slate-950 px-8 py-10 text-white md:px-10 ${selectable ? 'cursor-pointer' : ''} ${selectedBlockId === flowBlock.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-100' : ''}`}
+                    className={`border border-slate-700 bg-slate-950 px-8 py-10 text-white md:px-10 ${selectable ? 'cursor-pointer' : ''} ${selectedBlockId === flowBlock.id ? `ring-2 ring-offset-2 ring-offset-slate-100 ${theme.primary}` : ''}`}
                 >
-                    <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-300">{toText(flowBlock.content.eyebrow, 'Cómo trabajamos')}</p>
+                    <p className={`text-[11px] font-bold uppercase tracking-[0.3em] text-white/70`}>{toText(flowBlock.content.eyebrow, 'Cómo trabajamos')}</p>
                     <h3 className="mt-5 text-4xl font-black tracking-tight text-white">{toText(flowBlock.content.title, 'Cómo trabajamos')}</h3>
                     <div className="mt-8 space-y-6">
                         {flowItems.map((item, index) => (
                             <div key={`${item.id || index}`}>
-                                <p className="text-4xl font-black leading-none text-white">{toText(item.title || item.label || `Paso ${index + 1}`)}</p>
+                                <p className={`text-4xl font-black leading-none ${theme.textHighlight} opacity-90`}>{toText(item.title || item.label || `Paso ${index + 1}`)}</p>
                                 <p className="mt-2 text-lg leading-relaxed text-slate-200">{toText(item.body || item.description)}</p>
                             </div>
                         ))}
@@ -274,7 +319,7 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
                     {flowBadges.length > 0 && (
                         <div className="mt-8 grid grid-cols-[repeat(auto-fit,minmax(124px,1fr))] gap-3">
                             {flowBadges.map((badge) => (
-                                <div key={badge} className="min-h-[56px] border border-white/20 bg-white/5 px-3 py-4 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.1em] text-emerald-200 break-words whitespace-normal">
+                                <div key={badge} className="min-h-[56px] border border-white/20 bg-white/5 px-3 py-4 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.1em] text-white/80 break-words whitespace-normal">
                                     {badge}
                                 </div>
                             ))}
@@ -286,7 +331,7 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
                             href="https://www.algoritmot.com/caso-transversal"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 border border-emerald-400/30 bg-emerald-400/10 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-200 transition-all hover:bg-emerald-400/20 hover:border-emerald-400/50"
+                            className={`inline-flex items-center gap-2 border bg-transparent px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-all ${theme.border} hover:bg-white/10`}
                         >
                             Ver caso de éxito
                             <ArrowRight className="h-4 w-4" />
@@ -298,15 +343,54 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
     )
 }
 
-function renderFaqBlock(block: SitePageBlock) {
+function renderStandaloneFlowBlock(block: SitePageBlock, selectable: boolean, selectedBlockId: string | null, theme: ThemeColors, onSelectBlock?: (blockId: string) => void) {
+    const items = ensureObjectItems(block.content.items)
+    const badges = ensureStringArray(block.content.badges)
+
+    return (
+        <div className="mx-auto max-w-6xl">
+            <article
+                data-block-id={block.id}
+                onClickCapture={(event) => handleSelectableBlockClick(event, selectable, block.id, onSelectBlock)}
+                className={`border border-slate-700 bg-slate-950 px-8 py-14 text-white md:px-16 ${selectable ? 'cursor-pointer' : ''} ${selectedBlockId === block.id ? `ring-2 ring-offset-2 ring-offset-slate-100 ${theme.primary}` : ''}`}
+            >
+                <div className="text-center">
+                    <p className={`text-[11px] font-bold uppercase tracking-[0.3em] text-white/70`}>{toText(block.content.eyebrow, 'Cómo trabajamos')}</p>
+                    <h3 className="mx-auto mt-5 max-w-3xl text-4xl font-black tracking-tight text-white md:text-5xl">{toText(block.content.title, 'Cómo trabajamos')}</h3>
+                </div>
+
+                <div className="mx-auto mt-14 grid max-w-5xl gap-10 md:grid-cols-2 lg:gap-16">
+                    {items.map((item, index) => (
+                        <div key={`${item.id || index}`}>
+                            <p className={`text-4xl font-black leading-none ${theme.textHighlight} opacity-90`}>{toText(item.title || item.label || `Paso ${index + 1}`)}</p>
+                            <p className="mt-4 text-lg leading-relaxed text-slate-300">{toText(item.body || item.description)}</p>
+                        </div>
+                    ))}
+                </div>
+
+                {badges.length > 0 && (
+                    <div className="mx-auto mt-16 flex max-w-4xl flex-wrap justify-center gap-4">
+                        {badges.map((badge) => (
+                            <div key={badge} className="border border-white/20 bg-white/5 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-white/80">
+                                {badge}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </article>
+        </div>
+    )
+}
+
+function renderFaqBlock(block: SitePageBlock, theme: ThemeColors) {
     const items = ensureObjectItems(block.content.items)
     return (
-        <div className="mx-auto max-w-6xl border border-slate-200 bg-white px-8 py-10 md:px-10">
-            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-900">{toText(block.content.eyebrow, 'Preguntas frecuentes')}</p>
+        <div className={`mx-auto max-w-6xl border px-8 py-10 md:px-10 ${theme.border} bg-white`}>
+            <p className={`text-[11px] font-bold uppercase tracking-[0.3em] ${theme.textAccent}`}>{toText(block.content.eyebrow, 'Preguntas frecuentes')}</p>
             <h2 className="mt-5 text-5xl font-black leading-[0.95] tracking-tight text-slate-900 md:text-6xl">{toText(block.content.title, 'Respuestas claras para tomar decisiones')}</h2>
             <div className="mt-10 grid gap-5 md:grid-cols-2">
                 {items.map((item, index) => (
-                    <article key={`${item.id || index}`} className="border border-slate-200 bg-slate-50/70 px-6 py-6">
+                    <article key={`${item.id || index}`} className={`border ${theme.border} ${theme.bgLight} px-6 py-6`}>
                         <h3 className="text-3xl font-black tracking-tight text-slate-900">{toText(item.title || item.label || `Pregunta ${index + 1}`)}</h3>
                         <p className="mt-3 text-lg leading-relaxed text-slate-700">{toText(item.body || item.description || item.content)}</p>
                     </article>
@@ -316,12 +400,12 @@ function renderFaqBlock(block: SitePageBlock) {
     )
 }
 
-function renderContactBlock(block: SitePageBlock, currentPath: string) {
+function renderContactBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
     const secondaryHref = normalizeCmsHref(block.content.secondaryHref, '', currentPath)
     return (
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2">
-            <article className="border border-slate-200 bg-white px-8 py-10 md:px-10">
-                <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-900">{toText(block.content.eyebrow, 'Hablemos de tu caso')}</p>
+            <article className={`border px-8 py-10 md:px-10 ${theme.border} bg-white`}>
+                <p className={`text-[11px] font-bold uppercase tracking-[0.3em] ${theme.textAccent}`}>{toText(block.content.eyebrow, 'Hablemos de tu caso')}</p>
                 <h2 className="mt-5 text-5xl font-black leading-[0.95] tracking-tight text-slate-900 md:text-6xl">{toText(block.content.title, 'Cuéntanos qué quieres mejorar')}</h2>
                 <p className="mt-5 text-lg leading-relaxed text-slate-700">{toText(block.content.body, 'Te ayudamos a definir el mejor punto de inicio según tus objetivos de negocio y contexto actual.')}</p>
 
@@ -334,14 +418,14 @@ function renderContactBlock(block: SitePageBlock, currentPath: string) {
                     </a>
                 )}
                 {toText(block.content.secondaryLabel) && secondaryHref && (
-                    <a href={secondaryHref} className="mt-4 inline-flex items-center gap-2 text-lg font-black text-slate-900 hover:text-slate-700">
+                    <a href={secondaryHref} className={`mt-4 inline-flex items-center gap-2 text-lg font-black ${theme.secondary} hover:text-slate-700`}>
                         {toText(block.content.secondaryLabel)}
                         <ArrowRight className="h-4 w-4" />
                     </a>
                 )}
             </article>
 
-            <article className="border border-slate-200 bg-white px-8 py-10 shadow-2xl md:px-14 lg:px-16">
+            <article className={`border px-8 py-10 shadow-2xl md:px-14 lg:px-16 ${theme.border} bg-white`}>
                 <ContactForm />
                 
                 {toText(block.content.complianceText) && (
@@ -352,17 +436,17 @@ function renderContactBlock(block: SitePageBlock, currentPath: string) {
     )
 }
 
-function renderCtaBlock(block: SitePageBlock, currentPath: string) {
+function renderCtaBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
     const primaryHref = normalizeCmsHref(block.content.primaryHref, '', currentPath)
     return (
         <div className="mx-auto max-w-6xl border border-slate-200 bg-white px-8 py-12 text-center md:px-10">
-            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-900">{toText(block.content.eyebrow, 'Cierre')}</p>
+            <p className={`text-[11px] font-bold uppercase tracking-[0.3em] ${theme.textAccent}`}>{toText(block.content.eyebrow, 'Cierre')}</p>
             <h2 className="mt-5 text-5xl font-black leading-[0.95] tracking-tight text-slate-900 md:text-6xl">{toText(block.content.title, '¿Listo para avanzar?')}</h2>
             {toText(block.content.body) && <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-slate-700">{toText(block.content.body)}</p>}
             {toText(block.content.primaryLabel) && primaryHref && (
                 <a
                     href={primaryHref}
-                    className="mt-8 inline-flex items-center gap-2 border border-slate-900 bg-slate-900 px-8 py-4 text-sm font-bold uppercase tracking-[0.24em] text-white transition-colors hover:border-emerald-800 hover:bg-emerald-800"
+                    className={`mt-8 inline-flex items-center gap-2 border px-8 py-4 text-sm font-bold uppercase tracking-[0.24em] text-white transition-colors border-slate-900 bg-slate-900 ${theme.primaryHover}`}
                 >
                     {toText(block.content.primaryLabel)}
                     <ArrowRight className="h-4 w-4" />
@@ -372,20 +456,20 @@ function renderCtaBlock(block: SitePageBlock, currentPath: string) {
     )
 }
 
-function renderFallbackBlock(block: SitePageBlock) {
+function renderFallbackBlock(block: SitePageBlock, theme: ThemeColors) {
     const title = toText(block.content.title)
     const body = toText(block.content.body)
     const items = ensureObjectItems(block.content.items)
 
     return (
-        <div className="mx-auto max-w-6xl border border-slate-200 bg-white px-8 py-8 md:px-10">
+        <div className={`mx-auto max-w-6xl border px-8 py-8 md:px-10 ${theme.border} bg-white`}>
             {title && <h3 className="text-3xl font-black tracking-tight text-slate-900">{title}</h3>}
             {body && <p className="mt-3 text-lg leading-relaxed text-slate-700">{body}</p>}
             {items.length > 0 && (
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                     {items.map((item, index) => (
-                        <article key={`${item.id || index}`} className="border border-slate-200 bg-slate-50 px-5 py-5">
-                            <p className="text-xl font-black tracking-tight text-slate-900">{toText(item.title || item.label || `Item ${index + 1}`)}</p>
+                        <article key={`${item.id || index}`} className={`border px-5 py-5 ${theme.border} ${theme.bgLight}`}>
+                            <p className={`text-xl font-black tracking-tight text-slate-900`}>{toText(item.title || item.label || `Item ${index + 1}`)}</p>
                             <p className="mt-2 text-base text-slate-700">{toText(item.body || item.description)}</p>
                         </article>
                     ))}
@@ -406,19 +490,21 @@ export function HomeRootPageRenderer({
     const benefitsBlock = sortedBlocks.find((block) => block.id === 'beneficios') ?? null
     const flowBlock = sortedBlocks.find((block) => block.id === 'flujo') ?? null
 
+    const currentTheme = THEMES[page.path] || DEFAULT_THEME
+
     return (
         <div className={`services-landing-theme ${className}`.trim()}>
             {sortedBlocks.map((block) => {
                 if (block.id === 'flujo' && benefitsBlock) return null
                 const isSplitBenefitsFlow = block.id === 'beneficios' && Boolean(flowBlock)
 
-                const selected = !isSplitBenefitsFlow && selectedBlockId === block.id
+                const selected = (!isSplitBenefitsFlow || block.id === 'beneficios') && selectedBlockId === block.id
                 const sectionClasses = [
                     'px-6',
                     block.id === 'hero' ? 'pt-20 pb-16 md:pt-28 md:pb-24' : 'py-14 md:py-20',
                     'relative scroll-mt-36',
-                    selectable && !isSplitBenefitsFlow ? 'cursor-pointer' : '',
-                    selected ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-100' : '',
+                    selectable ? 'cursor-pointer' : '',
+                    selected ? `ring-2 ring-offset-2 ring-offset-slate-100 ${currentTheme.primary}` : '',
                 ]
                     .filter(Boolean)
                     .join(' ')
@@ -429,7 +515,7 @@ export function HomeRootPageRenderer({
                         key={block.id}
                         data-block-id={block.id}
                         id={blockAnchors[0] || undefined}
-                        onClickCapture={isSplitBenefitsFlow ? undefined : (event) => handleSelectableBlockClick(event, selectable, block.id, onSelectBlock)}
+                        onClickCapture={(event) => handleSelectableBlockClick(event, selectable, block.id, onSelectBlock)}
                         className={sectionClasses}
                         style={{ backgroundColor: toText(block.style.backgroundColor, 'transparent') }}
                     >
@@ -443,20 +529,21 @@ export function HomeRootPageRenderer({
                         ))}
                         {selectable && (
                             <div className="mx-auto mb-3 max-w-6xl">
-                                <div className="inline-flex w-fit items-center gap-2 border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-blue-700">
+                                <div className={`inline-flex w-fit items-center gap-2 border px-2 py-1 text-[10px] font-black uppercase tracking-[0.2em] ${currentTheme.bgLight} ${currentTheme.border} ${currentTheme.textHighlight}`}>
                                     {block.name || block.type}
                                 </div>
                             </div>
                         )}
 
-                        {block.id === 'hero' && renderHeroBlock(block, page.path)}
-                        {block.id === 'promesas' && renderPromisesBlock(block)}
-                        {block.id === 'servicios' && renderServicesGridBlock(block, page.path)}
-                        {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, onSelectBlock)}
-                        {block.id === 'faq' && renderFaqBlock(block)}
-                        {block.id === 'contacto' && renderContactBlock(block, page.path)}
-                        {block.id === 'cta' && renderCtaBlock(block, page.path)}
-                        {!['hero', 'promesas', 'servicios', 'beneficios', 'faq', 'contacto', 'cta'].includes(block.id) && renderFallbackBlock(block)}
+                        {block.id === 'hero' && renderHeroBlock(block, page.path, currentTheme)}
+                        {block.id === 'promesas' && renderPromisesBlock(block, currentTheme)}
+                        {block.id === 'servicios' && renderServicesGridBlock(block, page.path, currentTheme)}
+                        {block.id === 'flujo' && !benefitsBlock && renderStandaloneFlowBlock(block, selectable, selectedBlockId, currentTheme, onSelectBlock)}
+                        {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, currentTheme, onSelectBlock)}
+                        {block.id === 'faq' && renderFaqBlock(block, currentTheme)}
+                        {block.id === 'contacto' && renderContactBlock(block, page.path, currentTheme)}
+                        {block.id === 'cta' && renderCtaBlock(block, page.path, currentTheme)}
+                        {!['hero', 'promesas', 'servicios', 'flujo', 'beneficios', 'faq', 'contacto', 'cta'].includes(block.id) && renderFallbackBlock(block, currentTheme)}
                     </section>
                 )
             })}
