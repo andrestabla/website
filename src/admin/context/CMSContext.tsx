@@ -2129,6 +2129,57 @@ function createNavigationSelectorBlocks(): SitePageBlock[] {
         }
     ]
 }
+const VIRTUALIZACION_EXPERIENCIAS = [
+    {
+        title: 'Maestría en Entornos Globales',
+        body: 'Virtualización 100% de posgrado con simuladores de negocios y foros internacionales.',
+        url: '#maestria',
+        imageUrl: 'https://images.unsplash.com/photo-1523240715637-891ee3f71f0a?w=800&q=80',
+    },
+    {
+        title: 'Pregrado en Ingeniería Digital',
+        body: 'Estructuración didáctica de 40 materias con laboratorios virtuales y realidad aumentada.',
+        url: '#pregrado',
+        imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80',
+    },
+    {
+        title: 'Certificación en Liderazgo Ágil',
+        body: 'Curso corto gamificado con entrega de micro-credenciales y badges digitales.',
+        url: '#liderazgo',
+        imageUrl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80',
+    },
+    {
+        title: 'Diplomado en Data Science',
+        body: 'Contenidos interactivos con cuadernos de Jupyter integrados y videoclases 4K.',
+        url: '#datascience',
+        imageUrl: 'https://images.unsplash.com/photo-1551288049-bbbda536339a?w=800&q=80',
+    },
+    {
+        title: 'Escuela de Ventas Corporativas',
+        body: 'Fábrica de contenidos para 2,000 asesores con evaluaciones situacionales.',
+        url: '#ventas',
+        imageUrl: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&q=80',
+    },
+    {
+        title: 'Inducción de Talento Humano',
+        body: 'Experiencia de onboarding inmersiva con storyboarding y personajes 3D.',
+        url: '#induccion',
+        imageUrl: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&q=80',
+    },
+    {
+        title: 'Especialización en Bioética',
+        body: 'Migración masiva de contenidos legacy a estándares LTI y SCORM modernos.',
+        url: '#bioetica',
+        imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&q=80',
+    },
+    {
+        title: 'Bootcamp Code & Design',
+        body: 'Formación intensiva basada en proyectos con mentorías sincrónicas y asincrónicas.',
+        url: '#bootcamp',
+        imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80',
+    },
+]
+
 const VIRTUALIZACION_LANDING_WORKFLOW = [
     { title: 'Asesoría pedagógica', description: 'Definición de objetivos y estrategias de aprendizaje.' },
     { title: 'Autoría de contenidos', description: 'Creación de materiales por expertos temáticos.' },
@@ -2544,11 +2595,28 @@ function createVirtualizacionLandingBlocks(): SitePageBlock[] {
             },
         },
         {
+            id: 'experiencias',
+            type: 'carousel',
+            name: 'Casos de Virtualización',
+            visible: true,
+            order: 3,
+            content: {
+                title: 'Experiencias de virtualización exitosas',
+                body: 'Conoce cómo hemos transformado la oferta educativa de diversas organizaciones.',
+                items: VIRTUALIZACION_EXPERIENCIAS,
+            },
+            style: {
+                backgroundColor: '#f8fafc',
+                textColor: '#0f172a',
+                paddingY: '6rem',
+            },
+        },
+        {
             id: 'flujo',
             type: 'timeline',
             name: 'Procesos ágiles',
             visible: true,
-            order: 3,
+            order: 4,
             content: {
                 eyebrow: 'Calidad asegurada',
                 title: 'Procesos ágiles que generan valor',
@@ -2568,7 +2636,7 @@ function createVirtualizacionLandingBlocks(): SitePageBlock[] {
             type: 'contact',
             name: 'Contacto Servicio',
             visible: true,
-            order: 4,
+            order: 5,
             content: {
                 eyebrow: 'Iniciemos tu proyecto',
                 title: 'Hablemos de tus necesidades de virtualización',
