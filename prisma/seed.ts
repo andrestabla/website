@@ -16,19 +16,19 @@ async function main() {
     await prisma.hero.upsert({
         where: { id: 'main-hero' },
         update: {
-            highlight: 'Digital Strategy & Human Engineering',
-            title: 'Maestría Digital en la Era de la Industria 5.0',
-            subtitle: 'Transformamos organizaciones mediante la integración armónica de Inteligencia Artificial y Talento Humano.',
-            cta: 'Iniciar Transformación',
-            secondaryCta: 'Ver Casos de Éxito',
+            highlight: 'UNA NUEVA ERA PARA TU EMPRESA',
+            title: 'Te ayudamos a digitalizar tu empresa paso a paso, con decisiones simples y enfocadas en resultados.',
+            subtitle: 'Diseñamos e implementamos mejoras reales para tu empresa: menos fricción operativa, más orden interno y un mejor servicio para tus clientes.',
+            cta: 'VER SERVICIOS',
+            secondaryCta: 'VER CASOS EN MI INDUSTRIA',
         },
         create: {
             id: 'main-hero',
-            highlight: 'Digital Strategy & Human Engineering',
-            title: 'Maestría Digital en la Era de la Industria 5.0',
-            subtitle: 'Transformamos organizaciones mediante la integración armónica de Inteligencia Artificial y Talento Humano.',
-            cta: 'Iniciar Transformación',
-            secondaryCta: 'Ver Casos de Éxito',
+            highlight: 'UNA NUEVA ERA PARA TU EMPRESA',
+            title: 'Te ayudamos a digitalizar tu empresa paso a paso, con decisiones simples y enfocadas en resultados.',
+            subtitle: 'Diseñamos e implementamos mejoras reales para tu empresa: menos fricción operativa, más orden interno y un mejor servicio para tus clientes.',
+            cta: 'VER SERVICIOS',
+            secondaryCta: 'VER CASOS EN MI INDUSTRIA',
         }
     })
 
