@@ -499,8 +499,10 @@ function SimpleTabsPreview({ items, color }: { items: ItemObject[]; color: strin
 
 function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
     const { 
-        corporateTitle, corporateDescription, corporateCta,
+        corporateTitle, corporateDescription, corporateCta, 
+        corporateImage, corporateOverlay, corporateOpacity,
         educationTitle, educationDescription, educationCta,
+        educationImage, educationOverlay, educationOpacity,
         logoText
     } = block.content
 
@@ -513,9 +515,12 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
             >
                 <div 
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
-                    style={{ backgroundImage: 'url("/assets/landing/corporate.png")' }}
+                    style={{ backgroundImage: `url("${corporateImage || '/assets/landing/corporate.png'}")` }}
                 />
-                <div className="absolute inset-0 bg-blue-900/40 mix-blend-multiply transition-colors group-hover:bg-blue-800/20" />
+                <div 
+                    className="absolute inset-0 transition-colors group-hover:bg-blue-800/20" 
+                    style={{ backgroundColor: corporateOverlay || '#1e3a8a', opacity: corporateOpacity || '0.4' }}
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-950 via-transparent to-transparent opacity-80" />
                 
                 <div className="relative h-full flex flex-col items-center justify-center text-center px-6 py-16 lg:px-8 lg:py-0">
@@ -541,9 +546,12 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
             >
                 <div 
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
-                    style={{ backgroundImage: 'url("/assets/landing/education.png")' }}
+                    style={{ backgroundImage: `url("${educationImage || '/assets/landing/education.png'}")` }}
                 />
-                <div className="absolute inset-0 bg-emerald-950/40 mix-blend-multiply transition-colors group-hover:bg-emerald-800/20" />
+                <div 
+                    className="absolute inset-0 transition-colors group-hover:bg-emerald-800/20" 
+                    style={{ backgroundColor: educationOverlay || '#064e3b', opacity: educationOpacity || '0.4' }}
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-transparent to-transparent opacity-80" />
                 
                 <div className="relative h-full flex flex-col items-center justify-center text-center px-6 py-16 lg:px-8 lg:py-0">

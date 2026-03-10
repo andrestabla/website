@@ -208,9 +208,15 @@ function createDefaultBlockByType(type: SitePageBlockType, order: number, accent
                 corporateTitle: 'SOLUCIONES PARA EMPRESA',
                 corporateDescription: 'Optimización operativa, automatización de procesos y despliegue estratégico de IA.',
                 corporateCta: 'INGRESAR',
+                corporateImage: '/assets/landing/corporate.png',
+                corporateOverlay: '#1e3a8a',
+                corporateOpacity: '0.4',
                 educationTitle: 'SOLUCIONES EDUCATIVAS',
                 educationDescription: 'Transformación digital para instituciones, colegios y centros de formación técnica.',
                 educationCta: 'INGRESAR',
+                educationImage: '/assets/landing/education.png',
+                educationOverlay: '#064e3b',
+                educationOpacity: '0.4',
                 logoText: 'ALGORITMOT'
             },
             style: {
