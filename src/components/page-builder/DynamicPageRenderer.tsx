@@ -4,10 +4,12 @@ import {
     ArrowRight,
     BarChart3,
     Boxes,
+    Building2,
     CheckCircle2,
     ClipboardCheck,
     Clock3,
     Code2,
+    GraduationCap,
     Infinity,
     LayoutGrid,
     LineChart,
@@ -495,6 +497,81 @@ function SimpleTabsPreview({ items, color }: { items: ItemObject[]; color: strin
     )
 }
 
+function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
+    const { 
+        corporateTitle, corporateDescription, corporateCta,
+        educationTitle, educationDescription, educationCta,
+        logoText
+    } = block.content
+
+    return (
+        <div className="flex flex-col lg:flex-row h-screen w-full overflow-hidden bg-slate-900 font-sans">
+            {/* Corporate Section */}
+            <a 
+                href="/empresas"
+                className="group relative flex-1 overflow-hidden border-b lg:border-b-0 lg:border-r border-white/10"
+            >
+                <div 
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                    style={{ backgroundImage: 'url("/assets/landing/corporate.png")' }}
+                />
+                <div className="absolute inset-0 bg-blue-900/40 mix-blend-multiply transition-colors group-hover:bg-blue-800/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-950 via-transparent to-transparent opacity-80" />
+                
+                <div className="relative h-full flex flex-col items-center justify-center text-center px-8 pt-20 lg:pt-0">
+                    <div className="mb-4 lg:mb-6 p-3 lg:p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 group-hover:scale-110 transition-transform">
+                        <Building2 className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
+                    </div>
+                    <h2 className="text-3xl lg:text-5xl font-black tracking-tighter text-white mb-3 lg:mb-4 uppercase">
+                        {corporateTitle || 'SOLUCIONES PARA EMPRESA'}
+                    </h2>
+                    <p className="text-blue-100/70 text-base lg:text-lg max-w-md mx-auto mb-6 lg:mb-8 font-medium">
+                        {corporateDescription || 'Optimización operativa, automatización de procesos y despliegue estratégico de IA.'}
+                    </p>
+                    <div className="inline-flex items-center gap-2 px-6 py-3 lg:px-8 lg:py-4 bg-white text-blue-900 text-[10px] lg:text-xs font-black uppercase tracking-[0.3em] transition-all group-hover:bg-blue-50 group-hover:px-10">
+                        {corporateCta || 'INGRESAR'}
+                    </div>
+                </div>
+            </a>
+
+            {/* Educational Section */}
+            <a 
+                href="/educacion"
+                className="group relative flex-1 overflow-hidden"
+            >
+                <div 
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
+                    style={{ backgroundImage: 'url("/assets/landing/education.png")' }}
+                />
+                <div className="absolute inset-0 bg-emerald-950/40 mix-blend-multiply transition-colors group-hover:bg-emerald-800/20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-transparent to-transparent opacity-80" />
+                
+                <div className="relative h-full flex flex-col items-center justify-center text-center px-8 pt-10 lg:pt-0">
+                    <div className="mb-4 lg:mb-6 p-3 lg:p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 group-hover:scale-110 transition-transform">
+                        <GraduationCap className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
+                    </div>
+                    <h2 className="text-3xl lg:text-5xl font-black tracking-tighter text-white mb-3 lg:mb-4 uppercase">
+                        {educationTitle || 'SOLUCIONES EDUCATIVAS'}
+                    </h2>
+                    <p className="text-emerald-50/70 text-base lg:text-lg max-w-md mx-auto mb-6 lg:mb-8 font-medium">
+                        {educationDescription || 'Transformación digital para instituciones, colegios y centros de formación técnica.'}
+                    </p>
+                    <div className="inline-flex items-center gap-2 px-6 py-3 lg:px-8 lg:py-4 bg-white text-emerald-900 text-[10px] lg:text-xs font-black uppercase tracking-[0.3em] transition-all group-hover:bg-emerald-50 group-hover:px-10">
+                        {educationCta || 'INGRESAR'}
+                    </div>
+                </div>
+            </a>
+
+            {/* Logo Overlay */}
+            <div className="absolute top-6 lg:top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="text-xl lg:text-2xl font-black tracking-tighter text-white drop-shadow-lg uppercase">
+                    {logoText || 'ALGORITMOT'}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 function renderBlockBody(block: SitePageBlock, accentColor: string) {
     const eyebrow = toText(block.content.eyebrow)
     const title = toText(block.content.title)
@@ -502,6 +579,10 @@ function renderBlockBody(block: SitePageBlock, accentColor: string) {
     const body = toText(block.content.body)
     const html = toText(block.content.html)
     const items = ensureObjectItems(block.content.items)
+
+    if (block.type === 'navigation-selector') {
+        return <NavigationSelectorBlock block={block} />
+    }
 
     if (block.type === 'hero' || block.type === 'cta') {
         return (

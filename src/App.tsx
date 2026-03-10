@@ -225,8 +225,8 @@ function App() {
           <DataConsentModal />
           <Suspense fallback={<RouteLoader />}>
             <Routes>
-              <Route path="/" element={<NavigationSelector />} />
-              <Route path="/empresas" element={<ManagedPublishedRoute routePath="/" fallback={<Home />} />} />
+              <Route path="/" element={<ManagedPublishedRoute routePath="/" fallback={<NavigationSelector />} />} />
+              <Route path="/empresas" element={<ManagedPublishedRoute routePath="/empresas" fallback={<Home />} />} />
               <Route path="/educacion" element={<HomeEducacion />} />
               <Route path="/inicio" element={<Navigate to="/empresas" replace />} />
               <Route path="/servicios/:slug" element={<ServicePage />} />

@@ -85,6 +85,7 @@ const BLOCK_TYPE_LABEL: Record<SitePageBlockType, string> = {
     navmenu: 'Nav Menu',
     icon: 'Ícono',
     stats: 'Stats',
+    'navigation-selector': 'Selector de Navegación',
 }
 
 const INSERT_GROUPS: Array<{ label: string; items: SitePageBlockType[] }> = [
@@ -192,6 +193,29 @@ function createDefaultBlockByType(type: SitePageBlockType, order: number, accent
                 textColor: '#0f172a',
                 align: 'left',
                 paddingY: '4rem',
+            },
+        }
+    }
+
+    if (type === 'navigation-selector') {
+        return {
+            id,
+            type,
+            name: BLOCK_TYPE_LABEL[type],
+            visible: true,
+            order,
+            content: {
+                corporateTitle: 'SOLUCIONES PARA EMPRESA',
+                corporateDescription: 'Optimización operativa, automatización de procesos y despliegue estratégico de IA.',
+                corporateCta: 'INGRESAR',
+                educationTitle: 'SOLUCIONES EDUCATIVAS',
+                educationDescription: 'Transformación digital para instituciones, colegios y centros de formación técnica.',
+                educationCta: 'INGRESAR',
+                logoText: 'ALGORITMOT'
+            },
+            style: {
+                backgroundColor: '#0f172a',
+                paddingY: '0',
             },
         }
     }
