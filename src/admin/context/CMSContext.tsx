@@ -2276,6 +2276,16 @@ function createEducationLandingBlocks(): SitePageBlock[] {
                         idealWhen: 'Se busca transformar un programa presencial a una modalidad híbrida o virtual.',
                         label: 'Conocer más',
                         url: '#contacto',
+                    },
+                    {
+                        id: 'fabrica-contenidos',
+                        title: 'Fábrica de contenidos',
+                        eyebrow: 'Producción ágil',
+                        inSimpleWords: 'Producción masiva de materiales educativos digitales con altos estándares de calidad.',
+                        businessBenefit: 'Reducción de costos de producción y tiempos de salida a mercado.',
+                        idealWhen: 'Se requiere virtualizar un gran volumen de cursos en tiempo récord.',
+                        label: 'Conocer más',
+                        url: '#contacto',
                     }
                 ],
             },
