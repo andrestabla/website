@@ -305,7 +305,7 @@ export function GeneradorCasosAI() {
         <div className="min-h-screen bg-[#020617] text-slate-200">
             {/* Minimal Header */}
             <header className="fixed top-0 inset-x-0 z-50 flex items-center h-20 px-6 border-b border-white/5 bg-[#020617]/80 backdrop-blur-md">
-                <Link to="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors">
+                <Link to="/empresas" className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors">
                     <ChevronLeft className="w-5 h-5" />
                     Volver al Inicio
                 </Link>

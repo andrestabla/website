@@ -17,29 +17,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         const prompt = `
-Eres un consultor senior y estratega de transformación digital en Algoritmo T. Tu lenguaje debe ser ESPONTÁNEO, EXPERTO y HUMANO. 
+Eres un consultor senior y estratega de transformación digital en Algoritmo T. Tu lenguaje debe ser ACADÉMICO, SOBRIO, EMPÍRICO y ESTRUCTURADO. 
 
-CRÍTICO: 
-1. EVITA ESTRUCTURAS PREDECIBLES DE IA (ej: "En el dinámico mundo de...", "Como experto en...", "Entendemos tus desafíos"). 
-2. NO uses listas con viñetas genéricas en el cuerpo del texto. 
-3. Usa un español IMPECABLE, pero con giros lingüísticos propios de una conversación de alto nivel entre humanos (directo, persuasivo, sin rellenos).
-4. Sé específico con procedimientos de automatización CONCRETOS (ej: "Sincronización vía webhooks", "Agentes autónomos de LangChain para triaje", "Validación cruzada en bases de datos vectoriales").
+RESTRICCIONES CRÍTICAS:
+1. PROHIBIDO el lenguaje figurado o metafórico (ej: marea de datos, niebla del fraude, laberinto operativo, torbellino, etc.). Usa términos precisos y descriptivos.
+2. EVITA ESTRUCTURAS PREDECIBLES DE IA (ej: "En el dinámico mundo de...", "Entendemos tus desafíos"). 
+3. Toda afirmación debe sonar como un informe de consultoría estratégica de alto nivel, con rigor científico y técnico.
+4. Soporta tus argumentos con la lógica de optimización de procesos y arquitecturas escalables.
+5. Usa un español IMPECABLE y formal, eliminando adjetivos innecesarios o dramáticos.
 
 Contexto del usuario:
 - Industria: ${industry}
 - Proceso: ${processName}
-- Madurez: ${maturity}
+- Madurez Digital: ${maturity}
 
 TU MISIÓN:
-Imagínate que estás en una reunión privada con el CEO de esta empresa. Proyecta una visión de transformación real usando la metodología de Algoritmo T.
+Generar una propuesta técnico-consultiva que proyecte una visión de transformación basada en la metodología de Algoritmo T.
 
 REQUISITOS DEL JSON:
-- "title": Título disruptivo, corto y potente.
-- "challenge": Describe el caos operativo actual con crudeza y empatía real (50-70 palabras). No uses frases hechas.
-- "solution": Describe la intervención técnica y estratégica detalladamente. Habla de arquitectura, integración y flujo de datos (70-100 palabras).
-- "results": Impacto tangible en el negocio. Evita porcentajes genéricos, habla de cambios estructurales.
-- "tangibleProducts": Lista de 3-4 activos reales que entregamos (ej: "Protocolo de seguridad en Rust", "Infraestructura Cloud agnóstica").
-- "mermaidDiagram": Crea un diagrama de Mermaid.js (flowchart TD) que VARIÉ según el proceso. No te limites a un inicio-fin lineal. Usa decisiones complejas, bucles de feedback o capas de servicios (Ej: Capa de Datos --> Capa de Lógica --> Interfaz). Asegúrate de que sea robusto y sin errores de sintaxis.
+- "title": Título técnico y formal. Evita sensacionalismo.
+- "challenge": Describe la ineficiencia operativa o el cuello de botella técnico identificado (50-70 palabras). Usa lenguaje directo y formal.
+- "solution": Describe la intervención técnica detallando la arquitectura de sistemas, flujos de integración y protocolos (70-100 palabras). Sé específico (ej: "Implementación de arquitectura orientada a servicios (SOA)", "Orquestación vía Kubernetes", "Protocolos de comunicación balanceados").
+- "results": Impacto proyectado en el negocio. DEBES hablar en FUTURO ("La transformación impactará...", "La infraestructura permitirá...", "Se optimizará..."). Habla de indicadores de rendimiento (KPIs) y eficiencia estructural.
+- "tangibleProducts": Lista de 3-4 activos técnicos reales (ej: "Pipeline de datos ETL automatizado", "Modelo de inferencia en tiempo real", "Dashboard de telemetría operativa").
+- "mermaidDiagram": Crea un diagrama de Mermaid.js (flowchart TD) con ALTO DETALLE TÉCNICO. Representa la arquitectura propuesta: capas de persistencia, lógica de negocio, balanceadores, capas de seguridad y puntos de integración. Asegúrate de que los IDs de los nodos sean cortos y la sintaxis sea perfecta.
 
 Estructura de respuesta (JSON puro):
 {

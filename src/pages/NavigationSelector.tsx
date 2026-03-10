@@ -21,18 +21,18 @@ export function NavigationSelector() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8 }}
-                    className="relative h-full flex flex-col items-center justify-center text-center px-8"
+                    className="relative h-full flex flex-col items-center justify-center text-center px-8 pt-20 lg:pt-0"
                 >
-                    <div className="mb-6 p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 group-hover:scale-110 transition-transform">
-                        <Building2 className="w-10 h-10 text-white" />
+                    <div className="mb-4 lg:mb-6 p-3 lg:p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 group-hover:scale-110 transition-transform">
+                        <Building2 className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
                     </div>
-                    <h2 className="text-4xl lg:text-5xl font-black tracking-tighter text-white mb-4 font-display">
+                    <h2 className="text-3xl lg:text-5xl font-black tracking-tighter text-white mb-3 lg:mb-4 font-display">
                         SOLUCIONES <span className="block lg:inline">PARA EMPRESA</span>
                     </h2>
-                    <p className="text-blue-100/70 text-lg max-w-md mx-auto mb-8 font-medium">
+                    <p className="text-blue-100/70 text-base lg:text-lg max-w-md mx-auto mb-6 lg:mb-8 font-medium">
                         Optimización operativa, automatización de procesos y despliegue estratégico de IA.
                     </p>
-                    <div className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-900 text-xs font-black uppercase tracking-[0.3em] transition-all group-hover:bg-blue-50 group-hover:px-10">
+                    <div className="inline-flex items-center gap-2 px-6 py-3 lg:px-8 lg:py-4 bg-white text-blue-900 text-[10px] lg:text-xs font-black uppercase tracking-[0.3em] transition-all group-hover:bg-blue-50 group-hover:px-10">
                         INGRESAR
                     </div>
                 </motion.div>
@@ -54,26 +54,26 @@ export function NavigationSelector() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
-                    className="relative h-full flex flex-col items-center justify-center text-center px-8"
+                    className="relative h-full flex flex-col items-center justify-center text-center px-8 pt-10 lg:pt-0"
                 >
-                    <div className="mb-6 p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 group-hover:scale-110 transition-transform">
-                        <GraduationCap className="w-10 h-10 text-white" />
+                    <div className="mb-4 lg:mb-6 p-3 lg:p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 group-hover:scale-110 transition-transform">
+                        <GraduationCap className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
                     </div>
-                    <h2 className="text-4xl lg:text-5xl font-black tracking-tighter text-white mb-4 font-display">
+                    <h2 className="text-3xl lg:text-5xl font-black tracking-tighter text-white mb-3 lg:mb-4 font-display">
                         SOLUCIONES <span className="block lg:inline">EDUCATIVAS</span>
                     </h2>
-                    <p className="text-emerald-50/70 text-lg max-w-md mx-auto mb-8 font-medium">
+                    <p className="text-emerald-50/70 text-base lg:text-lg max-w-md mx-auto mb-6 lg:mb-8 font-medium">
                         Transformación digital para instituciones, colegios y centros de formación técnica.
                     </p>
-                    <div className="inline-flex items-center gap-2 px-8 py-4 bg-white text-emerald-900 text-xs font-black uppercase tracking-[0.3em] transition-all group-hover:bg-emerald-50 group-hover:px-10">
+                    <div className="inline-flex items-center gap-2 px-6 py-3 lg:px-8 lg:py-4 bg-white text-emerald-900 text-[10px] lg:text-xs font-black uppercase tracking-[0.3em] transition-all group-hover:bg-emerald-50 group-hover:px-10">
                         INGRESAR
                     </div>
                 </motion.div>
             </Link>
 
             {/* Logo Overlay */}
-            <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                <div className="text-2xl font-black tracking-tighter text-white">
+            <div className="absolute top-6 lg:top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                <div className="text-xl lg:text-2xl font-black tracking-tighter text-white drop-shadow-lg">
                     ALGORITMOT
                 </div>
             </div>
