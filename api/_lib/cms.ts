@@ -48,7 +48,7 @@ const SITE_PAGE_BLOCK_TYPES = [
   'form', 'social', 'tabs', 'toggle', 'gallery', 'counter', 'lottie', 'accordion', 'carousel',
   'map', 'testimonial', 'progress', 'progressbar',
   'grid', 'timeline', 'bento', 'loopgrid', 'portfolio', 'pricing', 'flipbox', 'hotspots', 'navmenu',
-  'icon', 'stats',
+  'icon', 'stats', 'navigation-selector',
 ] as const
 const SITE_PAGE_CATEGORY_SET = new Set<string>(SITE_PAGE_CATEGORIES)
 const SITE_PAGE_STATUS_SET = new Set<string>(SITE_PAGE_STATUSES)
@@ -1312,7 +1312,33 @@ function createTransversalCaseBlocks(siteEmail: string) {
   return blocks.map((block, index) => ({ ...block, order: index }))
 }
 
+function createNavigationSelectorBlocks() {
+  return [
+    {
+      id: 'selector',
+      type: 'navigation-selector',
+      name: 'Selector de Navegación',
+      visible: true,
+      order: 0,
+      content: {
+        corporateTitle: 'SOLUCIONES PARA EMPRESA',
+        corporateDescription: 'Optimización operativa, automatización de procesos y despliegue estratégico de IA.',
+        corporateCta: 'INGRESAR',
+        educationTitle: 'SOLUCIONES EDUCATIVAS',
+        educationDescription: 'Transformación digital para instituciones, colegios y centros de formación técnica.',
+        educationCta: 'INGRESAR',
+        logoText: 'ALGORITMOT'
+      },
+      style: {
+        backgroundColor: '#0f172a',
+        paddingY: '0',
+      },
+    },
+  ]
+}
+
 function createDefaultBlocksByPage(pageId: string, title: string, description: string, accentColor: string, siteEmail: string) {
+  if (pageId === 'home-nav') return createNavigationSelectorBlocks()
   if (pageId === 'home-root') return createServicesLandingBlocks(title, siteEmail)
   if (pageId === 'home-inicio') return createClassicHomeBlocks(title, description, accentColor, siteEmail)
   if (pageId === 'case-transversal') return createTransversalCaseBlocks(siteEmail)
@@ -1502,9 +1528,27 @@ export function getDefaultCmsSnapshot(): CMSState {
   const siteEmail = defaultSiteConfig.contact.email
   const defaultSiteArchitecturePages = [
     {
+      id: 'home-nav',
+      title: 'Selector de Navegación',
+      path: '/',
+      description: 'Pantalla inicial de selección: Empresas o Educación.',
+      category: 'principal',
+      status: 'published',
+      editor: 'home',
+      template: 'immersive',
+      navLabel: 'Selector',
+      showInNavigation: false,
+      previewPath: '/',
+      accentColor: '#0f172a',
+      notes: 'Página de entrada al sitio.',
+      order: 0,
+      locked: true,
+      blocks: createDefaultBlocksByPage('home-nav', 'Selector de Navegación', 'Pantalla inicial de selección: Empresas o Educación.', '#0f172a', siteEmail),
+    },
+    {
       id: 'home-root',
       title: 'Home (Landing principal)',
-      path: '/',
+      path: '/empresas',
       description: 'Página principal pública del sitio.',
       category: 'principal',
       status: 'published',
@@ -1512,10 +1556,10 @@ export function getDefaultCmsSnapshot(): CMSState {
       template: 'immersive',
       navLabel: 'Inicio',
       showInNavigation: true,
-      previewPath: '/',
+      previewPath: '/empresas',
       accentColor: '#2563eb',
       notes: 'Render principal del sitio.',
-      order: 0,
+      order: 1,
       locked: true,
       blocks: createDefaultBlocksByPage('home-root', 'Home (Landing principal)', 'Página principal pública del sitio.', '#2563eb', siteEmail),
     },
