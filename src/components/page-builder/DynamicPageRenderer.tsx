@@ -571,11 +571,14 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
             </a>
 
             {/* Logo Overlay */}
-            <div className="absolute top-6 lg:top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                <div className="text-xl lg:text-2xl font-black tracking-tighter text-white drop-shadow-lg uppercase">
+            <a 
+                href="https://www.algoritmot.com/"
+                className="absolute top-6 lg:top-8 left-1/2 -translate-x-1/2 z-20 cursor-pointer"
+            >
+                <div className="text-xl lg:text-2xl font-black tracking-tighter text-white drop-shadow-lg uppercase hover:scale-105 transition-transform">
                     {logoText || 'ALGORITMOT'}
                 </div>
-            </div>
+            </a>
         </div>
     )
 }

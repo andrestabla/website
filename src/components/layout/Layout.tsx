@@ -77,13 +77,13 @@ export function Layout({ children }: LayoutProps) {
         <div className="py-32 bg-slate-900 px-6 border-t border-white/5">
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-24">
-                    <div className="text-4xl font-black tracking-tighter text-white inline-flex items-center">
+                    <a href="https://www.algoritmot.com/" className="text-4xl font-black tracking-tighter text-white inline-flex items-center">
                         {useImageFooterLogo ? (
                             <img src={design.logoFooterUrl || design.logoUrl} alt={design.logoAlt || site.name} className="h-12 w-auto object-contain" />
                         ) : (
                             <>ALGORITMO<span className="text-white/30">T</span></>
                         )}
-                    </div>
+                    </a>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-16">
                         <div>
                             <div className="text-xs font-black text-white/30 uppercase tracking-[0.4em] mb-8">{uiText.footer.protocols}</div>
@@ -116,13 +116,13 @@ export function Layout({ children }: LayoutProps) {
     const renderCompactFooter = () => (
         <div className="py-16 bg-slate-900 px-6 border-t border-white/5">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-8">
-                <div className="text-2xl font-black tracking-tighter text-white inline-flex items-center">
+                <a href="https://www.algoritmot.com/" className="text-2xl font-black tracking-tighter text-white inline-flex items-center">
                     {useImageFooterLogo ? (
                         <img src={design.logoFooterUrl || design.logoUrl} alt={design.logoAlt || site.name} className="h-10 w-auto object-contain" />
                     ) : (
                         <>ALGORITMO<span className="text-white/30">T</span></>
                     )}
-                </div>
+                </a>
                 <div className="flex flex-wrap items-center gap-6 text-xs font-black uppercase tracking-[0.22em] text-white/60">
                     <Link to={servicesHref} className="hover:text-white transition-colors">{uiText.nav.services}</Link>
                     <Link to={workflowHref} className="hover:text-white transition-colors">{uiText.nav.workflow}</Link>
@@ -185,13 +185,13 @@ export function Layout({ children }: LayoutProps) {
             {!isNavigationSelector && (
                 <header className={headerShellClass} style={isHeaderSticky ? { top: announcementHeight } : undefined}>
                 <div className={`px-6 ${headerHeightClass} ${headerVariant === 'split' ? 'max-w-7xl mx-auto w-full grid grid-cols-[auto_1fr_auto] items-center gap-6' : 'flex items-center justify-between'}`}>
-                    <Link to="/empresas" className="text-2xl font-black tracking-tighter text-slate-900 inline-flex items-center">
+                    <a href="https://www.algoritmot.com/" className="text-2xl font-black tracking-tighter text-slate-900 inline-flex items-center">
                         {useImageLogo ? (
                             <img src={design.logoUrl} alt={design.logoAlt || site.name} className="h-10 w-auto object-contain" />
                         ) : (
                             <>ALGORITMO<span className="text-brand-primary">T</span></>
                         )}
-                    </Link>
+                    </a>
 
                     <nav className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-7' : 'gap-12'} ${headerVariant === 'split' ? 'justify-center' : ''}`}>
                         <Link to={servicesHref} className={navLinkClass}>{uiText.nav.services}</Link>
