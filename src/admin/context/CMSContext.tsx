@@ -2129,6 +2129,16 @@ function createNavigationSelectorBlocks(): SitePageBlock[] {
         }
     ]
 }
+const VIRTUALIZACION_LANDING_WORKFLOW = [
+    { title: 'Asesoría pedagógica', description: 'Definición de objetivos y estrategias de aprendizaje.' },
+    { title: 'Autoría de contenidos', description: 'Creación de materiales por expertos temáticos.' },
+    { title: 'Diseño instruccional', description: 'Estructuración pedagógica y didáctica del curso.' },
+    { title: 'Corrección de estilo', description: 'Revisión gramatical y coherencia editorial.' },
+    { title: 'Producción multimedia', description: 'Desarrollo de videos, interactivos y gráficos.' },
+    { title: 'Montaje sobre LMS', description: 'Configuración y despliegue en la plataforma.' },
+    { title: 'Quality Assurance', description: 'Pruebas rigurosas de funcionamiento y navegación.' },
+    { title: 'Auditoría aulas virtuales', description: 'Verificación de estándares de calidad final.' },
+]
 
 function createEducationLandingBlocks(): SitePageBlock[] {
     const blocks: SitePageBlock[] = [
@@ -2464,12 +2474,124 @@ function createPlataformasLandingBlocks(): SitePageBlock[] {
     return blocks
 }
 
+function createVirtualizacionLandingBlocks(): SitePageBlock[] {
+    const blocks: SitePageBlock[] = [
+        {
+            id: 'hero',
+            type: 'hero',
+            name: 'Hero Servicio',
+            visible: true,
+            order: 0,
+            content: {
+                eyebrow: 'Experiencias de aprendizaje mediadas por tecnologías',
+                title: 'Virtualización de programas',
+                body: '',
+                primaryLabel: 'Hablar con un consultor',
+                primaryHref: '#contacto',
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0b1323',
+                align: 'left',
+                paddingY: '8rem',
+            },
+        },
+        {
+            id: 'gestion-planes',
+            type: 'grid',
+            name: 'Gestión planes de formación',
+            visible: true,
+            order: 1,
+            content: {
+                eyebrow: 'Somos su aliado en la creación y operación',
+                title: 'Gestión planes de formación',
+                items: [
+                    { title: 'Programas de pregrado y posgrado', body: 'Acompañamiento integral en la formalización digital.' },
+                    { title: 'Oferta de educación continua', body: 'Diplomados y certificados de alta calidad.' },
+                    { title: 'Planes de formación organizacional', body: 'Entrenamiento corporativo escalable.' },
+                    { title: 'Formaciones a la medida', body: 'Proyectos específicos según necesidad.' },
+                    { title: 'Cursos cortos', body: 'Experiencias ágiles de micro-aprendizaje.' }
+                ]
+            },
+            style: {
+                backgroundColor: '#ffffff',
+                textColor: '#ffffff',
+                align: 'left',
+                columns: '3',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'contenidos',
+            type: 'feature-list',
+            name: 'Producción de contenidos',
+            visible: true,
+            order: 2,
+            content: {
+                title: 'Producción de contenidos educativos',
+                items: [
+                    { title: 'Cursos a la medida', body: 'Diseñamos, desarrollamos y virtualizamos programas atendiendo a proyectos específicos.' },
+                    { title: 'Fábrica de contenidos', body: 'Producción masiva de contenidos administrando el 100% de la operación.' },
+                    { title: 'Implementación del proceso', body: 'Transferencia de la metodología Algoritmo e implementación tecnológica.' }
+                ]
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0f172a',
+                align: 'left',
+                columns: '3',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'flujo',
+            type: 'timeline',
+            name: 'Procesos ágiles',
+            visible: true,
+            order: 3,
+            content: {
+                eyebrow: 'Calidad asegurada',
+                title: 'Procesos ágiles que generan valor',
+                items: VIRTUALIZACION_LANDING_WORKFLOW,
+                primaryLabel: 'Ver casos de éxito',
+                primaryHref: '/servicios/casos-de-exito'
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0f172a',
+                align: 'left',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'contacto',
+            type: 'contact',
+            name: 'Contacto Servicio',
+            visible: true,
+            order: 4,
+            content: {
+                eyebrow: 'Iniciemos tu proyecto',
+                title: 'Hablemos de tus necesidades de virtualización',
+                body: 'Escríbenos para conversar sobre modelos de producción y operación de programas.',
+                email: 'andrestabla@algoritmot.com',
+                secondaryLabel: 'WhatsApp Directo',
+                secondaryHref: 'https://wa.me/573044544525',
+            },
+            style: {
+                backgroundColor: '#ffffff',
+                textColor: '#0f172a',
+            },
+        }
+    ]
+    return blocks
+}
 
 function createDefaultBlocksByPage(pageId: string, title: string, description: string, accentColor: string): SitePageBlock[] {
     if (pageId === 'home-nav') return createNavigationSelectorBlocks()
     if (pageId === 'home-root') return createServicesLandingBlocks(title)
     if (pageId === 'home-edu') return createEducationLandingBlocks()
     if (pageId === 'servicio-plataformas') return createPlataformasLandingBlocks()
+    if (pageId === 'virtualizacion-programas') return createVirtualizacionLandingBlocks()
     if (pageId === 'home-inicio') return createClassicHomeBlocks(title, description, accentColor)
     if (pageId === 'case-transversal') return createTransversalCaseBlocks()
     return createDefaultBlocks(title, description, accentColor)
@@ -2687,6 +2809,24 @@ const staticSiteArchitecture: SiteArchitecture = {
             order: 3,
             locked: false,
             blocks: createDefaultBlocksByPage('servicio-plataformas', 'Plataformas de Aprendizaje', 'Implementa o evoluciona tu ecosistema digital para el aprendizaje.', '#10b981'),
+        },
+        {
+            id: 'virtualizacion-programas',
+            title: 'Virtualización de Programas',
+            path: '/virtualizacion-programas',
+            description: 'Experiencias de aprendizaje mediadas por tecnologías.',
+            category: 'servicios',
+            status: 'published',
+            editor: 'home',
+            template: 'immersive',
+            navLabel: 'Virtualización',
+            showInNavigation: false,
+            previewPath: '/virtualizacion-programas',
+            accentColor: '#10b981',
+            notes: 'Página de producción de contenidos educativos.',
+            order: 4,
+            locked: false,
+            blocks: createDefaultBlocksByPage('virtualizacion-programas', 'Virtualización de Programas', 'Experiencias de aprendizaje mediadas por tecnologías.', '#10b981'),
         },
         {
             id: 'home-inicio',

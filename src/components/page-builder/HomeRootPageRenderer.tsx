@@ -62,6 +62,18 @@ const THEMES: Record<string, ThemeColors> = {
         bgHighlight: 'bg-emerald-100',
         gradientStart: 'bg-emerald-200/40',
         gradientEnd: 'bg-teal-100/40',
+    },
+    '/virtualizacion-programas': {
+        primary: 'bg-emerald-700',
+        primaryHover: 'hover:bg-emerald-800 hover:border-emerald-800',
+        secondary: 'text-emerald-700',
+        textAccent: 'text-emerald-900',
+        textHighlight: 'text-emerald-800',
+        border: 'border-emerald-200',
+        bgLight: 'bg-emerald-50/50',
+        bgHighlight: 'bg-emerald-100',
+        gradientStart: 'bg-emerald-200/40',
+        gradientEnd: 'bg-teal-100/40',
     }
 }
 

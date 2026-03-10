@@ -31,7 +31,7 @@ export function Layout({ children }: LayoutProps) {
     const footerVariant = site.footerVariant || 'detailed'
     const isHeaderSticky = site.headerSticky !== 'false'
     const currentPath = location.pathname
-    const baseCandidate = ['/educacion', '/plataformas-de-aprendizaje', '/empresas'].find(p => currentPath.startsWith(p)) || '/empresas'
+    const baseCandidate = ['/educacion', '/plataformas-de-aprendizaje', '/virtualizacion-programas', '/empresas'].find(p => currentPath.startsWith(p)) || '/empresas'
 
     const normalizeLocalAnchor = (url: string) => {
         const trimmed = (url || '').trim()
