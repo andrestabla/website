@@ -2263,10 +2263,16 @@ const VIRTUALIZACION_EXPERIENCIAS = [
         ],
     },
     {
-        title: 'Inducción de Talento Humano',
-        body: 'Experiencia de onboarding inmersiva con storyboarding y personajes 3D.',
-        url: '#induccion',
-        imageUrl: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&q=80',
+        title: 'Programa de Formación EEQ',
+        body: 'Virtualización de contenidos formativos con foco en continuidad operativa y aprendizaje aplicado.',
+        url: '#eeq',
+        clientName: 'EEQ',
+        imageUrl: 'https://portafolio1.s3.us-east-1.amazonaws.com/EQUEBEC/EQUEBEC1.png',
+        images: [
+            'https://portafolio1.s3.us-east-1.amazonaws.com/EQUEBEC/EQUEBEC1.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/EQUEBEC/EQUEBEC2.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/EQUEBEC/EQUEBEC3.png',
+        ],
     },
     {
         title: 'Especialización en Bioética',
