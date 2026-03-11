@@ -209,12 +209,27 @@ function AnimatedNumber({ value, duration = 2 }: { value: number; duration?: num
     const rounded = useTransform(count, (latest) => Math.round(latest))
     const ref = useRef(null)
     const isInView = useInView(ref, { once: true, margin: "-100px" })
+    const [isMobileViewport, setIsMobileViewport] = useState(() => {
+        if (typeof window === 'undefined') return false
+        return window.matchMedia('(max-width: 767px)').matches
+    })
 
     useEffect(() => {
-        if (isInView) {
+        if (typeof window === 'undefined') return
+        const mediaQuery = window.matchMedia('(max-width: 767px)')
+        const syncViewport = (event?: MediaQueryListEvent) => {
+            setIsMobileViewport(event ? event.matches : mediaQuery.matches)
+        }
+        syncViewport()
+        mediaQuery.addEventListener('change', syncViewport)
+        return () => mediaQuery.removeEventListener('change', syncViewport)
+    }, [])
+
+    useEffect(() => {
+        if (isInView || isMobileViewport) {
             animate(count, value, { duration, ease: "easeOut" })
         }
-    }, [isInView, count, value, duration])
+    }, [isInView, isMobileViewport, count, value, duration])
 
     return <motion.span ref={ref}>{rounded}</motion.span>
 }
