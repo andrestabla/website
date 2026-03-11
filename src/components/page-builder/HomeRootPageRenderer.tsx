@@ -828,6 +828,18 @@ function renderClientCarouselBlock(block: SitePageBlock) {
                     })}
                 </div>
             </div>
+
+            {items.length > 1 && (
+                <div className="mt-1 flex items-center justify-center gap-2 md:hidden" aria-label={`Carrusel con ${items.length} experiencias`}>
+                    {items.map((_, index) => (
+                        <span
+                            key={`experience-dot-${index}`}
+                            className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                            aria-hidden="true"
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     )
 }
@@ -992,12 +1004,7 @@ function ExperienceCarouselCard({ item, index }: ExperienceCarouselCardProps) {
                     <button
                         type="button"
                         onClick={openPortfolioModal}
-                        disabled={isMobileViewport}
-                        className={`mt-8 inline-flex items-center text-left text-sm font-bold uppercase tracking-widest ${
-                            isMobileViewport
-                                ? 'cursor-default text-emerald-500/70'
-                                : 'text-emerald-600 hover:text-emerald-700'
-                        }`}
+                        className="mt-8 hidden items-center text-left text-sm font-bold uppercase tracking-widest text-emerald-600 hover:text-emerald-700 md:inline-flex"
                     >
                         Ver caso <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </button>
