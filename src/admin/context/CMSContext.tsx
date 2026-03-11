@@ -885,6 +885,59 @@ const EDUCATION_LANDING_FAQ = [
     },
 ]
 
+const EDUCATION_LANDING_CLIENTS = [
+    {
+        id: 'cliente-1',
+        title: 'CESA',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/CESA.svg',
+    },
+    {
+        id: 'cliente-2',
+        title: 'Ibero',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/ibero.png',
+    },
+    {
+        id: 'cliente-3',
+        title: 'La Salle',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/La-Salle-color-RGB.png',
+    },
+    {
+        id: 'cliente-4',
+        title: 'Mobile Citi Academy',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/LOGO+MOBILE+CITI+ACADEMY+VF.png',
+    },
+    {
+        id: 'cliente-5',
+        title: 'Inetum',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/LOGO_INETUM.jpg',
+    },
+    {
+        id: 'cliente-6',
+        title: 'UDI',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/logos-udi-1-02.png',
+    },
+    {
+        id: 'cliente-7',
+        title: 'San Martín',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/SanMarti%CC%81n.png',
+    },
+    {
+        id: 'cliente-8',
+        title: 'Santo Tomás',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/SANTO_TOMA%CC%81S_Principal.webp',
+    },
+    {
+        id: 'cliente-9',
+        title: 'UTB',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/UTB.png',
+    },
+    {
+        id: 'cliente-10',
+        title: 'CA3',
+        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/Logo+CA3.svg',
+    },
+]
+
 const PLATAFORMAS_LANDING_WORKFLOW = [
     { title: '1. Despliegue', body: 'Instalación y configuración de la infraestructura tecnológica base de acuerdo con los requerimientos operativos y de seguridad.' },
     { title: '2. Personalización', body: 'Adaptación de la interfaz gráfica al libro de marca y configuración de reglas funcionales específicas del modelo.' },
@@ -2317,11 +2370,29 @@ function createEducationLandingBlocks(): SitePageBlock[] {
             },
         },
         {
+            id: 'clientes',
+            type: 'carousel',
+            name: 'Clientes',
+            visible: true,
+            order: 4,
+            content: {
+                title: 'Clientes',
+                body: 'Instituciones y empresas que han confiado en nosotros',
+                items: EDUCATION_LANDING_CLIENTS,
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0f172a',
+                align: 'left',
+                paddingY: '5rem',
+            },
+        },
+        {
             id: 'faq',
             type: 'accordion',
             name: 'Preguntas frecuentes',
             visible: true,
-            order: 4,
+            order: 5,
             content: {
                 eyebrow: 'Preguntas frecuentes',
                 title: 'Respuestas claras para tomar decisiones',
@@ -2339,7 +2410,7 @@ function createEducationLandingBlocks(): SitePageBlock[] {
             type: 'contact',
             name: 'Contacto Educación',
             visible: true,
-            order: 5,
+            order: 6,
             content: {
                 eyebrow: 'Iniciemos tu proyecto',
                 title: 'Hablemos de tus objetivos educativos',
@@ -2716,6 +2787,60 @@ function isOutdatedEducationBlocks(blocks: SitePageBlock[]) {
     return firstItem?.id !== 'plataformas-lms' || firstItem?.id === 'edu-digital'
 }
 
+function ensureEducationClientsBlock(blocks: SitePageBlock[]) {
+    const defaultClientsBlock = createEducationLandingBlocks().find((block) => block.id === 'clientes')
+    if (!defaultClientsBlock) return blocks
+
+    const existingClientsIndex = blocks.findIndex((block) => block.id === 'clientes')
+    if (existingClientsIndex >= 0) {
+        const existingClientsBlock = blocks[existingClientsIndex]
+        const existingItems = Array.isArray(existingClientsBlock.content?.items) ? existingClientsBlock.content.items : []
+        const hasLogoUrls = existingItems.some((item) => (
+            item &&
+            typeof item === 'object' &&
+            typeof (item as Record<string, unknown>).logoUrl === 'string' &&
+            String((item as Record<string, unknown>).logoUrl).trim().length > 0
+        ))
+
+        if (hasLogoUrls) return blocks
+
+        const updated = [...blocks]
+        updated[existingClientsIndex] = {
+            ...existingClientsBlock,
+            content: {
+                ...existingClientsBlock.content,
+                title: 'Clientes',
+                body: 'Instituciones y empresas que han confiado en nosotros',
+                items: Array.isArray(defaultClientsBlock.content.items)
+                    ? defaultClientsBlock.content.items.map((item) => (item && typeof item === 'object' ? { ...(item as Record<string, unknown>) } : item))
+                    : [],
+            },
+            style: { ...existingClientsBlock.style },
+        }
+        return updated.map((block, index) => ({ ...block, order: index }))
+    }
+
+    const nextBlocks = [...blocks].sort((a, b) => a.order - b.order)
+    const flowIndex = nextBlocks.findIndex((block) => block.id === 'flujo')
+    const faqIndex = nextBlocks.findIndex((block) => block.id === 'faq')
+    const insertAt = flowIndex >= 0
+        ? flowIndex + 1
+        : (faqIndex >= 0 ? faqIndex : nextBlocks.length)
+
+    nextBlocks.splice(insertAt, 0, {
+        ...defaultClientsBlock,
+        content: {
+            ...defaultClientsBlock.content,
+            items: Array.isArray(defaultClientsBlock.content.items)
+                ? defaultClientsBlock.content.items.map((item) => (item && typeof item === 'object' ? { ...(item as Record<string, unknown>) } : item))
+                : [],
+        },
+        style: { ...defaultClientsBlock.style },
+    })
+
+    return nextBlocks.map((block, index) => ({ ...block, order: index }))
+}
+
 function isOutdatedVirtualizacionBlocks(blocks: SitePageBlock[]) {
     return !blocks.some((block) => block.id === 'experiencias')
 }
@@ -2755,8 +2880,12 @@ function migrateLegacyBuilderPage(pageId: string, title: string, description: st
     if (pageId === 'home-root' && isOutdatedHomeRootBlocks(blocks)) {
         return createDefaultBlocksByPage(pageId, title, description, accentColor)
     }
-    if (pageId === 'home-edu' && isOutdatedEducationBlocks(blocks)) {
-        return createDefaultBlocksByPage(pageId, title, description, accentColor)
+    if (pageId === 'home-edu') {
+        const withClients = ensureEducationClientsBlock(blocks)
+        if (isOutdatedEducationBlocks(withClients)) {
+            return createDefaultBlocksByPage(pageId, title, description, accentColor)
+        }
+        return withClients
     }
     if (pageId === 'virtualizacion-programas' && isOutdatedVirtualizacionBlocks(blocks)) {
         return createDefaultBlocksByPage(pageId, title, description, accentColor)

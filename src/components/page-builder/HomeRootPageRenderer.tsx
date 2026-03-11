@@ -146,6 +146,16 @@ function normalizeAnchorId(value: string) {
     return trimmed.replace(/^\/?#/, '').trim()
 }
 
+function getLogoInitials(value: string) {
+    const parts = value
+        .split(/\s+/)
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+        .slice(0, 2)
+    const initials = parts.map((segment) => segment[0]?.toUpperCase() ?? '').join('')
+    return initials || 'CL'
+}
+
 function AnimatedNumber({ value, duration = 2 }: { value: number; duration?: number }) {
     const count = useMotionValue(0)
     const rounded = useTransform(count, (latest) => Math.round(latest))
@@ -658,6 +668,55 @@ function renderFeatureListBlock(block: SitePageBlock, theme: ThemeColors) {
     )
 }
 
+function renderTrustedClientsBlock(block: SitePageBlock, theme: ThemeColors) {
+    const title = toText(block.content.title, 'Clientes')
+    const body = toText(block.content.body, 'Instituciones y empresas que han confiado en nosotros')
+    const items = ensureObjectItems(block.content.items)
+    const carouselItems = items.length > 1 ? [...items, ...items] : items
+
+    if (items.length === 0) return null
+
+    return (
+        <div className="mx-auto max-w-7xl">
+            <div className="mx-auto max-w-4xl text-center">
+                <h2 className={`text-4xl font-black tracking-tight md:text-5xl ${theme.textAccent}`}>{title}</h2>
+                <p className="mt-5 text-lg text-slate-600">{body}</p>
+            </div>
+
+            <div className={`clients-marquee relative mt-12 overflow-hidden rounded-3xl border bg-white/80 px-4 py-6 backdrop-blur-sm md:px-6 ${theme.border}`}>
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#f8fbfa] to-transparent md:w-24" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#f8fbfa] to-transparent md:w-24" />
+
+                <div className="clients-marquee-track flex w-max items-stretch gap-4 md:gap-6">
+                    {carouselItems.map((item, index) => {
+                        const name = toText(item.title || item.label, `Cliente ${index + 1}`)
+                        const logoUrl = toText(item.logoUrl || item.imageUrl)
+
+                        return (
+                            <article
+                                key={`${item.id || name}-${index}`}
+                                className={`flex min-h-[104px] min-w-[220px] items-center gap-4 rounded-2xl border bg-white px-5 py-4 ${theme.border}`}
+                                aria-label={name}
+                            >
+                                <div className={`flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-slate-50 ${theme.border}`}>
+                                    {logoUrl ? (
+                                        <img src={logoUrl} alt={`Logo de ${name}`} className="h-full w-full object-contain p-1.5" loading="lazy" />
+                                    ) : (
+                                        <span className={`text-base font-black tracking-tight ${theme.textHighlight}`}>
+                                            {getLogoInitials(name)}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-sm font-bold leading-tight text-slate-800">{name}</p>
+                            </article>
+                        )
+                    })}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 function renderClientCarouselBlock(block: SitePageBlock, currentPath: string) {
     const title = toText(block.content.title)
     const body = toText(block.content.body)
@@ -873,12 +932,13 @@ export function HomeRootPageRenderer({
                         {block.id === 'flujo' && !benefitsBlock && renderStandaloneFlowBlock(block)}
                         {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, currentTheme, onSelectBlock)}
                         {block.id === 'funcionalidades' && block.type === 'feature-list' && renderFeatureListBlock(block, currentTheme)}
-                        {block.type === 'carousel' && renderClientCarouselBlock(block, page.path)}
+                        {block.id === 'clientes' && renderTrustedClientsBlock(block, currentTheme)}
+                        {block.type === 'carousel' && block.id !== 'clientes' && renderClientCarouselBlock(block, page.path)}
                         {block.type === 'tuprofe' && renderTuProfeBlock(block)}
                         {block.id === 'faq' && renderFaqBlock(block, currentTheme)}
                         {block.id === 'contacto' && renderContactBlock(block, page.path, currentTheme)}
                         {block.id === 'cta' && renderCtaBlock(block, page.path, currentTheme)}
-                        {!['hero', 'promesas', 'servicios', 'flujo', 'beneficios', 'funcionalidades', 'faq', 'contacto', 'cta'].includes(block.id) && block.type !== 'carousel' && block.type !== 'tuprofe' && renderFallbackBlock(block, currentTheme)}
+                        {!['hero', 'promesas', 'servicios', 'flujo', 'beneficios', 'funcionalidades', 'clientes', 'faq', 'contacto', 'cta'].includes(block.id) && block.type !== 'carousel' && block.type !== 'tuprofe' && renderFallbackBlock(block, currentTheme)}
                     </section>
                 )
             })}

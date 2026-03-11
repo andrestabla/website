@@ -103,6 +103,22 @@
     animation: servicesFloat 11s ease-in-out infinite reverse;
   }
 
+  .clients-marquee-track {
+    animation: clientsMarquee 32s linear infinite;
+    will-change: transform;
+  }
+
+  .clients-marquee:hover .clients-marquee-track {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .clients-marquee-track {
+      animation: none;
+      transform: translateX(0);
+    }
+  }
+
   @keyframes servicesFloat {
     0% {
       transform: translateY(0);
@@ -114,6 +130,16 @@
 
     100% {
       transform: translateY(0);
+    }
+  }
+
+  @keyframes clientsMarquee {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-50%);
     }
   }
 
