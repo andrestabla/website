@@ -2236,7 +2236,16 @@ const VIRTUALIZACION_EXPERIENCIAS = [
         title: 'Diplomado en Data Science',
         body: 'Contenidos interactivos con cuadernos de Jupyter integrados y videoclases 4K.',
         url: '#datascience',
-        imageUrl: 'https://images.unsplash.com/photo-1551288049-bbbda536339a?w=800&q=80',
+        clientName: 'USTA',
+        imageUrl: 'https://portafolio1.s3.us-east-1.amazonaws.com/USTA/USTA1.png',
+        images: [
+            'https://portafolio1.s3.us-east-1.amazonaws.com/USTA/USTA1.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/USTA/USTA2.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/USTA/USTA3.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/USTA/USTA4.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/USTA/USTA5.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/USTA/USTA6.png',
+        ],
     },
     {
         title: 'Escuela de Ventas Corporativas',
