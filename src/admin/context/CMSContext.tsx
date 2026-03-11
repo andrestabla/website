@@ -2290,10 +2290,16 @@ const VIRTUALIZACION_EXPERIENCIAS = [
         ],
     },
     {
-        title: 'Bootcamp Code & Design',
-        body: 'Formación intensiva basada en proyectos con mentorías sincrónicas y asincrónicas.',
-        url: '#bootcamp',
-        imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80',
+        title: 'Campus Digital UDI',
+        body: 'Despliegue de experiencia virtual con contenidos modulares, recursos multimedia y rutas académicas guiadas.',
+        url: '#udi',
+        clientName: 'UDI',
+        imageUrl: 'https://portafolio1.s3.us-east-1.amazonaws.com/UDI/UDI1.png',
+        images: [
+            'https://portafolio1.s3.us-east-1.amazonaws.com/UDI/UDI1.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/UDI/UDI2.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/UDI/UDI3.png',
+        ],
     },
 ]
 
