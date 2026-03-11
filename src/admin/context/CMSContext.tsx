@@ -2220,7 +2220,17 @@ const VIRTUALIZACION_EXPERIENCIAS = [
         title: 'Certificación en Liderazgo Ágil',
         body: 'Curso corto gamificado con entrega de micro-credenciales y badges digitales.',
         url: '#liderazgo',
-        imageUrl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80',
+        clientName: 'USANMARTÍN',
+        imageUrl: 'https://portafolio1.s3.us-east-1.amazonaws.com/usanmartin/USANMARTIN1.png',
+        images: [
+            'https://portafolio1.s3.us-east-1.amazonaws.com/usanmartin/USANMARTIN1.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/usanmartin/USANMARTIN2.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/usanmartin/USANMARTIN3.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/usanmartin/USANMARTIN4.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/usanmartin/USANMARTIN5.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/usanmartin/USANMARTIN6.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/usanmartin/USANMARTIN7.png',
+        ],
     },
     {
         title: 'Diplomado en Data Science',
