@@ -2275,10 +2275,19 @@ const VIRTUALIZACION_EXPERIENCIAS = [
         ],
     },
     {
-        title: 'Especialización en Bioética',
-        body: 'Migración masiva de contenidos legacy a estándares LTI y SCORM modernos.',
-        url: '#bioetica',
-        imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&q=80',
+        title: 'Campus Virtual Estudiemos Web',
+        body: 'Implementación de ecosistema e-learning con rutas formativas, contenidos dinámicos y seguimiento académico.',
+        url: '#estudiemos-web',
+        clientName: 'Estudiemos Web',
+        imageUrl: 'https://portafolio1.s3.us-east-1.amazonaws.com/EstudiemosWeb/EW1.png',
+        images: [
+            'https://portafolio1.s3.us-east-1.amazonaws.com/EstudiemosWeb/EW1.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/EstudiemosWeb/EW2.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/EstudiemosWeb/EW3.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/EstudiemosWeb/EW4.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/EstudiemosWeb/EW5.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/EstudiemosWeb/EW6.png',
+        ],
     },
     {
         title: 'Bootcamp Code & Design',
