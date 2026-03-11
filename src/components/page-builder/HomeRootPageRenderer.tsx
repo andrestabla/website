@@ -668,7 +668,7 @@ function renderFeatureListBlock(block: SitePageBlock, theme: ThemeColors) {
     )
 }
 
-function renderTrustedClientsBlock(block: SitePageBlock, theme: ThemeColors) {
+function renderTrustedClientsBlock(block: SitePageBlock, theme: ThemeColors, currentPath: string) {
     const title = toText(block.content.title, 'Clientes')
     const body = toText(block.content.body, 'Instituciones y empresas que han confiado en nosotros')
     const items = ensureObjectItems(block.content.items)
@@ -691,13 +691,10 @@ function renderTrustedClientsBlock(block: SitePageBlock, theme: ThemeColors) {
                     {carouselItems.map((item, index) => {
                         const name = toText(item.title || item.label, `Cliente ${index + 1}`)
                         const logoUrl = toText(item.logoUrl || item.imageUrl)
+                        const itemUrl = normalizeCmsHref(item.url, '', currentPath)
 
-                        return (
-                            <article
-                                key={`${item.id || name}-${index}`}
-                                className={`flex min-h-[104px] min-w-[220px] items-center gap-4 rounded-2xl border bg-white px-5 py-4 ${theme.border}`}
-                                aria-label={name}
-                            >
+                        const cardContent = (
+                            <>
                                 <div className={`flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-slate-50 ${theme.border}`}>
                                     {logoUrl ? (
                                         <img src={logoUrl} alt={`Logo de ${name}`} className="h-full w-full object-contain p-1.5" loading="lazy" />
@@ -708,6 +705,31 @@ function renderTrustedClientsBlock(block: SitePageBlock, theme: ThemeColors) {
                                     )}
                                 </div>
                                 <p className="text-sm font-bold leading-tight text-slate-800">{name}</p>
+                            </>
+                        )
+
+                        if (itemUrl) {
+                            return (
+                                <a
+                                    key={`${item.id || name}-${index}`}
+                                    href={itemUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`flex min-h-[104px] min-w-[220px] items-center gap-4 rounded-2xl border bg-white px-5 py-4 transition-transform hover:-translate-y-0.5 ${theme.border}`}
+                                    aria-label={name}
+                                >
+                                    {cardContent}
+                                </a>
+                            )
+                        }
+
+                        return (
+                            <article
+                                key={`${item.id || name}-${index}`}
+                                className={`flex min-h-[104px] min-w-[220px] items-center gap-4 rounded-2xl border bg-white px-5 py-4 ${theme.border}`}
+                                aria-label={name}
+                            >
+                                {cardContent}
                             </article>
                         )
                     })}
@@ -932,7 +954,7 @@ export function HomeRootPageRenderer({
                         {block.id === 'flujo' && !benefitsBlock && renderStandaloneFlowBlock(block)}
                         {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, currentTheme, onSelectBlock)}
                         {block.id === 'funcionalidades' && block.type === 'feature-list' && renderFeatureListBlock(block, currentTheme)}
-                        {block.id === 'clientes' && renderTrustedClientsBlock(block, currentTheme)}
+                        {block.id === 'clientes' && renderTrustedClientsBlock(block, currentTheme, page.path)}
                         {block.type === 'carousel' && block.id !== 'clientes' && renderClientCarouselBlock(block, page.path)}
                         {block.type === 'tuprofe' && renderTuProfeBlock(block)}
                         {block.id === 'faq' && renderFaqBlock(block, currentTheme)}

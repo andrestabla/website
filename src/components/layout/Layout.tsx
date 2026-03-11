@@ -32,6 +32,8 @@ export function Layout({ children }: LayoutProps) {
     const isHeaderSticky = site.headerSticky !== 'false'
     const currentPath = location.pathname
     const baseCandidate = ['/educacion', '/plataformas-de-aprendizaje', '/virtualizacion-programas', '/empresas'].find(p => currentPath.startsWith(p)) || '/empresas'
+    const forceEducationNav = currentPath.startsWith('/plataformas-de-aprendizaje')
+    const navBasePath = forceEducationNav ? '/educacion' : baseCandidate
 
     const normalizeLocalAnchor = (url: string) => {
         const trimmed = (url || '').trim()
@@ -55,11 +57,12 @@ export function Layout({ children }: LayoutProps) {
     const headerHeight = headerVariant === 'minimal' ? 64 : 80
     const headerHeightClass = headerHeight === 64 ? 'h-16' : 'h-20'
     const routeTemplate = useMemo(() => getRouteTemplate(location.pathname, site), [location.pathname, site])
-    const servicesHref = `${baseCandidate}#servicios`
-    const workflowAnchor = baseCandidate === '/empresas' ? 'beneficios' : 'flujo'
-    const workflowHref = `${baseCandidate}#${workflowAnchor}`
-    const faqHref = `${baseCandidate}#faq`
-    const contactHref = `${baseCandidate}#contacto`
+    const servicesHref = `${navBasePath}#servicios`
+    const workflowAnchor = navBasePath === '/empresas' ? 'beneficios' : 'flujo'
+    const workflowHref = `${navBasePath}#${workflowAnchor}`
+    const faqHref = `${navBasePath}#faq`
+    const contactHref = `${navBasePath}#contacto`
+    const contactNavLabel = forceEducationNav ? 'Objetivo' : uiText.nav.contact
     const closeMobileMenu = () => setMobileMenuOpen(false)
 
     useEffect(() => {
@@ -207,7 +210,7 @@ export function Layout({ children }: LayoutProps) {
                         <Link to={servicesHref} className={navLinkClass}>{uiText.nav.services}</Link>
                         <Link to={workflowHref} className={navLinkClass}>{uiText.nav.workflow}</Link>
                         <Link to={faqHref} className={navLinkClass}>{uiText.nav.faq}</Link>
-                        <Link to={contactHref} className={navLinkClass}>{uiText.nav.contact}</Link>
+                        <Link to={contactHref} className={navLinkClass}>{contactNavLabel}</Link>
                     </nav>
 
                     <div className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-3' : 'gap-4'} ${headerVariant === 'split' ? 'justify-end' : ''}`}>
@@ -266,7 +269,7 @@ export function Layout({ children }: LayoutProps) {
                             {uiText.nav.faq}
                         </Link>
                         <Link to={contactHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
-                            {uiText.nav.contact}
+                            {contactNavLabel}
                         </Link>
                         {headerCtaEnabled && (
                             isExternalHeaderCta ? (
