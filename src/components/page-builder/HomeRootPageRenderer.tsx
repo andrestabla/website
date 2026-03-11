@@ -518,7 +518,7 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
                             rel="noopener noreferrer"
                             className={`inline-flex items-center gap-2 border bg-transparent px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-white transition-all ${theme.border} hover:bg-white/10`}
                         >
-                            Ver caso de éxito
+                            Ver caso
                             <ArrowRight className="h-4 w-4" />
                         </a>
                     </div>
@@ -860,6 +860,10 @@ function ExperienceCarouselCard({ item, index }: ExperienceCarouselCardProps) {
     const clientName = toText(item.clientName || item.client || item.company || item.organization || item.partner, itemTitle)
     const itemBody = toText(item.body || item.description)
     const images = resolveExperienceImages(item)
+    const [isMobileViewport, setIsMobileViewport] = useState(() => {
+        if (typeof window === 'undefined') return false
+        return window.matchMedia('(max-width: 767px)').matches
+    })
     const [activeImageIndex, setActiveImageIndex] = useState(0)
     const [portfolioModalOpen, setPortfolioModalOpen] = useState(false)
     const [modalImageIndex, setModalImageIndex] = useState(0)
@@ -883,6 +887,23 @@ function ExperienceCarouselCard({ item, index }: ExperienceCarouselCardProps) {
         }
     }, [portfolioModalOpen])
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        const mediaQuery = window.matchMedia('(max-width: 767px)')
+        const syncViewport = (event?: MediaQueryListEvent) => {
+            setIsMobileViewport(event ? event.matches : mediaQuery.matches)
+        }
+        syncViewport()
+        mediaQuery.addEventListener('change', syncViewport)
+        return () => mediaQuery.removeEventListener('change', syncViewport)
+    }, [])
+
+    useEffect(() => {
+        if (isMobileViewport && portfolioModalOpen) {
+            setPortfolioModalOpen(false)
+        }
+    }, [isMobileViewport, portfolioModalOpen])
+
     const goToPreviousPreview = (event: ReactMouseEvent<HTMLButtonElement>) => {
         event.preventDefault()
         event.stopPropagation()
@@ -898,6 +919,7 @@ function ExperienceCarouselCard({ item, index }: ExperienceCarouselCardProps) {
     const openPortfolioModal = (event: ReactMouseEvent<HTMLButtonElement>) => {
         event.preventDefault()
         event.stopPropagation()
+        if (isMobileViewport) return
         setModalImageIndex(activeImageIndex)
         setPortfolioModalOpen(true)
     }
@@ -970,14 +992,19 @@ function ExperienceCarouselCard({ item, index }: ExperienceCarouselCardProps) {
                     <button
                         type="button"
                         onClick={openPortfolioModal}
-                        className="mt-8 inline-flex items-center text-left font-bold text-sm tracking-widest uppercase text-emerald-600 hover:text-emerald-700"
+                        disabled={isMobileViewport}
+                        className={`mt-8 inline-flex items-center text-left text-sm font-bold uppercase tracking-widest ${
+                            isMobileViewport
+                                ? 'cursor-default text-emerald-500/70'
+                                : 'text-emerald-600 hover:text-emerald-700'
+                        }`}
                     >
-                        Ver caso de éxito <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        Ver caso <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </button>
                 </div>
             </article>
 
-            {portfolioModalOpen && (
+            {portfolioModalOpen && !isMobileViewport && (
                 <div
                     className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm"
                     role="dialog"
