@@ -2248,10 +2248,19 @@ const VIRTUALIZACION_EXPERIENCIAS = [
         ],
     },
     {
-        title: 'Escuela de Ventas Corporativas',
-        body: 'Fábrica de contenidos para 2,000 asesores con evaluaciones situacionales.',
-        url: '#ventas',
-        imageUrl: 'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&q=80',
+        title: 'Programas Ejecutivos CESA',
+        body: 'Virtualización de programas con enfoque en formación ejecutiva y experiencias de alto impacto.',
+        url: '#cesa',
+        clientName: 'CESA',
+        imageUrl: 'https://portafolio1.s3.us-east-1.amazonaws.com/CESA/CESA1.png',
+        images: [
+            'https://portafolio1.s3.us-east-1.amazonaws.com/CESA/CESA1.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/CESA/CESA2.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/CESA/CESA3.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/CESA/CESA4.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/CESA/CESA5.png',
+            'https://portafolio1.s3.us-east-1.amazonaws.com/CESA/CESA6.png',
+        ],
     },
     {
         title: 'Inducción de Talento Humano',
