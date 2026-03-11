@@ -792,24 +792,33 @@ function createDefaultBlockByType(type: SitePageBlockType, order: number, accent
     }
 }
 
-function parseItemsLines(value: string, mode: 'single' | 'pair' | 'metric') {
+function parseItemsLines(value: string, mode: 'single' | 'pair' | 'metric', sourceItems?: unknown) {
+    const currentItems = Array.isArray(sourceItems) ? sourceItems : []
     return value
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean)
-        .map((line) => {
+        .map((line, index) => {
             if (mode === 'single') return line
-            const [left, right] = line.split('|').map((part) => part.trim())
+            const [leftRaw, ...rightRawParts] = line.split('|')
+            const left = (leftRaw ?? '').trim()
+            const right = rightRawParts.join('|').trim()
+            const currentItem = currentItems[index]
+            const base = currentItem && typeof currentItem === 'object'
+                ? { ...(currentItem as Record<string, unknown>) }
+                : {}
             if (mode === 'metric') {
                 return {
-                    label: left || 'Item',
+                    ...base,
+                    label: left || String(base.label ?? base.title ?? 'Item'),
                     value: Number(right || '0') || 0,
                 }
             }
             return {
-                label: left || 'Item',
+                ...base,
+                label: left || String(base.label ?? base.title ?? 'Item'),
                 body: right || '',
-                title: left || 'Item',
+                title: left || String(base.title ?? base.label ?? 'Item'),
                 url: right || '',
             }
         })
@@ -1328,7 +1337,7 @@ export function ManageSitePageEditor() {
                         <Textarea
                             rows={5}
                             value={itemsSingle}
-                            onChange={(event) => updateSelectedBlockContent({ items: parseItemsLines(event.target.value, 'single') })}
+                            onChange={(event) => updateSelectedBlockContent({ items: parseItemsLines(event.target.value, 'single', selectedBlock.content.items) })}
                         />
                     </Field>
                 )}
@@ -1338,7 +1347,7 @@ export function ManageSitePageEditor() {
                         <Textarea
                             rows={6}
                             value={itemsPair}
-                            onChange={(event) => updateSelectedBlockContent({ items: parseItemsLines(event.target.value, 'pair') })}
+                            onChange={(event) => updateSelectedBlockContent({ items: parseItemsLines(event.target.value, 'pair', selectedBlock.content.items) })}
                         />
                     </Field>
                 )}
@@ -1363,7 +1372,7 @@ export function ManageSitePageEditor() {
                         <Textarea
                             rows={5}
                             value={itemsMetric}
-                            onChange={(event) => updateSelectedBlockContent({ items: parseItemsLines(event.target.value, 'metric') })}
+                            onChange={(event) => updateSelectedBlockContent({ items: parseItemsLines(event.target.value, 'metric', selectedBlock.content.items) })}
                         />
                     </Field>
                 )}
