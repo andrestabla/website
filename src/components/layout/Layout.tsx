@@ -63,7 +63,7 @@ export function Layout({ children }: LayoutProps) {
     const workflowHref = `${navBasePath}#${workflowAnchor}`
     const faqHref = `${navBasePath}#faq`
     const contactHref = `${navBasePath}#contacto`
-    const contactNavLabel = isPlataformasPath ? 'Objetivo' : uiText.nav.contact
+    const contactNavLabel = uiText.nav.contact
     const closeMobileMenu = () => setMobileMenuOpen(false)
 
     useEffect(() => {
