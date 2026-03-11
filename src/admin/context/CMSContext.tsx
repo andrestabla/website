@@ -2643,11 +2643,11 @@ function createVirtualizacionLandingBlocks(): SitePageBlock[] {
                 eyebrow: 'Somos su aliado en la creación y operación',
                 title: 'Gestión planes de formación',
                 items: [
-                    { title: 'Programas de pregrado y posgrado', body: 'Acompañamiento integral en la formalización digital.' },
-                    { title: 'Oferta de educación continua', body: 'Diplomados y certificados de alta calidad.' },
-                    { title: 'Planes de formación organizacional', body: 'Entrenamiento corporativo escalable.' },
-                    { title: 'Formaciones a la medida', body: 'Proyectos específicos según necesidad.' },
-                    { title: 'Cursos cortos', body: 'Experiencias ágiles de micro-aprendizaje.' }
+                    { title: 'Programas de pregrado y posgrado', body: 'Acompañamiento integral en la formalización digital.', icon: 'GraduationCap' },
+                    { title: 'Oferta de educación continua', body: 'Diplomados y certificados de alta calidad.', icon: 'BookOpenText' },
+                    { title: 'Planes de formación organizacional', body: 'Entrenamiento corporativo escalable.', icon: 'Building2' },
+                    { title: 'Formaciones a la medida', body: 'Proyectos específicos según necesidad.', icon: 'Users' },
+                    { title: 'Cursos cortos', body: 'Experiencias ágiles de micro-aprendizaje.', icon: 'Rocket' }
                 ]
             },
             style: {
@@ -2667,9 +2667,9 @@ function createVirtualizacionLandingBlocks(): SitePageBlock[] {
             content: {
                 title: 'Producción de contenidos educativos',
                 items: [
-                    { title: 'Cursos a la medida', body: 'Diseñamos, desarrollamos y virtualizamos programas atendiendo a proyectos específicos.' },
-                    { title: 'Fábrica de contenidos', body: 'Producción masiva de contenidos administrando el 100% de la operación.' },
-                    { title: 'Implementación del proceso', body: 'Transferencia de la metodología Algoritmo e implementación tecnológica.' }
+                    { title: 'Cursos a la medida', body: 'Diseñamos, desarrollamos y virtualizamos programas atendiendo a proyectos específicos.', icon: 'BookOpenText' },
+                    { title: 'Fábrica de contenidos', body: 'Producción masiva de contenidos administrando el 100% de la operación.', icon: 'Layers' },
+                    { title: 'Implementación del proceso', body: 'Transferencia de la metodología Algoritmo e implementación tecnológica.', icon: 'Settings2' }
                 ]
             },
             style: {

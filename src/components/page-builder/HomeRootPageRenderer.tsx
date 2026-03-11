@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, BarChart3, BookOpenText, Boxes, CheckCircle2, Code2, Laptop, Layers, Layout, LayoutDashboard, LineChart, Network, Rocket, Search, ShieldCheck, Target, Users } from 'lucide-react'
+import { Activity, ArrowRight, BarChart3, BookOpenText, Boxes, Building2, CheckCircle2, Code2, GraduationCap, Laptop, Layers, Layout, LayoutDashboard, LineChart, Network, Rocket, Search, Settings2, ShieldCheck, Target, Users, type LucideIcon } from 'lucide-react'
 import { motion, useMotionValue, useTransform, animate, useInView } from 'framer-motion'
 import { useEffect, useRef } from 'react'
 import { ContactForm } from '../forms/ContactForm'
@@ -82,6 +82,19 @@ const THEMES: Record<string, ThemeColors> = {
 const DEFAULT_THEME = THEMES['/empresas']
 
 const SERVICE_CARD_ICONS = [Search, Network, Users, Code2, Rocket, LineChart]
+const CMS_ICON_COMPONENTS: Record<string, LucideIcon> = {
+    search: Search,
+    network: Network,
+    users: Users,
+    code2: Code2,
+    rocket: Rocket,
+    linechart: LineChart,
+    graduationcap: GraduationCap,
+    bookopentext: BookOpenText,
+    building2: Building2,
+    layers: Layers,
+    settings2: Settings2,
+}
 
 function handleSelectableBlockClick(
     event: ReactMouseEvent<HTMLElement>,
@@ -144,6 +157,41 @@ function normalizeAnchorId(value: string) {
     const trimmed = value.trim()
     if (!trimmed) return ''
     return trimmed.replace(/^\/?#/, '').trim()
+}
+
+function normalizeIconToken(value: string) {
+    return value.toLowerCase().replace(/[\s_-]+/g, '').trim()
+}
+
+function resolveCmsIcon(value: string) {
+    if (!value) return null
+    const normalized = normalizeIconToken(value)
+    return CMS_ICON_COMPONENTS[normalized] ?? null
+}
+
+function resolveVirtualizacionFallbackIcon(blockId: string, itemTitle: string, index: number) {
+    const normalizedTitle = itemTitle
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+
+    if (blockId === 'gestion-planes') {
+        if (normalizedTitle.includes('pregrado') || normalizedTitle.includes('posgrado')) return GraduationCap
+        if (normalizedTitle.includes('educacion continua') || normalizedTitle.includes('diplom') || normalizedTitle.includes('certific')) return BookOpenText
+        if (normalizedTitle.includes('organizacional') || normalizedTitle.includes('corporativ')) return Building2
+        if (normalizedTitle.includes('medida')) return Users
+        if (normalizedTitle.includes('cursos cortos') || normalizedTitle.includes('micro')) return Rocket
+        return SERVICE_CARD_ICONS[index % SERVICE_CARD_ICONS.length]
+    }
+
+    if (blockId === 'contenidos') {
+        if (normalizedTitle.includes('fabrica') || normalizedTitle.includes('produccion') || normalizedTitle.includes('contenido')) return Layers
+        if (normalizedTitle.includes('implementacion') || normalizedTitle.includes('proceso') || normalizedTitle.includes('metodologia')) return Settings2
+        if (normalizedTitle.includes('curso')) return BookOpenText
+        return SERVICE_CARD_ICONS[index % SERVICE_CARD_ICONS.length]
+    }
+
+    return null
 }
 
 function getLogoInitials(value: string) {
@@ -632,12 +680,29 @@ function renderFallbackBlock(block: SitePageBlock, theme: ThemeColors) {
             {body && <p className="mt-3 text-lg leading-relaxed text-slate-700">{body}</p>}
             {items.length > 0 && (
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    {items.map((item, index) => (
-                        <article key={`${item.id || index}`} className={`border px-5 py-5 ${theme.border} ${theme.bgLight}`}>
-                            <p className={`text-xl font-black tracking-tight text-slate-900`}>{toText(item.title || item.label || `Item ${index + 1}`)}</p>
-                            <p className="mt-2 text-base text-slate-700">{toText(item.body || item.description)}</p>
-                        </article>
-                    ))}
+                    {items.map((item, index) => {
+                        const itemTitle = toText(item.title || item.label || `Item ${index + 1}`)
+                        const itemBody = toText(item.body || item.description)
+                        const explicitIcon = resolveCmsIcon(toText(item.icon))
+                        const inferredIcon = resolveVirtualizacionFallbackIcon(block.id, itemTitle, index)
+                        const Icon = explicitIcon || inferredIcon
+
+                        return (
+                            <article key={`${item.id || index}`} className={`border px-5 py-5 ${theme.border} ${theme.bgLight}`}>
+                                <div className="flex items-start gap-3">
+                                    {Icon && (
+                                        <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center border ${theme.border} bg-white ${theme.textAccent}`}>
+                                            <Icon className="h-5 w-5" />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="text-xl font-black tracking-tight text-slate-900">{itemTitle}</p>
+                                        {itemBody && <p className="mt-2 text-base text-slate-700">{itemBody}</p>}
+                                    </div>
+                                </div>
+                            </article>
+                        )
+                    })}
                 </div>
             )}
         </div>
