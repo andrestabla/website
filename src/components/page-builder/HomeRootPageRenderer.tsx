@@ -1,6 +1,6 @@
-import { Activity, ArrowRight, BarChart3, BookOpenText, Boxes, Building2, CheckCircle2, Code2, GraduationCap, Laptop, Layers, Layout, LayoutDashboard, LineChart, Network, Rocket, Search, Settings2, ShieldCheck, Target, Users, type LucideIcon } from 'lucide-react'
+import { Activity, ArrowRight, BarChart3, BookOpenText, Boxes, Building2, CheckCircle2, ChevronLeft, ChevronRight, Code2, GraduationCap, Laptop, Layers, Layout, LayoutDashboard, LineChart, Network, Rocket, Search, Settings2, ShieldCheck, Target, Users, type LucideIcon } from 'lucide-react'
 import { motion, useMotionValue, useTransform, animate, useInView } from 'framer-motion'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ContactForm } from '../forms/ContactForm'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { type SiteArchitecturePage, type SitePageBlock } from '../../admin/context/CMSContext'
@@ -824,43 +824,117 @@ function renderClientCarouselBlock(block: SitePageBlock, currentPath: string) {
                 
                 <div className="flex w-full gap-6 overflow-x-auto snap-x snap-mandatory px-8 pb-12 pt-4 hide-scrollbar md:px-24">
                     {items.map((item, index) => {
-                        const imageUrl = toText(item.imageUrl) || `https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80`
-                        const itemUrl = normalizeCmsHref(item.url, '', currentPath)
-                        
-                        return (
-                            <a 
-                                key={`${item.id || index}`} 
-                                href={itemUrl || '#'}
-                                className="group relative flex w-[85vw] max-w-[420px] shrink-0 snap-center flex-col overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl sm:w-[380px]"
-                            >
-                                <div className="relative h-56 w-full overflow-hidden">
-                                    <div className="absolute inset-0 z-10 bg-emerald-900/20 mix-blend-multiply opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                                    <img 
-                                        src={imageUrl} 
-                                        alt={toText(item.title)} 
-                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                    />
-                                    <div className="absolute inset-0 z-0 bg-gradient-to-t from-slate-900/95 via-slate-900/50 to-transparent" />
-                                    <div className="absolute bottom-6 left-6 right-6 z-20">
-                                        <h3 className="text-xl font-bold leading-tight text-white group-hover:text-emerald-400 transition-colors drop-shadow-md">
-                                            {toText(item.title)}
-                                        </h3>
-                                    </div>
-                                </div>
-                                <div className="flex flex-1 flex-col p-8">
-                                    <p className="line-clamp-4 text-base leading-relaxed text-slate-600">
-                                        {toText(item.body || item.description)}
-                                    </p>
-                                    <div className="mt-8 flex items-center font-bold text-sm tracking-widest uppercase text-emerald-600">
-                                        Ver caso de éxito <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                    </div>
-                                </div>
-                            </a>
-                        )
+                        return <ExperienceCarouselCard key={`${item.id || index}`} item={item} index={index} currentPath={currentPath} />
                     })}
                 </div>
             </div>
         </div>
+    )
+}
+
+type ExperienceCarouselCardProps = {
+    item: ItemObject
+    index: number
+    currentPath: string
+}
+
+function resolveExperienceImages(item: ItemObject) {
+    const imageCollections = [
+        ensureStringArray(item.images),
+        ensureStringArray(item.imageUrls),
+        ensureStringArray(item.gallery),
+        ensureStringArray(item.photos),
+    ].flat()
+    const coverImage = toText(item.imageUrl || item.image || item.photo)
+    const normalizedCollections = imageCollections.map((entry) => entry.trim()).filter(Boolean)
+    const cover = coverImage.trim()
+    const mergedImages = [...normalizedCollections]
+    if (cover && !mergedImages.includes(cover)) mergedImages.unshift(cover)
+    const normalized = mergedImages
+    return normalized.length > 0
+        ? normalized
+        : ['https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80']
+}
+
+function ExperienceCarouselCard({ item, index, currentPath }: ExperienceCarouselCardProps) {
+    const itemTitle = toText(item.title || item.label || `Experiencia ${index + 1}`)
+    const clientName = toText(item.clientName || item.client || item.company || item.organization || item.partner, itemTitle)
+    const itemBody = toText(item.body || item.description)
+    const itemUrl = normalizeCmsHref(item.url, '', currentPath)
+    const images = resolveExperienceImages(item)
+    const [activeImageIndex, setActiveImageIndex] = useState(0)
+    const currentImage = images[Math.min(activeImageIndex, images.length - 1)] || images[0]
+    const hasImageSlider = images.length > 1
+
+    const goToPrevious = (event: ReactMouseEvent<HTMLButtonElement>) => {
+        event.preventDefault()
+        event.stopPropagation()
+        setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length)
+    }
+
+    const goToNext = (event: ReactMouseEvent<HTMLButtonElement>) => {
+        event.preventDefault()
+        event.stopPropagation()
+        setActiveImageIndex((prev) => (prev + 1) % images.length)
+    }
+
+    return (
+        <article className="group relative flex w-[85vw] max-w-[420px] shrink-0 snap-center flex-col overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-900/5 transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl sm:w-[380px]">
+            <div className="relative h-56 w-full overflow-hidden">
+                <div className="absolute inset-0 z-10 bg-emerald-900/20 mix-blend-multiply opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <img
+                    src={currentImage}
+                    alt={`${clientName} - ${itemTitle}`}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 z-0 bg-gradient-to-t from-slate-900/95 via-slate-900/50 to-transparent" />
+                <div className="absolute left-4 top-4 z-20 rounded-full border border-white/35 bg-slate-950/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/95 backdrop-blur-sm">
+                    {clientName}
+                </div>
+                {hasImageSlider && (
+                    <>
+                        <button
+                            type="button"
+                            onClick={goToPrevious}
+                            className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/35 bg-slate-950/60 p-2 text-white transition-colors hover:bg-slate-900/90"
+                            aria-label={`Imagen anterior de ${clientName}`}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={goToNext}
+                            className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/35 bg-slate-950/60 p-2 text-white transition-colors hover:bg-slate-900/90"
+                            aria-label={`Siguiente imagen de ${clientName}`}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                        <div className="absolute right-4 top-4 z-20 rounded-full border border-white/30 bg-slate-950/50 px-2 py-1 text-[10px] font-bold text-white/90">
+                            {activeImageIndex + 1}/{images.length}
+                        </div>
+                    </>
+                )}
+                <div className="absolute bottom-6 left-6 right-6 z-20">
+                    <h3 className="text-xl font-bold leading-tight text-white group-hover:text-emerald-400 transition-colors drop-shadow-md">
+                        {itemTitle}
+                    </h3>
+                </div>
+            </div>
+            <div className="flex flex-1 flex-col p-8">
+                <p className="line-clamp-4 text-base leading-relaxed text-slate-600">
+                    {itemBody}
+                </p>
+                {itemUrl ? (
+                    <a href={itemUrl} className="mt-8 inline-flex items-center font-bold text-sm tracking-widest uppercase text-emerald-600 hover:text-emerald-700">
+                        Ver caso de éxito <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </a>
+                ) : (
+                    <div className="mt-8 flex items-center font-bold text-sm tracking-widest uppercase text-emerald-600">
+                        Ver caso de éxito <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                )}
+            </div>
+        </article>
     )
 }
 
