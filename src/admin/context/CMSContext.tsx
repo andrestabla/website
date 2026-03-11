@@ -933,7 +933,7 @@ const EDUCATION_LANDING_CLIENTS = [
     },
     {
         id: 'cliente-10',
-        title: 'CA3',
+        title: 'Carmenza Alarcón',
         logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/Logo+CA3.svg',
     },
 ]

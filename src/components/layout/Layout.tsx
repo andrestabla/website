@@ -56,7 +56,8 @@ export function Layout({ children }: LayoutProps) {
     const headerHeightClass = headerHeight === 64 ? 'h-16' : 'h-20'
     const routeTemplate = useMemo(() => getRouteTemplate(location.pathname, site), [location.pathname, site])
     const servicesHref = `${baseCandidate}#servicios`
-    const workflowHref = `${baseCandidate}#beneficios`
+    const workflowAnchor = baseCandidate === '/empresas' ? 'beneficios' : 'flujo'
+    const workflowHref = `${baseCandidate}#${workflowAnchor}`
     const faqHref = `${baseCandidate}#faq`
     const contactHref = `${baseCandidate}#contacto`
     const closeMobileMenu = () => setMobileMenuOpen(false)
