@@ -32,7 +32,7 @@ export function Layout({ children }: LayoutProps) {
     const isHeaderSticky = site.headerSticky !== 'false'
     const currentPath = location.pathname
     const baseCandidate = ['/educacion', '/plataformas-de-aprendizaje', '/virtualizacion-programas', '/empresas'].find(p => currentPath.startsWith(p)) || '/empresas'
-    const forceEducationNav = currentPath.startsWith('/plataformas-de-aprendizaje')
+    const forceEducationNav = currentPath.startsWith('/plataformas-de-aprendizaje') || currentPath.startsWith('/virtualizacion-programas')
     const navBasePath = forceEducationNav ? '/educacion' : baseCandidate
 
     const normalizeLocalAnchor = (url: string) => {
