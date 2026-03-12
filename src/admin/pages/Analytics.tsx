@@ -2,7 +2,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts'
-import { TrendingUp, Languages, Boxes, Activity, RefreshCw, ShieldCheck, Mail, MailOpen, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react'
+import { TrendingUp, Languages, Boxes, Activity, RefreshCw, ShieldCheck, Mail, MailOpen, AlertTriangle, CheckCircle2, Sparkles, UserX } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useCMS } from '../context/CMSContext'
 
@@ -41,14 +41,22 @@ type MetricsData = {
     campaignsTotal: number
     sentTotal: number
     openedTotal: number
+    unsubscribedTotal: number
     openRate: number
-    daily: Array<{ day: string; sent: number; opened: number }>
-    monthly: Array<{ month: string; sent: number; opened: number }>
+    daily: Array<{ day: string; sent: number; opened: number; unsubscribed: number }>
+    monthly: Array<{ month: string; sent: number; opened: number; unsubscribed: number }>
     openedRecipients: Array<{
       email: string
       openCount: number
       openedAt: string | null
       lastOpenedAt: string | null
+      campaignId: string | null
+      campaignName: string | null
+      subject: string | null
+    }>
+    unsubscribedRecipients: Array<{
+      email: string
+      unsubscribedAt: string | null
       campaignId: string | null
       campaignName: string | null
       subject: string | null
@@ -138,6 +146,7 @@ export function Analytics() {
   const topSectionsChart = metrics?.analytics.topSections.slice(0, 8) ?? []
   const countriesChart = metrics?.analytics.byCountry.slice(0, 6) ?? []
   const marketingOpeners = metrics?.marketing.openedRecipients.slice(0, 25) ?? []
+  const marketingUnsubscribed = metrics?.marketing.unsubscribedRecipients.slice(0, 25) ?? []
   const caseGeneratorIndustryChart = metrics?.caseGenerator.byIndustry.slice(0, 8) ?? []
   const caseGeneratorProcessChart = metrics?.caseGenerator.byProcess.slice(0, 8) ?? []
   const caseGeneratorTypes = metrics?.caseGenerator.byType.slice(0, 8) ?? []
@@ -470,7 +479,7 @@ export function Analytics() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             <div className="bg-white border border-slate-200 p-7">
               <div className="flex items-center justify-between mb-4">
                 <Mail className="w-5 h-5 text-brand-primary" />
@@ -497,6 +506,14 @@ export function Analytics() {
             </div>
             <div className="bg-white border border-slate-200 p-7">
               <div className="flex items-center justify-between mb-4">
+                <UserX className="w-5 h-5 text-amber-600" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-700">opt-out</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900">{metrics.marketing.unsubscribedTotal}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">No interesados</div>
+            </div>
+            <div className="bg-white border border-slate-200 p-7">
+              <div className="flex items-center justify-between mb-4">
                 <TrendingUp className="w-5 h-5 text-emerald-600" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">rate</span>
               </div>
@@ -516,6 +533,7 @@ export function Analytics() {
                   <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
                   <Area type="monotone" dataKey="sent" stroke="#1d4ed8" fillOpacity={0.08} fill="#1d4ed8" name="Enviados" />
                   <Area type="monotone" dataKey="opened" stroke="#10b981" fillOpacity={0.08} fill="#10b981" name="Abiertos" />
+                  <Area type="monotone" dataKey="unsubscribed" stroke="#f59e0b" fillOpacity={0.1} fill="#f59e0b" name="No interesados" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -530,6 +548,7 @@ export function Analytics() {
                   <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
                   <Bar dataKey="sent" name="Enviados" fill="#1d4ed8" radius={[2, 2, 0, 0]} />
                   <Bar dataKey="opened" name="Abiertos" fill="#10b981" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="unsubscribed" name="No interesados" fill="#f59e0b" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -562,6 +581,36 @@ export function Analytics() {
                       <td className="px-6 py-4 font-bold text-slate-900">{row.openCount}</td>
                       <td className="px-6 py-4 text-slate-600">{row.openedAt ? new Date(row.openedAt).toLocaleString() : 'N/D'}</td>
                       <td className="px-6 py-4 text-slate-600">{row.lastOpenedAt ? new Date(row.lastOpenedAt).toLocaleString() : 'N/D'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200">
+            <div className="p-8 border-b border-slate-100">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900">No interesados (opt-out)</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-slate-500 uppercase tracking-[0.2em] text-[10px] font-black">
+                  <tr>
+                    <th className="text-left px-6 py-4">Email</th>
+                    <th className="text-left px-6 py-4">Campaña</th>
+                    <th className="text-left px-6 py-4">Asunto</th>
+                    <th className="text-left px-6 py-4">Fecha de baja</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {marketingUnsubscribed.length === 0 ? (
+                    <tr><td className="px-6 py-8 text-slate-500" colSpan={4}>Aún no hay registros de “No estoy interesado”.</td></tr>
+                  ) : marketingUnsubscribed.map((row, idx) => (
+                    <tr key={`${row.email}-${idx}`} className="border-t border-slate-100">
+                      <td className="px-6 py-4 font-medium text-slate-800">{row.email}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.campaignName || 'N/D'}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.subject || 'N/D'}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.unsubscribedAt ? new Date(row.unsubscribedAt).toLocaleString() : 'N/D'}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -153,8 +153,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let marketingCampaignCount = 0
     let marketingSentCount = 0
     let marketingOpenedCount = 0
-    let marketingRecipientRows: Array<{ sentAt: Date | null; openedAt: Date | null }> = []
+    let marketingUnsubscribedCount = 0
+    let marketingRecipientRows: Array<{ sentAt: Date | null; openedAt: Date | null; status: string; updatedAt: Date }> = []
     let marketingOpenedRecipientsRows: Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }> = []
+    let marketingUnsubscribedRows: Array<{ email: string; updatedAt: Date; campaign: { id: string; name: string; subject: string } }> = []
     let caseGeneratorRows: Array<{ eventType: string; createdAt: Date; metadata: any }> = []
 
     try {
@@ -198,14 +200,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         prisma.marketingEmailCampaign.count(),
         prisma.marketingEmailRecipient.count({ where: { status: 'sent' } }),
         prisma.marketingEmailRecipient.count({ where: { openedAt: { not: null } } }),
+        prisma.marketingEmailRecipient.count({ where: { status: 'unsubscribed' } }),
         prisma.marketingEmailRecipient.findMany({
           where: {
             OR: [
               { sentAt: { not: null } },
               { openedAt: { not: null } },
+              { status: 'unsubscribed' },
             ],
           },
-          select: { sentAt: true, openedAt: true },
+          select: { sentAt: true, openedAt: true, status: true, updatedAt: true },
           take: 12000,
           orderBy: { createdAt: 'desc' },
         }),
@@ -218,6 +222,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             openCount: true,
             openedAt: true,
             lastOpenedAt: true,
+            campaign: {
+              select: {
+                id: true,
+                name: true,
+                subject: true,
+              },
+            },
+          },
+        }),
+        prisma.marketingEmailRecipient.findMany({
+          where: { status: 'unsubscribed' },
+          orderBy: { updatedAt: 'desc' },
+          take: 200,
+          select: {
+            email: true,
+            updatedAt: true,
             campaign: {
               select: {
                 id: true,
@@ -266,9 +286,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       marketingCampaignCount = pick(10, 0)
       marketingSentCount = pick(11, 0)
       marketingOpenedCount = pick(12, 0)
-      marketingRecipientRows = pick(13, [] as Array<{ sentAt: Date | null; openedAt: Date | null }>)
-      marketingOpenedRecipientsRows = pick(14, [] as Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }>)
-      caseGeneratorRows = pick(15, [] as Array<{ eventType: string; createdAt: Date; metadata: any }>)
+      marketingUnsubscribedCount = pick(13, 0)
+      marketingRecipientRows = pick(14, [] as Array<{ sentAt: Date | null; openedAt: Date | null; status: string; updatedAt: Date }>)
+      marketingOpenedRecipientsRows = pick(15, [] as Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }>)
+      marketingUnsubscribedRows = pick(16, [] as Array<{ email: string; updatedAt: Date; campaign: { id: string; name: string; subject: string } }>)
+      caseGeneratorRows = pick(17, [] as Array<{ eventType: string; createdAt: Date; metadata: any }>)
     } catch (analyticsError) {
       console.error('api/admin-metrics analytics block degraded', analyticsError)
     }
@@ -455,7 +477,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const marketingDaily = Array.from({ length: 30 }, (_, i) => {
       const d = startOfDay(new Date(Date.now() - (29 - i) * 86400000))
-      return { day: formatDay(d), sent: 0, opened: 0 }
+      return { day: formatDay(d), sent: 0, opened: 0, unsubscribed: 0 }
     })
     const marketingDayIndex = new Map(marketingDaily.map((entry, index) => [entry.day, index]))
 
@@ -464,7 +486,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       base.setDate(1)
       base.setHours(0, 0, 0, 0)
       base.setMonth(base.getMonth() - (11 - i))
-      return { month: formatMonth(base), sent: 0, opened: 0 }
+      return { month: formatMonth(base), sent: 0, opened: 0, unsubscribed: 0 }
     })
     const marketingMonthIndex = new Map(marketingMonthly.map((entry, index) => [entry.month, index]))
 
@@ -487,6 +509,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const openedMonthIndex = marketingMonthIndex.get(openedMonth)
         if (openedMonthIndex !== undefined) marketingMonthly[openedMonthIndex].opened += 1
       }
+      if (String(row.status || '').toLowerCase() === 'unsubscribed') {
+        const unsubscribedDay = formatDay(new Date(row.updatedAt))
+        const unsubscribedDayIndex = marketingDayIndex.get(unsubscribedDay)
+        if (unsubscribedDayIndex !== undefined) marketingDaily[unsubscribedDayIndex].unsubscribed += 1
+
+        const unsubscribedMonth = formatMonth(new Date(row.updatedAt))
+        const unsubscribedMonthIndex = marketingMonthIndex.get(unsubscribedMonth)
+        if (unsubscribedMonthIndex !== undefined) marketingMonthly[unsubscribedMonthIndex].unsubscribed += 1
+      }
     }
 
     const marketingOpenedRecipients = marketingOpenedRecipientsRows.map((row) => ({
@@ -494,6 +525,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       openCount: row.openCount || 0,
       openedAt: row.openedAt ? row.openedAt.toISOString() : null,
       lastOpenedAt: row.lastOpenedAt ? row.lastOpenedAt.toISOString() : null,
+      campaignId: row.campaign?.id || null,
+      campaignName: row.campaign?.name || null,
+      subject: row.campaign?.subject || null,
+    }))
+    const marketingUnsubscribedRecipients = marketingUnsubscribedRows.map((row) => ({
+      email: row.email,
+      unsubscribedAt: row.updatedAt ? row.updatedAt.toISOString() : null,
       campaignId: row.campaign?.id || null,
       campaignName: row.campaign?.name || null,
       subject: row.campaign?.subject || null,
@@ -637,10 +675,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           campaignsTotal: marketingCampaignCount,
           sentTotal: marketingSentCount,
           openedTotal: marketingOpenedCount,
+          unsubscribedTotal: marketingUnsubscribedCount,
           openRate: marketingOpenRate,
           daily: marketingDaily,
           monthly: marketingMonthly,
           openedRecipients: marketingOpenedRecipients,
+          unsubscribedRecipients: marketingUnsubscribedRecipients,
         },
         caseGenerator: {
           totalQueries: caseGeneratorTotalQueries,

@@ -12,6 +12,8 @@ type BuildMarketingEmailHtmlInput = {
   ctaUrl: string
 }
 
+type LogoVariant = 'default' | 'white' | 'dark'
+
 function escapeHtml(input: string) {
   return String(input || '')
     .replace(/&/g, '&amp;')
@@ -31,13 +33,38 @@ function bodyToParagraphs(bodyText: string) {
   return segments.map((segment) => `<p>${escapeHtml(segment).replace(/\n/g, '<br/>')}</p>`).join('')
 }
 
-function renderLogo(logoUrl: string, siteName: string) {
+const emailMotionStyles = `
+  <style>
+    @keyframes logoFloat {
+      0% { transform: translateY(0); opacity: 0.98; }
+      50% { transform: translateY(-2px); opacity: 1; }
+      100% { transform: translateY(0); opacity: 0.98; }
+    }
+  </style>
+`
+
+function renderLogo(
+  logoUrl: string,
+  siteName: string,
+  options?: { variant?: LogoVariant; animated?: boolean }
+) {
   const safeSiteName = escapeHtml(siteName || 'AlgoritmoT')
+  const variant = options?.variant || 'default'
+  const animated = options?.animated !== false
+  const logoFilter =
+    variant === 'white'
+      ? 'filter:brightness(0) invert(1);'
+      : variant === 'dark'
+        ? 'filter:brightness(0) saturate(100%);'
+        : ''
+  const animation = animated ? 'animation:logoFloat 6s ease-in-out infinite;' : ''
+  const logoStyle = `max-width:180px;max-height:56px;height:auto;width:auto;display:block;margin:0 auto;${logoFilter}${animation}`
   if (logoUrl) {
     const safeLogoUrl = escapeHtml(logoUrl)
-    return `<img src="${safeLogoUrl}" alt="${safeSiteName}" style="max-width:180px;max-height:56px;height:auto;width:auto;display:block;margin:0 auto;" />`
+    return `<img src="${safeLogoUrl}" alt="${safeSiteName}" style="${logoStyle}" />`
   }
-  return `<div style="font-size:24px;font-weight:900;letter-spacing:-0.02em;color:#0f172a;text-transform:uppercase;">${safeSiteName}</div>`
+  const textColor = variant === 'white' ? '#f8fafc' : '#0f172a'
+  return `<div style="font-size:24px;font-weight:900;letter-spacing:-0.02em;color:${textColor};text-transform:uppercase;${animation}">${safeSiteName}</div>`
 }
 
 export function buildMarketingEmailHtml(input: BuildMarketingEmailHtmlInput) {
@@ -47,7 +74,8 @@ export function buildMarketingEmailHtml(input: BuildMarketingEmailHtmlInput) {
   const ctaUrl = escapeHtml(input.ctaUrl || '/')
   const campaignName = escapeHtml(input.campaignName || input.subject || 'Campaña')
   const bodyHtml = bodyToParagraphs(input.bodyText)
-  const logoHtml = renderLogo(input.logoUrl, input.siteName)
+  const logoVariant: LogoVariant = input.templateId === 'minimal' ? 'dark' : 'white'
+  const logoHtml = renderLogo(input.logoUrl, input.siteName, { variant: logoVariant, animated: true })
 
   if (input.templateId === 'minimal') {
     return `
@@ -56,6 +84,7 @@ export function buildMarketingEmailHtml(input: BuildMarketingEmailHtmlInput) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${emailMotionStyles}
   <title>${subject}</title>
 </head>
 <body style="margin:0;padding:0;background:#f8fafc;font-family:Inter,Arial,sans-serif;color:#0f172a;">
@@ -100,6 +129,7 @@ export function buildMarketingEmailHtml(input: BuildMarketingEmailHtmlInput) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${emailMotionStyles}
   <title>${subject}</title>
 </head>
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:Inter,Arial,sans-serif;color:#0f172a;">
@@ -145,6 +175,7 @@ export function buildMarketingEmailHtml(input: BuildMarketingEmailHtmlInput) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${emailMotionStyles}
   <title>${subject}</title>
 </head>
 <body style="margin:0;padding:0;background:#020617;font-family:Inter,Arial,sans-serif;color:#e2e8f0;">

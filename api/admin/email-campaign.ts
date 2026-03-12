@@ -82,6 +82,47 @@ function appendTrackingPixel(html: string, trackingUrl: string) {
   return `${html}${pixel}`
 }
 
+async function getUnsubscribedEmailSet() {
+  const rows = await prisma.marketingEmailRecipient.findMany({
+    where: { status: 'unsubscribed' },
+    distinct: ['email'],
+    select: { email: true },
+    take: 10000,
+  })
+  return new Set(rows.map((row) => String(row.email || '').trim().toLowerCase()).filter(Boolean))
+}
+
+function appendUnsubscribeFooterHtml(
+  html: string,
+  templateId: MarketingEmailTemplateId,
+  unsubscribeUrl: string
+) {
+  if (!unsubscribeUrl) return html
+  if (html.includes('data-mkt-unsubscribe-link="1"')) return html
+
+  const isDark = templateId === 'executive' || templateId === 'spotlight'
+  const textColor = isDark ? '#94a3b8' : '#64748b'
+  const linkColor = isDark ? '#38bdf8' : '#1d4ed8'
+  const borderColor = isDark ? '#1e293b' : '#e2e8f0'
+
+  const block = `
+<div data-mkt-unsubscribe-link="1" style="margin:22px 0 0 0;padding:14px 0 0 0;border-top:1px solid ${borderColor};font-size:12px;line-height:1.6;color:${textColor};text-align:center;">
+  Si no quieres recibir más correos, <a href="${unsubscribeUrl}" style="color:${linkColor};font-weight:700;text-decoration:underline;">No estoy interesado</a>.
+</div>
+`
+
+  if (/<\/body>/i.test(html)) {
+    return html.replace(/<\/body>/i, `${block}</body>`)
+  }
+  return `${html}${block}`
+}
+
+function appendUnsubscribeFooterText(text: string, unsubscribeUrl: string) {
+  if (!unsubscribeUrl) return text
+  if (text.includes('No estoy interesado')) return text
+  return `${text}\n\nNo estoy interesado: ${unsubscribeUrl}`.trim()
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
@@ -109,11 +150,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const senderName = safeString(body?.fromName, 100) || safeString(smtp.fromName, 100) || 'Marketing'
     const recipientsRaw = parseRecipients(body?.recipients)
     const recipients = uniqueEmails(recipientsRaw).slice(0, 500)
+    const unsubscribedSet = await getUnsubscribedEmailSet()
+    const skippedUnsubscribed = recipients.filter((email) => unsubscribedSet.has(email))
+    const allowedRecipients = recipients.filter((email) => !unsubscribedSet.has(email))
     const previewOnly = body?.previewOnly === true
 
     if (!subject) return res.status(400).json({ ok: false, error: 'subject is required' })
     if (!html && !text && !bodyText) return res.status(400).json({ ok: false, error: 'html, text or bodyText is required' })
     if (recipients.length === 0) return res.status(400).json({ ok: false, error: 'At least one valid recipient is required' })
+    if (allowedRecipients.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Todos los destinatarios están marcados como "No interesado".',
+      })
+    }
 
     const secure = smtp.encryption === 'ssl' || String(smtp.port) === '465'
     const transporter = nodemailer.createTransport({
@@ -145,14 +195,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const textBody = text || `${preheader ? `${preheader}\n\n` : ''}${bodyText || ''}\n\n${ctaLabel}: ${ctaUrl}`.trim()
 
     if (previewOnly) {
+      const previewRecipient = allowedRecipients[0]
+      const previewUnsubscribeUrl = `${siteUrl}/api/marketing/unsubscribe?preview=1&email=${encodeURIComponent(previewRecipient)}`
       await transporter.sendMail({
         from,
-        to: recipients[0],
+        to: previewRecipient,
         subject: `[PREVIEW] ${subject}`,
-        html: htmlBody,
-        text: textBody,
+        html: appendUnsubscribeFooterHtml(htmlBody, templateId, previewUnsubscribeUrl),
+        text: appendUnsubscribeFooterText(textBody, previewUnsubscribeUrl),
+        headers: {
+          'List-Unsubscribe': `<${previewUnsubscribeUrl}>`,
+        },
       })
-      return res.status(200).json({ ok: true, preview: true, sent: 1, failed: 0, templateId })
+      return res.status(200).json({
+        ok: true,
+        preview: true,
+        sent: 1,
+        failed: 0,
+        templateId,
+        skippedUnsubscribed: skippedUnsubscribed.length,
+      })
     }
 
     const campaign = await prisma.marketingEmailCampaign.create({
@@ -169,7 +231,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     })
 
-    const batches = chunk(recipients, 20)
+    const batches = chunk(allowedRecipients, 20)
     const success: Array<{ recipient: string; recordId: string; messageId: string | null }> = []
     const failed: Array<{ recipient: string; reason: string }> = []
 
@@ -185,16 +247,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           })
 
           const trackingUrl = `${siteUrl}/api/marketing/open?rid=${encodeURIComponent(record.id)}&cid=${encodeURIComponent(campaign.id)}`
+          const unsubscribeUrl =
+            `${siteUrl}/api/marketing/unsubscribe?rid=${encodeURIComponent(record.id)}&cid=${encodeURIComponent(campaign.id)}&email=${encodeURIComponent(recipient)}`
+          const finalHtml = appendTrackingPixel(
+            appendUnsubscribeFooterHtml(htmlBody, templateId, unsubscribeUrl),
+            trackingUrl
+          )
+          const finalText = appendUnsubscribeFooterText(textBody, unsubscribeUrl)
           const message = await transporter.sendMail({
             from,
             to: recipient,
             subject,
-            html: appendTrackingPixel(htmlBody, trackingUrl),
-            text: textBody,
+            html: finalHtml,
+            text: finalText,
             headers: {
               'x-campaign-name': campaignName,
               'x-campaign-id': campaign.id,
               'x-template-id': templateId,
+              'List-Unsubscribe': `<${unsubscribeUrl}>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
             },
           })
           return { recipient, recordId: record.id, messageId: message.messageId ? String(message.messageId) : null }
@@ -265,6 +336,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           fromName: senderName,
           sent: success.length,
           failed: failed.length,
+          skippedUnsubscribed: skippedUnsubscribed.length,
         },
       },
     })
@@ -276,6 +348,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sent: success.length,
       failed: failed.length,
       templateId,
+      skippedUnsubscribed: skippedUnsubscribed.length,
+      skippedRecipients: skippedUnsubscribed.slice(0, 20),
       failedRecipients: failed.slice(0, 20),
     })
   } catch (error) {

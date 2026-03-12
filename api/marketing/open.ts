@@ -18,11 +18,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (recipientId && campaignId) {
       const now = new Date()
       await prisma.marketingEmailRecipient.updateMany({
-        where: { id: recipientId, campaignId, openedAt: null },
+        where: { id: recipientId, campaignId, openedAt: null, status: { not: 'unsubscribed' } },
         data: { openedAt: now },
       })
       await prisma.marketingEmailRecipient.updateMany({
-        where: { id: recipientId, campaignId },
+        where: { id: recipientId, campaignId, status: { not: 'unsubscribed' } },
         data: {
           lastOpenedAt: now,
           openCount: { increment: 1 },

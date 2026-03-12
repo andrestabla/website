@@ -490,9 +490,14 @@ export function ManageMarketing() {
             const json = await response.json().catch(() => null)
             if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`)
             if (previewOnly) {
-                setEmailResult('Preview enviado al primer destinatario válido.')
+                const skipped = Number(json.skippedUnsubscribed || 0)
+                setEmailResult(skipped > 0
+                    ? `Preview enviado al primer destinatario válido. Omitidos por "No interesado": ${skipped}.`
+                    : 'Preview enviado al primer destinatario válido.'
+                )
             } else {
-                setEmailResult(`Envío completado: ${json.sent} enviados, ${json.failed} fallidos. Plantilla: ${json.templateId || emailTemplateId}.`)
+                const skipped = Number(json.skippedUnsubscribed || 0)
+                setEmailResult(`Envío completado: ${json.sent} enviados, ${json.failed} fallidos, ${skipped} omitidos por "No interesado". Plantilla: ${json.templateId || emailTemplateId}.`)
             }
         } catch (error) {
             setEmailError(error instanceof Error ? error.message : 'No se pudo enviar campaña')
@@ -964,6 +969,7 @@ export function ManageMarketing() {
                         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
                             {(EMAIL_TEMPLATE_OPTIONS.find((item) => item.value === emailTemplateId)?.description) || 'Plantilla estándar para campañas.'}
                             <span className="ml-2 font-bold text-slate-700">Incluye logo automáticamente.</span>
+                            <span className="ml-2 text-slate-500">Executive Dark y Spotlight Gradient usan logo en blanco por defecto.</span>
                         </div>
                         <Field label="Asunto">
                             <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} />
