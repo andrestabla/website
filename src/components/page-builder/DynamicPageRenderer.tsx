@@ -1380,7 +1380,9 @@ export function DynamicPageRenderer({
         page.id === 'home-root' ||
         page.id === 'home-edu' ||
         page.id === 'servicio-plataformas' ||
-        page.id === 'virtualizacion-programas'
+        page.id === 'virtualizacion-programas' ||
+        page.id === 'auditoria-programas-virtuales' ||
+        normalizedPath === '/auditoria-programas-virtuales'
     const pageTheme: PageThemeVariant = page.id === 'case-transversal' || normalizedPath === '/caso-transversal'
         ? 'case-premium'
         : 'default'

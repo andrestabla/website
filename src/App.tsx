@@ -230,6 +230,7 @@ function App() {
               <Route path="/educacion" element={<ManagedPublishedRoute routePath="/educacion" fallback={<div className="min-h-screen flex items-center justify-center">Cargando Educación...</div>} />} />
               <Route path="/plataformas-de-aprendizaje" element={<ManagedPublishedRoute routePath="/plataformas-de-aprendizaje" fallback={<div className="min-h-screen flex items-center justify-center">Cargando Plataformas...</div>} />} />
               <Route path="/virtualizacion-programas" element={<ManagedPublishedRoute routePath="/virtualizacion-programas" fallback={<div className="min-h-screen flex items-center justify-center">Cargando Virtualización...</div>} />} />
+              <Route path="/auditoria-programas-virtuales" element={<ManagedPublishedRoute routePath="/auditoria-programas-virtuales" fallback={<div className="min-h-screen flex items-center justify-center">Cargando Auditoría...</div>} />} />
               <Route path="/inicio" element={<Navigate to="/empresas" replace />} />
               <Route path="/servicios/:slug" element={<ServicePage />} />
               <Route path="/productos/:slug" element={<ProductPage />} />
