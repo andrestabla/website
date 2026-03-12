@@ -14,6 +14,42 @@ function normalizeEmail(value: string) {
   return email
 }
 
+function normalizeText(value: string, max = 220) {
+  return String(value || '').trim().slice(0, max)
+}
+
+function isTruthyFlag(value: unknown) {
+  const normalized = pickFirst(value).toLowerCase()
+  return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'si'
+}
+
+async function resolveRecipientByEmail(email: string) {
+  if (!email) return null
+  const bySentAt = await prisma.marketingEmailRecipient.findFirst({
+    where: { email, sentAt: { not: null } },
+    orderBy: { sentAt: 'desc' },
+    select: {
+      id: true,
+      campaignId: true,
+      email: true,
+      status: true,
+      campaign: { select: { id: true, name: true, subject: true } },
+    },
+  })
+  if (bySentAt) return bySentAt
+  return prisma.marketingEmailRecipient.findFirst({
+    where: { email },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      campaignId: true,
+      email: true,
+      status: true,
+      campaign: { select: { id: true, name: true, subject: true } },
+    },
+  })
+}
+
 function renderResponsePage(params: {
   success: boolean
   title: string
@@ -57,17 +93,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const recipientId = pickFirst(req.query?.rid || req.body?.rid)
     const campaignId = pickFirst(req.query?.cid || req.body?.cid)
     const emailParam = normalizeEmail(pickFirst(req.query?.email || req.body?.email))
+    const campaignNameParam = normalizeText(pickFirst(req.query?.cn || req.body?.cn), 180)
+    const campaignSubjectParam = normalizeText(pickFirst(req.query?.cs || req.body?.cs), 220)
+    const previewMode = isTruthyFlag(req.query?.preview || req.body?.preview)
 
     let resolvedEmail = emailParam
     let updated = false
+    let sourceCampaignId: string | null = null
+    let sourceCampaignName: string | null = campaignNameParam || null
+    let sourceCampaignSubject: string | null = campaignSubjectParam || null
+    let resolution: 'recipient' | 'email_fallback' | 'email_only' | 'none' = 'none'
+
+    if (previewMode) {
+      await prisma.analyticsEvent.create({
+        data: {
+          visitorId: `mkt_unsub_preview_${(resolvedEmail || 'unknown').slice(0, 20)}`,
+          eventType: 'email_campaign_unsubscribe_preview',
+          path: '/api/marketing/unsubscribe',
+          metadata: {
+            campaignId: campaignId || null,
+            campaignName: sourceCampaignName,
+            campaignSubject: sourceCampaignSubject,
+            recipientId: recipientId || null,
+            email: resolvedEmail || null,
+            preview: true,
+            updated: false,
+            resolution: 'none',
+          },
+        },
+      }).catch(() => null)
+
+      const title = 'Preferencia actualizada'
+      const message = 'Este correo es una vista previa y no modificó tu estado real de suscripción.'
+      res.setHeader('Content-Type', 'text/html; charset=utf-8')
+      return res.status(200).send(renderResponsePage({ success: true, title, message }))
+    }
 
     if (recipientId && campaignId) {
       const recipient = await prisma.marketingEmailRecipient.findFirst({
         where: { id: recipientId, campaignId },
-        select: { id: true, email: true, status: true },
+        select: {
+          id: true,
+          email: true,
+          status: true,
+          campaignId: true,
+          campaign: { select: { id: true, name: true, subject: true } },
+        },
       })
       if (recipient) {
+        resolution = 'recipient'
         resolvedEmail = normalizeEmail(recipient.email) || resolvedEmail
+        sourceCampaignId = recipient.campaignId || sourceCampaignId
+        sourceCampaignName = recipient.campaign?.name || sourceCampaignName
+        sourceCampaignSubject = recipient.campaign?.subject || sourceCampaignSubject
         if (recipient.status !== 'unsubscribed') {
           await prisma.marketingEmailRecipient.update({
             where: { id: recipient.id },
@@ -81,12 +159,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    if (!updated && resolvedEmail) {
-      const latestForEmail = await prisma.marketingEmailRecipient.findFirst({
-        where: { email: resolvedEmail },
-        orderBy: { createdAt: 'desc' },
-        select: { id: true, status: true },
-      })
+    const canFallbackByEmail = !recipientId || !campaignId
+    if (!updated && resolvedEmail && canFallbackByEmail) {
+      const latestForEmail = await resolveRecipientByEmail(resolvedEmail)
+      if (latestForEmail) {
+        resolution = 'email_fallback'
+        sourceCampaignId = latestForEmail.campaignId || sourceCampaignId
+        sourceCampaignName = sourceCampaignName || latestForEmail.campaign?.name || null
+        sourceCampaignSubject = sourceCampaignSubject || latestForEmail.campaign?.subject || null
+      }
       if (latestForEmail && latestForEmail.status !== 'unsubscribed') {
         await prisma.marketingEmailRecipient.update({
           where: { id: latestForEmail.id },
@@ -97,6 +178,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
         updated = true
       }
+    }
+
+    if (resolution === 'none' && resolvedEmail) {
+      resolution = 'email_only'
     }
 
     if (resolvedEmail) {
@@ -118,9 +203,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         eventType: 'email_campaign_unsubscribe',
         path: '/api/marketing/unsubscribe',
         metadata: {
-          campaignId: campaignId || null,
+          campaignId: sourceCampaignId || campaignId || null,
+          campaignName: sourceCampaignName,
+          campaignSubject: sourceCampaignSubject,
           recipientId: recipientId || null,
           email: resolvedEmail || null,
+          preview: false,
+          resolution,
           updated,
         },
       },

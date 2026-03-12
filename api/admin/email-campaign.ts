@@ -196,7 +196,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (previewOnly) {
       const previewRecipient = allowedRecipients[0]
-      const previewUnsubscribeUrl = `${siteUrl}/api/marketing/unsubscribe?preview=1&email=${encodeURIComponent(previewRecipient)}`
+      const previewUnsubscribeUrl =
+        `${siteUrl}/api/marketing/unsubscribe` +
+        `?preview=1` +
+        `&email=${encodeURIComponent(previewRecipient)}` +
+        `&cn=${encodeURIComponent(campaignName)}` +
+        `&cs=${encodeURIComponent(subject)}`
       await transporter.sendMail({
         from,
         to: previewRecipient,
@@ -248,7 +253,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           const trackingUrl = `${siteUrl}/api/marketing/open?rid=${encodeURIComponent(record.id)}&cid=${encodeURIComponent(campaign.id)}`
           const unsubscribeUrl =
-            `${siteUrl}/api/marketing/unsubscribe?rid=${encodeURIComponent(record.id)}&cid=${encodeURIComponent(campaign.id)}&email=${encodeURIComponent(recipient)}`
+            `${siteUrl}/api/marketing/unsubscribe` +
+            `?rid=${encodeURIComponent(record.id)}` +
+            `&cid=${encodeURIComponent(campaign.id)}` +
+            `&email=${encodeURIComponent(recipient)}` +
+            `&cn=${encodeURIComponent(campaignName)}` +
+            `&cs=${encodeURIComponent(subject)}`
           const finalHtml = appendTrackingPixel(
             appendUnsubscribeFooterHtml(htmlBody, templateId, unsubscribeUrl),
             trackingUrl
