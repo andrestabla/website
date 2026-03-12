@@ -100,8 +100,14 @@ function inferModuleFromRequest(req: VercelRequest): AdminModuleKey | null {
   return null
 }
 
+function isPrimaryAdminUser(session: SessionPayload) {
+  const configuredUsername = process.env.ADMIN_USERNAME || 'admin'
+  return String(session.username || '').trim().toLowerCase() === String(configuredUsername).trim().toLowerCase()
+}
+
 export function canAccessAdminModule(session: SessionPayload, module: AdminModuleKey) {
   if (session.role === 'SUPERADMIN') return true
+  if (module === 'USERS' && isPrimaryAdminUser(session)) return true
   const tokenPermissions = session.permissions || undefined
   if (tokenPermissions && Object.prototype.hasOwnProperty.call(tokenPermissions, module)) {
     return tokenPermissions[module] === true

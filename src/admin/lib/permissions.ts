@@ -106,12 +106,15 @@ export function getAdminModuleForPath(pathname: string): AdminModuleKey | null {
 }
 
 export function canAccessModule(
-  user: { role: string; permissions?: unknown } | null | undefined,
+  user: { role: string; username?: string; permissions?: unknown } | null | undefined,
   module: AdminModuleKey
 ) {
   if (!user) return false
   const role = String(user.role || '') as AdminRoleKey
   if (role === 'SUPERADMIN') return true
+  const primaryAdminUsername = (import.meta.env.VITE_ADMIN_PRIMARY_USERNAME || 'admin').trim().toLowerCase()
+  const normalizedUsername = String(user.username || '').trim().toLowerCase()
+  if (module === 'USERS' && normalizedUsername && normalizedUsername === primaryAdminUsername) return true
   const permissions = normalizePermissions(user.permissions, role === 'ADMIN' || role === 'EDITOR' || role === 'ANALYST' ? role : 'ANALYST')
   return permissions[module] === true
 }
