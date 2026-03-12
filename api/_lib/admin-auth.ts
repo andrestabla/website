@@ -6,6 +6,7 @@ type VercelResponse = any
 
 const COOKIE_NAME = 'admin_session'
 const SESSION_TTL_SECONDS = 60 * 60 * 12
+const SESSION_PERMISSIONS_VERSION = 2
 
 function isDeployedEnvironment() {
   return (
@@ -22,6 +23,7 @@ type SessionPayload = {
   displayName: string
   role: 'SUPERADMIN' | 'ADMIN' | 'EDITOR' | 'ANALYST'
   permissions?: Partial<Record<AdminModuleKey, boolean>>
+  permissionsVersion?: number
   exp: number
   iat: number
 }
@@ -116,6 +118,7 @@ export function createAdminSessionToken(input: CreateSessionInput) {
     exp: now + SESSION_TTL_SECONDS,
     ...input,
     permissions: sanitizePermissionPayload(input.permissions),
+    permissionsVersion: SESSION_PERMISSIONS_VERSION,
   }
   const encoded = base64UrlEncode(JSON.stringify(payload))
   return `${encoded}.${sign(encoded)}`
@@ -131,7 +134,11 @@ export function verifyAdminSessionToken(token: string | undefined | null): Sessi
     if (payload.sub !== 'admin') return null
     if (!payload.userId || !payload.username || !payload.displayName || !payload.role) return null
     if (typeof payload.exp !== 'number' || payload.exp <= Math.floor(Date.now() / 1000)) return null
-    payload.permissions = sanitizePermissionPayload(payload.permissions)
+    if (payload.permissionsVersion === SESSION_PERMISSIONS_VERSION) {
+      payload.permissions = sanitizePermissionPayload(payload.permissions)
+    } else {
+      payload.permissions = undefined
+    }
     return payload
   } catch {
     return null

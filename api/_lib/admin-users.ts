@@ -68,7 +68,6 @@ export function getDefaultPermissionMapForRole(role: AdminRoleKey): AdminPermiss
 
   if (role === 'ADMIN') {
     for (const module of ADMIN_MODULES) base[module] = true
-    base.USERS = false
     return base
   }
 

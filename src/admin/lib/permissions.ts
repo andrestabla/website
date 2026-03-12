@@ -47,7 +47,6 @@ export function defaultPermissionsForRole(role: AdminRoleKey): AdminPermissionMa
   }
   if (role === 'ADMIN') {
     for (const module of ADMIN_MODULES) map[module] = true
-    map.USERS = false
     return map
   }
   if (role === 'EDITOR') {
