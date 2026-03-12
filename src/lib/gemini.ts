@@ -5,20 +5,72 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
  */
 
 let genAI: GoogleGenerativeAI | null = null;
+const REQUEST_TIMEOUT_MS = 18000;
+const MAX_MEMORY_CACHE_ENTRIES = 120;
+const responseCache = new Map<string, unknown>();
+const inFlightRequests = new Map<string, Promise<unknown>>();
+
+function buildCacheKey(payload: unknown, targetLang: string, mode: 'text' | 'object'): string {
+    let serialized = '';
+    try {
+        serialized = JSON.stringify(payload);
+    } catch {
+        serialized = String(payload);
+    }
+    return `${mode}:${targetLang}:${serialized}`;
+}
+
+function setMemoryCache(key: string, value: unknown) {
+    if (responseCache.has(key)) responseCache.delete(key);
+    responseCache.set(key, value);
+    if (responseCache.size > MAX_MEMORY_CACHE_ENTRIES) {
+        const oldest = responseCache.keys().next().value as string | undefined;
+        if (oldest) responseCache.delete(oldest);
+    }
+}
+
+function runDeduped<T>(key: string, run: () => Promise<T>): Promise<T> {
+    const existing = inFlightRequests.get(key);
+    if (existing) return existing as Promise<T>;
+
+    const promise = run()
+        .finally(() => {
+            inFlightRequests.delete(key);
+        });
+    inFlightRequests.set(key, promise as Promise<unknown>);
+    return promise;
+}
 
 async function translateViaServer<T>(payload: unknown, targetLang: string, mode: 'text' | 'object'): Promise<T | null> {
-    try {
-        const res = await fetch('/api/translate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ payload, targetLang, mode }),
-        });
-        if (!res.ok) return null;
-        const json = await res.json();
-        return (json?.ok ? json.data : null) as T | null;
-    } catch {
-        return null;
+    const cacheKey = buildCacheKey(payload, targetLang, mode);
+    if (responseCache.has(cacheKey)) {
+        return responseCache.get(cacheKey) as T;
     }
+
+    return runDeduped<T | null>(`server:${cacheKey}`, async () => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+        try {
+            const res = await fetch('/api/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payload, targetLang, mode }),
+                signal: controller.signal,
+            });
+            if (!res.ok) return null;
+            const json = await res.json();
+            const data = (json?.ok ? json.data : null) as T | null;
+            if (data !== null) {
+                setMemoryCache(cacheKey, data);
+            }
+            return data;
+        } catch {
+            return null;
+        } finally {
+            clearTimeout(timeout);
+        }
+    });
 }
 
 type GeminiRuntimeConfig = {
@@ -70,42 +122,67 @@ const LANGUAGE_NAMES: Record<string, string> = {
     en: "English",
     fr: "French"
 };
+const PRESERVE_TERMS = [
+    'AlgoritmoT',
+    'QM',
+    'Quality Matters',
+    'LMS',
+    'API',
+    'UTB',
+    'CESA',
+    'IBERO',
+    'USTA',
+    'USANMARTÍN',
+    'San Martín',
+    'La Salle',
+];
 
 export async function translateText(text: string, targetLang: string): Promise<string> {
     if (!text || targetLang === 'es') return text;
 
-    const serverResult = await translateViaServer<string>(text, targetLang, 'text');
-    if (typeof serverResult === 'string' && serverResult.trim()) {
-        return serverResult;
+    const key = buildCacheKey(text, targetLang, 'text');
+    if (responseCache.has(key)) {
+        return responseCache.get(key) as string;
     }
 
-    const ai = getAI();
-    if (!ai) return text;
+    return runDeduped<string>(`text:${key}`, async () => {
+        const serverResult = await translateViaServer<string>(text, targetLang, 'text');
+        if (typeof serverResult === 'string' && serverResult.trim()) {
+            setMemoryCache(key, serverResult);
+            return serverResult;
+        }
 
-    try {
-        const cfg = getGeminiConfig();
-        const model = ai.getGenerativeModel({
-            model: cfg?.model || "gemini-2.0-flash",
-            generationConfig: {
-                temperature: cfg?.temperature ?? 0.2,
-                maxOutputTokens: cfg?.maxTokens,
-            }
-        });
-        const targetLanguageName = LANGUAGE_NAMES[targetLang] || targetLang;
+        const ai = getAI();
+        if (!ai) return text;
 
-        const prompt = `Translate the following text from Spanish to ${targetLanguageName}. 
-        Return ONLY the translated text without any explanations or additional formatting.
-        
-        Text to translate:
-        "${text}"`;
+        try {
+            const cfg = getGeminiConfig();
+            const model = ai.getGenerativeModel({
+                model: cfg?.model || "gemini-2.0-flash",
+                generationConfig: {
+                    temperature: cfg?.temperature ?? 0.2,
+                    maxOutputTokens: cfg?.maxTokens,
+                }
+            });
+            const targetLanguageName = LANGUAGE_NAMES[targetLang] || targetLang;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        return response.text().trim();
-    } catch (error) {
-        console.error("Gemini translation error:", error);
-        return text;
-    }
+            const prompt = `Translate the following text from Spanish to ${targetLanguageName}.
+            Return ONLY the translated text without any explanations or additional formatting.
+            Keep these terms unchanged when present: ${PRESERVE_TERMS.join(', ')}.
+            
+            Text to translate:
+            "${text}"`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const translated = response.text().trim() || text;
+            setMemoryCache(key, translated);
+            return translated;
+        } catch (error) {
+            console.error("Gemini translation error:", error);
+            return text;
+        }
+    });
 }
 
 function extractJson(text: string): string {
@@ -134,45 +211,56 @@ function extractJson(text: string): string {
 export async function translateObject<T>(obj: T, targetLang: string): Promise<T> {
     if (targetLang === 'es') return obj;
 
-    const serverResult = await translateViaServer<T>(obj, targetLang, 'object');
-    if (serverResult && typeof serverResult === 'object') {
-        return serverResult;
+    const key = buildCacheKey(obj, targetLang, 'object');
+    if (responseCache.has(key)) {
+        return responseCache.get(key) as T;
     }
 
-    const ai = getAI();
-    if (!ai) {
-        throw new Error("Gemini API key is not configured. Please add it in the Admin Integrations panel.");
-    }
+    return runDeduped<T>(`object:${key}`, async () => {
+        const serverResult = await translateViaServer<T>(obj, targetLang, 'object');
+        if (serverResult && typeof serverResult === 'object') {
+            setMemoryCache(key, serverResult);
+            return serverResult;
+        }
 
-    try {
-        const cfg = getGeminiConfig();
-        const model = ai.getGenerativeModel({
-            model: cfg?.model || "gemini-2.0-flash",
-            generationConfig: {
-                responseMimeType: "application/json",
-                temperature: 0.1,
-                maxOutputTokens: cfg?.maxTokens,
-            }
-        });
-        const targetLanguageName = LANGUAGE_NAMES[targetLang] || targetLang;
+        const ai = getAI();
+        if (!ai) {
+            throw new Error("Gemini API key is not configured. Please add it in the Admin Integrations panel.");
+        }
 
-        const prompt = `Translate all user-facing string values in the following JSON from Spanish to ${targetLanguageName}.
-        Preserve the JSON structure and keys exactly.
-        Do not rename keys.
-        Do not add or remove fields.
-        Keep URLs, emails, slugs, handles, and identifiers unchanged.
-        If a value is not a string (object, array, number, boolean, null), preserve its type and structure.
-        Return valid JSON only.
-        
-        Object to translate:
-        ${JSON.stringify(obj, null, 2)}`;
+        try {
+            const cfg = getGeminiConfig();
+            const model = ai.getGenerativeModel({
+                model: cfg?.model || "gemini-2.0-flash",
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    temperature: 0.1,
+                    maxOutputTokens: cfg?.maxTokens,
+                }
+            });
+            const targetLanguageName = LANGUAGE_NAMES[targetLang] || targetLang;
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const cleanedText = extractJson(response.text());
-        return JSON.parse(cleanedText) as T;
-    } catch (error) {
-        console.error("Gemini object translation error:", error);
-        return obj;
-    }
+            const prompt = `Translate all user-facing string values in the following JSON from Spanish to ${targetLanguageName}.
+            Preserve the JSON structure and keys exactly.
+            Do not rename keys.
+            Do not add or remove fields.
+            Keep URLs, emails, slugs, handles, and identifiers unchanged.
+            Keep these terms unchanged when present: ${PRESERVE_TERMS.join(', ')}.
+            If a value is not a string (object, array, number, boolean, null), preserve its type and structure.
+            Return valid JSON only.
+            
+            Object to translate:
+            ${JSON.stringify(obj, null, 2)}`;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const cleanedText = extractJson(response.text());
+            const translated = JSON.parse(cleanedText) as T;
+            setMemoryCache(key, translated);
+            return translated;
+        } catch (error) {
+            console.error("Gemini object translation error:", error);
+            return obj;
+        }
+    });
 }

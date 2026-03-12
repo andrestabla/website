@@ -17,6 +17,29 @@ const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
   fr: 'French',
 }
+const PRESERVE_TERMS = [
+  'AlgoritmoT',
+  'QM',
+  'Quality Matters',
+  'LMS',
+  'API',
+  'UTB',
+  'CESA',
+  'IBERO',
+  'USTA',
+  'USANMARTÍN',
+  'San Martín',
+  'La Salle',
+]
+const inFlightByKey = new Map<string, Promise<unknown>>()
+
+function runDeduped<T>(key: string, run: () => Promise<T>): Promise<T> {
+  const existing = inFlightByKey.get(key)
+  if (existing) return existing as Promise<T>
+  const promise = run().finally(() => inFlightByKey.delete(key))
+  inFlightByKey.set(key, promise as Promise<unknown>)
+  return promise
+}
 
 function hashKey(input: unknown, targetLang: string, mode: string) {
   const text = JSON.stringify({ input, targetLang, mode })
@@ -59,7 +82,10 @@ async function translateWithGemini(body: TranslateBody) {
   const targetLanguageName = LANGUAGE_NAMES[body.targetLang] || body.targetLang
 
   if (body.mode === 'text') {
-    const prompt = `Translate the following text from Spanish to ${targetLanguageName}. Return ONLY the translated text.\n\n${String(body.payload)}`
+    const prompt = `Translate the following text from Spanish to ${targetLanguageName}. Return ONLY the translated text.
+Keep these terms unchanged when present: ${PRESERVE_TERMS.join(', ')}.
+
+${String(body.payload)}`
     const result = await model.generateContent(prompt)
     const response = await result.response
     return response.text().trim()
@@ -68,6 +94,7 @@ async function translateWithGemini(body: TranslateBody) {
   const prompt = `Translate all user-facing string values in this JSON from Spanish to ${targetLanguageName}.
 Preserve keys and structure exactly.
 Keep URLs, emails, slugs, handles and identifiers unchanged.
+Keep these terms unchanged when present: ${PRESERVE_TERMS.join(', ')}.
 Return valid JSON only.
 
 JSON:
@@ -100,12 +127,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, data: cached.payload, cached: true })
     }
 
-    const data = await translateWithGemini({ ...body, mode })
-
-    await prisma.translationCache.upsert({
-      where: { key },
-      update: { payload: data as any, provider: 'gemini', model: process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash', targetLang: body.targetLang },
-      create: { key, payload: data as any, provider: 'gemini', model: process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash', targetLang: body.targetLang },
+    const data = await runDeduped(key, async () => {
+      const translated = await translateWithGemini({ ...body, mode })
+      await prisma.translationCache.upsert({
+        where: { key },
+        update: { payload: translated as any, provider: 'gemini', model: process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash', targetLang: body.targetLang },
+        create: { key, payload: translated as any, provider: 'gemini', model: process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || 'gemini-2.0-flash', targetLang: body.targetLang },
+      })
+      return translated
     })
 
     return res.status(200).json({ ok: true, data, cached: false })

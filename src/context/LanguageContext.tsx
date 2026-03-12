@@ -27,11 +27,24 @@ type LanguageContextType = {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 const CACHE_KEY = 'algoritmot_translations_v3';
+const MAX_CACHE_SNAPSHOTS_PER_LANG = 4;
+
+function pruneCache(cache: TranslationCache): TranslationCache {
+    const next: TranslationCache = {};
+    (['es', 'en', 'fr'] as Language[]).forEach((lang) => {
+        const entries = Object.entries(cache[lang] || {});
+        if (entries.length === 0) return;
+        const kept = entries.slice(-MAX_CACHE_SNAPSHOTS_PER_LANG);
+        next[lang] = Object.fromEntries(kept) as Record<string, CMSState>;
+    });
+    return next;
+}
 
 function loadCache(): TranslationCache {
     try {
         const raw = localStorage.getItem(CACHE_KEY);
-        return raw ? JSON.parse(raw) : {};
+        const parsed = raw ? JSON.parse(raw) : {};
+        return pruneCache(parsed as TranslationCache);
     } catch {
         return {};
     }
@@ -39,7 +52,7 @@ function loadCache(): TranslationCache {
 
 function saveCache(cache: TranslationCache) {
     try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(pruneCache(cache)));
     } catch { }
 }
 
@@ -98,6 +111,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const [isTranslating, setIsTranslating] = useState(false);
     const lastProcessed = useRef<string>("");
     const isProcessing = useRef<boolean>(false);
+    const cacheRef = useRef<TranslationCache>(loadCache());
+    const pendingRequestRef = useRef<{ targetLang: Language; baseState: CMSState; hash: string } | null>(null);
 
     const translateCollection = useCallback(async <T,>(items: T[], targetLang: Language): Promise<T[]> => {
         const results = await Promise.allSettled(items.map(item => translateObject(item, targetLang)));
@@ -113,17 +128,22 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
      */
     const performTranslation = useCallback(async (targetLang: Language, baseState: CMSState) => {
         if (targetLang === 'es') {
+            pendingRequestRef.current = null;
             setTranslatedState(baseState);
             lastProcessed.current = getCMSHash(baseState) + 'es';
             return;
         }
 
         const hash = getCMSHash(baseState) + targetLang;
-        if (lastProcessed.current === hash || isProcessing.current) {
+        if (lastProcessed.current === hash) {
+            return;
+        }
+        if (isProcessing.current) {
+            pendingRequestRef.current = { targetLang, baseState, hash };
             return;
         }
 
-        const cache = loadCache();
+        const cache = cacheRef.current;
         if (cache[targetLang]?.[hash]) {
             const cached = cache[targetLang]![hash];
             setTranslatedState({
@@ -164,35 +184,63 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         };
 
         try {
-            // Split translation into smaller requests to reduce malformed/truncated JSON responses.
+            // Split translation in chunks and run the top-level chunks in parallel for faster first paint.
             const timeoutMs = 20000; // 20 seconds timeout per chunk
-            const heroT = await withTimeout(translateObject(baseState.hero, targetLang), timeoutMs, baseState.hero).catch(e => { console.error('Hero translate failed', e); return baseState.hero; });
-            const servicesT = await withTimeout(translateCollection(baseState.services, targetLang), timeoutMs, baseState.services).catch(e => { console.error('Services translate failed', e); return baseState.services; });
-            const productsT = await withTimeout(translateCollection(baseState.products, targetLang), timeoutMs, baseState.products).catch(e => { console.error('Products translate failed', e); return baseState.products; });
-            const siteT = await withTimeout(translateObject({
-                name: baseState.site.name,
-                description: baseState.site.description,
-                contactAddress: baseState.site.contactAddress
-            }, targetLang), timeoutMs, { name: baseState.site.name, description: baseState.site.description, contactAddress: baseState.site.contactAddress }).catch(e => { console.error('Site translate failed', e); return { name: baseState.site.name, description: baseState.site.description, contactAddress: baseState.site.contactAddress }; });
-            const homePageT = await withTimeout(translateObject((baseState as any).homePage, targetLang), timeoutMs, (baseState as any).homePage).catch(e => { console.error('HomePage translate failed', e); return (baseState as any).homePage; });
+            const translatePages = async () => {
+                const pages = baseState.siteArchitecture.pages;
+                if (pages.length === 0) return pages;
+                const translatedPages = [...pages];
+                const concurrency = Math.min(4, pages.length);
+                let cursor = 0;
 
-            // Translate pages in small batches to improve speed without hitting payload limits
-            const siteArchitecturePagesT = [];
-            const BATCH_SIZE = 3;
-            for (let i = 0; i < baseState.siteArchitecture.pages.length; i += BATCH_SIZE) {
-                const batch = baseState.siteArchitecture.pages.slice(i, i + BATCH_SIZE);
-                const batchPromises = batch.map(async (page) => {
-                    if (page.blocks && page.blocks.length > 0) {
-                        return withTimeout(translateObject(page, targetLang), timeoutMs, page).catch(err => {
+                const worker = async () => {
+                    while (cursor < pages.length) {
+                        const index = cursor++;
+                        const page = pages[index];
+                        if (!page?.blocks?.length) {
+                            translatedPages[index] = page;
+                            continue;
+                        }
+                        translatedPages[index] = await withTimeout(translateObject(page, targetLang), timeoutMs, page).catch(err => {
                             console.error(`Failed to translate page ${page.id}`, err);
                             return page;
                         });
                     }
-                    return page;
-                });
-                const resolvedBatch = await Promise.all(batchPromises);
-                siteArchitecturePagesT.push(...resolvedBatch);
-            }
+                };
+
+                await Promise.all(Array.from({ length: concurrency }, () => worker()));
+                return translatedPages;
+            };
+
+            const siteFallback = {
+                name: baseState.site.name,
+                description: baseState.site.description,
+                contactAddress: baseState.site.contactAddress,
+            };
+
+            const [heroT, servicesT, productsT, siteT, homePageT, siteArchitecturePagesT] = await Promise.all([
+                withTimeout(translateObject(baseState.hero, targetLang), timeoutMs, baseState.hero).catch(e => {
+                    console.error('Hero translate failed', e);
+                    return baseState.hero;
+                }),
+                withTimeout(translateCollection(baseState.services, targetLang), timeoutMs, baseState.services).catch(e => {
+                    console.error('Services translate failed', e);
+                    return baseState.services;
+                }),
+                withTimeout(translateCollection(baseState.products, targetLang), timeoutMs, baseState.products).catch(e => {
+                    console.error('Products translate failed', e);
+                    return baseState.products;
+                }),
+                withTimeout(translateObject(siteFallback, targetLang), timeoutMs, siteFallback).catch(e => {
+                    console.error('Site translate failed', e);
+                    return siteFallback;
+                }),
+                withTimeout(translateObject((baseState as any).homePage, targetLang), timeoutMs, (baseState as any).homePage).catch(e => {
+                    console.error('HomePage translate failed', e);
+                    return (baseState as any).homePage;
+                }),
+                translatePages(),
+            ]);
 
             // Extremely defensive merging
             const t = {
@@ -220,6 +268,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             const targetLangKey = targetLang as Language;
             if (!cache[targetLangKey]) cache[targetLangKey] = {};
             cache[targetLangKey]![hash] = newState;
+            cacheRef.current = cache;
             saveCache(cache);
 
             setTranslatedState(newState);
@@ -229,10 +278,20 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
             setTranslatedState(baseState);
             lastProcessed.current = hash;
         } finally {
-            setIsTranslating(false);
             isProcessing.current = false;
+            const pending = pendingRequestRef.current;
+            const shouldProcessPending = Boolean(pending && pending.hash !== hash && pending.hash !== lastProcessed.current);
+            if (shouldProcessPending && pending) {
+                pendingRequestRef.current = null;
+                setTimeout(() => {
+                    void performTranslation(pending.targetLang, pending.baseState);
+                }, 0);
+            } else {
+                pendingRequestRef.current = null;
+            }
+            setIsTranslating(false);
         }
-    }, [translateCollection, language, cmsState]);
+    }, [translateCollection]);
 
     // Effect: Handle CMS State changes or Language changes
     useEffect(() => {
