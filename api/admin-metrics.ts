@@ -347,7 +347,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       bucket.cached += 1
-      const diff = compareTranslatedStrings(entry.unit.payload, cached.payload)
+      const diff = compareTranslatedStrings(entry.unit.payload, (cached as any).payload)
       bucket.checkedStrings += diff.total
       bucket.unchangedStrings += diff.unchanged
 

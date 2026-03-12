@@ -151,17 +151,85 @@ enum AdminRole {
   ANALYST
 }
 
+enum AdminModule {
+  DASHBOARD
+  SITE_BUILDER
+  SERVICES
+  PRODUCTS
+  LEADS
+  DESIGN
+  SEO
+  MARKETING
+  ANALYTICS
+  INTEGRATIONS
+  SETTINGS
+  USERS
+}
+
 model AdminUser {
-  id           String    @id @default(cuid())
-  username     String    @unique
-  email        String?   @unique
-  displayName  String
-  role         AdminRole @default(ADMIN)
-  passwordHash String
-  active       Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  lastLoginAt  DateTime?
+  id                    String                @id @default(cuid())
+  username              String                @unique
+  email                 String?               @unique
+  displayName           String
+  role                  AdminRole             @default(ADMIN)
+  passwordHash          String
+  active                Boolean               @default(true)
+  passwordSetupRequired Boolean               @default(false)
+  suspendedAt           DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  lastLoginAt           DateTime?
+  permissions           AdminUserPermission[]
+  authTokens            AdminCredentialToken[]
+  navigationLogs        AdminNavigationLog[]
+}
+
+model AdminUserPermission {
+  id        String      @id @default(cuid())
+  userId    String
+  module    AdminModule
+  canAccess Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      AdminUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module])
+  @@index([module, canAccess])
+}
+
+model AdminCredentialToken {
+  id              String     @id @default(cuid())
+  userId          String
+  tokenHash       String     @unique
+  expiresAt       DateTime
+  usedAt          DateTime?
+  createdByUserId String?
+  createdByName   String?
+  purpose         String     @default("SETUP_PASSWORD")
+  metadata        Json?
+  createdAt       DateTime   @default(now())
+  user            AdminUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([expiresAt])
+}
+
+model AdminNavigationLog {
+  id          String     @id @default(cuid())
+  userId      String
+  username    String
+  role        AdminRole
+  path        String
+  action      String     @default("NAVIGATE")
+  ip          String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  user        AdminUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([path, createdAt(sort: Desc)])
 }
 
 model ContactLead {

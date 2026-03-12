@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { ADMIN_MODULES, getDefaultPermissionMapForRole, type AdminModuleKey } from './admin-users.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -20,6 +21,7 @@ type SessionPayload = {
   username: string
   displayName: string
   role: 'SUPERADMIN' | 'ADMIN' | 'EDITOR' | 'ANALYST'
+  permissions?: Partial<Record<AdminModuleKey, boolean>>
   exp: number
   iat: number
 }
@@ -58,10 +60,63 @@ function parseCookies(req: VercelRequest) {
 }
 
 type CreateSessionInput = Pick<SessionPayload, 'userId' | 'username' | 'displayName' | 'role'>
+  & { permissions?: Partial<Record<AdminModuleKey, boolean>> }
+
+function sanitizePermissionPayload(
+  value: unknown
+): Partial<Record<AdminModuleKey, boolean>> | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const record = value as Record<string, unknown>
+  const normalized: Partial<Record<AdminModuleKey, boolean>> = {}
+  let hasAny = false
+  for (const module of ADMIN_MODULES) {
+    if (Object.prototype.hasOwnProperty.call(record, module)) {
+      normalized[module] = record[module] === true
+      hasAny = true
+    }
+  }
+  return hasAny ? normalized : undefined
+}
+
+function inferModuleFromRequest(req: VercelRequest): AdminModuleKey | null {
+  const rawUrl = typeof req.url === 'string' ? req.url : ''
+  const path = rawUrl.split('?')[0] || ''
+  if (!path) return null
+
+  if (path === '/api/admin/login' || path === '/api/admin/logout' || path === '/api/admin/session' || path === '/api/admin/account-setup') {
+    return null
+  }
+  if (path === '/api/admin/navigation-log') return null
+  if (path.startsWith('/api/admin/users')) return 'USERS'
+  if (path.startsWith('/api/admin/leads')) return 'LEADS'
+  if (path.startsWith('/api/admin/seo')) return 'SEO'
+  if (path.startsWith('/api/admin/marketing') || path.startsWith('/api/admin/ai-copy') || path.startsWith('/api/admin/ai-email') || path.startsWith('/api/admin/email-campaign') || path.startsWith('/api/admin/campaign-landings') || path.startsWith('/api/admin/ai-landing') || path.startsWith('/api/admin/accessibility-scan')) return 'MARKETING'
+  if (path.startsWith('/api/admin/integrations') || path.startsWith('/api/admin/smtp-test') || path.startsWith('/api/integrations')) return 'INTEGRATIONS'
+  if (path.startsWith('/api/admin/design') || path.startsWith('/api/admin/upload')) return 'DESIGN'
+  if (path.startsWith('/api/admin-metrics')) return 'ANALYTICS'
+  if (path.startsWith('/api/cms') || path.startsWith('/api/cms-prewarm')) return 'SITE_BUILDER'
+  return null
+}
+
+export function canAccessAdminModule(session: SessionPayload, module: AdminModuleKey) {
+  if (session.role === 'SUPERADMIN') return true
+  const tokenPermissions = session.permissions || undefined
+  if (tokenPermissions && Object.prototype.hasOwnProperty.call(tokenPermissions, module)) {
+    return tokenPermissions[module] === true
+  }
+  const fallback = getDefaultPermissionMapForRole(session.role)
+  return fallback[module] === true
+}
 
 export function createAdminSessionToken(input: CreateSessionInput) {
   const now = Math.floor(Date.now() / 1000)
-  const payload: SessionPayload = { sub: 'admin', iat: now, exp: now + SESSION_TTL_SECONDS, ...input }
+  const payload: SessionPayload = {
+    sub: 'admin',
+    iat: now,
+    exp: now + SESSION_TTL_SECONDS,
+    ...input,
+    permissions: sanitizePermissionPayload(input.permissions),
+  }
   const encoded = base64UrlEncode(JSON.stringify(payload))
   return `${encoded}.${sign(encoded)}`
 }
@@ -76,6 +131,7 @@ export function verifyAdminSessionToken(token: string | undefined | null): Sessi
     if (payload.sub !== 'admin') return null
     if (!payload.userId || !payload.username || !payload.displayName || !payload.role) return null
     if (typeof payload.exp !== 'number' || payload.exp <= Math.floor(Date.now() / 1000)) return null
+    payload.permissions = sanitizePermissionPayload(payload.permissions)
     return payload
   } catch {
     return null
@@ -115,5 +171,16 @@ export function requireAdminSession(req: VercelRequest, res: VercelResponse) {
     res.status(401).json({ ok: false, error: 'Unauthorized' })
     return null
   }
+
+  const module = inferModuleFromRequest(req)
+  if (module && !canAccessAdminModule(session, module)) {
+    res.status(403).json({
+      ok: false,
+      error: `Sin permisos para el módulo ${module}`,
+      module,
+    })
+    return null
+  }
+
   return session
 }

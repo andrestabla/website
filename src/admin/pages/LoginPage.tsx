@@ -26,9 +26,15 @@ export function LoginPage() {
                 return
             }
             const payload = await response.json().catch(() => null)
-            setError(payload?.error === 'Invalid credentials'
-                ? 'Protocolo de acceso denegado. Credencial inválida.'
-                : 'No se pudo iniciar sesión en el servidor.')
+            if (payload?.error === 'Invalid credentials') {
+                setError('Protocolo de acceso denegado. Credencial inválida.')
+            } else if (payload?.error === 'User suspended') {
+                setError('Tu usuario está suspendido. Contacta a un SUPERADMIN.')
+            } else if (payload?.error === 'Password setup required') {
+                setError('Debes activar credenciales desde el enlace seguro enviado a tu correo.')
+            } else {
+                setError('No se pudo iniciar sesión en el servidor.')
+            }
         } catch {
             setError('No se pudo conectar con el servidor de autenticación.')
         } finally {

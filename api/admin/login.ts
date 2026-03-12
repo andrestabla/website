@@ -4,7 +4,8 @@ import {
 } from '../_lib/admin-auth.js'
 import {
   ensureBootstrapAdminUser,
-  findAdminUserByIdentifier,
+  findAdminUserByIdentifierAnyStatus,
+  getSessionPermissionsForUser,
   registerAdminLogin,
   verifyPassword,
 } from '../_lib/admin-users.js'
@@ -27,17 +28,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     await ensureBootstrapAdminUser()
-    const user = await findAdminUserByIdentifier(identifier)
+    const user = await findAdminUserByIdentifierAnyStatus(identifier)
     if (!user || !verifyPassword(password, user.passwordHash)) {
       return res.status(401).json({ ok: false, error: 'Invalid credentials' })
     }
+    if (!user.active) {
+      return res.status(403).json({ ok: false, error: 'User suspended' })
+    }
+    if (user.passwordSetupRequired) {
+      return res.status(403).json({ ok: false, error: 'Password setup required' })
+    }
 
     await registerAdminLogin(user.id)
+    const permissions = getSessionPermissionsForUser({
+      role: user.role as any,
+      permissions: (user as any).permissions || [],
+    })
     const token = createAdminSessionToken({
       userId: user.id,
       username: user.username,
       displayName: user.displayName,
       role: user.role as any,
+      permissions,
     })
     setAdminSessionCookie(res, token)
     return res.status(200).json({
@@ -47,6 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         username: user.username,
         displayName: user.displayName,
         role: user.role,
+        permissions,
       },
     })
   } catch (error) {

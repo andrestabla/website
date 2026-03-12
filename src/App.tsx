@@ -3,9 +3,11 @@ import { CMSProvider, useCMS } from './admin/context/CMSContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { DataConsentModal } from './components/privacy/DataConsentModal'
 import { SiteTelemetry } from './components/analytics/SiteTelemetry'
+import { AdminTelemetry } from './components/analytics/AdminTelemetry'
 import { SmartPopup } from './components/marketing/SmartPopup'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { canAccessModule, getAdminModuleForPath, type AdminModuleKey } from './admin/lib/permissions'
 
 const Home = lazy(() => import('./pages/Home').then((module) => ({ default: module.Home })))
 const ServicePage = lazy(() => import('./pages/ServicePage').then((module) => ({ default: module.ServicePage })))
@@ -35,6 +37,8 @@ const ManageSEO = lazy(() => import('./admin/pages/ManageSEO').then((module) => 
 const ManageMarketing = lazy(() => import('./admin/pages/ManageMarketing').then((module) => ({ default: module.ManageMarketing })))
 const ManageLeads = lazy(() => import('./admin/pages/ManageLeads').then((module) => ({ default: module.ManageLeads })))
 const Analytics = lazy(() => import('./admin/pages/Analytics').then((module) => ({ default: module.Analytics })))
+const ManageUsers = lazy(() => import('./admin/pages/ManageUsers').then((module) => ({ default: module.ManageUsers })))
+const SetupPasswordPage = lazy(() => import('./admin/pages/SetupPasswordPage').then((module) => ({ default: module.SetupPasswordPage })))
 const AdminLayout = lazy(() => import('./admin/components/AdminLayout').then((module) => ({ default: module.AdminLayout })))
 
 function ScrollToTopOnRouteChange() {
@@ -50,7 +54,13 @@ function ScrollToTopOnRouteChange() {
 }
 
 type AdminSessionStatus = 'checking' | 'authenticated' | 'unauthenticated'
-type AdminSessionUser = { id: string; username: string; displayName: string; role: string } | null
+type AdminSessionUser = {
+  id: string
+  username: string
+  displayName: string
+  role: string
+  permissions?: Record<string, boolean> | null
+} | null
 
 function useAdminSessionGuard() {
   const [status, setStatus] = useState<AdminSessionStatus>('checking')
@@ -103,19 +113,52 @@ function RouteLoader() {
   )
 }
 
-const ProtectedRoute = ({ children }: { children: ReactNode }) => {
+function NoAccessState({ module }: { module: AdminModuleKey }) {
+  return (
+    <div className="min-h-[60vh] bg-slate-50 flex items-center justify-center p-6">
+      <div className="bg-white border border-slate-200 p-8 max-w-lg text-center">
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Acceso restringido</h2>
+        <p className="text-slate-600">
+          Tu usuario no tiene permisos para el módulo <span className="font-bold">{module}</span>.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+const ProtectedRoute = ({
+  children,
+  requiredModule,
+}: {
+  children: ReactNode
+  requiredModule?: AdminModuleKey
+}) => {
   const { status, sessionUser } = useAdminSessionGuard()
+  const { pathname } = useLocation()
 
   if (status === 'checking') return <ProtectedRouteFrame status={status} />
   if (status === 'unauthenticated') return <Navigate to="/admin/login" replace />
+  const module = requiredModule || getAdminModuleForPath(pathname)
+  if (module && !canAccessModule(sessionUser, module)) {
+    return <AdminLayout sessionUser={sessionUser}><NoAccessState module={module} /></AdminLayout>
+  }
   return <AdminLayout sessionUser={sessionUser}>{children}</AdminLayout>
 }
 
-const ProtectedRouteNoLayout = ({ children }: { children: ReactNode }) => {
-  const { status } = useAdminSessionGuard()
+const ProtectedRouteNoLayout = ({
+  children,
+  requiredModule,
+}: {
+  children: ReactNode
+  requiredModule?: AdminModuleKey
+}) => {
+  const { status, sessionUser } = useAdminSessionGuard()
+  const { pathname } = useLocation()
 
   if (status === 'checking') return <ProtectedRouteFrame status={status} />
   if (status === 'unauthenticated') return <Navigate to="/admin/login" replace />
+  const module = requiredModule || getAdminModuleForPath(pathname)
+  if (module && !canAccessModule(sessionUser, module)) return <Navigate to="/admin/dashboard" replace />
   return <>{children}</>
 }
 
@@ -221,6 +264,7 @@ function App() {
           <GlobalExperienceMode />
           <GlobalBrandLoader />
           <SiteTelemetry />
+          <AdminTelemetry />
           <SmartPopup />
           <DataConsentModal />
           <Suspense fallback={<RouteLoader />}>
@@ -245,20 +289,22 @@ function App() {
               {/* Admin Routes */}
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="/admin/login" element={<LoginPage />} />
-              <Route path="/admin/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/admin/setup" element={<SetupPasswordPage />} />
+              <Route path="/admin/dashboard" element={<ProtectedRoute requiredModule="DASHBOARD"><Dashboard /></ProtectedRoute>} />
               <Route path="/admin/home" element={<Navigate to="/admin/site-builder" replace />} />
-              <Route path="/admin/site-builder" element={<ProtectedRoute><ManageContentBuilder /></ProtectedRoute>} />
-              <Route path="/admin/home/editor/:pageId" element={<ProtectedRouteNoLayout><ManageSitePageEditor /></ProtectedRouteNoLayout>} />
-              <Route path="/admin/site-builder/editor/:pageId" element={<ProtectedRouteNoLayout><ManageSitePageEditor /></ProtectedRouteNoLayout>} />
-              <Route path="/admin/services" element={<ProtectedRoute><ManageServices /></ProtectedRoute>} />
-              <Route path="/admin/products" element={<ProtectedRoute><ManageProducts /></ProtectedRoute>} />
-              <Route path="/admin/settings" element={<ProtectedRoute><ManageSite /></ProtectedRoute>} />
-              <Route path="/admin/design" element={<ProtectedRoute><ManageDesign /></ProtectedRoute>} />
-              <Route path="/admin/integrations" element={<ProtectedRoute><ManageIntegrations /></ProtectedRoute>} />
-              <Route path="/admin/seo" element={<ProtectedRoute><ManageSEO /></ProtectedRoute>} />
-              <Route path="/admin/marketing" element={<ProtectedRoute><ManageMarketing /></ProtectedRoute>} />
-              <Route path="/admin/leads" element={<ProtectedRoute><ManageLeads /></ProtectedRoute>} />
-              <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/admin/site-builder" element={<ProtectedRoute requiredModule="SITE_BUILDER"><ManageContentBuilder /></ProtectedRoute>} />
+              <Route path="/admin/home/editor/:pageId" element={<ProtectedRouteNoLayout requiredModule="SITE_BUILDER"><ManageSitePageEditor /></ProtectedRouteNoLayout>} />
+              <Route path="/admin/site-builder/editor/:pageId" element={<ProtectedRouteNoLayout requiredModule="SITE_BUILDER"><ManageSitePageEditor /></ProtectedRouteNoLayout>} />
+              <Route path="/admin/services" element={<ProtectedRoute requiredModule="SERVICES"><ManageServices /></ProtectedRoute>} />
+              <Route path="/admin/products" element={<ProtectedRoute requiredModule="PRODUCTS"><ManageProducts /></ProtectedRoute>} />
+              <Route path="/admin/settings" element={<ProtectedRoute requiredModule="SETTINGS"><ManageSite /></ProtectedRoute>} />
+              <Route path="/admin/design" element={<ProtectedRoute requiredModule="DESIGN"><ManageDesign /></ProtectedRoute>} />
+              <Route path="/admin/integrations" element={<ProtectedRoute requiredModule="INTEGRATIONS"><ManageIntegrations /></ProtectedRoute>} />
+              <Route path="/admin/seo" element={<ProtectedRoute requiredModule="SEO"><ManageSEO /></ProtectedRoute>} />
+              <Route path="/admin/marketing" element={<ProtectedRoute requiredModule="MARKETING"><ManageMarketing /></ProtectedRoute>} />
+              <Route path="/admin/leads" element={<ProtectedRoute requiredModule="LEADS"><ManageLeads /></ProtectedRoute>} />
+              <Route path="/admin/analytics" element={<ProtectedRoute requiredModule="ANALYTICS"><Analytics /></ProtectedRoute>} />
+              <Route path="/admin/users" element={<ProtectedRoute requiredModule="USERS"><ManageUsers /></ProtectedRoute>} />
               <Route path="*" element={<SiteArchitectureFallbackRoute />} />
             </Routes>
           </Suspense>

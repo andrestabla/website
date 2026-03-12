@@ -20,6 +20,7 @@ import {
     ChevronRight,
     Bell,
     User,
+    Users,
     CircleHelp,
     CheckCircle2,
     History,
@@ -29,6 +30,7 @@ import {
     Mail
 } from 'lucide-react'
 import { useCMS } from '../context/CMSContext'
+import { canAccessModule, type AdminModuleKey } from '../lib/permissions'
 
 interface AdminLayoutProps {
     children: ReactNode
@@ -36,6 +38,7 @@ interface AdminLayoutProps {
         displayName: string
         role: string
         username: string
+        permissions?: Record<string, boolean> | null
     } | null
 }
 
@@ -47,18 +50,19 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
     const { persistence, rollbackSection, refreshHistory } = useCMS()
     const [isCmsStatusOpen, setIsCmsStatusOpen] = useState(false)
 
-    const navigation = [
-        { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms' },
-        { name: 'Site Builder', href: '/admin/site-builder', icon: Home, group: 'cms' },
-        { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms' },
-        { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms' },
-        { name: 'Contactos', href: '/admin/leads', icon: Mail, group: 'cms' },
-        { name: 'Diseño Global', href: '/admin/design', icon: Paintbrush, group: 'cms' },
-        { name: 'SEO Manager', href: '/admin/seo', icon: SearchCheck, group: 'growth' },
-        { name: 'Marketing', href: '/admin/marketing', icon: Megaphone, group: 'growth' },
-        { name: 'Analítica', href: '/admin/analytics', icon: BarChart2, group: 'growth' },
-        { name: 'Integraciones', href: '/admin/integrations', icon: Plug, group: 'infra' },
-        { name: 'Configuración', href: '/admin/settings', icon: Settings, group: 'infra' },
+    const navigation: Array<{ name: string; href: string; icon: any; group: string; module: AdminModuleKey }> = [
+        { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms', module: 'DASHBOARD' },
+        { name: 'Site Builder', href: '/admin/site-builder', icon: Home, group: 'cms', module: 'SITE_BUILDER' },
+        { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms', module: 'SERVICES' },
+        { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms', module: 'PRODUCTS' },
+        { name: 'Contactos', href: '/admin/leads', icon: Mail, group: 'cms', module: 'LEADS' },
+        { name: 'Diseño Global', href: '/admin/design', icon: Paintbrush, group: 'cms', module: 'DESIGN' },
+        { name: 'SEO Manager', href: '/admin/seo', icon: SearchCheck, group: 'growth', module: 'SEO' },
+        { name: 'Marketing', href: '/admin/marketing', icon: Megaphone, group: 'growth', module: 'MARKETING' },
+        { name: 'Analítica', href: '/admin/analytics', icon: BarChart2, group: 'growth', module: 'ANALYTICS' },
+        { name: 'Integraciones', href: '/admin/integrations', icon: Plug, group: 'infra', module: 'INTEGRATIONS' },
+        { name: 'Configuración', href: '/admin/settings', icon: Settings, group: 'infra', module: 'SETTINGS' },
+        { name: 'Usuarios', href: '/admin/users', icon: Users, group: 'infra', module: 'USERS' },
     ]
 
     const confirmLeaveIfPending = () => {
@@ -186,6 +190,17 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                 'Usa cobertura SEO para encontrar rutas incompletas.',
             ],
         },
+        '/admin/users': {
+            title: 'Usuarios',
+            intro: 'Administra cuentas del panel, permisos por módulo y credenciales seguras por correo.',
+            data: 'Fuente: `AdminUser`, `AdminUserPermission`, `AdminCredentialToken`, `AdminNavigationLog`.',
+            steps: [
+                'Crea usuarios con rol y permisos granulares.',
+                'Suspende/reactiva/elimina usuarios según operación.',
+                'Reenvía credenciales por enlace seguro de un solo uso.',
+                'Monitorea logs de navegación del panel.',
+            ],
+        },
         '/admin/integrations': {
             title: 'Integraciones',
             intro: 'Configura proveedores (Gemini, OpenAI, SMTP, Cloudflare R2) con persistencia real y uso server-side.',
@@ -251,7 +266,8 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                 {/* Navigation */}
                 <nav className="flex-1 py-8 px-4 overflow-y-auto custom-scrollbar space-y-8">
                     {groups.map(group => {
-                        const items = navigation.filter(n => n.group === group.id)
+                        const items = navigation.filter((n) => n.group === group.id && canAccessModule(sessionUser, n.module))
+                        if (!items.length) return null
                         return (
                             <div key={group.id} className="space-y-2">
                                 {isSidebarOpen && (

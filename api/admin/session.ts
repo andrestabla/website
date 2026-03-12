@@ -19,6 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           username: session.username,
           displayName: session.displayName,
           role: session.role,
+          permissions: session.permissions || null,
         }
       : null,
   })
