@@ -1515,6 +1515,79 @@ function renderClientCarouselBlock(block: SitePageBlock) {
     const body = toText(block.content.body)
     const items = ensureObjectItems(block.content.items)
 
+    return <ClientCarouselBlock title={title} body={body} items={items} />
+}
+
+type ClientCarouselBlockProps = {
+    title: string
+    body: string
+    items: ItemObject[]
+}
+
+function ClientCarouselBlock({ title, body, items }: ClientCarouselBlockProps) {
+    const trackRef = useRef<HTMLDivElement | null>(null)
+    const [activeIndex, setActiveIndex] = useState(0)
+
+    useEffect(() => {
+        if (items.length === 0) {
+            setActiveIndex(0)
+            return
+        }
+        setActiveIndex((prev) => Math.min(prev, items.length - 1))
+    }, [items.length])
+
+    useEffect(() => {
+        const track = trackRef.current
+        if (!track || items.length <= 1) return
+
+        let rafId = 0
+        const updateActiveIndex = () => {
+            const cards = Array.from(track.children) as HTMLElement[]
+            if (cards.length === 0) return
+
+            const viewportCenter = track.scrollLeft + track.clientWidth / 2
+            let closestIndex = 0
+            let closestDistance = Number.POSITIVE_INFINITY
+
+            cards.forEach((card, index) => {
+                const cardCenter = card.offsetLeft + card.offsetWidth / 2
+                const distance = Math.abs(viewportCenter - cardCenter)
+                if (distance < closestDistance) {
+                    closestDistance = distance
+                    closestIndex = index
+                }
+            })
+
+            setActiveIndex((prev) => (prev === closestIndex ? prev : closestIndex))
+        }
+
+        const scheduleUpdate = () => {
+            if (rafId) cancelAnimationFrame(rafId)
+            rafId = requestAnimationFrame(updateActiveIndex)
+        }
+
+        scheduleUpdate()
+        track.addEventListener('scroll', scheduleUpdate, { passive: true })
+        window.addEventListener('resize', scheduleUpdate)
+
+        return () => {
+            track.removeEventListener('scroll', scheduleUpdate)
+            window.removeEventListener('resize', scheduleUpdate)
+            if (rafId) cancelAnimationFrame(rafId)
+        }
+    }, [items.length])
+
+    const goToExperience = (index: number) => {
+        const track = trackRef.current
+        if (!track) return
+        const cards = Array.from(track.children) as HTMLElement[]
+        const targetCard = cards[index]
+        if (!targetCard) return
+
+        const targetLeft = targetCard.offsetLeft - (track.clientWidth - targetCard.offsetWidth) / 2
+        track.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' })
+    }
+
     return (
         <div className="mx-auto max-w-screen-2xl overflow-hidden px-4 md:px-8">
             <div className="mx-auto mb-10 max-w-6xl text-center">
@@ -1528,7 +1601,7 @@ function renderClientCarouselBlock(block: SitePageBlock) {
                 <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-8 bg-gradient-to-r from-[#f8fafc] to-transparent md:w-24" />
                 <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-8 bg-gradient-to-l from-[#f8fafc] to-transparent md:w-24" />
                 
-                <div className="flex w-full gap-6 overflow-x-auto snap-x snap-mandatory px-8 pb-12 pt-4 hide-scrollbar md:px-24">
+                <div ref={trackRef} className="flex w-full gap-6 overflow-x-auto snap-x snap-mandatory px-8 pb-12 pt-4 hide-scrollbar md:px-24">
                     {items.map((item, index) => {
                         return <ExperienceCarouselCard key={`${item.id || index}`} item={item} index={index} />
                     })}
@@ -1538,10 +1611,13 @@ function renderClientCarouselBlock(block: SitePageBlock) {
             {items.length > 1 && (
                 <div className="mt-1 flex items-center justify-center gap-2 md:hidden" aria-label={`Carrusel con ${items.length} experiencias`}>
                     {items.map((_, index) => (
-                        <span
+                        <button
+                            type="button"
                             key={`experience-dot-${index}`}
-                            className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-emerald-600' : 'bg-slate-300'}`}
-                            aria-hidden="true"
+                            onClick={() => goToExperience(index)}
+                            className={`h-2.5 w-2.5 rounded-full transition-colors ${index === activeIndex ? 'bg-emerald-600' : 'bg-slate-300'}`}
+                            aria-label={`Ir a experiencia ${index + 1}`}
+                            aria-current={index === activeIndex}
                         />
                     ))}
                 </div>
