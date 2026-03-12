@@ -22,6 +22,14 @@ type UIStrings = {
     eyebrow: string
     title: string
     subtitle: string
+    card: {
+      itemPrefix: string
+      simpleWords: string
+      businessBenefit: string
+      idealWhen: string
+      expectedOutcomes: string
+      detailCta: string
+    }
   }
   products: {
     eyebrow: string
@@ -101,6 +109,14 @@ const UI_COPY: Record<Language, UIStrings> = {
       eyebrow: 'Infrastructure & Operations',
       title: 'Portafolio de Servicios Digitales',
       subtitle: 'Nuestro método sistemático para capturar valor y asegurar la adopción real.',
+      card: {
+        itemPrefix: 'Servicio',
+        simpleWords: 'En palabras simples',
+        businessBenefit: 'Beneficio para tu compañía',
+        idealWhen: 'Te conviene si hoy',
+        expectedOutcomes: 'Resultados esperados',
+        detailCta: 'Ver detalle del servicio',
+      },
     },
     products: {
       eyebrow: 'Performance Modules',
@@ -177,6 +193,14 @@ const UI_COPY: Record<Language, UIStrings> = {
       eyebrow: 'Infrastructure & Operations',
       title: 'Digital Services Portfolio',
       subtitle: 'Our systematic method to capture value and ensure real adoption.',
+      card: {
+        itemPrefix: 'Service',
+        simpleWords: 'In simple words',
+        businessBenefit: 'Business benefit',
+        idealWhen: 'Ideal if today you',
+        expectedOutcomes: 'Expected outcomes',
+        detailCta: 'View service details',
+      },
     },
     products: {
       eyebrow: 'Performance Modules',
@@ -253,6 +277,14 @@ const UI_COPY: Record<Language, UIStrings> = {
       eyebrow: 'Infrastructure & Operations',
       title: 'Portefeuille de Services Numériques',
       subtitle: "Notre méthode systématique pour capturer de la valeur et garantir une adoption réelle.",
+      card: {
+        itemPrefix: 'Service',
+        simpleWords: 'En termes simples',
+        businessBenefit: "Bénéfice pour votre entreprise",
+        idealWhen: "Pertinent si aujourd'hui vous",
+        expectedOutcomes: 'Résultats attendus',
+        detailCta: 'Voir le detail du service',
+      },
     },
     products: {
       eyebrow: 'Modules de Performance',
@@ -319,4 +351,3 @@ const UI_COPY: Record<Language, UIStrings> = {
 export function getUICopy(language: Language): UIStrings {
   return UI_COPY[language] ?? UI_COPY.es
 }
-

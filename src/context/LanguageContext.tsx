@@ -115,12 +115,40 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const pendingRequestRef = useRef<{ targetLang: Language; baseState: CMSState; hash: string } | null>(null);
 
     const translateCollection = useCallback(async <T,>(items: T[], targetLang: Language): Promise<T[]> => {
-        const results = await Promise.allSettled(items.map(item => translateObject(item, targetLang)));
-        return items.map((item, index) => {
-            const result = results[index];
-            if (result?.status === 'fulfilled') return result.value;
-            return item;
-        });
+        if (items.length === 0) return items;
+
+        try {
+            const translated = await translateObject(items, targetLang);
+            if (!Array.isArray(translated)) return items;
+
+            const merged = items.map((item, index) => mergeTranslated(item, translated[index])) as T[];
+            const pendingIndexes = merged
+                .map((item, index) => ({ item, index }))
+                .filter(({ item, index }) => JSON.stringify(item) === JSON.stringify(items[index]))
+                .map(({ index }) => index);
+
+            if (pendingIndexes.length === 0) return merged;
+
+            const retries = await Promise.allSettled(
+                pendingIndexes.map((index) => translateObject(items[index], targetLang))
+            );
+
+            const patched = [...merged];
+            retries.forEach((result, retryIndex) => {
+                const originalIndex = pendingIndexes[retryIndex];
+                if (result.status !== 'fulfilled') return;
+                patched[originalIndex] = mergeTranslated(items[originalIndex], result.value) as T;
+            });
+
+            return patched;
+        } catch {
+            const results = await Promise.allSettled(items.map((item) => translateObject(item, targetLang)));
+            return items.map((item, index) => {
+                const result = results[index];
+                if (result?.status === 'fulfilled') return mergeTranslated(item, result.value);
+                return item;
+            });
+        }
     }, []);
 
     /**
@@ -184,13 +212,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         };
 
         try {
-            // Split translation in chunks and run the top-level chunks in parallel for faster first paint.
-            const timeoutMs = 20000; // 20 seconds timeout per chunk
+            // Translate the visible surface first, then complete deep page translation in background.
+            const timeoutMs = 24000;
             const translatePages = async () => {
                 const pages = baseState.siteArchitecture.pages;
                 if (pages.length === 0) return pages;
                 const translatedPages = [...pages];
-                const concurrency = Math.min(4, pages.length);
+                const concurrency = Math.min(3, pages.length);
                 let cursor = 0;
 
                 const worker = async () => {
@@ -218,7 +246,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                 contactAddress: baseState.site.contactAddress,
             };
 
-            const [heroT, servicesT, productsT, siteT, homePageT, siteArchitecturePagesT] = await Promise.all([
+            const [heroT, servicesT, productsT, siteT, homePageT] = await Promise.all([
                 withTimeout(translateObject(baseState.hero, targetLang), timeoutMs, baseState.hero).catch(e => {
                     console.error('Hero translate failed', e);
                     return baseState.hero;
@@ -239,29 +267,37 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
                     console.error('HomePage translate failed', e);
                     return (baseState as any).homePage;
                 }),
-                translatePages(),
             ]);
 
-            // Extremely defensive merging
-            const t = {
-                hero: heroT,
-                services: servicesT,
-                products: productsT,
-                site: siteT,
-                homePage: homePageT,
-                siteArchitecturePages: siteArchitecturePagesT
-            } as any;
-
-            const newState: CMSState = {
+            const visibleFirstState: CMSState = {
                 ...baseState,
-                hero: mergeTranslated(baseState.hero, t.hero),
-                services: mergeTranslated(baseState.services, t.services),
-                products: mergeTranslated(baseState.products, t.products),
-                site: mergeTranslated(baseState.site, { ...baseState.site, ...t.site }),
-                homePage: mergeTranslated((baseState as any).homePage, t.homePage),
+                hero: heroT,
+                services: mergeTranslated(baseState.services, servicesT),
+                products: mergeTranslated(baseState.products, productsT),
+                site: mergeTranslated(baseState.site, { ...baseState.site, ...siteT }),
+                homePage: mergeTranslated((baseState as any).homePage, homePageT),
                 siteArchitecture: {
                     ...baseState.siteArchitecture,
-                    pages: mergeTranslated(baseState.siteArchitecture.pages, t.siteArchitecturePages),
+                    pages: baseState.siteArchitecture.pages,
+                },
+            };
+
+            setTranslatedState(visibleFirstState);
+
+            const siteArchitecturePagesT = await withTimeout(
+                translatePages(),
+                timeoutMs * 2,
+                baseState.siteArchitecture.pages
+            ).catch((e) => {
+                console.error('Site architecture translate failed', e);
+                return baseState.siteArchitecture.pages;
+            });
+
+            const newState: CMSState = {
+                ...visibleFirstState,
+                siteArchitecture: {
+                    ...baseState.siteArchitecture,
+                    pages: mergeTranslated(baseState.siteArchitecture.pages, siteArchitecturePagesT),
                 },
             };
 

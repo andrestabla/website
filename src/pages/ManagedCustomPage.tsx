@@ -7,11 +7,9 @@ type ManagedCustomPageProps = {
 }
 
 export function ManagedCustomPage({ page: initialPage }: ManagedCustomPageProps) {
-    const { translatedState, language } = useLanguage()
+    const { translatedState } = useLanguage()
     const page = (translatedState.siteArchitecture.pages as any[])?.find(p => p.id === initialPage.id) || initialPage
-    
-    console.log(`[ManagedCustomPage] Lang: ${language}, Page ID: ${initialPage.id}, isTranslated:`, page !== initialPage, page.blocks?.[0]?.content?.title);
-    
+
     const hasBlocks = Array.isArray(page.blocks) && page.blocks.length > 0
     const accentColor = page.accentColor || '#2563eb'
 

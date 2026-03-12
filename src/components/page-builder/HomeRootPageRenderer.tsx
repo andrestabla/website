@@ -5,6 +5,7 @@ import { ContactForm } from '../forms/ContactForm'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { type SiteArchitecturePage, type SitePageBlock } from '../../admin/context/CMSContext'
 import { Link } from 'react-router-dom'
+import { useLanguage } from '../../context/LanguageContext'
 type HomeRootPageRendererProps = {
     page: SiteArchitecturePage
     selectable?: boolean
@@ -1043,7 +1044,36 @@ function renderAuditoriaResourcesBlock(block: SitePageBlock, currentPath: string
     )
 }
 
-function renderServicesGridBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
+function normalizeServiceEyebrow(rawEyebrow: string, itemIndex: number, language: 'es' | 'en' | 'fr', itemPrefixLabel: string) {
+    const normalized = rawEyebrow.trim()
+    if (language === 'es') return normalized || `${itemPrefixLabel} ${itemIndex + 1}`
+    if (!normalized) return `${itemPrefixLabel} ${itemIndex + 1}`
+    if (/^servicio\s*\d*$/i.test(normalized)) return `${itemPrefixLabel} ${itemIndex + 1}`
+    return normalized
+}
+
+function normalizeServiceCtaLabel(rawLabel: string, language: 'es' | 'en' | 'fr', fallbackLabel: string) {
+    const normalized = rawLabel.trim()
+    if (!normalized) return fallbackLabel
+    if (language === 'es') return normalized
+    if (/^ver detalle del servicio$/i.test(normalized)) return fallbackLabel
+    return normalized
+}
+
+function renderServicesGridBlock(
+    block: SitePageBlock,
+    currentPath: string,
+    theme: ThemeColors,
+    language: 'es' | 'en' | 'fr',
+    labels: {
+        itemPrefix: string
+        simpleWords: string
+        businessBenefit: string
+        idealWhen: string
+        expectedOutcomes: string
+        detailCta: string
+    }
+) {
     const items = ensureObjectItems(block.content.items)
     return (
         <div className="mx-auto max-w-6xl">
@@ -1083,22 +1113,22 @@ function renderServicesGridBlock(block: SitePageBlock, currentPath: string, them
                                 </div>
                                 <div>
                                     <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-slate-500">
-                                        {toText(item.eyebrow, `Servicio ${index + 1}`)}
+                                        {normalizeServiceEyebrow(toText(item.eyebrow), index, language, labels.itemPrefix)}
                                     </p>
-                                    <h3 className="mt-1 text-[2rem] font-black leading-none tracking-tight text-slate-900">{toText(item.title, `Servicio ${index + 1}`)}</h3>
+                                    <h3 className="mt-1 text-[2rem] font-black leading-none tracking-tight text-slate-900">{toText(item.title, `${labels.itemPrefix} ${index + 1}`)}</h3>
                                 </div>
                             </div>
 
                             <div className="mt-7 space-y-4 text-lg leading-relaxed text-slate-700">
-                                <p><span className="font-black text-slate-900">En palabras simples:</span> {toText(item.inSimpleWords || item.body || item.description)}</p>
-                                <p><span className="font-black text-slate-900">Beneficio para tu compañía:</span> {toText(item.businessBenefit || item.benefit)}</p>
-                                <p><span className="font-black text-slate-900">Te conviene si hoy:</span> {toText(item.idealWhen || item.when)}</p>
+                                <p><span className="font-black text-slate-900">{labels.simpleWords}:</span> {toText(item.inSimpleWords || item.body || item.description)}</p>
+                                <p><span className="font-black text-slate-900">{labels.businessBenefit}:</span> {toText(item.businessBenefit || item.benefit)}</p>
+                                <p><span className="font-black text-slate-900">{labels.idealWhen}:</span> {toText(item.idealWhen || item.when)}</p>
                             </div>
 
                             {outcomes.length > 0 && (
                                 <>
                                     <div className="my-7 h-px bg-slate-200" />
-                                    <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500">Resultados esperados</p>
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-500">{labels.expectedOutcomes}</p>
                                     <ul className="mt-4 space-y-2 text-lg text-slate-700">
                                         {outcomes.map((outcome) => (
                                             <li key={outcome} className="flex items-start gap-2">
@@ -1117,7 +1147,7 @@ function renderServicesGridBlock(block: SitePageBlock, currentPath: string, them
                                     rel={opensInNewTab ? 'noopener noreferrer' : undefined}
                                     className="mt-7 inline-flex items-center gap-2 border border-slate-300 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-800 transition-colors hover:border-slate-900 hover:text-slate-900"
                                 >
-                                    {toText(item.label)}
+                                    {normalizeServiceCtaLabel(toText(item.label), language, labels.detailCta)}
                                     <ArrowRight className="h-4 w-4" />
                                 </a>
                             )}
@@ -1979,12 +2009,14 @@ export function HomeRootPageRenderer({
     onSelectBlock,
     className = '',
 }: HomeRootPageRendererProps) {
+    const { language, uiText } = useLanguage()
     const sortedBlocks = [...page.blocks].sort((a, b) => a.order - b.order).filter((block) => block.visible)
     const benefitsBlock = sortedBlocks.find((block) => block.id === 'beneficios') ?? null
     const flowBlock = sortedBlocks.find((block) => block.id === 'flujo') ?? null
 
     const currentTheme = THEMES[page.path] || DEFAULT_THEME
     const isAuditoriaPage = page.path === '/auditoria-programas-virtuales'
+    const servicesCardLabels = uiText.services.card
 
     return (
         <div className={`services-landing-theme ${className}`.trim()}>
@@ -2032,7 +2064,7 @@ export function HomeRootPageRenderer({
 
                         {block.id === 'hero' && (isAuditoriaPage ? renderAuditoriaHeroBlock(block, page.path, currentTheme) : renderHeroBlock(block, page.path, currentTheme))}
                         {block.id === 'promesas' && (isAuditoriaPage ? renderAuditoriaMetricsBlock(block, currentTheme) : renderPromisesBlock(block, currentTheme))}
-                        {block.id === 'servicios' && (isAuditoriaPage ? renderAuditoriaScopeBlock(block, page.path, currentTheme) : renderServicesGridBlock(block, page.path, currentTheme))}
+                        {block.id === 'servicios' && (isAuditoriaPage ? renderAuditoriaScopeBlock(block, page.path, currentTheme) : renderServicesGridBlock(block, page.path, currentTheme, language, servicesCardLabels))}
                         {block.id === 'estandares-qm' && isAuditoriaPage && renderAuditoriaStandardsBlock(block, currentTheme)}
                         {block.id === 'entregables' && isAuditoriaPage && renderAuditoriaDeliverablesBlock(block, currentTheme)}
                         {block.id === 'recursos' && isAuditoriaPage && renderAuditoriaResourcesBlock(block, page.path, currentTheme)}
