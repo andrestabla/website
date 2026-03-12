@@ -15,6 +15,12 @@ function formatDay(date: Date) {
   return date.toISOString().slice(0, 10)
 }
 
+function formatMonth(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
+}
+
 function relativeTime(input: Date) {
   const diffMs = Date.now() - input.getTime()
   const mins = Math.max(1, Math.floor(diffMs / 60000))
@@ -48,6 +54,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let byCountryRaw: any[] = []
     let recentAnalytics: any[] = []
     let recentConsents: any[] = []
+    let marketingCampaignCount = 0
+    let marketingSentCount = 0
+    let marketingOpenedCount = 0
+    let marketingRecipientRows: Array<{ sentAt: Date | null; openedAt: Date | null }> = []
+    let marketingOpenedRecipientsRows: Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }> = []
 
     try {
       const analyticsResults = await Promise.allSettled([
@@ -87,6 +98,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           take: 20,
           select: { policyVersion: true, path: true, country: true, city: true, acceptedAt: true, visitorId: true },
         }),
+        prisma.marketingEmailCampaign.count(),
+        prisma.marketingEmailRecipient.count({ where: { status: 'sent' } }),
+        prisma.marketingEmailRecipient.count({ where: { openedAt: { not: null } } }),
+        prisma.marketingEmailRecipient.findMany({
+          where: {
+            OR: [
+              { sentAt: { not: null } },
+              { openedAt: { not: null } },
+            ],
+          },
+          select: { sentAt: true, openedAt: true },
+          take: 12000,
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.marketingEmailRecipient.findMany({
+          where: { openedAt: { not: null } },
+          orderBy: { lastOpenedAt: 'desc' },
+          take: 200,
+          select: {
+            email: true,
+            openCount: true,
+            openedAt: true,
+            lastOpenedAt: true,
+            campaign: {
+              select: {
+                id: true,
+                name: true,
+                subject: true,
+              },
+            },
+          },
+        }),
       ] as const)
 
       const pick = <T,>(index: number, fallback: T): T => {
@@ -109,6 +152,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       byCountryRaw = pick(7, [] as any[])
       recentAnalytics = pick(8, [] as any[])
       recentConsents = pick(9, [] as any[])
+      marketingCampaignCount = pick(10, 0)
+      marketingSentCount = pick(11, 0)
+      marketingOpenedCount = pick(12, 0)
+      marketingRecipientRows = pick(13, [] as Array<{ sentAt: Date | null; openedAt: Date | null }>)
+      marketingOpenedRecipientsRows = pick(14, [] as Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }>)
     } catch (analyticsError) {
       console.error('api/admin-metrics analytics block degraded', analyticsError)
     }
@@ -208,6 +256,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })()
     const byCountry = (byCountryRaw as any[]).map((row) => ({ country: row.country || 'Unknown', count: row._count?._all || 0 }))
 
+    const marketingDaily = Array.from({ length: 30 }, (_, i) => {
+      const d = startOfDay(new Date(Date.now() - (29 - i) * 86400000))
+      return { day: formatDay(d), sent: 0, opened: 0 }
+    })
+    const marketingDayIndex = new Map(marketingDaily.map((entry, index) => [entry.day, index]))
+
+    const marketingMonthly = Array.from({ length: 12 }, (_, i) => {
+      const base = new Date()
+      base.setDate(1)
+      base.setHours(0, 0, 0, 0)
+      base.setMonth(base.getMonth() - (11 - i))
+      return { month: formatMonth(base), sent: 0, opened: 0 }
+    })
+    const marketingMonthIndex = new Map(marketingMonthly.map((entry, index) => [entry.month, index]))
+
+    for (const row of marketingRecipientRows) {
+      if (row.sentAt) {
+        const sentDay = formatDay(new Date(row.sentAt))
+        const sentDayIndex = marketingDayIndex.get(sentDay)
+        if (sentDayIndex !== undefined) marketingDaily[sentDayIndex].sent += 1
+
+        const sentMonth = formatMonth(new Date(row.sentAt))
+        const sentMonthIndex = marketingMonthIndex.get(sentMonth)
+        if (sentMonthIndex !== undefined) marketingMonthly[sentMonthIndex].sent += 1
+      }
+      if (row.openedAt) {
+        const openedDay = formatDay(new Date(row.openedAt))
+        const openedDayIndex = marketingDayIndex.get(openedDay)
+        if (openedDayIndex !== undefined) marketingDaily[openedDayIndex].opened += 1
+
+        const openedMonth = formatMonth(new Date(row.openedAt))
+        const openedMonthIndex = marketingMonthIndex.get(openedMonth)
+        if (openedMonthIndex !== undefined) marketingMonthly[openedMonthIndex].opened += 1
+      }
+    }
+
+    const marketingOpenedRecipients = marketingOpenedRecipientsRows.map((row) => ({
+      email: row.email,
+      openCount: row.openCount || 0,
+      openedAt: row.openedAt ? row.openedAt.toISOString() : null,
+      lastOpenedAt: row.lastOpenedAt ? row.lastOpenedAt.toISOString() : null,
+      campaignId: row.campaign?.id || null,
+      campaignName: row.campaign?.name || null,
+      subject: row.campaign?.subject || null,
+    }))
+    const marketingOpenRate = marketingSentCount > 0 ? Math.round((marketingOpenedCount / marketingSentCount) * 1000) / 10 : 0
+
     return res.status(200).json({
       ok: true,
       data: {
@@ -247,6 +342,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             acceptedAt: c.acceptedAt,
             visitorId: String(c.visitorId || '').slice(0, 8),
           })),
+        },
+        marketing: {
+          campaignsTotal: marketingCampaignCount,
+          sentTotal: marketingSentCount,
+          openedTotal: marketingOpenedCount,
+          openRate: marketingOpenRate,
+          daily: marketingDaily,
+          monthly: marketingMonthly,
+          openedRecipients: marketingOpenedRecipients,
         },
         recentActivity,
       },

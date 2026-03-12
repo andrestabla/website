@@ -2,7 +2,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts'
-import { TrendingUp, Languages, Boxes, Activity, RefreshCw, ShieldCheck } from 'lucide-react'
+import { TrendingUp, Languages, Boxes, Activity, RefreshCw, ShieldCheck, Mail, MailOpen } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useCMS } from '../context/CMSContext'
 
@@ -21,6 +21,23 @@ type MetricsData = {
     byCountry: Array<{ country: string; count: number }>
     recentDaily: Array<{ day: string; pageViews: number; consents: number }>
     recentConsents: Array<{ acceptedAt: string; policyVersion: string; path?: string | null; country?: string | null; city?: string | null; visitorId: string }>
+  }
+  marketing: {
+    campaignsTotal: number
+    sentTotal: number
+    openedTotal: number
+    openRate: number
+    daily: Array<{ day: string; sent: number; opened: number }>
+    monthly: Array<{ month: string; sent: number; opened: number }>
+    openedRecipients: Array<{
+      email: string
+      openCount: number
+      openedAt: string | null
+      lastOpenedAt: string | null
+      campaignId: string | null
+      campaignName: string | null
+      subject: string | null
+    }>
   }
 }
 
@@ -94,6 +111,7 @@ export function Analytics() {
   const topPagesChart = metrics?.analytics.topPages.slice(0, 8) ?? []
   const topSectionsChart = metrics?.analytics.topSections.slice(0, 8) ?? []
   const countriesChart = metrics?.analytics.byCountry.slice(0, 6) ?? []
+  const marketingOpeners = metrics?.marketing.openedRecipients.slice(0, 25) ?? []
 
   return (
     <div className="space-y-12">
@@ -198,6 +216,105 @@ export function Analytics() {
                   </PieChart>
                 </ResponsiveContainer>
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="bg-white border border-slate-200 p-7">
+              <div className="flex items-center justify-between mb-4">
+                <Mail className="w-5 h-5 text-brand-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">marketing</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900">{metrics.marketing.campaignsTotal}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Campañas enviadas</div>
+            </div>
+            <div className="bg-white border border-slate-200 p-7">
+              <div className="flex items-center justify-between mb-4">
+                <Mail className="w-5 h-5 text-slate-700" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">marketing</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900">{metrics.marketing.sentTotal}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Correos enviados</div>
+            </div>
+            <div className="bg-white border border-slate-200 p-7">
+              <div className="flex items-center justify-between mb-4">
+                <MailOpen className="w-5 h-5 text-emerald-600" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">opened</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900">{metrics.marketing.openedTotal}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Correos abiertos</div>
+            </div>
+            <div className="bg-white border border-slate-200 p-7">
+              <div className="flex items-center justify-between mb-4">
+                <TrendingUp className="w-5 h-5 text-emerald-600" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">rate</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900">{metrics.marketing.openRate}%</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Tasa de apertura</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="bg-white border border-slate-200 p-8">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Email Marketing por Día (30d)</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={metrics.marketing.daily}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
+                  <Area type="monotone" dataKey="sent" stroke="#1d4ed8" fillOpacity={0.08} fill="#1d4ed8" name="Enviados" />
+                  <Area type="monotone" dataKey="opened" stroke="#10b981" fillOpacity={0.08} fill="#10b981" name="Abiertos" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-white border border-slate-200 p-8">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Email Marketing por Mes (12m)</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={metrics.marketing.monthly}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
+                  <Bar dataKey="sent" name="Enviados" fill="#1d4ed8" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="opened" name="Abiertos" fill="#10b981" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200">
+            <div className="p-8 border-b border-slate-100">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900">Aperturas de correo (quién abrió)</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-slate-500 uppercase tracking-[0.2em] text-[10px] font-black">
+                  <tr>
+                    <th className="text-left px-6 py-4">Email</th>
+                    <th className="text-left px-6 py-4">Campaña</th>
+                    <th className="text-left px-6 py-4">Asunto</th>
+                    <th className="text-left px-6 py-4">Aperturas</th>
+                    <th className="text-left px-6 py-4">Primera apertura</th>
+                    <th className="text-left px-6 py-4">Última apertura</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {marketingOpeners.length === 0 ? (
+                    <tr><td className="px-6 py-8 text-slate-500" colSpan={6}>Aún no hay aperturas registradas.</td></tr>
+                  ) : marketingOpeners.map((row, idx) => (
+                    <tr key={`${row.email}-${idx}`} className="border-t border-slate-100">
+                      <td className="px-6 py-4 font-medium text-slate-800">{row.email}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.campaignName || 'N/D'}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.subject || 'N/D'}</td>
+                      <td className="px-6 py-4 font-bold text-slate-900">{row.openCount}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.openedAt ? new Date(row.openedAt).toLocaleString() : 'N/D'}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.lastOpenedAt ? new Date(row.lastOpenedAt).toLocaleString() : 'N/D'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 

@@ -3,9 +3,12 @@ import { prisma } from '../_lib/prisma.js'
 import { requireAdminSession } from '../_lib/admin-auth.js'
 import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, sanitizeIntegrations } from '../_lib/integrations.js'
 import { safeString } from '../_lib/analytics.js'
+import { buildMarketingEmailHtml, type MarketingEmailTemplateId } from '../_lib/marketing-email-template.js'
 
 type VercelRequest = any
 type VercelResponse = any
+const CMS_ID = 'main'
+const TEMPLATE_IDS: MarketingEmailTemplateId[] = ['executive', 'minimal', 'spotlight']
 
 function parseRecipients(input: unknown) {
   if (Array.isArray(input)) {
@@ -39,14 +42,6 @@ function chunk<T>(items: T[], size: number) {
   return out
 }
 
-function textToHtml(text: string) {
-  return `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#0f172a;">${text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\n/g, '<br/>')}</div>`
-}
-
 async function getSmtpConfig() {
   const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
   const integrations = applyServerEnv(sanitizeIntegrations(snapshot?.data))
@@ -54,6 +49,37 @@ async function getSmtpConfig() {
   const cfg = integrations.smtp.config
   if (!cfg.host || !cfg.user || !cfg.password || !cfg.fromEmail) return null
   return cfg
+}
+
+async function getSiteBranding() {
+  const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: CMS_ID } })
+  const data = (snapshot?.data || {}) as any
+  const siteUrl = String(data?.site?.url || 'https://algoritmot.com').replace(/\/+$/, '')
+  const siteName = String(data?.site?.name || 'AlgoritmoT').trim() || 'AlgoritmoT'
+  const rawLogoUrl = String(data?.design?.logoUrl || data?.design?.logoFooterUrl || '').trim()
+  const logoUrl = rawLogoUrl.startsWith('http') ? rawLogoUrl : rawLogoUrl ? `${siteUrl}${rawLogoUrl.startsWith('/') ? '' : '/'}${rawLogoUrl}` : ''
+  return { siteUrl, siteName, logoUrl }
+}
+
+function normalizeTemplateId(input: unknown): MarketingEmailTemplateId {
+  const normalized = String(input || '').trim().toLowerCase()
+  return TEMPLATE_IDS.includes(normalized as MarketingEmailTemplateId)
+    ? (normalized as MarketingEmailTemplateId)
+    : 'executive'
+}
+
+function ensureAbsoluteUrl(baseUrl: string, maybeRelative: string) {
+  if (!maybeRelative) return baseUrl
+  if (/^https?:\/\//i.test(maybeRelative)) return maybeRelative
+  return `${baseUrl}${maybeRelative.startsWith('/') ? '' : '/'}${maybeRelative}`
+}
+
+function appendTrackingPixel(html: string, trackingUrl: string) {
+  const pixel = `<img src="${trackingUrl}" alt="" width="1" height="1" style="display:block;border:0;outline:none;text-decoration:none;width:1px;height:1px;" />`
+  if (/<\/body>/i.test(html)) {
+    return html.replace(/<\/body>/i, `${pixel}</body>`)
+  }
+  return `${html}${pixel}`
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -68,18 +94,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const smtp = await getSmtpConfig()
     if (!smtp) return res.status(400).json({ ok: false, error: 'SMTP no está configurado o activo en Integraciones' })
+    const { siteUrl, siteName, logoUrl } = await getSiteBranding()
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {})
     const campaignName = safeString(body?.campaignName, 140) || 'Campaign'
     const subject = safeString(body?.subject, 180)
+    const preheader = safeString(body?.preheader, 220)
+    const bodyText = safeString(body?.bodyText, 50000)
+    const ctaLabel = safeString(body?.ctaLabel, 80) || 'Conocer más'
+    const ctaHref = safeString(body?.ctaHref, 2000) || '/#contacto'
+    const templateId = normalizeTemplateId(body?.templateId)
     const html = safeString(body?.html, 120000)
     const text = safeString(body?.text, 50000)
+    const senderName = safeString(body?.fromName, 100) || safeString(smtp.fromName, 100) || 'Marketing'
     const recipientsRaw = parseRecipients(body?.recipients)
     const recipients = uniqueEmails(recipientsRaw).slice(0, 500)
     const previewOnly = body?.previewOnly === true
 
     if (!subject) return res.status(400).json({ ok: false, error: 'subject is required' })
-    if (!html && !text) return res.status(400).json({ ok: false, error: 'html or text content is required' })
+    if (!html && !text && !bodyText) return res.status(400).json({ ok: false, error: 'html, text or bodyText is required' })
     if (recipients.length === 0) return res.status(400).json({ ok: false, error: 'At least one valid recipient is required' })
 
     const secure = smtp.encryption === 'ssl' || String(smtp.port) === '465'
@@ -94,10 +127,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       tls: smtp.encryption === 'none' ? { rejectUnauthorized: false } : undefined,
     })
 
-    const fromName = smtp.fromName || 'Marketing'
-    const from = `${fromName} <${smtp.fromEmail}>`
-    const htmlBody = html || textToHtml(text || '')
-    const textBody = text || String(htmlBody).replace(/<[^>]+>/g, ' ')
+    const from = `${senderName} <${smtp.fromEmail}>`
+    const ctaUrl = ensureAbsoluteUrl(siteUrl, ctaHref)
+    const htmlBody =
+      html ||
+      buildMarketingEmailHtml({
+        templateId,
+        logoUrl,
+        siteName,
+        campaignName,
+        subject,
+        preheader: preheader || undefined,
+        bodyText: bodyText || text || '',
+        ctaLabel,
+        ctaUrl,
+      })
+    const textBody = text || `${preheader ? `${preheader}\n\n` : ''}${bodyText || ''}\n\n${ctaLabel}: ${ctaUrl}`.trim()
 
     if (previewOnly) {
       await transporter.sendMail({
@@ -107,32 +152,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         html: htmlBody,
         text: textBody,
       })
-      return res.status(200).json({ ok: true, preview: true, sent: 1, failed: 0 })
+      return res.status(200).json({ ok: true, preview: true, sent: 1, failed: 0, templateId })
     }
 
+    const campaign = await prisma.marketingEmailCampaign.create({
+      data: {
+        name: campaignName,
+        subject,
+        preheader: preheader || null,
+        templateId,
+        fromName: senderName,
+        fromEmail: smtp.fromEmail,
+        previewOnly: false,
+        createdByUserId: session.userId,
+        createdByName: session.username,
+      },
+    })
+
     const batches = chunk(recipients, 20)
-    const success: string[] = []
+    const success: Array<{ recipient: string; recordId: string; messageId: string | null }> = []
     const failed: Array<{ recipient: string; reason: string }> = []
 
     for (const batch of batches) {
       const results = await Promise.allSettled(
-        batch.map((recipient) =>
-          transporter.sendMail({
+        batch.map(async (recipient) => {
+          const record = await prisma.marketingEmailRecipient.create({
+            data: {
+              campaignId: campaign.id,
+              email: recipient,
+              status: 'pending',
+            },
+          })
+
+          const trackingUrl = `${siteUrl}/api/marketing/open?rid=${encodeURIComponent(record.id)}&cid=${encodeURIComponent(campaign.id)}`
+          const message = await transporter.sendMail({
             from,
             to: recipient,
             subject,
-            html: htmlBody,
+            html: appendTrackingPixel(htmlBody, trackingUrl),
             text: textBody,
             headers: {
               'x-campaign-name': campaignName,
+              'x-campaign-id': campaign.id,
+              'x-template-id': templateId,
             },
           })
-        )
+          return { recipient, recordId: record.id, messageId: message.messageId ? String(message.messageId) : null }
+        })
       )
       results.forEach((result, index) => {
         const recipient = batch[index]
         if (result.status === 'fulfilled') {
-          success.push(recipient)
+          success.push(result.value)
           return
         }
         failed.push({
@@ -140,7 +211,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           reason: result.reason instanceof Error ? result.reason.message : 'Send failed',
         })
       })
+
+      await Promise.all(
+        success
+          .filter((item) => batch.includes(item.recipient))
+          .map((item) =>
+            prisma.marketingEmailRecipient.update({
+              where: { id: item.recordId },
+              data: {
+                status: 'sent',
+                sentAt: new Date(),
+                messageId: item.messageId,
+              },
+            })
+          )
+      )
+
+      await Promise.all(
+        failed
+          .filter((item) => batch.includes(item.recipient))
+          .map((item) =>
+            prisma.marketingEmailRecipient.updateMany({
+              where: { campaignId: campaign.id, email: item.recipient },
+              data: {
+                status: 'failed',
+                failureReason: safeString(item.reason, 500) || 'Send failed',
+              },
+            })
+          )
+      )
     }
+
+    await prisma.marketingEmailCampaign.update({
+      where: { id: campaign.id },
+      data: {
+        sentCount: success.length,
+        failedCount: failed.length,
+      },
+    })
 
     await prisma.analyticsEvent.create({
       data: {
@@ -150,8 +258,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         path: '/admin/marketing',
         pageTitle: 'Email Campaign',
         metadata: {
+          campaignId: campaign.id,
           campaignName,
           subject,
+          templateId,
+          fromName: senderName,
           sent: success.length,
           failed: failed.length,
         },
@@ -161,8 +272,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({
       ok: true,
       preview: false,
+      campaignId: campaign.id,
       sent: success.length,
       failed: failed.length,
+      templateId,
       failedRecipients: failed.slice(0, 20),
     })
   } catch (error) {

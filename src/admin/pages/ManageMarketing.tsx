@@ -21,12 +21,14 @@ import {
     Tablet,
     Smartphone,
     LayoutTemplate,
+    Upload,
 } from 'lucide-react'
 import { useCMS, type SiteConfig } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
 
 type SelectedVariants = Record<string, string>
 type AIProvider = 'auto' | 'openai' | 'gemini'
+type EmailTemplateId = 'executive' | 'minimal' | 'spotlight'
 
 type A11yFinding = {
     id: string
@@ -81,6 +83,24 @@ type LandingWidgetTemplate = {
     description: string
     section: CampaignSection
 }
+
+const EMAIL_TEMPLATE_OPTIONS: Array<{ value: EmailTemplateId; label: string; description: string }> = [
+    {
+        value: 'executive',
+        label: 'Executive Dark',
+        description: 'Diseño premium oscuro, ideal para invitaciones estratégicas.',
+    },
+    {
+        value: 'minimal',
+        label: 'Clean Minimal',
+        description: 'Layout limpio y directo para comunicación informativa.',
+    },
+    {
+        value: 'spotlight',
+        label: 'Spotlight Gradient',
+        description: 'Plantilla con alto contraste para campañas de lanzamiento.',
+    },
+]
 
 const LANDING_WIDGET_TEMPLATES: LandingWidgetTemplate[] = [
     {
@@ -202,6 +222,19 @@ function slugify(input: string) {
         .slice(0, 80)
 }
 
+function extractEmailsFromRaw(raw: string) {
+    const matches = raw.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi) || []
+    const seen = new Set<string>()
+    const emails: string[] = []
+    for (const candidate of matches) {
+        const normalized = candidate.trim().toLowerCase()
+        if (!normalized || seen.has(normalized)) continue
+        seen.add(normalized)
+        emails.push(normalized)
+    }
+    return emails
+}
+
 function ensureUniqueSectionId(baseId: string, sections: CampaignSection[]) {
     const normalized = slugify(baseId) || `section-${sections.length + 1}`
     if (!sections.some((section) => section.id === normalized)) return normalized
@@ -248,7 +281,10 @@ export function ManageMarketing() {
     const [emailBodyText, setEmailBodyText] = useState('')
     const [emailCtaLabel, setEmailCtaLabel] = useState('Agendar sesión')
     const [emailCtaHref, setEmailCtaHref] = useState('/#contacto')
+    const [emailFromName, setEmailFromName] = useState(state.site.name || 'Marketing')
+    const [emailTemplateId, setEmailTemplateId] = useState<EmailTemplateId>('executive')
     const [emailRecipientsText, setEmailRecipientsText] = useState('')
+    const [emailImportedCount, setEmailImportedCount] = useState<number | null>(null)
     const [emailLoading, setEmailLoading] = useState(false)
     const [emailError, setEmailError] = useState<string | null>(null)
     const [emailResult, setEmailResult] = useState<string | null>(null)
@@ -302,9 +338,32 @@ export function ManageMarketing() {
         void loadLandings()
     }, [])
 
+    useEffect(() => {
+        if (!emailFromName.trim()) {
+            setEmailFromName(state.site.name || 'Marketing')
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.site.name])
+
     const buildUTM = (path: string) => {
         const base = (state.site.url || 'https://algoritmot.com').replace(/\/+$/, '')
         return `${base}${path}?utm_source=${encodeURIComponent(utmSource)}&utm_medium=${encodeURIComponent(utmMedium)}&utm_campaign=${encodeURIComponent(utmCampaign)}`
+    }
+
+    const handleBulkRecipientsUpload = async (file: File | null) => {
+        if (!file) return
+        try {
+            const content = await file.text()
+            const imported = extractEmailsFromRaw(content)
+            const current = extractEmailsFromRaw(emailRecipientsText)
+            const merged = Array.from(new Set([...current, ...imported]))
+            setEmailRecipientsText(merged.join(', '))
+            setEmailImportedCount(imported.length)
+            setEmailError(null)
+            setEmailResult(imported.length > 0 ? `${imported.length} correos importados desde archivo.` : 'No se encontraron emails válidos en el archivo.')
+        } catch (error) {
+            setEmailError(error instanceof Error ? error.message : 'No se pudo leer el archivo de destinatarios')
+        }
     }
 
     const handleCopy = (id: string, url: string) => {
@@ -411,25 +470,19 @@ export function ManageMarketing() {
         setEmailError(null)
         setEmailResult(null)
         try {
-            const ctaUrl = emailCtaHref.startsWith('http')
-                ? emailCtaHref
-                : `${(state.site.url || 'https://algoritmot.com').replace(/\/+$/, '')}${emailCtaHref.startsWith('/') ? emailCtaHref : `/${emailCtaHref}`}`
-            const html = `
-                <div style="font-family:Inter,Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;color:#0f172a;">
-                    ${emailPreheader ? `<div style="font-size:12px;color:#64748b;margin-bottom:12px;">${emailPreheader}</div>` : ''}
-                    <h1 style="font-size:28px;line-height:1.15;margin:0 0 16px 0;">${emailSubject || emailCampaignName}</h1>
-                    <div style="font-size:16px;line-height:1.7;white-space:pre-line;margin-bottom:24px;">${emailBodyText || ''}</div>
-                    <a href="${ctaUrl}" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:12px 18px;">${emailCtaLabel || 'Ver más'}</a>
-                </div>
-            `
             const response = await fetch('/api/admin/email-campaign', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     campaignName: emailCampaignName,
                     subject: emailSubject,
-                    text: `${emailPreheader}\n\n${emailBodyText}\n\n${emailCtaLabel}: ${ctaUrl}`.trim(),
-                    html,
+                    preheader: emailPreheader,
+                    bodyText: emailBodyText,
+                    ctaLabel: emailCtaLabel,
+                    ctaHref: emailCtaHref,
+                    fromName: emailFromName,
+                    templateId: emailTemplateId,
+                    text: `${emailPreheader}\n\n${emailBodyText}`.trim(),
                     recipients: emailRecipientsText,
                     previewOnly,
                 }),
@@ -439,7 +492,7 @@ export function ManageMarketing() {
             if (previewOnly) {
                 setEmailResult('Preview enviado al primer destinatario válido.')
             } else {
-                setEmailResult(`Envío completado: ${json.sent} enviados, ${json.failed} fallidos.`)
+                setEmailResult(`Envío completado: ${json.sent} enviados, ${json.failed} fallidos. Plantilla: ${json.templateId || emailTemplateId}.`)
             }
         } catch (error) {
             setEmailError(error instanceof Error ? error.message : 'No se pudo enviar campaña')
@@ -892,6 +945,26 @@ export function ManageMarketing() {
                     </div>
 
                     <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Field label="Nombre remitente">
+                                <Input
+                                    value={emailFromName}
+                                    onChange={(e) => setEmailFromName(e.target.value)}
+                                    placeholder="Ej: Equipo AlgoritmoT"
+                                />
+                            </Field>
+                            <Field label="Plantilla de correo">
+                                <SelectField
+                                    value={emailTemplateId}
+                                    onChange={(value) => setEmailTemplateId(value as EmailTemplateId)}
+                                    options={EMAIL_TEMPLATE_OPTIONS.map((item) => ({ value: item.value, label: item.label }))}
+                                />
+                            </Field>
+                        </div>
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                            {(EMAIL_TEMPLATE_OPTIONS.find((item) => item.value === emailTemplateId)?.description) || 'Plantilla estándar para campañas.'}
+                            <span className="ml-2 font-bold text-slate-700">Incluye logo automáticamente.</span>
+                        </div>
                         <Field label="Asunto">
                             <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} />
                         </Field>
@@ -911,6 +984,27 @@ export function ManageMarketing() {
                         </div>
                         <Field label="Destinatarios (emails separados por coma o salto de línea)">
                             <Textarea rows={5} value={emailRecipientsText} onChange={(e) => setEmailRecipientsText(e.target.value)} />
+                        </Field>
+                        <Field label="Carga masiva de destinatarios (CSV/TXT)">
+                            <div className="space-y-2">
+                                <input
+                                    type="file"
+                                    accept=".csv,.txt"
+                                    onChange={(event) => {
+                                        const file = event.target.files?.[0] || null
+                                        void handleBulkRecipientsUpload(file)
+                                        event.currentTarget.value = ''
+                                    }}
+                                    className="block w-full text-xs text-slate-600 file:mr-3 file:border file:border-slate-200 file:bg-white file:px-3 file:py-2 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:text-slate-600 hover:file:border-slate-300"
+                                />
+                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <Upload className="w-3.5 h-3.5" />
+                                    <span>Sube un archivo con correos; se deduplican automáticamente.</span>
+                                </div>
+                                {emailImportedCount !== null && (
+                                    <div className="text-xs font-bold text-emerald-700">Importados: {emailImportedCount} contactos válidos.</div>
+                                )}
+                            </div>
                         </Field>
                         <div className="flex flex-wrap items-center gap-3">
                             <button

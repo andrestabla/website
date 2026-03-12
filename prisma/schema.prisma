@@ -183,3 +183,45 @@ model ContactLead {
   @@index([createdAt(sort: Desc)])
   @@index([status])
 }
+
+model MarketingEmailCampaign {
+  id              String                  @id @default(cuid())
+  name            String
+  subject         String
+  preheader       String?
+  templateId      String                  @default("executive")
+  fromName        String
+  fromEmail       String
+  previewOnly     Boolean                 @default(false)
+  createdByUserId String?
+  createdByName   String?
+  sentCount       Int                     @default(0)
+  failedCount     Int                     @default(0)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  recipients      MarketingEmailRecipient[]
+
+  @@index([createdAt(sort: Desc)])
+}
+
+model MarketingEmailRecipient {
+  id           String                @id @default(cuid())
+  campaignId   String
+  campaign     MarketingEmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email        String
+  status       String                @default("pending")
+  messageId    String?
+  failureReason String?
+  sentAt       DateTime?
+  openedAt     DateTime?
+  lastOpenedAt DateTime?
+  openCount    Int                   @default(0)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@unique([campaignId, email])
+  @@index([campaignId, status])
+  @@index([email])
+  @@index([openedAt])
+  @@index([sentAt])
+}
