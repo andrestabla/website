@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { generateJsonWithAI } from './_lib/ai.js'
+import { prisma } from './_lib/prisma.js'
+import { getGeoFromRequest, safeString } from './_lib/analytics.js'
 
 export const maxDuration = 60; // Allow 60s in production
 
@@ -10,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
         const body = req.body || {}
-        const { industry, processName, maturity } = body
+        const { industry, processName, maturity, visitorId, sessionId } = body
 
         if (!industry || !processName || !maturity) {
             return res.status(400).json({ error: 'Missing required fields' })
@@ -57,6 +59,31 @@ Estructura:
             temperature: 0.7, 
             maxTokens: 1500, // Increased maxTokens for diagram and extra fields
         })
+
+        try {
+            const geo = getGeoFromRequest(req)
+            await prisma.analyticsEvent.create({
+                data: {
+                    visitorId: safeString(visitorId, 120) || 'case-generator',
+                    sessionId: safeString(sessionId, 120),
+                    eventType: 'case_generator_query',
+                    path: '/generador-casos',
+                    pageTitle: 'Generador de Casos AI',
+                    sectionId: 'case-generator',
+                    country: geo.country,
+                    region: geo.region,
+                    city: geo.city,
+                    metadata: {
+                        industry: safeString(industry, 160),
+                        processName: safeString(processName, 220),
+                        queryType: safeString(maturity, 120),
+                        providerUsed: safeString(providerUsed, 80),
+                    },
+                },
+            } as any)
+        } catch (analyticsError) {
+            console.error('generate-case-study analytics log failed', analyticsError)
+        }
 
         return res.status(200).json({ success: true, caseStudy: data, providerUsed })
 

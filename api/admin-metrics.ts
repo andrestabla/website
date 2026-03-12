@@ -2,6 +2,7 @@ import { prisma } from './_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from './_lib/integrations.js'
 import { requireAdminSession } from './_lib/admin-auth.js'
 import { PRESERVE_TERMS, hashTranslationCacheKey } from './_lib/translation.js'
+import { safeString } from './_lib/analytics.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -154,6 +155,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let marketingOpenedCount = 0
     let marketingRecipientRows: Array<{ sentAt: Date | null; openedAt: Date | null }> = []
     let marketingOpenedRecipientsRows: Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }> = []
+    let caseGeneratorRows: Array<{ eventType: string; createdAt: Date; metadata: any }> = []
 
     try {
       const analyticsResults = await Promise.allSettled([
@@ -225,6 +227,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             },
           },
         }),
+        prisma.analyticsEvent.findMany({
+          where: {
+            eventType: {
+              in: ['case_generator_query', 'case_generator_email_sent'],
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 5000,
+          select: {
+            eventType: true,
+            createdAt: true,
+            metadata: true,
+          },
+        }),
       ] as const)
 
       const pick = <T,>(index: number, fallback: T): T => {
@@ -252,6 +268,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       marketingOpenedCount = pick(12, 0)
       marketingRecipientRows = pick(13, [] as Array<{ sentAt: Date | null; openedAt: Date | null }>)
       marketingOpenedRecipientsRows = pick(14, [] as Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }>)
+      caseGeneratorRows = pick(15, [] as Array<{ eventType: string; createdAt: Date; metadata: any }>)
     } catch (analyticsError) {
       console.error('api/admin-metrics analytics block degraded', analyticsError)
     }
@@ -483,6 +500,90 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }))
     const marketingOpenRate = marketingSentCount > 0 ? Math.round((marketingOpenedCount / marketingSentCount) * 1000) / 10 : 0
 
+    const caseGeneratorDaily = Array.from({ length: 30 }, (_, i) => {
+      const d = startOfDay(new Date(Date.now() - (29 - i) * 86400000))
+      return { day: formatDay(d), queries: 0, emails: 0 }
+    })
+    const caseGeneratorDayIndex = new Map(caseGeneratorDaily.map((entry, index) => [entry.day, index]))
+    const queryByIndustry = new Map<string, number>()
+    const queryByProcess = new Map<string, number>()
+    const queryByType = new Map<string, number>()
+    const emailByRecipient = new Map<string, { email: string; count: number; lastSentAt: Date; industry: string | null; processName: string | null }>()
+
+    for (const row of caseGeneratorRows) {
+      const day = formatDay(new Date(row.createdAt))
+      const dayIndex = caseGeneratorDayIndex.get(day)
+      const metadata = (row.metadata && typeof row.metadata === 'object') ? row.metadata as Record<string, unknown> : {}
+      const industry = safeString(metadata.industry, 160) || 'No definido'
+      const processName = safeString(metadata.processName, 220) || 'No definido'
+      const queryType = safeString(metadata.queryType, 120) || 'No definido'
+
+      if (row.eventType === 'case_generator_query') {
+        if (dayIndex !== undefined) caseGeneratorDaily[dayIndex].queries += 1
+        queryByIndustry.set(industry, (queryByIndustry.get(industry) || 0) + 1)
+        queryByProcess.set(processName, (queryByProcess.get(processName) || 0) + 1)
+        queryByType.set(queryType, (queryByType.get(queryType) || 0) + 1)
+      }
+
+      if (row.eventType === 'case_generator_email_sent') {
+        if (dayIndex !== undefined) caseGeneratorDaily[dayIndex].emails += 1
+        const email = safeString(metadata.email, 320)?.toLowerCase()
+        if (email) {
+          const current = emailByRecipient.get(email)
+          if (!current) {
+            emailByRecipient.set(email, {
+              email,
+              count: 1,
+              lastSentAt: new Date(row.createdAt),
+              industry: safeString(metadata.industry, 160) || null,
+              processName: safeString(metadata.processName, 220) || null,
+            })
+          } else {
+            current.count += 1
+            if (new Date(row.createdAt) > current.lastSentAt) {
+              current.lastSentAt = new Date(row.createdAt)
+              current.industry = safeString(metadata.industry, 160) || current.industry
+              current.processName = safeString(metadata.processName, 220) || current.processName
+            }
+          }
+        }
+      }
+    }
+
+    const caseGeneratorByIndustry = Array.from(queryByIndustry.entries())
+      .map(([industry, count]) => ({ industry, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 12)
+
+    const caseGeneratorByProcess = Array.from(queryByProcess.entries())
+      .map(([processName, count]) => ({ processName, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15)
+
+    const caseGeneratorByType = Array.from(queryByType.entries())
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8)
+
+    const caseGeneratorEmails = Array.from(emailByRecipient.values())
+      .sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count
+        return b.lastSentAt.getTime() - a.lastSentAt.getTime()
+      })
+      .slice(0, 200)
+      .map((row) => ({
+        email: row.email,
+        count: row.count,
+        lastSentAt: row.lastSentAt.toISOString(),
+        industry: row.industry,
+        processName: row.processName,
+      }))
+
+    const caseGeneratorTotalQueries = caseGeneratorRows.filter((row) => row.eventType === 'case_generator_query').length
+    const caseGeneratorTotalEmails = caseGeneratorRows.filter((row) => row.eventType === 'case_generator_email_sent').length
+    const caseGeneratorActiveIndustries = caseGeneratorByIndustry.length
+    const caseGeneratorActiveProcesses = caseGeneratorByProcess.length
+
     return res.status(200).json({
       ok: true,
       data: {
@@ -540,6 +641,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           daily: marketingDaily,
           monthly: marketingMonthly,
           openedRecipients: marketingOpenedRecipients,
+        },
+        caseGenerator: {
+          totalQueries: caseGeneratorTotalQueries,
+          totalEmails: caseGeneratorTotalEmails,
+          activeIndustries: caseGeneratorActiveIndustries,
+          activeProcesses: caseGeneratorActiveProcesses,
+          daily: caseGeneratorDaily,
+          byIndustry: caseGeneratorByIndustry,
+          byProcess: caseGeneratorByProcess,
+          byType: caseGeneratorByType,
+          emails: caseGeneratorEmails,
         },
         recentActivity,
       },

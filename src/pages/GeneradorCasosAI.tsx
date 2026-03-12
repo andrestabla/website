@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { ArrowRight, Loader2, Sparkles, Building2, Workflow, TrendingUp, CheckCircle2, ChevronLeft, Package, GitMerge, Mail, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import mermaid from 'mermaid'
+import { getOrCreateVisitorId, getSessionId } from '../lib/privacyConsent'
 
 const INDUSTRIES = [
     'Finanzas y Banca',
@@ -251,7 +252,9 @@ export function GeneradorCasosAI() {
                     email: userEmail, 
                     caseStudy: result,
                     industry,
-                    processName
+                    processName,
+                    visitorId: getOrCreateVisitorId(),
+                    sessionId: getSessionId(),
                 })
             })
             const data = await res.json()
@@ -276,7 +279,13 @@ export function GeneradorCasosAI() {
             const res = await fetch('/api/generate-case-study', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ industry, processName, maturity })
+                body: JSON.stringify({
+                    industry,
+                    processName,
+                    maturity,
+                    visitorId: getOrCreateVisitorId(),
+                    sessionId: getSessionId(),
+                })
             })
             
             const textResponse = await res.text()

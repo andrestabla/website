@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer'
 import { prisma } from './_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, sanitizeIntegrations } from './_lib/integrations.js'
 import { generateStyledEmail } from './_lib/email-templates.js'
+import { getGeoFromRequest, safeString } from './_lib/analytics.js'
 
 async function getSmtpConfig() {
   const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
@@ -19,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { email, caseStudy, industry, processName } = req.body
+    const { email, caseStudy, industry, processName, visitorId, sessionId } = req.body
 
     if (!email || !caseStudy) {
       return res.status(400).json({ error: 'Email and case study data are required' })
@@ -91,6 +92,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subject: subject,
       html: html,
     })
+
+    try {
+      const geo = getGeoFromRequest(req)
+      await prisma.analyticsEvent.create({
+        data: {
+          visitorId: safeString(visitorId, 120) || 'case-generator',
+          sessionId: safeString(sessionId, 120),
+          eventType: 'case_generator_email_sent',
+          path: '/generador-casos',
+          pageTitle: 'Generador de Casos AI',
+          sectionId: 'case-generator',
+          country: geo.country,
+          region: geo.region,
+          city: geo.city,
+          metadata: {
+            email: safeString(email, 320)?.toLowerCase(),
+            industry: safeString(industry, 160),
+            processName: safeString(processName, 220),
+            caseTitle: safeString(caseStudy?.title, 220),
+          },
+        },
+      } as any)
+    } catch (analyticsError) {
+      console.error('send-case-study analytics log failed', analyticsError)
+    }
 
     return res.status(200).json({ success: true, message: 'Email enviado correctamente' })
   } catch (error: any) {

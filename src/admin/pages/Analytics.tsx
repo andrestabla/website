@@ -2,7 +2,7 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts'
-import { TrendingUp, Languages, Boxes, Activity, RefreshCw, ShieldCheck, Mail, MailOpen, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { TrendingUp, Languages, Boxes, Activity, RefreshCw, ShieldCheck, Mail, MailOpen, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useCMS } from '../context/CMSContext'
 
@@ -53,6 +53,17 @@ type MetricsData = {
       campaignName: string | null
       subject: string | null
     }>
+  }
+  caseGenerator: {
+    totalQueries: number
+    totalEmails: number
+    activeIndustries: number
+    activeProcesses: number
+    daily: Array<{ day: string; queries: number; emails: number }>
+    byIndustry: Array<{ industry: string; count: number }>
+    byProcess: Array<{ processName: string; count: number }>
+    byType: Array<{ type: string; count: number }>
+    emails: Array<{ email: string; count: number; lastSentAt: string; industry: string | null; processName: string | null }>
   }
 }
 
@@ -127,6 +138,10 @@ export function Analytics() {
   const topSectionsChart = metrics?.analytics.topSections.slice(0, 8) ?? []
   const countriesChart = metrics?.analytics.byCountry.slice(0, 6) ?? []
   const marketingOpeners = metrics?.marketing.openedRecipients.slice(0, 25) ?? []
+  const caseGeneratorIndustryChart = metrics?.caseGenerator.byIndustry.slice(0, 8) ?? []
+  const caseGeneratorProcessChart = metrics?.caseGenerator.byProcess.slice(0, 8) ?? []
+  const caseGeneratorTypes = metrics?.caseGenerator.byType.slice(0, 8) ?? []
+  const caseGeneratorEmails = metrics?.caseGenerator.emails.slice(0, 100) ?? []
   const i18nLangRows = metrics
     ? Object.entries(metrics.i18n.byLang).map(([lang, bucket]) => ({ lang: lang.toUpperCase(), ...bucket }))
     : []
@@ -240,6 +255,139 @@ export function Analytics() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="bg-white border border-slate-200 p-7">
+              <div className="flex items-center justify-between mb-4">
+                <Sparkles className="w-5 h-5 text-brand-primary" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">generador-casos</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900">{metrics.caseGenerator.totalQueries}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Consultas generadas</div>
+            </div>
+            <div className="bg-white border border-slate-200 p-7">
+              <div className="flex items-center justify-between mb-4">
+                <Mail className="w-5 h-5 text-emerald-600" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">email</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900">{metrics.caseGenerator.totalEmails}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Resultados enviados</div>
+            </div>
+            <div className="bg-white border border-slate-200 p-7">
+              <div className="flex items-center justify-between mb-4">
+                <Boxes className="w-5 h-5 text-slate-700" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">segmentación</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900">{metrics.caseGenerator.activeIndustries}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Industrias activas</div>
+            </div>
+            <div className="bg-white border border-slate-200 p-7">
+              <div className="flex items-center justify-between mb-4">
+                <Activity className="w-5 h-5 text-slate-700" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">operación</span>
+              </div>
+              <div className="text-3xl font-black text-slate-900">{metrics.caseGenerator.activeProcesses}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Procesos consultados</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="xl:col-span-2 bg-white border border-slate-200 p-8">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Interacción en /generador-casos por Día (30d)</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={metrics.caseGenerator.daily}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
+                  <Area type="monotone" dataKey="queries" stroke="#1d4ed8" fillOpacity={0.08} fill="#1d4ed8" name="Consultas" />
+                  <Area type="monotone" dataKey="emails" stroke="#10b981" fillOpacity={0.08} fill="#10b981" name="Envíos por correo" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-white border border-slate-200 p-8">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Tipos de consulta</h3>
+              <div className="space-y-3">
+                {caseGeneratorTypes.length === 0 ? (
+                  <p className="text-sm text-slate-500">Aún no hay consultas registradas.</p>
+                ) : caseGeneratorTypes.map((row, idx) => (
+                  <div key={`${row.type}-${idx}`} className="flex items-center justify-between border border-slate-200 px-4 py-3">
+                    <span className="text-sm font-semibold text-slate-700">{row.type}</span>
+                    <span className="text-sm font-black text-slate-900">{row.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="bg-white border border-slate-200 p-8">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Consultas por Industria</h3>
+              {caseGeneratorIndustryChart.length === 0 ? (
+                <div className="text-sm text-slate-500">Aún no hay datos de industria.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={caseGeneratorIndustryChart} layout="vertical" margin={{ left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="industry" type="category" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} axisLine={false} tickLine={false} width={220} />
+                    <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
+                    <Bar dataKey="count" fill="#1d4ed8" radius={[0, 2, 2, 0]} maxBarSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            <div className="bg-white border border-slate-200 p-8">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Consultas por Proceso</h3>
+              {caseGeneratorProcessChart.length === 0 ? (
+                <div className="text-sm text-slate-500">Aún no hay datos de proceso.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={caseGeneratorProcessChart} layout="vertical" margin={{ left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="processName" type="category" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} axisLine={false} tickLine={false} width={240} />
+                    <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
+                    <Bar dataKey="count" fill="#0f172a" radius={[0, 2, 2, 0]} maxBarSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200">
+            <div className="p-8 border-b border-slate-100">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900">Correos que enviaron resultados</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-slate-500 uppercase tracking-[0.2em] text-[10px] font-black">
+                  <tr>
+                    <th className="text-left px-6 py-4">Email</th>
+                    <th className="text-left px-6 py-4">Envíos</th>
+                    <th className="text-left px-6 py-4">Industria (último)</th>
+                    <th className="text-left px-6 py-4">Proceso (último)</th>
+                    <th className="text-left px-6 py-4">Último envío</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {caseGeneratorEmails.length === 0 ? (
+                    <tr><td className="px-6 py-8 text-slate-500" colSpan={5}>Aún no hay envíos desde el generador de casos.</td></tr>
+                  ) : caseGeneratorEmails.map((row, idx) => (
+                    <tr key={`${row.email}-${idx}`} className="border-t border-slate-100">
+                      <td className="px-6 py-4 font-medium text-slate-800">{row.email}</td>
+                      <td className="px-6 py-4 font-bold text-slate-900">{row.count}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.industry || 'N/D'}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.processName || 'N/D'}</td>
+                      <td className="px-6 py-4 text-slate-600">{new Date(row.lastSentAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
