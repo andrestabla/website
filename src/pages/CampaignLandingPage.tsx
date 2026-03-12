@@ -4,6 +4,9 @@ import { ArrowRight, ChevronLeft } from 'lucide-react'
 import { Layout } from '../components/layout/Layout'
 import { ContactForm } from '../components/forms/ContactForm'
 import { Button } from '../components/ui/Button'
+import { useCMS } from '../admin/context/CMSContext'
+import { useLanguage } from '../context/LanguageContext'
+import { applySeoPayload, limitText, normalizeBaseUrl, toAbsoluteUrl } from '../lib/seo'
 
 type CampaignSection = {
     id: string
@@ -16,6 +19,8 @@ type CampaignLanding = {
     id: string
     slug: string
     name: string
+    seoTitle?: string
+    seoDescription?: string
     heroEyebrow: string
     heroTitle: string
     heroSubtitle: string
@@ -35,6 +40,8 @@ type CampaignLanding = {
 export function CampaignLandingPage() {
     const { slug } = useParams<{ slug: string }>()
     const { search } = useLocation()
+    const { state } = useCMS()
+    const { language } = useLanguage()
     const [landing, setLanding] = useState<CampaignLanding | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -64,6 +71,49 @@ export function CampaignLandingPage() {
             cancelled = true
         }
     }, [preview, slug])
+
+    useEffect(() => {
+        if (!landing) return
+
+        const siteName = String(state.site.name || 'AlgoritmoT').trim() || 'AlgoritmoT'
+        const baseUrl = normalizeBaseUrl(state.site.url)
+        const canonicalUrl = toAbsoluteUrl(baseUrl, `/campanias/${landing.slug}`)
+        const rawTitle = landing.seoTitle || landing.heroTitle || landing.name || 'Campaña'
+        const title = rawTitle.toLowerCase().includes(siteName.toLowerCase()) ? rawTitle : `${rawTitle} | ${siteName}`
+        const description = limitText(landing.seoDescription || landing.heroSubtitle || state.site.description, 180)
+        const imageCandidate = state.design.logoUrl || state.design.logoFooterUrl || '/assets/og-default.svg'
+        const imageUrl = toAbsoluteUrl(baseUrl, imageCandidate)
+        const faviconUrl = state.design.faviconUrl ? toAbsoluteUrl(baseUrl, state.design.faviconUrl) : undefined
+
+        applySeoPayload({
+            title: limitText(title, 70),
+            description,
+            canonicalUrl,
+            imageUrl,
+            robots: 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1',
+            lang: language,
+            siteName,
+            ogType: 'article',
+            twitterCard: 'summary_large_image',
+            themeColor: state.design.colorPrimary,
+            faviconUrl,
+            schemas: [
+                {
+                    '@type': 'WebPage',
+                    name: title,
+                    description,
+                    url: canonicalUrl,
+                    inLanguage: language,
+                },
+                {
+                    '@type': 'Offer',
+                    name: landing.offerTitle || landing.name,
+                    description: limitText(landing.offerBody || landing.heroSubtitle || '', 220),
+                    url: canonicalUrl,
+                },
+            ],
+        })
+    }, [landing, language, state.design.colorPrimary, state.design.faviconUrl, state.design.logoFooterUrl, state.design.logoUrl, state.site.description, state.site.name, state.site.url])
 
     if (loading) {
         return (

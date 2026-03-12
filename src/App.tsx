@@ -5,6 +5,7 @@ import { DataConsentModal } from './components/privacy/DataConsentModal'
 import { SiteTelemetry } from './components/analytics/SiteTelemetry'
 import { AdminTelemetry } from './components/analytics/AdminTelemetry'
 import { SmartPopup } from './components/marketing/SmartPopup'
+import { SiteSEO } from './components/seo/SiteSEO'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { canAccessModule, getAdminModuleForPath, type AdminModuleKey } from './admin/lib/permissions'
@@ -263,6 +264,7 @@ function App() {
           <ScrollToTopOnRouteChange />
           <GlobalExperienceMode />
           <GlobalBrandLoader />
+          <SiteSEO />
           <SiteTelemetry />
           <AdminTelemetry />
           <SmartPopup />

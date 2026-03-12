@@ -1,0 +1,46 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b1a3a"/>
+      <stop offset="1" stop-color="#2d5bff"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(860 120) rotate(129.851) scale(420 680)">
+      <stop stop-color="#49d4ff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#49d4ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <g opacity="0.16">
+    <path d="M0 540H1200" stroke="white" stroke-width="1"/>
+    <path d="M0 480H1200" stroke="white" stroke-width="1"/>
+    <path d="M0 420H1200" stroke="white" stroke-width="1"/>
+    <path d="M0 360H1200" stroke="white" stroke-width="1"/>
+    <path d="M0 300H1200" stroke="white" stroke-width="1"/>
+    <path d="M0 240H1200" stroke="white" stroke-width="1"/>
+    <path d="M0 180H1200" stroke="white" stroke-width="1"/>
+    <path d="M0 120H1200" stroke="white" stroke-width="1"/>
+    <path d="M120 0V630" stroke="white" stroke-width="1"/>
+    <path d="M240 0V630" stroke="white" stroke-width="1"/>
+    <path d="M360 0V630" stroke="white" stroke-width="1"/>
+    <path d="M480 0V630" stroke="white" stroke-width="1"/>
+    <path d="M600 0V630" stroke="white" stroke-width="1"/>
+    <path d="M720 0V630" stroke="white" stroke-width="1"/>
+    <path d="M840 0V630" stroke="white" stroke-width="1"/>
+    <path d="M960 0V630" stroke="white" stroke-width="1"/>
+    <path d="M1080 0V630" stroke="white" stroke-width="1"/>
+  </g>
+  <text x="80" y="238" fill="white" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="700" letter-spacing="8">
+    ALGORITMOT
+  </text>
+  <text x="80" y="338" fill="white" font-family="Inter, Arial, sans-serif" font-size="84" font-weight="800">
+    Transformación digital
+  </text>
+  <text x="80" y="420" fill="#bfdbfe" font-family="Inter, Arial, sans-serif" font-size="52" font-weight="700">
+    orientada a resultados
+  </text>
+  <rect x="80" y="500" width="470" height="56" rx="6" fill="rgba(15,23,42,0.45)" stroke="rgba(255,255,255,0.22)"/>
+  <text x="108" y="536" fill="#e2e8f0" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="600">
+    www.algoritmot.com
+  </text>
+</svg>
