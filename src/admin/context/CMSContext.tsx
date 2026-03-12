@@ -2560,6 +2560,7 @@ function createEducationLandingBlocks(): SitePageBlock[] {
                         idealWhen: 'Se requiere actualizar las competencias digitales de los profesores.',
                         label: 'Conocer más',
                         url: '#contacto',
+                        openInNewTab: true,
                     }
                 ],
             },
@@ -2991,34 +2992,48 @@ function createAuditoriaLandingBlocks(): SitePageBlock[] {
             order: 1,
             content: {
                 title: 'Indicadores de referencia en auditoría',
-                body: 'Visualiza de forma clara y accionable el estado de tus componentes críticos para priorizar la intervención técnica y académica.',
+                body: 'Consolidamos auditoría técnica-pedagógica y encuestas de percepción para entregar una lectura holística con resultados accionables.',
+                radarTitle: 'Gráfica radial dinámica comparativa por estándar (0-100)',
+                radarLegendGeneral: 'Promedio general',
+                radarLegendFaculty: 'Facultad (ejemplo)',
+                radarLegendProgram: 'Programa (ejemplo)',
+                radarComparative: [
+                    { standard: 'E1', general: 84, faculty: 78, program: 88 },
+                    { standard: 'E2', general: 86, faculty: 80, program: 90 },
+                    { standard: 'E3', general: 79, faculty: 73, program: 84 },
+                    { standard: 'E4', general: 88, faculty: 82, program: 92 },
+                    { standard: 'E5', general: 90, faculty: 85, program: 94 },
+                    { standard: 'E6', general: 85, faculty: 79, program: 89 },
+                    { standard: 'E7', general: 81, faculty: 75, program: 86 },
+                    { standard: 'E8', general: 83, faculty: 77, program: 87 },
+                ],
                 items: [
                     {
-                        title: '80% cumplimiento global',
-                        body: 'Meta de referencia para asegurar una experiencia de aprendizaje de alta calidad.',
-                        value: 80,
-                        metric: '80%',
+                        title: 'Gráfica radial dinámica comparativa',
+                        body: 'Resultados de los 8 estándares entre 0 y 100, con lectura general y comparativo por facultad y programa.',
+                        value: 88,
+                        metric: '8x3',
                         icon: 'LineChart',
                     },
                     {
-                        title: '8 estándares QM',
-                        body: 'Rúbrica internacional que cubre desde el diseño hasta la tecnología de apoyo.',
-                        value: 100,
-                        metric: '8/8',
+                        title: 'Metodología integral con encuestas de percepción',
+                        body: 'La metodología incorpora encuestas de percepción para obtener resultados más holísticos junto a los estándares QM.',
+                        value: 92,
+                        metric: 'Holístico',
                         icon: 'ShieldCheck',
                     },
                     {
-                        title: '42 criterios de revisión',
-                        body: 'Validación detallada de cada aspecto pedagógico para garantizar la trazabilidad.',
-                        value: 84,
-                        metric: '42',
+                        title: 'Resultados por estándar y subestándar con evidencia',
+                        body: 'Entregamos resultados generales por estándar y resultados por subestándar, sustentados en evidencia verificable.',
+                        value: 90,
+                        metric: 'Evidencia',
                         icon: 'LayoutDashboard',
                     },
                     {
-                        title: 'Mejora continua',
-                        body: 'Proceso cíclico diseñado para elevar el estándar institucional permanentemente.',
-                        value: 75,
-                        metric: 'Ciclo',
+                        title: 'Análisis cuantitativo y cualitativo con rutas de acción',
+                        body: 'Presentamos análisis cuantitativo, cualitativo y rutas de acción específicas considerando prácticas de referentes de la industria.',
+                        value: 94,
+                        metric: 'Benchmark',
                         icon: 'Target',
                     },
                 ],
@@ -3032,58 +3047,11 @@ function createAuditoriaLandingBlocks(): SitePageBlock[] {
             },
         },
         {
-            id: 'clientes',
-            type: 'carousel',
-            name: 'Trayectoria y Confianza',
-            visible: true,
-            order: 2,
-            content: {
-                title: 'Instituciones que confían en nuestras auditorías',
-                body: 'Hemos acompañado a universidades y organizaciones en la ruta de la excelencia digital.',
-                items: [
-                    {
-                        id: 'marca-ejecutiva',
-                        title: 'Marca Ejecutiva',
-                        body: 'Aseguramiento de calidad para programas de alta dirección.',
-                        url: 'https://marcaejecutiva.co/',
-                        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/Marca+Ejecutiva.svg',
-                    },
-                    {
-                        id: 'icaza-jammoul',
-                        title: 'Icaza-Jammoul',
-                        body: 'Auditoría integral de cursos para certificación internacional.',
-                        url: 'https://icazajammoul.com/login/index.php',
-                        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/Icaza.svg',
-                    },
-                    {
-                        id: 'inetum',
-                        title: 'Inetum',
-                        body: 'Validación de estándares de formación técnica y corporativa.',
-                        url: 'https://doyouspeakinetum.com/',
-                        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/LOGO_INETUM.jpg',
-                    },
-                    {
-                        id: 'estudiemos-web',
-                        title: 'Estudiemos Web',
-                        body: 'Optimización de la experiencia del estudiante mediante auditoría QM.',
-                        url: 'https://estudiemosweb.com/',
-                        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/logo+EW.png',
-                    },
-                ],
-            },
-            style: {
-                backgroundColor: '#ffffff',
-                textColor: '#0f172a',
-                align: 'center',
-                paddingY: '5rem',
-            },
-        },
-        {
             id: 'servicios',
             type: 'grid',
             name: 'Alcance de la auditoría',
             visible: true,
-            order: 3,
+            order: 2,
             content: {
                 eyebrow: 'Qué auditamos',
                 title: 'Evaluación integral basada en evidencia',
@@ -3103,10 +3071,12 @@ function createAuditoriaLandingBlocks(): SitePageBlock[] {
             type: 'grid',
             name: 'Estándares QM',
             visible: true,
-            order: 4,
+            order: 3,
             content: {
                 title: '8 estándares fundamentales para el éxito virtual',
                 body: 'Nuestra metodología se basa en la rúbrica Quality Matters para garantizar coherencia y rigor.',
+                standardsFullLabel: 'Ver estándares completos',
+                standardsFullHref: 'https://view.genially.com/62feddd288238d0018fca5f9',
                 items: AUDITORIA_QM_STANDARDS,
             },
             style: {
@@ -3122,7 +3092,7 @@ function createAuditoriaLandingBlocks(): SitePageBlock[] {
             type: 'feature-list',
             name: 'Entregables',
             visible: true,
-            order: 5,
+            order: 4,
             content: {
                 title: 'Acciones concretas para tu institución',
                 items: [
@@ -3138,6 +3108,31 @@ function createAuditoriaLandingBlocks(): SitePageBlock[] {
                 textColor: '#0f172a',
                 align: 'left',
                 columns: '3',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'clientes',
+            type: 'carousel',
+            name: 'Clientes',
+            visible: true,
+            order: 5,
+            content: {
+                title: 'Cliente que confía en nuestras auditorías',
+                body: 'Caso real de acompañamiento en aseguramiento de calidad académica virtual.',
+                items: [
+                    {
+                        id: 'iberoamericana',
+                        title: 'Corporación Universitaria Iberoamericana',
+                        body: 'Acompañamiento en aseguramiento de calidad para programas virtuales.',
+                        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/ibero.png',
+                    },
+                ],
+            },
+            style: {
+                backgroundColor: '#ffffff',
+                textColor: '#0f172a',
+                align: 'center',
                 paddingY: '5rem',
             },
         },
@@ -3387,6 +3382,7 @@ function ensureAuditoriaPremiumBlocks(blocks: SitePageBlock[]) {
         if (block.type === 'accordion') return 'faq'
         if (block.type === 'contact') return 'contacto'
         if (block.type === 'cta') return 'cta'
+        if (block.type === 'carousel') return 'clientes'
 
         if (includesAny(fullText, ['estandares qm', 'estandar qm', 'quality matters'])) return 'estandares-qm'
         if (includesAny(itemText, ['descripcion general e introduccion', 'objetivos de aprendizaje', 'accesibilidad y usabilidad'])) return 'estandares-qm'
@@ -3422,7 +3418,7 @@ function ensureAuditoriaPremiumBlocks(blocks: SitePageBlock[]) {
             style: { ...block.style },
         }))
 
-    const canonicalOrder = ['hero', 'promesas', 'servicios', 'estandares-qm', 'entregables', 'recursos', 'flujo', 'faq', 'contacto']
+    const canonicalOrder = ['hero', 'promesas', 'servicios', 'estandares-qm', 'entregables', 'clientes', 'recursos', 'flujo', 'faq', 'contacto']
     const usedIds = new Set(nextBlocks.map((block) => block.id))
 
     nextBlocks.forEach((block, index) => {
@@ -3483,6 +3479,53 @@ function ensureAuditoriaPremiumBlocks(blocks: SitePageBlock[]) {
                 items: mergedItems.length > 0 ? mergedItems : defaultItems,
             },
         }
+    }
+
+    const clientsIndex = nextBlocks.findIndex((block) => block.id === 'clientes')
+    const deliverablesIndex = nextBlocks.findIndex((block) => block.id === 'entregables')
+    const defaultClients = defaultById.get('clientes')
+
+    if (clientsIndex >= 0 && defaultClients) {
+        const currentClientsBlock = nextBlocks[clientsIndex]
+        const currentItems = Array.isArray(currentClientsBlock.content?.items) ? currentClientsBlock.content.items : []
+        const defaultItems = Array.isArray(defaultClients.content?.items) ? defaultClients.content.items : []
+        const onlyDefaultClient = defaultItems.slice(0, 1).map((item) => (item && typeof item === 'object' ? { ...(item as Record<string, unknown>) } : item))
+        const legacyIds = new Set(['marca-ejecutiva', 'icaza-jammoul', 'inetum', 'estudiemos-web'])
+        const legacyLike = currentItems.length === 4 && currentItems.every((item) => (
+            item &&
+            typeof item === 'object' &&
+            typeof (item as Record<string, unknown>).id === 'string' &&
+            legacyIds.has(String((item as Record<string, unknown>).id))
+        ))
+        const singleLegacyMarca = currentItems.length === 1 && currentItems.some((item) => (
+            item &&
+            typeof item === 'object' &&
+            (
+                String((item as Record<string, unknown>).id || '').toLowerCase() === 'marca-ejecutiva' ||
+                String((item as Record<string, unknown>).title || '').toLowerCase().includes('marca ejecutiva')
+            )
+        ))
+
+        if ((legacyLike || singleLegacyMarca) && onlyDefaultClient.length > 0) {
+            nextBlocks[clientsIndex] = {
+                ...currentClientsBlock,
+                name: defaultClients.name,
+                content: {
+                    ...currentClientsBlock.content,
+                    title: defaultClients.content?.title,
+                    body: defaultClients.content?.body,
+                    items: onlyDefaultClient,
+                },
+            }
+        }
+    }
+
+    const currentClientsIndex = nextBlocks.findIndex((block) => block.id === 'clientes')
+    if (currentClientsIndex >= 0 && deliverablesIndex >= 0 && currentClientsIndex !== deliverablesIndex + 1) {
+        const [clientsBlock] = nextBlocks.splice(currentClientsIndex, 1)
+        const updatedDeliverablesIndex = nextBlocks.findIndex((block) => block.id === 'entregables')
+        const insertAt = updatedDeliverablesIndex >= 0 ? updatedDeliverablesIndex + 1 : nextBlocks.length
+        nextBlocks.splice(insertAt, 0, clientsBlock)
     }
 
     return nextBlocks.map((block, index) => ({ ...block, order: index }))

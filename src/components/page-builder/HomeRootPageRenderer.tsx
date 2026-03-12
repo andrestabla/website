@@ -15,6 +15,8 @@ type HomeRootPageRendererProps = {
 
 type ItemObject = Record<string, unknown>
 type ChartPoint = { x: number; y: number }
+type AuditoriaRadarEntry = { standard: string; general: number; faculty: number; program: number }
+type AuditoriaRadarSeriesKey = 'general' | 'faculty' | 'program'
 
 type ThemeColors = {
     primary: string
@@ -97,6 +99,16 @@ const DEFAULT_THEME = THEMES['/empresas']
 const SERVICE_CARD_ICONS = [Search, Network, Users, Code2, Rocket, LineChart]
 const AUDITORIA_VISUAL_ICONS = [ShieldCheck, BarChart3, LayoutDashboard, Target, BookOpenText, Users, Settings2, Rocket]
 const AUDITORIA_STANDARD_FALLBACK_SCORES = [75, 87, 85, 92, 100, 88, 50, 67]
+const AUDITORIA_RADAR_FALLBACK: AuditoriaRadarEntry[] = [
+    { standard: 'E1', general: 84, faculty: 78, program: 88 },
+    { standard: 'E2', general: 86, faculty: 80, program: 90 },
+    { standard: 'E3', general: 79, faculty: 73, program: 84 },
+    { standard: 'E4', general: 88, faculty: 82, program: 92 },
+    { standard: 'E5', general: 90, faculty: 85, program: 94 },
+    { standard: 'E6', general: 85, faculty: 79, program: 89 },
+    { standard: 'E7', general: 81, faculty: 75, program: 86 },
+    { standard: 'E8', general: 83, faculty: 77, program: 87 },
+]
 const CMS_ICON_COMPONENTS: Record<string, LucideIcon> = {
     search: Search,
     network: Network,
@@ -160,14 +172,6 @@ function buildChartPoints(values: number[], width = 300, height = 100, padding =
 
 function chartPointsToPolyline(points: ChartPoint[]) {
     return points.map((point) => `${point.x},${point.y}`).join(' ')
-}
-
-function chartPointsToAreaPath(points: ChartPoint[], height: number, padding: number) {
-    if (points.length === 0) return ''
-    const first = points[0]
-    const last = points[points.length - 1]
-    const baseline = height - padding
-    return `M ${first.x} ${baseline} L ${chartPointsToPolyline(points)} L ${last.x} ${baseline} Z`
 }
 
 function normalizeCmsHref(value: unknown, fallback = '', currentPath = '/empresas') {
@@ -485,6 +489,57 @@ function getAuditoriaScoreLabel(item: ItemObject, score: number) {
     return explicit || `${Math.round(score)}%`
 }
 
+function getAuditoriaRadarAxisPoint(index: number, total: number, ratio: number, centerX: number, centerY: number, radius: number) {
+    const safeTotal = Math.max(total, 3)
+    const angle = -Math.PI / 2 + (index / safeTotal) * Math.PI * 2
+    const scaledRadius = radius * Math.max(0, Math.min(1, ratio))
+    return {
+        x: Number((centerX + Math.cos(angle) * scaledRadius).toFixed(2)),
+        y: Number((centerY + Math.sin(angle) * scaledRadius).toFixed(2)),
+    }
+}
+
+function buildAuditoriaRadarRingPoints(total: number, ratio: number, centerX: number, centerY: number, radius: number) {
+    const safeTotal = Math.max(total, 3)
+    return Array.from({ length: safeTotal }, (_, index) => {
+        const point = getAuditoriaRadarAxisPoint(index, safeTotal, ratio, centerX, centerY, radius)
+        return `${point.x},${point.y}`
+    }).join(' ')
+}
+
+function buildAuditoriaRadarSeriesPoints(dataset: AuditoriaRadarEntry[], series: AuditoriaRadarSeriesKey, centerX: number, centerY: number, radius: number) {
+    return dataset
+        .map((entry, index) => {
+            const point = getAuditoriaRadarAxisPoint(index, dataset.length, entry[series] / 100, centerX, centerY, radius)
+            return `${point.x},${point.y}`
+        })
+        .join(' ')
+}
+
+function getAuditoriaRadarValue(item: ItemObject, keys: string[], fallback: number) {
+    for (const key of keys) {
+        if (key in item) {
+            return clampPercentage(toNumber(item[key], fallback))
+        }
+    }
+    return clampPercentage(fallback)
+}
+
+function getAuditoriaRadarDataset(content: Record<string, unknown>): AuditoriaRadarEntry[] {
+    const source = ensureObjectItems(content.radarComparative ?? content.radarData ?? content.radarItems)
+    if (source.length === 0) return AUDITORIA_RADAR_FALLBACK
+
+    return source.slice(0, 8).map((item, index) => {
+        const fallback = AUDITORIA_RADAR_FALLBACK[index] ?? AUDITORIA_RADAR_FALLBACK[AUDITORIA_RADAR_FALLBACK.length - 1]
+        return {
+            standard: toText(item.standard || item.label || item.title, `E${index + 1}`),
+            general: getAuditoriaRadarValue(item, ['general', 'global', 'promedio', 'value'], fallback.general),
+            faculty: getAuditoriaRadarValue(item, ['faculty', 'facultad', 'facultyValue', 'facultadValue'], fallback.faculty),
+            program: getAuditoriaRadarValue(item, ['program', 'programa', 'programValue', 'programaValue'], fallback.program),
+        }
+    })
+}
+
 function renderAuditoriaHeroBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
     const primaryHref = normalizeCmsHref(block.content.primaryHref, '', currentPath)
     const standardsHref = `${currentPath}#estandares-qm`
@@ -529,7 +584,7 @@ function renderAuditoriaHeroBlock(block: SitePageBlock, currentPath: string, the
                                 href={standardsHref}
                                 className={`inline-flex items-center gap-2 border px-7 py-3 text-sm font-bold uppercase tracking-[0.2em] text-slate-800 transition-colors border-slate-200 bg-white hover:border-slate-900 hover:text-slate-900 shadow-sm`}
                             >
-                                Ver matriz QM
+                                Conocer estándares
                                 <ArrowRight className="h-4 w-4" />
                             </a>
                         </div>
@@ -537,7 +592,7 @@ function renderAuditoriaHeroBlock(block: SitePageBlock, currentPath: string, the
                         <div className="mt-10 grid gap-3 sm:grid-cols-3">
                             {[
                                 { label: 'Cobertura', value: '8 estándares' },
-                                { label: 'Criterios', value: '42 subestándares' },
+                                { label: 'Criterios', value: '44 subestándares' },
                                 { label: 'Resultado guía', value: '80% cumplimiento' },
                             ].map((metric) => (
                                 <article key={metric.label} className="rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
@@ -590,6 +645,9 @@ function renderAuditoriaMetricsBlock(block: SitePageBlock, _theme: ThemeColors) 
     const items = ensureObjectItems(block.content.items)
     if (items.length === 0) return renderPromisesBlock(block, _theme)
 
+    const sectionTitle = toText(block.content.title, 'Indicadores de referencia')
+    const sectionBody = toText(block.content.body)
+    const radarDataset = getAuditoriaRadarDataset(block.content)
     const scoredItems = items.map((item, index) => {
         const score = getAuditoriaScore(item, AUDITORIA_STANDARD_FALLBACK_SCORES[index] ?? 75)
         return {
@@ -599,60 +657,151 @@ function renderAuditoriaMetricsBlock(block: SitePageBlock, _theme: ThemeColors) 
             Icon: resolveCmsIcon(toText(item.icon)) || AUDITORIA_VISUAL_ICONS[index % AUDITORIA_VISUAL_ICONS.length],
         }
     })
-    const summaryScore = Math.round(scoredItems.reduce((acc, entry) => acc + entry.score, 0) / Math.max(scoredItems.length, 1))
+    const generalScores = radarDataset.map((entry) => entry.general)
+    const maxGeneral = Math.max(...generalScores)
+    const minGeneral = Math.min(...generalScores)
+    const summaryScore = Math.round(radarDataset.reduce((acc, entry) => acc + entry.general, 0) / Math.max(radarDataset.length, 1))
     const gaugeStyle = { background: `conic-gradient(#10b981 ${summaryScore * 3.6}deg, rgba(148,163,184,0.2) ${summaryScore * 3.6}deg 360deg)` }
-    const chartPoints = buildChartPoints(scoredItems.map((entry) => entry.score), 300, 96, 10)
-    const chartAreaPath = chartPointsToAreaPath(chartPoints, 96, 10)
-    const chartPolyline = chartPointsToPolyline(chartPoints)
+    const radarCenterX = 175
+    const radarCenterY = 140
+    const radarRadius = 102
+    const radarScaleSteps = [20, 40, 60, 80, 100]
+    const radarGeneralLabel = toText(block.content.radarLegendGeneral, 'Promedio general')
+    const radarFacultyLabel = toText(block.content.radarLegendFaculty, 'Facultad (ejemplo)')
+    const radarProgramLabel = toText(block.content.radarLegendProgram, 'Programa (ejemplo)')
+    const radarSeries = [
+        {
+            key: 'general' as AuditoriaRadarSeriesKey,
+            label: radarGeneralLabel,
+            stroke: '#34d399',
+            fill: 'rgba(16,185,129,0.25)',
+            points: buildAuditoriaRadarSeriesPoints(radarDataset, 'general', radarCenterX, radarCenterY, radarRadius),
+        },
+        {
+            key: 'faculty' as AuditoriaRadarSeriesKey,
+            label: radarFacultyLabel,
+            stroke: '#fbbf24',
+            fill: 'rgba(251,191,36,0.16)',
+            points: buildAuditoriaRadarSeriesPoints(radarDataset, 'faculty', radarCenterX, radarCenterY, radarRadius),
+        },
+        {
+            key: 'program' as AuditoriaRadarSeriesKey,
+            label: radarProgramLabel,
+            stroke: '#38bdf8',
+            fill: 'rgba(56,189,248,0.14)',
+            points: buildAuditoriaRadarSeriesPoints(radarDataset, 'program', radarCenterX, radarCenterY, radarRadius),
+        },
+    ]
 
     return (
         <div className="relative overflow-hidden bg-slate-950 px-6 py-14 md:px-10 md:py-20">
             <div className="pointer-events-none absolute left-0 top-0 h-72 w-72 rounded-full bg-emerald-500/20 blur-[100px]" />
             <div className="pointer-events-none absolute right-0 top-1/3 h-72 w-72 rounded-full bg-cyan-500/10 blur-[120px]" />
 
-            <div className="relative mx-auto max-w-7xl">
-                <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-                    <aside className="rounded-2xl border border-slate-700 bg-slate-900/70 p-6">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-emerald-300">
-                            {toText(block.content.title, 'Indicadores de referencia')}
-                        </p>
-                        {toText(block.content.body) && <p className="mt-3 text-sm leading-relaxed text-slate-300">{toText(block.content.body)}</p>}
+            <div className="relative mx-auto max-w-[1280px]">
+                <div className="mb-8 max-w-4xl">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-emerald-300">{sectionTitle}</p>
+                    {sectionBody && <p className="mt-3 text-base leading-relaxed text-slate-300">{sectionBody}</p>}
+                </div>
 
-                        <div className="mt-6 flex justify-center">
-                            <div className="relative grid h-44 w-44 place-items-center rounded-full p-3" style={gaugeStyle}>
-                                <div className="grid h-full w-full place-items-center rounded-full bg-slate-950">
-                                    <div className="text-center">
-                                        <p className="text-4xl font-black tracking-tight text-white">{summaryScore}%</p>
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Promedio</p>
+                <div className="grid gap-5 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[410px_minmax(0,1fr)] xl:gap-6">
+                    <aside className="h-full rounded-3xl border border-slate-700 bg-gradient-to-b from-slate-900/85 to-slate-900/65 p-5 shadow-[0_16px_40px_rgba(2,6,23,0.4)] md:p-6">
+                        <div className="rounded-2xl border border-slate-700/90 bg-slate-950/70 p-4">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="relative grid h-36 w-36 place-items-center rounded-full p-3" style={gaugeStyle}>
+                                    <div className="grid h-full w-full place-items-center rounded-full bg-slate-950">
+                                        <div className="text-center">
+                                            <p className="text-4xl font-black tracking-tight text-white">{summaryScore}%</p>
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Promedio</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid flex-1 gap-2">
+                                    <div className="rounded-xl border border-emerald-400/35 bg-emerald-400/10 px-3 py-2">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-200">Resultado más alto</p>
+                                        <p className="mt-1 text-2xl font-black text-white">{maxGeneral}%</p>
+                                    </div>
+                                    <div className="rounded-xl border border-rose-300/35 bg-rose-300/10 px-3 py-2">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-rose-100">Resultado más bajo</p>
+                                        <p className="mt-1 text-2xl font-black text-white">{minGeneral}%</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-6 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
-                            <svg viewBox="0 0 300 96" className="h-24 w-full" preserveAspectRatio="none" role="img" aria-label="Tendencia de indicadores">
-                                <defs>
-                                    <linearGradient id="auditoriaMetricsArea" x1="0%" x2="0%" y1="0%" y2="100%">
-                                        <stop offset="0%" stopColor="rgba(16,185,129,0.45)" />
-                                        <stop offset="100%" stopColor="rgba(16,185,129,0)" />
-                                    </linearGradient>
-                                </defs>
-                                <path d={chartAreaPath} fill="url(#auditoriaMetricsArea)" />
-                                <polyline fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={chartPolyline} />
+                        <div className="mt-4 rounded-2xl border border-slate-700 bg-slate-950/60 p-4">
+                            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                                {toText(block.content.radarTitle, 'Vista radial comparativa (0-100)')}
+                            </p>
+                            <svg viewBox="0 0 350 290" className="h-64 w-full" role="img" aria-label="Comparativo radial de estándares">
+                                {radarScaleSteps.map((step) => (
+                                    <polygon
+                                        key={`scale-${step}`}
+                                        points={buildAuditoriaRadarRingPoints(radarDataset.length, step / 100, radarCenterX, radarCenterY, radarRadius)}
+                                        fill="none"
+                                        stroke="rgba(148,163,184,0.24)"
+                                        strokeWidth="1"
+                                    />
+                                ))}
+                                {radarDataset.map((entry, index) => {
+                                    const edgePoint = getAuditoriaRadarAxisPoint(index, radarDataset.length, 1, radarCenterX, radarCenterY, radarRadius)
+                                    const labelPoint = getAuditoriaRadarAxisPoint(index, radarDataset.length, 1.16, radarCenterX, radarCenterY, radarRadius)
+                                    return (
+                                        <g key={`axis-${entry.standard}-${index}`}>
+                                            <line x1={radarCenterX} y1={radarCenterY} x2={edgePoint.x} y2={edgePoint.y} stroke="rgba(148,163,184,0.25)" strokeWidth="1" />
+                                            <text x={labelPoint.x} y={labelPoint.y} textAnchor="middle" className="fill-slate-400 text-[10px] font-bold uppercase tracking-[0.14em]">
+                                                {entry.standard}
+                                            </text>
+                                        </g>
+                                    )
+                                })}
+
+                                {radarSeries.map((series) => (
+                                    <polygon
+                                        key={`series-${series.key}`}
+                                        points={series.points}
+                                        fill={series.fill}
+                                        stroke={series.stroke}
+                                        strokeWidth="2"
+                                        strokeLinejoin="round"
+                                    />
+                                ))}
+                                {radarSeries.map((series) =>
+                                    radarDataset.map((entry, index) => {
+                                        const point = getAuditoriaRadarAxisPoint(
+                                            index,
+                                            radarDataset.length,
+                                            entry[series.key] / 100,
+                                            radarCenterX,
+                                            radarCenterY,
+                                            radarRadius
+                                        )
+                                        return <circle key={`point-${series.key}-${entry.standard}-${index}`} cx={point.x} cy={point.y} r="2.5" fill={series.stroke} />
+                                    })
+                                )}
                             </svg>
+                            <div className="mt-3 grid gap-2">
+                                {radarSeries.map((series) => (
+                                    <span key={`legend-${series.key}`} className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300">
+                                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: series.stroke }} />
+                                        {series.label}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     </aside>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid auto-rows-fr gap-5 sm:grid-cols-2">
                         {scoredItems.map((entry, index) => {
                             const { item, score, scoreLabel, Icon } = entry
                             return (
                                 <article
                                     key={`${item.id || index}`}
-                                    className="rounded-2xl border border-slate-700 bg-slate-900/60 p-5 text-white shadow-[0_12px_30px_rgba(2,6,23,0.35)] transition-all hover:-translate-y-1 hover:border-emerald-400/50 hover:bg-slate-900/80"
+                                    className="flex h-full min-h-[245px] flex-col rounded-2xl border border-slate-700 bg-slate-900/60 p-5 text-white shadow-[0_12px_30px_rgba(2,6,23,0.35)] transition-all hover:-translate-y-1 hover:border-emerald-400/50 hover:bg-slate-900/80"
                                 >
                                     <div className="flex items-start justify-between gap-3">
-                                        <p className="text-base font-black leading-tight text-white">
+                                        <p className="text-3xl font-black leading-[1.15] text-white">
                                             {toText(item.title || item.label || `Indicador ${index + 1}`)}
                                         </p>
                                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-600 bg-slate-950 text-emerald-300">
@@ -660,9 +809,9 @@ function renderAuditoriaMetricsBlock(block: SitePageBlock, _theme: ThemeColors) 
                                         </div>
                                     </div>
 
-                                    {toText(item.body) && <p className="mt-3 text-sm leading-relaxed text-slate-300">{toText(item.body)}</p>}
+                                    {toText(item.body) && <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-300">{toText(item.body)}</p>}
 
-                                    <div className="mt-4">
+                                    <div className="mt-6">
                                         <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                                             <span>Lectura</span>
                                             <span className="text-emerald-300">{scoreLabel}</span>
@@ -736,6 +885,12 @@ function renderAuditoriaStandardsBlock(block: SitePageBlock, theme: ThemeColors)
     const title = toText(block.content.title)
     const body = toText(block.content.body)
     const items = ensureObjectItems(block.content.items)
+    const standardsButtonLabel = toText(block.content.standardsFullLabel, 'Ver estándares completos')
+    const standardsButtonHref = normalizeCmsHref(
+        block.content.standardsFullHref,
+        'https://view.genially.com/62feddd288238d0018fca5f9'
+    )
+    const hasStandardsButton = Boolean(standardsButtonLabel && standardsButtonHref)
     if (items.length === 0) return renderFallbackBlock(block, theme)
 
     const average = Math.round(
@@ -801,6 +956,18 @@ function renderAuditoriaStandardsBlock(block: SitePageBlock, theme: ThemeColors)
                         <p className="text-3xl font-black tracking-tight text-emerald-800">{average}%</p>
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">Promedio general</p>
                     </div>
+
+                    {hasStandardsButton && (
+                        <a
+                            href={standardsButtonHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-3 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700 transition-colors hover:border-emerald-500 hover:text-emerald-800"
+                        >
+                            {standardsButtonLabel}
+                            <ArrowRight className="h-4 w-4" />
+                        </a>
+                    )}
                 </aside>
             </div>
         </div>
@@ -892,6 +1059,15 @@ function renderServicesGridBlock(block: SitePageBlock, currentPath: string, them
                     const outcomes = ensureStringArray(item.outcomes)
                     const iconText = toText(item.icon)
                     const ExplicitIcon = resolveCmsIcon(iconText)
+                    const href = normalizeCmsHref(item.url, '', currentPath)
+                    const opensInNewTab = Boolean(item.openInNewTab) || (
+                        currentPath === '/educacion' &&
+                        (
+                            toText(item.id).toLowerCase() === 'edu-digital' ||
+                            toText(item.title).toLowerCase().includes('formación docente') ||
+                            toText(item.title).toLowerCase().includes('formacion docente')
+                        )
+                    )
 
                     return (
                         <article key={`${item.id || index}`} className={`services-card-shadow border bg-white/95 px-8 py-8 ${theme.border}`}>
@@ -934,9 +1110,11 @@ function renderServicesGridBlock(block: SitePageBlock, currentPath: string, them
                                 </>
                             )}
 
-                            {toText(item.label) && toText(item.url) && (
+                            {toText(item.label) && href && (
                                 <a
-                                    href={normalizeCmsHref(item.url, '', currentPath)}
+                                    href={href}
+                                    target={opensInNewTab ? '_blank' : undefined}
+                                    rel={opensInNewTab ? 'noopener noreferrer' : undefined}
                                     className="mt-7 inline-flex items-center gap-2 border border-slate-300 px-5 py-3 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-800 transition-colors hover:border-slate-900 hover:text-slate-900"
                                 >
                                     {toText(item.label)}
@@ -1229,9 +1407,45 @@ function renderTrustedClientsBlock(block: SitePageBlock, theme: ThemeColors, cur
     const title = toText(block.content.title, 'Clientes')
     const body = toText(block.content.body, 'Instituciones y empresas que han confiado en nosotros')
     const items = ensureObjectItems(block.content.items)
+    const isSingleClient = items.length === 1
     const carouselItems = items.length > 1 ? [...items, ...items] : items
 
     if (items.length === 0) return null
+
+    if (isSingleClient) {
+        const item = items[0]
+        const name = toText(item.title || item.label, 'Cliente')
+        const logoUrl = toText(item.logoUrl || item.imageUrl)
+
+        return (
+            <div className="mx-auto max-w-7xl">
+                <div className="mx-auto max-w-4xl text-center">
+                    <h2 className={`text-4xl font-black tracking-tight md:text-5xl ${theme.textAccent}`}>{title}</h2>
+                    <p className="mt-5 text-lg text-slate-600">{body}</p>
+                </div>
+
+                <div className={`relative mt-12 overflow-hidden rounded-3xl border bg-white/80 px-4 py-8 backdrop-blur-sm md:px-6 ${theme.border}`}>
+                    <div className="flex justify-center">
+                        <article
+                            className={`flex min-h-[104px] w-full max-w-[420px] items-center justify-center gap-4 rounded-2xl border bg-white px-5 py-4 ${theme.border}`}
+                            aria-label={name}
+                        >
+                            <div className={`flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-slate-50 ${theme.border}`}>
+                                {logoUrl ? (
+                                    <img src={logoUrl} alt={`Logo de ${name}`} className="h-full w-full object-contain p-1.5" loading="lazy" />
+                                ) : (
+                                    <span className={`text-base font-black tracking-tight ${theme.textHighlight}`}>
+                                        {getLogoInitials(name)}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-sm font-bold leading-tight text-slate-800">{name}</p>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="mx-auto max-w-7xl">
