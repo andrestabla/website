@@ -41,7 +41,7 @@ export function ServicePageView({
         }}
       >
         <div className="max-w-7xl mx-auto">
-          <Link to="/#servicios" className="inline-flex items-center text-xs font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary mb-16 group">
+          <Link to="/empresas#servicios-explicados" className="inline-flex items-center text-xs font-black uppercase tracking-widest text-slate-400 hover:text-brand-primary mb-16 group">
             <ChevronLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
             {uiText.backServices}
           </Link>
