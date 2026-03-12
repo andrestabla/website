@@ -1,6 +1,7 @@
 import { prisma } from './_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from './_lib/integrations.js'
 import { requireAdminSession } from './_lib/admin-auth.js'
+import { PRESERVE_TERMS, hashTranslationCacheKey } from './_lib/translation.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -29,6 +30,100 @@ function relativeTime(input: Date) {
   if (hours < 24) return `Hace ${hours}h`
   const days = Math.floor(hours / 24)
   return `Hace ${days}d`
+}
+
+type TranslationAuditUnit = {
+  id: string
+  label: string
+  route: string
+  payload: unknown
+}
+
+function buildTranslationAuditUnits(cmsData: any): TranslationAuditUnit[] {
+  const units: TranslationAuditUnit[] = []
+  const pages = Array.isArray(cmsData?.siteArchitecture?.pages) ? cmsData.siteArchitecture.pages : []
+
+  units.push({ id: 'core:hero', label: 'Hero', route: '/', payload: cmsData?.hero ?? {} })
+  units.push({ id: 'core:services', label: 'Servicios', route: '/#servicios', payload: cmsData?.services ?? [] })
+  units.push({ id: 'core:products', label: 'Productos', route: '/#productos', payload: cmsData?.products ?? [] })
+  units.push({
+    id: 'core:site',
+    label: 'Configuración sitio',
+    route: '/config',
+    payload: {
+      name: cmsData?.site?.name ?? '',
+      description: cmsData?.site?.description ?? '',
+      contactAddress: cmsData?.site?.contactAddress ?? '',
+    },
+  })
+  units.push({ id: 'core:homePage', label: 'Home Builder', route: '/', payload: cmsData?.homePage ?? {} })
+
+  for (const page of pages) {
+    const id = String(page?.id || '')
+    if (!id) continue
+    const route = typeof page?.path === 'string' && page.path.trim() ? page.path.trim() : '/(sin-ruta)'
+    const title = typeof page?.title === 'string' && page.title.trim() ? page.title.trim() : id
+    units.push({
+      id: `page:${id}`,
+      label: title,
+      route,
+      payload: page,
+    })
+  }
+
+  return units
+}
+
+function normalizeText(value: string) {
+  return value.replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+function isLikelyNonTranslatable(value: string) {
+  const text = value.trim()
+  if (!text) return true
+  if (text.length < 3) return true
+  if (/^(https?:\/\/|mailto:|tel:|#|\/)/i.test(text)) return true
+  if (/^[-+*/=~_.,:;!?()[\]{}<>0-9\s%$#@]+$/.test(text)) return true
+  if (/^[A-Z0-9 _:+\-/.]{2,20}$/.test(text)) return true
+  if (/^[^A-Za-zÁÉÍÓÚÑáéíóúñ]+$/.test(text)) return true
+
+  const normalized = normalizeText(text)
+  if (PRESERVE_TERMS.some((term) => normalizeText(term) === normalized)) return true
+  return false
+}
+
+function compareTranslatedStrings(source: unknown, translated: unknown): { total: number; unchanged: number } {
+  if (typeof source === 'string') {
+    if (isLikelyNonTranslatable(source)) return { total: 0, unchanged: 0 }
+    const translatedString = typeof translated === 'string' ? translated : ''
+    const unchanged = normalizeText(source) === normalizeText(translatedString) ? 1 : 0
+    return { total: 1, unchanged }
+  }
+
+  if (Array.isArray(source)) {
+    let total = 0
+    let unchanged = 0
+    for (let i = 0; i < source.length; i++) {
+      const child = compareTranslatedStrings(source[i], Array.isArray(translated) ? translated[i] : undefined)
+      total += child.total
+      unchanged += child.unchanged
+    }
+    return { total, unchanged }
+  }
+
+  if (source && typeof source === 'object') {
+    let total = 0
+    let unchanged = 0
+    const translatedObject = translated && typeof translated === 'object' && !Array.isArray(translated) ? (translated as Record<string, unknown>) : {}
+    for (const [key, value] of Object.entries(source as Record<string, unknown>)) {
+      const child = compareTranslatedStrings(value, translatedObject[key])
+      total += child.total
+      unchanged += child.unchanged
+    }
+    return { total, unchanged }
+  }
+
+  return { total: 0, unchanged: 0 }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -184,6 +279,91 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       byLangMap[row.targetLang] = row._count._all
     }
 
+    const i18nAuditUnits = buildTranslationAuditUnits(cmsData)
+    const i18nLangs = ['en', 'fr'] as const
+    const i18nKeyMeta = i18nLangs.flatMap((lang) =>
+      i18nAuditUnits.map((unit) => ({
+        lang,
+        key: hashTranslationCacheKey(unit.payload, lang, 'object'),
+        unit,
+      }))
+    )
+    const i18nUniqueKeys = Array.from(new Set(i18nKeyMeta.map((entry) => entry.key)))
+    const i18nCacheRows = i18nUniqueKeys.length
+      ? await prisma.translationCache.findMany({
+          where: { key: { in: i18nUniqueKeys } },
+          select: { key: true, payload: true, updatedAt: true },
+        })
+      : []
+    const i18nCacheByKey = new Map(i18nCacheRows.map((row) => [row.key, row]))
+
+    const i18nByLang: Record<string, {
+      expected: number
+      cached: number
+      missing: number
+      coveragePct: number
+      checkedStrings: number
+      unchangedStrings: number
+      unchangedRatePct: number
+    }> = {
+      en: { expected: 0, cached: 0, missing: 0, coveragePct: 0, checkedStrings: 0, unchangedStrings: 0, unchangedRatePct: 0 },
+      fr: { expected: 0, cached: 0, missing: 0, coveragePct: 0, checkedStrings: 0, unchangedStrings: 0, unchangedRatePct: 0 },
+    }
+
+    const i18nMissingUnits: Array<{ lang: string; route: string; label: string }> = []
+    const i18nFlaggedUnits: Array<{ lang: string; route: string; label: string; unchanged: number; total: number; ratioPct: number }> = []
+    const i18nMissingByRoute = new Map<string, number>()
+
+    for (const entry of i18nKeyMeta) {
+      const bucket = i18nByLang[entry.lang]
+      bucket.expected += 1
+
+      const cached = i18nCacheByKey.get(entry.key)
+      if (!cached) {
+        bucket.missing += 1
+        const routeKey = `${entry.lang}:${entry.unit.route}`
+        i18nMissingByRoute.set(routeKey, (i18nMissingByRoute.get(routeKey) || 0) + 1)
+        if (i18nMissingUnits.length < 30) {
+          i18nMissingUnits.push({ lang: entry.lang, route: entry.unit.route, label: entry.unit.label })
+        }
+        continue
+      }
+
+      bucket.cached += 1
+      const diff = compareTranslatedStrings(entry.unit.payload, cached.payload)
+      bucket.checkedStrings += diff.total
+      bucket.unchangedStrings += diff.unchanged
+
+      if (diff.total >= 8) {
+        const ratio = diff.unchanged / diff.total
+        if (ratio >= 0.35 && i18nFlaggedUnits.length < 40) {
+          i18nFlaggedUnits.push({
+            lang: entry.lang,
+            route: entry.unit.route,
+            label: entry.unit.label,
+            unchanged: diff.unchanged,
+            total: diff.total,
+            ratioPct: Math.round(ratio * 1000) / 10,
+          })
+        }
+      }
+    }
+
+    Object.values(i18nByLang).forEach((bucket) => {
+      bucket.coveragePct = bucket.expected > 0 ? Math.round((bucket.cached / bucket.expected) * 1000) / 10 : 100
+      bucket.unchangedRatePct = bucket.checkedStrings > 0 ? Math.round((bucket.unchangedStrings / bucket.checkedStrings) * 1000) / 10 : 0
+    })
+
+    const i18nMissingRoutes = Array.from(i18nMissingByRoute.entries())
+      .map(([key, missing]) => {
+        const separator = key.indexOf(':')
+        const lang = separator === -1 ? 'en' : key.slice(0, separator)
+        const route = separator === -1 ? key : key.slice(separator + 1)
+        return { lang, route, missing }
+      })
+      .sort((a, b) => b.missing - a.missing)
+      .slice(0, 20)
+
     const eventDays = Array.from({ length: 14 }, (_, i) => {
       const d = startOfDay(new Date(Date.now() - (13 - i) * 86400000))
       return { day: formatDay(d), pageViews: 0, consents: 0 }
@@ -320,6 +500,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           total: translationCount,
           byLang: byLangMap,
           recentDaily: days,
+        },
+        i18n: {
+          auditedUnits: i18nAuditUnits.length,
+          byLang: i18nByLang,
+          missingRoutes: i18nMissingRoutes,
+          missingUnits: i18nMissingUnits,
+          flaggedUnits: i18nFlaggedUnits
+            .sort((a, b) => b.ratioPct - a.ratioPct)
+            .slice(0, 20),
         },
         integrations: {
           configured: configuredIntegrations.filter((i) => i.status === 'configured').length,

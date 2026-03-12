@@ -4408,6 +4408,10 @@ export function CMSProvider({ children }: { children: ReactNode }) {
     const saveInFlightRef = useRef(false)
     const retryTimerRef = useRef<number | null>(null)
     const queuedHashRef = useRef<string | null>(null)
+    const prewarmTimerRef = useRef<number | null>(null)
+    const prewarmInFlightRef = useRef(false)
+    const queuedPrewarmRef = useRef<{ hash: string; changedSections: string[] } | null>(null)
+    const lastPrewarmedHashRef = useRef('')
 
     // Inject design tokens on mount and whenever they change
     useEffect(() => {
@@ -4479,6 +4483,49 @@ export function CMSProvider({ children }: { children: ReactNode }) {
         }
     }, [])
 
+    const runTranslationPrewarm = useCallback(async (hash: string, changedSections: string[]) => {
+        const targetSections = Array.from(new Set(changedSections.filter(section => section !== 'design')))
+        if (targetSections.length === 0) return
+        if (hash === lastPrewarmedHashRef.current) return
+
+        if (prewarmInFlightRef.current) {
+            queuedPrewarmRef.current = { hash, changedSections: targetSections }
+            return
+        }
+
+        prewarmInFlightRef.current = true
+        try {
+            const res = await fetch('/api/cms-prewarm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ changedSections: targetSections }),
+            })
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            lastPrewarmedHashRef.current = hash
+        } catch (error) {
+            console.warn('CMS translation prewarm failed (non-blocking)', error)
+        } finally {
+            prewarmInFlightRef.current = false
+            const queued = queuedPrewarmRef.current
+            if (queued && queued.hash !== lastPrewarmedHashRef.current) {
+                queuedPrewarmRef.current = null
+                void runTranslationPrewarm(queued.hash, queued.changedSections)
+            } else {
+                queuedPrewarmRef.current = null
+            }
+        }
+    }, [])
+
+    const scheduleTranslationPrewarm = useCallback((hash: string, changedSections: string[]) => {
+        const targetSections = Array.from(new Set(changedSections.filter(section => section !== 'design')))
+        if (targetSections.length === 0) return
+        if (prewarmTimerRef.current) window.clearTimeout(prewarmTimerRef.current)
+        prewarmTimerRef.current = window.setTimeout(() => {
+            void runTranslationPrewarm(hash, targetSections)
+        }, 12000) as unknown as number
+    }, [runTranslationPrewarm])
+
     const syncToServer = useCallback(async (snapshot: CMSState, hash: string, retryCount = 0) => {
         if (saveInFlightRef.current) {
             queuedHashRef.current = hash
@@ -4503,6 +4550,9 @@ export function CMSProvider({ children }: { children: ReactNode }) {
                 throw new Error(body?.error || `HTTP ${res.status}`)
             }
             const json = await res.json().catch(() => ({}))
+            const changedSections = Array.isArray(json?.changedSections)
+                ? (json.changedSections as unknown[]).filter((section): section is string => typeof section === 'string')
+                : []
             lastServerHash.current = hash
             lastServerStateRef.current = snapshot
             setPersistence(prev => ({
@@ -4511,9 +4561,10 @@ export function CMSProvider({ children }: { children: ReactNode }) {
                 pendingChanges: false,
                 retryCount: 0,
                 lastSavedAt: json?.savedAt || new Date().toISOString(),
-                changedSections: Array.isArray(json?.changedSections) ? json.changedSections : prev.changedSections,
+                changedSections,
                 lastError: null,
             }))
+            scheduleTranslationPrewarm(hash, changedSections)
             void refreshHistory()
         } catch (error: any) {
             const nextRetry = retryCount + 1
@@ -4539,7 +4590,7 @@ export function CMSProvider({ children }: { children: ReactNode }) {
                 void syncToServer(stateRef.current, latestHash, 0)
             }
         }
-    }, [refreshHistory])
+    }, [refreshHistory, scheduleTranslationPrewarm])
 
     const stateRef = useRef(state)
     useEffect(() => {
@@ -4609,6 +4660,12 @@ export function CMSProvider({ children }: { children: ReactNode }) {
         window.addEventListener('beforeunload', handler)
         return () => window.removeEventListener('beforeunload', handler)
     }, [persistence.pendingChanges])
+
+    useEffect(() => {
+        return () => {
+            if (prewarmTimerRef.current) window.clearTimeout(prewarmTimerRef.current)
+        }
+    }, [])
 
     const rollbackSection = useCallback(async (versionId: string) => {
         try {

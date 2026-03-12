@@ -2,12 +2,27 @@ import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts'
-import { TrendingUp, Languages, Boxes, Activity, RefreshCw, ShieldCheck, Mail, MailOpen } from 'lucide-react'
+import { TrendingUp, Languages, Boxes, Activity, RefreshCw, ShieldCheck, Mail, MailOpen, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useCMS } from '../context/CMSContext'
 
 type MetricsData = {
   translations: { total: number; byLang: Record<string, number>; recentDaily: Array<{ day: string; count: number }> }
+  i18n: {
+    auditedUnits: number
+    byLang: Record<string, {
+      expected: number
+      cached: number
+      missing: number
+      coveragePct: number
+      checkedStrings: number
+      unchangedStrings: number
+      unchangedRatePct: number
+    }>
+    missingRoutes: Array<{ lang: string; route: string; missing: number }>
+    missingUnits: Array<{ lang: string; route: string; label: string }>
+    flaggedUnits: Array<{ lang: string; route: string; label: string; unchanged: number; total: number; ratioPct: number }>
+  }
   cms: { serviceCount: number; productCount: number; totalManagedRoutes: number }
   integrations: { configured: number; enabled: number }
   analytics: {
@@ -112,6 +127,11 @@ export function Analytics() {
   const topSectionsChart = metrics?.analytics.topSections.slice(0, 8) ?? []
   const countriesChart = metrics?.analytics.byCountry.slice(0, 6) ?? []
   const marketingOpeners = metrics?.marketing.openedRecipients.slice(0, 25) ?? []
+  const i18nLangRows = metrics
+    ? Object.entries(metrics.i18n.byLang).map(([lang, bucket]) => ({ lang: lang.toUpperCase(), ...bucket }))
+    : []
+  const i18nMissingRoutes = metrics?.i18n.missingRoutes.slice(0, 12) ?? []
+  const i18nFlaggedUnits = metrics?.i18n.flaggedUnits.slice(0, 12) ?? []
 
   return (
     <div className="space-y-12">
@@ -138,6 +158,89 @@ export function Analytics() {
                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{kpi.label}</div>
               </div>
             ))}
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="bg-white border border-slate-200 p-8">
+              <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-6">Calidad i18n</h3>
+              <p className="text-sm text-slate-600 mb-6">
+                Auditoría sobre <span className="font-semibold text-slate-900">{metrics.i18n.auditedUnits}</span> bloques esperados por idioma.
+              </p>
+              <div className="space-y-4">
+                {i18nLangRows.map((row) => (
+                  <div key={row.lang} className="border border-slate-200 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-black tracking-widest text-slate-500">{row.lang}</span>
+                      <span className="text-sm font-black text-slate-900">{row.coveragePct}% cache</span>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {row.cached}/{row.expected} listos · {row.missing} faltantes
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      Sin traducir detectado: <span className="font-semibold text-slate-700">{row.unchangedRatePct}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200">
+              <div className="p-6 border-b border-slate-100 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                <h3 className="font-black uppercase tracking-widest text-xs text-slate-900">Rutas sin cache i18n</h3>
+              </div>
+              <div className="max-h-80 overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-[0.2em] text-[10px] font-black">
+                    <tr>
+                      <th className="text-left px-4 py-3">Idioma</th>
+                      <th className="text-left px-4 py-3">Ruta</th>
+                      <th className="text-left px-4 py-3">Faltantes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {i18nMissingRoutes.length === 0 ? (
+                      <tr><td className="px-4 py-6 text-slate-500" colSpan={3}>Sin faltantes detectados.</td></tr>
+                    ) : i18nMissingRoutes.map((row, idx) => (
+                      <tr key={`${row.lang}-${row.route}-${idx}`} className="border-t border-slate-100">
+                        <td className="px-4 py-3 font-semibold text-slate-700">{row.lang.toUpperCase()}</td>
+                        <td className="px-4 py-3 text-slate-600">{row.route}</td>
+                        <td className="px-4 py-3 font-semibold text-amber-700">{row.missing}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200">
+              <div className="p-6 border-b border-slate-100 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <h3 className="font-black uppercase tracking-widest text-xs text-slate-900">Bloques con riesgo de mezcla</h3>
+              </div>
+              <div className="max-h-80 overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-slate-500 uppercase tracking-[0.2em] text-[10px] font-black">
+                    <tr>
+                      <th className="text-left px-4 py-3">Idioma</th>
+                      <th className="text-left px-4 py-3">Bloque</th>
+                      <th className="text-left px-4 py-3">Sin traducir</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {i18nFlaggedUnits.length === 0 ? (
+                      <tr><td className="px-4 py-6 text-slate-500" colSpan={3}>Sin bloques críticos detectados.</td></tr>
+                    ) : i18nFlaggedUnits.map((row, idx) => (
+                      <tr key={`${row.lang}-${row.route}-${idx}`} className="border-t border-slate-100">
+                        <td className="px-4 py-3 font-semibold text-slate-700">{row.lang.toUpperCase()}</td>
+                        <td className="px-4 py-3 text-slate-600">{row.route}</td>
+                        <td className="px-4 py-3 font-semibold text-slate-900">{row.ratioPct}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
