@@ -493,12 +493,12 @@ function renderAuditoriaHeroBlock(block: SitePageBlock, currentPath: string, the
     const polyline = chartPointsToPolyline(points)
 
     return (
-        <div className="relative overflow-hidden bg-white -mt-20 md:-mt-28">
+        <div className="relative overflow-hidden bg-white">
             <div className={`pointer-events-none absolute left-0 top-10 h-64 w-64 rounded-full blur-[100px] opacity-40 ${theme.gradientStart}`} />
             <div className={`pointer-events-none absolute right-0 bottom-10 h-72 w-72 rounded-full blur-[110px] opacity-30 ${theme.gradientEnd}`} />
             <div className="pointer-events-none absolute inset-0 services-grid-pattern opacity-[0.25]" />
 
-            <div className="relative mx-auto max-w-7xl px-6 py-20 pb-16 md:px-12 md:pt-32 md:pb-24">
+            <div className="relative mx-auto max-w-7xl px-6 pt-28 pb-16 md:px-12 md:pt-40 md:pb-24">
                 <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
                     <div>
                         <p className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.26em] bg-white/80 ${theme.border} ${theme.textAccent}`}>
@@ -1706,7 +1706,7 @@ export function HomeRootPageRenderer({
                 const isFullWidthSection = isAuditoriaPage && (block.id === 'hero' || block.id === 'promesas')
                 const sectionClasses = [
                     isFullWidthSection ? '' : 'px-6',
-                    block.id === 'hero' ? 'pt-20 pb-16 md:pt-28 md:pb-24' : 'py-14 md:py-20',
+                    isFullWidthSection ? 'py-0' : block.id === 'hero' ? 'pt-20 pb-16 md:pt-28 md:pb-24' : 'py-14 md:py-20',
                     'relative scroll-mt-36',
                     selectable ? 'cursor-pointer' : '',
                     selected ? `ring-2 ring-offset-2 ring-offset-slate-100 ${currentTheme.primary}` : '',
