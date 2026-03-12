@@ -493,92 +493,94 @@ function renderAuditoriaHeroBlock(block: SitePageBlock, currentPath: string, the
     const polyline = chartPointsToPolyline(points)
 
     return (
-        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.6rem] border border-slate-200 bg-white shadow-xl md:px-12 md:py-16 px-6 py-12">
-            <div className={`pointer-events-none absolute left-[5%] top-10 h-64 w-64 rounded-full blur-[100px] opacity-40 ${theme.gradientStart}`} />
-            <div className={`pointer-events-none absolute right-[5%] bottom-10 h-72 w-72 rounded-full blur-[110px] opacity-30 ${theme.gradientEnd}`} />
+        <div className="relative overflow-hidden bg-white -mt-20 md:-mt-28">
+            <div className={`pointer-events-none absolute left-0 top-10 h-64 w-64 rounded-full blur-[100px] opacity-40 ${theme.gradientStart}`} />
+            <div className={`pointer-events-none absolute right-0 bottom-10 h-72 w-72 rounded-full blur-[110px] opacity-30 ${theme.gradientEnd}`} />
             <div className="pointer-events-none absolute inset-0 services-grid-pattern opacity-[0.25]" />
 
-            <div className="relative grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
-                <div>
-                    <p className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.26em] bg-white/80 ${theme.border} ${theme.textAccent}`}>
-                        {toText(block.content.eyebrow, 'Auditoría de programas virtuales')}
-                    </p>
-
-                    <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[0.95] tracking-tight text-slate-900 md:text-6xl xl:text-7xl">
-                        {toText(block.content.title, 'Asegura la calidad de tus aulas virtuales con estándares QM')}
-                    </h1>
-
-                    {toText(block.content.body) && (
-                        <p className="mt-6 max-w-3xl text-lg leading-relaxed text-slate-700 md:text-xl">
-                            {toText(block.content.body)}
+            <div className="relative mx-auto max-w-7xl px-6 py-20 pb-16 md:px-12 md:pt-32 md:pb-24">
+                <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
+                    <div>
+                        <p className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.26em] bg-white/80 ${theme.border} ${theme.textAccent}`}>
+                            {toText(block.content.eyebrow, 'Auditoría de programas virtuales')}
                         </p>
-                    )}
 
-                    <div className="mt-10 flex flex-wrap gap-4">
-                        {toText(block.content.primaryLabel) && primaryHref && (
+                        <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[0.95] tracking-tight text-slate-900 md:text-6xl xl:text-7xl">
+                            {toText(block.content.title, 'Asegura la calidad de tus aulas virtuales con estándares QM')}
+                        </h1>
+
+                        {toText(block.content.body) && (
+                            <p className="mt-6 max-w-3xl text-lg leading-relaxed text-slate-700 md:text-xl">
+                                {toText(block.content.body)}
+                            </p>
+                        )}
+
+                        <div className="mt-10 flex flex-wrap gap-4">
+                            {toText(block.content.primaryLabel) && primaryHref && (
+                                <a
+                                    href={primaryHref}
+                                    className={`inline-flex items-center gap-2 border px-7 py-3 text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors border-slate-900 bg-slate-900 ${theme.primaryHover}`}
+                                >
+                                    {toText(block.content.primaryLabel)}
+                                    <ArrowRight className="h-4 w-4" />
+                                </a>
+                            )}
                             <a
-                                href={primaryHref}
-                                className={`inline-flex items-center gap-2 border px-7 py-3 text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors border-slate-900 bg-slate-900 ${theme.primaryHover}`}
+                                href={standardsHref}
+                                className={`inline-flex items-center gap-2 border px-7 py-3 text-sm font-bold uppercase tracking-[0.2em] text-slate-800 transition-colors border-slate-200 bg-white hover:border-slate-900 hover:text-slate-900 shadow-sm`}
                             >
-                                {toText(block.content.primaryLabel)}
+                                Ver matriz QM
                                 <ArrowRight className="h-4 w-4" />
                             </a>
-                        )}
-                        <a
-                            href={standardsHref}
-                            className={`inline-flex items-center gap-2 border px-7 py-3 text-sm font-bold uppercase tracking-[0.2em] text-slate-800 transition-colors border-slate-200 bg-white hover:border-slate-900 hover:text-slate-900 shadow-sm`}
-                        >
-                            Ver matriz QM
-                            <ArrowRight className="h-4 w-4" />
-                        </a>
-                    </div>
+                        </div>
 
-                    <div className="mt-10 grid gap-3 sm:grid-cols-3">
-                        {[
-                            { label: 'Cobertura', value: '8 estándares' },
-                            { label: 'Criterios', value: '42 subestándares' },
-                            { label: 'Resultado guía', value: '80% cumplimiento' },
-                        ].map((metric) => (
-                            <article key={metric.label} className="rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{metric.label}</p>
-                                <p className="mt-1 text-base font-black text-slate-900">{metric.value}</p>
-                            </article>
-                        ))}
-                    </div>
-                </div>
-
-                <aside className="rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm shadow-lg ring-1 ring-slate-900/5">
-                    <p className={`text-[11px] font-bold uppercase tracking-[0.24em] ${theme.textHighlight}`}>Panel de calidad</p>
-                    <h3 className="mt-3 text-2xl font-black text-slate-900">Lectura rápida de cumplimiento</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600">Vista de referencia por estándar para priorizar la intervención académica y técnica.</p>
-
-                    <div className="mt-5 overflow-hidden rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                        <svg viewBox="0 0 280 96" className="h-24 w-full" preserveAspectRatio="none" role="img" aria-label="Tendencia de cumplimiento">
-                            <defs>
-                                <linearGradient id="auditoriaHeroLine" x1="0%" x2="100%" y1="0%" y2="0%">
-                                    <stop offset="0%" stopColor="#10b981" />
-                                    <stop offset="100%" stopColor="#06b6d4" />
-                                </linearGradient>
-                            </defs>
-                            <polyline fill="none" stroke="url(#auditoriaHeroLine)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={polyline} />
-                            {points.map((point, index) => (
-                                <circle key={`hero-point-${index}`} cx={point.x} cy={point.y} r="2.5" fill="#10b981" />
+                        <div className="mt-10 grid gap-3 sm:grid-cols-3">
+                            {[
+                                { label: 'Cobertura', value: '8 estándares' },
+                                { label: 'Criterios', value: '42 subestándares' },
+                                { label: 'Resultado guía', value: '80% cumplimiento' },
+                            ].map((metric) => (
+                                <article key={metric.label} className="rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{metric.label}</p>
+                                    <p className="mt-1 text-base font-black text-slate-900">{metric.value}</p>
+                                </article>
                             ))}
-                        </svg>
+                        </div>
                     </div>
 
-                    <div className="mt-5 grid gap-2">
-                        {chartValues.slice(0, 4).map((score, index) => (
-                            <div key={`hero-bar-${index}`} className="flex items-center gap-3">
-                                <span className="w-5 text-[10px] font-bold uppercase text-slate-500">{index + 1}</span>
-                                <div className="h-2 flex-1 rounded-full bg-slate-100">
-                                    <span className="block h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500" style={{ width: `${score}%` }} />
+                    <aside className="rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm shadow-lg ring-1 ring-slate-900/5">
+                        <p className={`text-[11px] font-bold uppercase tracking-[0.24em] ${theme.textHighlight}`}>Panel de calidad</p>
+                        <h3 className="mt-3 text-2xl font-black text-slate-900">Lectura rápida de cumplimiento</h3>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-600">Vista de referencia por estándar para priorizar la intervención académica y técnica.</p>
+
+                        <div className="mt-5 overflow-hidden rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                            <svg viewBox="0 0 280 96" className="h-24 w-full" preserveAspectRatio="none" role="img" aria-label="Tendencia de cumplimiento">
+                                <defs>
+                                    <linearGradient id="auditoriaHeroLine" x1="0%" x2="100%" y1="0%" y2="0%">
+                                        <stop offset="0%" stopColor="#10b981" />
+                                        <stop offset="100%" stopColor="#06b6d4" />
+                                    </linearGradient>
+                                </defs>
+                                <polyline fill="none" stroke="url(#auditoriaHeroLine)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={polyline} />
+                                {points.map((point, index) => (
+                                    <circle key={`hero-point-${index}`} cx={point.x} cy={point.y} r="2.5" fill="#10b981" />
+                                ))}
+                            </svg>
+                        </div>
+
+                        <div className="mt-5 grid gap-2">
+                            {chartValues.slice(0, 4).map((score, index) => (
+                                <div key={`hero-bar-${index}`} className="flex items-center gap-3">
+                                    <span className="w-5 text-[10px] font-bold uppercase text-slate-500">{index + 1}</span>
+                                    <div className="h-2 flex-1 rounded-full bg-slate-100">
+                                        <span className="block h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500" style={{ width: `${score}%` }} />
+                                    </div>
+                                    <span className="w-10 text-right text-xs font-bold text-emerald-600">{score}%</span>
                                 </div>
-                                <span className="w-10 text-right text-xs font-bold text-emerald-600">{score}%</span>
-                            </div>
-                        ))}
-                    </div>
-                </aside>
+                            ))}
+                        </div>
+                    </aside>
+                </div>
             </div>
         </div>
     )
@@ -604,12 +606,12 @@ function renderAuditoriaMetricsBlock(block: SitePageBlock, _theme: ThemeColors) 
     const chartPolyline = chartPointsToPolyline(chartPoints)
 
     return (
-        <div className="mx-auto max-w-7xl">
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-800 bg-slate-950 px-6 py-10 shadow-2xl md:px-10 md:py-12">
-                <div className="pointer-events-none absolute left-0 top-0 h-72 w-72 rounded-full bg-emerald-500/20 blur-[100px]" />
-                <div className="pointer-events-none absolute right-0 top-1/3 h-72 w-72 rounded-full bg-cyan-500/10 blur-[120px]" />
+        <div className="relative overflow-hidden bg-slate-950 px-6 py-14 md:px-10 md:py-20">
+            <div className="pointer-events-none absolute left-0 top-0 h-72 w-72 rounded-full bg-emerald-500/20 blur-[100px]" />
+            <div className="pointer-events-none absolute right-0 top-1/3 h-72 w-72 rounded-full bg-cyan-500/10 blur-[120px]" />
 
-                <div className="relative grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
+            <div className="relative mx-auto max-w-7xl">
+                <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
                     <aside className="rounded-2xl border border-slate-700 bg-slate-900/70 p-6">
                         <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-emerald-300">
                             {toText(block.content.title, 'Indicadores de referencia')}
@@ -1701,8 +1703,9 @@ export function HomeRootPageRenderer({
                 const isSplitBenefitsFlow = block.id === 'beneficios' && Boolean(flowBlock)
 
                 const selected = (!isSplitBenefitsFlow || block.id === 'beneficios') && selectedBlockId === block.id
+                const isFullWidthSection = isAuditoriaPage && (block.id === 'hero' || block.id === 'promesas')
                 const sectionClasses = [
-                    'px-6',
+                    isFullWidthSection ? '' : 'px-6',
                     block.id === 'hero' ? 'pt-20 pb-16 md:pt-28 md:pb-24' : 'py-14 md:py-20',
                     'relative scroll-mt-36',
                     selectable ? 'cursor-pointer' : '',
