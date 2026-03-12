@@ -2314,6 +2314,157 @@ const VIRTUALIZACION_LANDING_WORKFLOW = [
     { title: 'Auditoría aulas virtuales', description: 'Verificación de estándares de calidad final.' },
 ]
 
+const AUDITORIA_LANDING_EJES = [
+    {
+        title: 'Cumplimiento institucional',
+        body: 'Verificamos la creación, implementación y evaluación de aulas virtuales frente al modelo pedagógico y los lineamientos internos.',
+        icon: 'Building2',
+    },
+    {
+        title: 'Calidad pedagógica',
+        body: 'Evaluamos coherencia entre resultados de aprendizaje, actividades, recursos y criterios de evaluación.',
+        icon: 'GraduationCap',
+    },
+    {
+        title: 'Experiencia del estudiante',
+        body: 'Analizamos navegación, accesibilidad, usabilidad y soporte para favorecer retención y logro académico.',
+        icon: 'Users',
+    },
+    {
+        title: 'Evidencia y trazabilidad',
+        body: 'Documentamos fortalezas, brechas y oportunidades de mejora con evidencias concretas por estándar.',
+        icon: 'LineChart',
+    },
+]
+
+const AUDITORIA_QM_STANDARDS = [
+    {
+        title: '1. Descripción general e introducción',
+        body: 'Inicio del curso, estructura, políticas, requisitos técnicos y expectativas de comunicación.',
+        icon: 'BookOpenText',
+        value: 75,
+        scoreLabel: '75%',
+    },
+    {
+        title: '2. Objetivos de aprendizaje',
+        body: 'Resultados medibles, centrados en el estudiante y alineados con actividades y evaluaciones.',
+        icon: 'GraduationCap',
+        value: 87,
+        scoreLabel: '87%',
+    },
+    {
+        title: '3. Evaluación y medición',
+        body: 'Criterios claros de calificación, evaluaciones variadas y retroalimentación oportuna.',
+        icon: 'LineChart',
+        value: 85,
+        scoreLabel: '85%',
+    },
+    {
+        title: '4. Materiales didácticos',
+        body: 'Recursos pertinentes, actualizados y conectados con los resultados esperados del curso.',
+        icon: 'Layers',
+        value: 92,
+        scoreLabel: '92%',
+    },
+    {
+        title: '5. Actividades e interacción',
+        body: 'Actividades activas con interacción tutor-estudiante y colaboración entre pares.',
+        icon: 'Users',
+        value: 100,
+        scoreLabel: '100%',
+    },
+    {
+        title: '6. Tecnología del curso',
+        body: 'Herramientas tecnológicas que soportan el aprendizaje y promueven participación.',
+        icon: 'Settings2',
+        value: 88,
+        scoreLabel: '88%',
+    },
+    {
+        title: '7. Apoyo al estudiante',
+        body: 'Acceso a soporte técnico, servicios académicos y recursos institucionales de acompañamiento.',
+        icon: 'Building2',
+        value: 50,
+        scoreLabel: '50%',
+    },
+    {
+        title: '8. Accesibilidad y usabilidad',
+        body: 'Diseño navegable, legible y accesible para distintos perfiles y necesidades de aprendizaje.',
+        icon: 'Rocket',
+        value: 67,
+        scoreLabel: '67%',
+    },
+]
+
+const AUDITORIA_LANDING_WORKFLOW = [
+    {
+        title: '1. Alistamiento y muestra',
+        description: 'Definimos alcance, criterios y selección de módulos o aulas virtuales a revisar.',
+    },
+    {
+        title: '2. Recolección de evidencia',
+        description: 'Aplicamos instrumentos por estándar QM y registramos hallazgos técnicos y pedagógicos.',
+    },
+    {
+        title: '3. Análisis y ponderación',
+        description: 'Consolidamos resultados por estándar para identificar fortalezas, brechas y riesgos.',
+    },
+    {
+        title: '4. Ruta de mejoramiento',
+        description: 'Entregamos recomendaciones priorizadas con acciones concretas para elevar la calidad.',
+    },
+]
+
+const AUDITORIA_LANDING_FAQ = [
+    {
+        title: '¿La auditoría aplica solo para programas 100% virtuales?',
+        body: 'No. También aplica para programas híbridos o blended que utilicen LMS y recursos digitales.',
+    },
+    {
+        title: '¿Qué recibe la institución al finalizar?',
+        body: 'Un informe con resultados por estándar, evidencias, oportunidades de mejora y ruta de acción priorizada.',
+    },
+    {
+        title: '¿Cuánto tiempo toma una auditoría?',
+        body: 'Depende del número de módulos y la profundidad del análisis, pero se define desde la fase de alistamiento.',
+    },
+    {
+        title: '¿Se puede acompañar la implementación del plan de mejora?',
+        body: 'Sí. Podemos continuar con asesoría pedagógica y técnica para ejecutar la ruta de mejoramiento.',
+    },
+]
+
+const AUDITORIA_LANDING_RESOURCES = [
+    {
+        title: 'Rúbrica QM Higher Education',
+        body: 'Marco internacional para evaluar cursos virtuales en educación superior.',
+        label: 'Ver referencia',
+        url: 'https://www.qualitymatters.org/qa-resources/rubric-standards/higher-ed-rubric',
+        icon: 'ShieldCheck',
+    },
+    {
+        title: 'Matriz de hallazgos',
+        body: 'Consolidado por estándar y subestándar con evidencias observables.',
+        label: 'Solicitar muestra',
+        url: '#contacto',
+        icon: 'LayoutDashboard',
+    },
+    {
+        title: 'Informe ejecutivo',
+        body: 'Resumen de brechas críticas, fortalezas y prioridades de intervención.',
+        label: 'Ver estructura',
+        url: '#contacto',
+        icon: 'BarChart3',
+    },
+    {
+        title: 'Plan de mejoramiento',
+        body: 'Ruta de acción por fases con recomendaciones pedagógicas y técnicas.',
+        label: 'Hablar con un consultor',
+        url: '#contacto',
+        icon: 'Target',
+    },
+]
+
 function createEducationLandingBlocks(): SitePageBlock[] {
     const blocks: SitePageBlock[] = [
         {
@@ -2398,7 +2549,7 @@ function createEducationLandingBlocks(): SitePageBlock[] {
                         businessBenefit: 'Aseguramiento de la esencia académica y mejora en los índices de retención.',
                         idealWhen: 'Buscas validar la efectividad de tus programas o prepararte para acreditaciones.',
                         label: 'Conocer más',
-                        url: '#contacto',
+                        url: '/auditoria-programas-virtuales#servicios',
                     },
                     {
                         id: 'edu-digital',
@@ -2810,12 +2961,276 @@ function createVirtualizacionLandingBlocks(): SitePageBlock[] {
     return blocks
 }
 
+function createAuditoriaLandingBlocks(): SitePageBlock[] {
+    const blocks: SitePageBlock[] = [
+        {
+            id: 'hero',
+            type: 'hero',
+            name: 'Hero Servicio',
+            visible: true,
+            order: 0,
+            content: {
+                eyebrow: 'Auditoría de programas virtuales',
+                title: 'Asegura la calidad de tus aulas virtuales con estándares QM',
+                body: 'Evoluciona tu operación educativa con una evaluación rigurosa del cumplimiento técnico y pedagógico, enfocada en la retención estudiantil y la excelencia académica.',
+                primaryLabel: 'Solicitar auditoría',
+                primaryHref: '#contacto',
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0b1323',
+                align: 'left',
+                paddingY: '8rem',
+            },
+        },
+        {
+            id: 'promesas',
+            type: 'grid',
+            name: 'Indicadores de referencia',
+            visible: true,
+            order: 1,
+            content: {
+                title: 'Indicadores de referencia en auditoría',
+                body: 'Visualiza de forma clara y accionable el estado de tus componentes críticos para priorizar la intervención técnica y académica.',
+                items: [
+                    {
+                        title: '80% cumplimiento global',
+                        body: 'Meta de referencia para asegurar una experiencia de aprendizaje de alta calidad.',
+                        value: 80,
+                        metric: '80%',
+                        icon: 'LineChart',
+                    },
+                    {
+                        title: '8 estándares QM',
+                        body: 'Rúbrica internacional que cubre desde el diseño hasta la tecnología de apoyo.',
+                        value: 100,
+                        metric: '8/8',
+                        icon: 'ShieldCheck',
+                    },
+                    {
+                        title: '42 criterios de revisión',
+                        body: 'Validación detallada de cada aspecto pedagógico para garantizar la trazabilidad.',
+                        value: 84,
+                        metric: '42',
+                        icon: 'LayoutDashboard',
+                    },
+                    {
+                        title: 'Mejora continua',
+                        body: 'Proceso cíclico diseñado para elevar el estándar institucional permanentemente.',
+                        value: 75,
+                        metric: 'Ciclo',
+                        icon: 'Target',
+                    },
+                ],
+            },
+            style: {
+                backgroundColor: '#0f172a',
+                textColor: '#ffffff',
+                align: 'left',
+                columns: '3',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'clientes',
+            type: 'carousel',
+            name: 'Trayectoria y Confianza',
+            visible: true,
+            order: 2,
+            content: {
+                title: 'Instituciones que confían en nuestras auditorías',
+                body: 'Hemos acompañado a universidades y organizaciones en la ruta de la excelencia digital.',
+                items: [
+                    {
+                        id: 'marca-ejecutiva',
+                        title: 'Marca Ejecutiva',
+                        body: 'Aseguramiento de calidad para programas de alta dirección.',
+                        url: 'https://marcaejecutiva.co/',
+                        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/Marca+Ejecutiva.svg',
+                    },
+                    {
+                        id: 'icaza-jammoul',
+                        title: 'Icaza-Jammoul',
+                        body: 'Auditoría integral de cursos para certificación internacional.',
+                        url: 'https://icazajammoul.com/login/index.php',
+                        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/Icaza.svg',
+                    },
+                    {
+                        id: 'inetum',
+                        title: 'Inetum',
+                        body: 'Validación de estándares de formación técnica y corporativa.',
+                        url: 'https://doyouspeakinetum.com/',
+                        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/LOGO_INETUM.jpg',
+                    },
+                    {
+                        id: 'estudiemos-web',
+                        title: 'Estudiemos Web',
+                        body: 'Optimización de la experiencia del estudiante mediante auditoría QM.',
+                        url: 'https://estudiemosweb.com/',
+                        logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/logo+EW.png',
+                    },
+                ],
+            },
+            style: {
+                backgroundColor: '#ffffff',
+                textColor: '#0f172a',
+                align: 'center',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'servicios',
+            type: 'grid',
+            name: 'Alcance de la auditoría',
+            visible: true,
+            order: 3,
+            content: {
+                eyebrow: 'Qué auditamos',
+                title: 'Evaluación integral basada en evidencia',
+                body: 'Analizamos cada aula virtual bajo marcos internacionales para detectar brechas y oportunidades de mejora real.',
+                items: AUDITORIA_LANDING_EJES,
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0f172a',
+                align: 'left',
+                columns: '4',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'estandares-qm',
+            type: 'grid',
+            name: 'Estándares QM',
+            visible: true,
+            order: 4,
+            content: {
+                title: '8 estándares fundamentales para el éxito virtual',
+                body: 'Nuestra metodología se basa en la rúbrica Quality Matters para garantizar coherencia y rigor.',
+                items: AUDITORIA_QM_STANDARDS,
+            },
+            style: {
+                backgroundColor: '#f8fafc',
+                textColor: '#0f172a',
+                align: 'left',
+                columns: '2',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'entregables',
+            type: 'feature-list',
+            name: 'Entregables',
+            visible: true,
+            order: 5,
+            content: {
+                title: 'Acciones concretas para tu institución',
+                items: [
+                    { title: 'Matriz detallada de hallazgos por curso.', icon: 'LayoutDashboard' },
+                    { title: 'Priorización de brechas por nivel de criticidad.', icon: 'BarChart3' },
+                    { title: 'Evidencias de cumplimiento técnico-pedagógico.', icon: 'BookOpenText' },
+                    { title: 'Ruta de mejoramiento con hitos y responsables.', icon: 'Target' },
+                    { title: 'Reporte ejecutivo para toma de decisiones.', icon: 'Rocket' },
+                ],
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0f172a',
+                align: 'left',
+                columns: '3',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'recursos',
+            type: 'grid',
+            name: 'Recursos',
+            visible: true,
+            order: 6,
+            content: {
+                eyebrow: 'Herramientas de seguimiento',
+                title: 'Marcos de trabajo y decisión',
+                body: 'Herramientas diseñadas para facilitar la gestión del cambio y el control de calidad.',
+                items: AUDITORIA_LANDING_RESOURCES,
+            },
+            style: {
+                backgroundColor: '#ffffff',
+                textColor: '#0f172a',
+                align: 'left',
+                columns: '2',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'flujo',
+            type: 'timeline',
+            name: 'Ruta de auditoría',
+            visible: true,
+            order: 7,
+            content: {
+                eyebrow: 'Metodología',
+                title: 'Proceso de auditoría en 4 fases',
+                items: AUDITORIA_LANDING_WORKFLOW,
+                badges: ['Metodología QM', 'Evidencia Directa', 'Ruta Accionable'],
+            },
+            style: {
+                backgroundColor: '#0f172a',
+                textColor: '#ffffff',
+                align: 'left',
+                paddingY: '6rem',
+            },
+        },
+        {
+            id: 'faq',
+            type: 'accordion',
+            name: 'Preguntas frecuentes',
+            visible: true,
+            order: 8,
+            content: {
+                eyebrow: 'Resolviendo dudas',
+                title: 'Lo que necesitas saber para empezar',
+                items: AUDITORIA_LANDING_FAQ,
+            },
+            style: {
+                backgroundColor: 'transparent',
+                textColor: '#0f172a',
+                align: 'left',
+                paddingY: '5rem',
+            },
+        },
+        {
+            id: 'contacto',
+            type: 'contact',
+            name: 'Contacto Servicio',
+            visible: true,
+            order: 9,
+            content: {
+                eyebrow: 'Iniciemos hoy',
+                title: 'Hablemos de tu calidad académica virtual',
+                body: 'Escríbenos para agendar un diagnóstico inicial de tus programas en línea.',
+                email: 'andrestabla@algoritmot.com',
+                secondaryLabel: 'WhatsApp Consultoría',
+                secondaryHref: 'https://wa.me/573044544525',
+                serviceSlug: 'auditoria-virtual',
+            },
+            style: {
+                backgroundColor: '#ffffff',
+                textColor: '#0f172a',
+                paddingY: '6rem',
+            },
+        },
+    ]
+
+    return blocks
+}
+
 function createDefaultBlocksByPage(pageId: string, title: string, description: string, accentColor: string): SitePageBlock[] {
     if (pageId === 'home-nav') return createNavigationSelectorBlocks()
     if (pageId === 'home-root') return createServicesLandingBlocks(title)
     if (pageId === 'home-edu') return createEducationLandingBlocks()
     if (pageId === 'servicio-plataformas') return createPlataformasLandingBlocks()
     if (pageId === 'virtualizacion-programas') return createVirtualizacionLandingBlocks()
+    if (pageId === 'auditoria-programas-virtuales') return createAuditoriaLandingBlocks()
     if (pageId === 'home-inicio') return createClassicHomeBlocks(title, description, accentColor)
     if (pageId === 'case-transversal') return createTransversalCaseBlocks()
     return createDefaultBlocks(title, description, accentColor)
@@ -2916,6 +3331,163 @@ function ensureEducationClientsBlock(blocks: SitePageBlock[]) {
     return nextBlocks.map((block, index) => ({ ...block, order: index }))
 }
 
+function ensureAuditoriaPremiumBlocks(blocks: SitePageBlock[]) {
+    const defaultBlocks = createAuditoriaLandingBlocks()
+    if (!Array.isArray(blocks) || blocks.length === 0) return defaultBlocks
+
+    const normalizeAuditoriaText = (value: unknown) =>
+        (typeof value === 'string' ? value : '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim()
+
+    const includesAny = (source: string, terms: string[]) => terms.some((term) => source.includes(term))
+
+    const getItemAuditText = (item: unknown) => {
+        if (typeof item === 'string') return normalizeAuditoriaText(item)
+        if (!item || typeof item !== 'object') return ''
+        const source = item as Record<string, unknown>
+        return normalizeAuditoriaText(
+            [
+                source.title,
+                source.label,
+                source.body,
+                source.description,
+                source.metric,
+                source.scoreLabel,
+            ]
+                .filter((value) => typeof value === 'string')
+                .join(' ')
+        )
+    }
+
+    const inferAuditoriaBlockId = (block: SitePageBlock): string | null => {
+        const idText = normalizeAuditoriaText(block.id)
+        const nameText = normalizeAuditoriaText(block.name)
+        const titleText = normalizeAuditoriaText(block.content?.title)
+        const eyebrowText = normalizeAuditoriaText(block.content?.eyebrow)
+        const bodyText = normalizeAuditoriaText(block.content?.body)
+        const items = Array.isArray(block.content?.items) ? block.content.items : []
+        const itemText = items.map((item) => getItemAuditText(item)).join(' ')
+        const fullText = `${idText} ${nameText} ${titleText} ${eyebrowText} ${bodyText} ${itemText}`.trim()
+        const hasMetricLikeItem = items.some((item) => (
+            item &&
+            typeof item === 'object' &&
+            (
+                Object.prototype.hasOwnProperty.call(item, 'value') ||
+                Object.prototype.hasOwnProperty.call(item, 'metric') ||
+                Object.prototype.hasOwnProperty.call(item, 'scoreLabel')
+            )
+        ))
+
+        if (block.type === 'hero') return 'hero'
+        if (block.type === 'timeline') return 'flujo'
+        if (block.type === 'accordion') return 'faq'
+        if (block.type === 'contact') return 'contacto'
+        if (block.type === 'cta') return 'cta'
+
+        if (includesAny(fullText, ['estandares qm', 'estandar qm', 'quality matters'])) return 'estandares-qm'
+        if (includesAny(itemText, ['descripcion general e introduccion', 'objetivos de aprendizaje', 'accesibilidad y usabilidad'])) return 'estandares-qm'
+
+        if (block.type === 'feature-list' && includesAny(fullText, ['entregables', 'matriz de hallazgos', 'puntajes de cumplimiento'])) return 'entregables'
+        if (includesAny(fullText, ['activos para decision', 'rubrica qm higher education', 'informe ejecutivo', 'plan de mejoramiento'])) return 'recursos'
+        if (includesAny(fullText, ['indicadores de referencia', 'cumplimiento global de referencia', 'fases de mejora continua']) || hasMetricLikeItem) return 'promesas'
+        if (includesAny(fullText, ['alcance de la auditoria', 'que auditamos', 'auditoria tecnica y pedagogica'])) return 'servicios'
+        if (includesAny(fullText, ['respuestas claras para iniciar la auditoria', 'preguntas frecuentes'])) return 'faq'
+        if (includesAny(fullText, ['hablemos de la calidad', 'iniciemos tu proyecto', 'cuentanos el alcance'])) return 'contacto'
+        if (includesAny(fullText, ['ruta de auditoria en 4 fases', 'alistamiento y muestra', 'recoleccion de evidencia'])) return 'flujo'
+
+        return null
+    }
+
+    const cloneDefaultBlock = (block: SitePageBlock): SitePageBlock => ({
+        ...block,
+        content: {
+            ...block.content,
+            items: Array.isArray(block.content?.items)
+                ? block.content.items.map((item) => (item && typeof item === 'object' ? { ...(item as Record<string, unknown>) } : item))
+                : block.content?.items,
+        },
+        style: { ...block.style },
+    })
+
+    const defaultById = new Map(defaultBlocks.map((block) => [block.id, cloneDefaultBlock(block)]))
+    const nextBlocks = [...blocks]
+        .sort((a, b) => a.order - b.order)
+        .map((block) => ({
+            ...block,
+            content: { ...block.content },
+            style: { ...block.style },
+        }))
+
+    const canonicalOrder = ['hero', 'promesas', 'servicios', 'estandares-qm', 'entregables', 'recursos', 'flujo', 'faq', 'contacto']
+    const usedIds = new Set(nextBlocks.map((block) => block.id))
+
+    nextBlocks.forEach((block, index) => {
+        const inferredId = inferAuditoriaBlockId(block)
+        if (!inferredId || block.id === inferredId || usedIds.has(inferredId)) return
+        usedIds.delete(block.id)
+        usedIds.add(inferredId)
+        nextBlocks[index] = {
+            ...block,
+            id: inferredId,
+        }
+    })
+
+    const insertMissingBlock = (blockId: string, afterBlockId?: string) => {
+        const exists = nextBlocks.some((block) => block.id === blockId)
+        if (exists) return
+        const defaultBlock = defaultById.get(blockId)
+        if (!defaultBlock) return
+
+        const afterIndex = afterBlockId ? nextBlocks.findIndex((block) => block.id === afterBlockId) : -1
+        const insertAt = afterIndex >= 0 ? afterIndex + 1 : (blockId === 'hero' ? 0 : nextBlocks.length)
+        nextBlocks.splice(insertAt, 0, cloneDefaultBlock(defaultBlock))
+    }
+
+    canonicalOrder.forEach((blockId, index) => {
+        if (index === 0) {
+            insertMissingBlock(blockId)
+            return
+        }
+        insertMissingBlock(blockId, canonicalOrder[index - 1])
+    })
+
+    const standardsIndex = nextBlocks.findIndex((block) => block.id === 'estandares-qm')
+    const defaultStandards = defaultById.get('estandares-qm')
+    if (standardsIndex >= 0 && defaultStandards) {
+        const currentStandardsBlock = nextBlocks[standardsIndex]
+        const currentItems = Array.isArray(currentStandardsBlock.content?.items) ? currentStandardsBlock.content.items : []
+        const defaultItems = Array.isArray(defaultStandards.content?.items) ? defaultStandards.content.items : []
+
+        const mergedItems = currentItems.map((item, index) => {
+            if (!item || typeof item !== 'object') return item
+            const source = item as Record<string, unknown>
+            const fallbackItem = (defaultItems[index] && typeof defaultItems[index] === 'object')
+                ? (defaultItems[index] as Record<string, unknown>)
+                : {}
+            return {
+                ...source,
+                value: source.value ?? fallbackItem.value,
+                scoreLabel: source.scoreLabel ?? fallbackItem.scoreLabel,
+                icon: source.icon ?? fallbackItem.icon,
+            }
+        })
+
+        nextBlocks[standardsIndex] = {
+            ...currentStandardsBlock,
+            content: {
+                ...currentStandardsBlock.content,
+                items: mergedItems.length > 0 ? mergedItems : defaultItems,
+            },
+        }
+    }
+
+    return nextBlocks.map((block, index) => ({ ...block, order: index }))
+}
+
 function isOutdatedVirtualizacionBlocks(blocks: SitePageBlock[]) {
     return !blocks.some((block) => block.id === 'experiencias')
 }
@@ -2964,6 +3536,9 @@ function migrateLegacyBuilderPage(pageId: string, title: string, description: st
     }
     if (pageId === 'virtualizacion-programas' && isOutdatedVirtualizacionBlocks(blocks)) {
         return createDefaultBlocksByPage(pageId, title, description, accentColor)
+    }
+    if (pageId === 'auditoria-programas-virtuales') {
+        return ensureAuditoriaPremiumBlocks(blocks)
     }
     if (pageId === 'case-transversal' && isOutdatedCaseTransversalBlocks(blocks)) {
         return createDefaultBlocksByPage(pageId, title, description, accentColor)
@@ -3130,6 +3705,29 @@ const staticSiteArchitecture: SiteArchitecture = {
             order: 4,
             locked: false,
             blocks: createDefaultBlocksByPage('virtualizacion-programas', 'Virtualización de Programas', 'Experiencias de aprendizaje mediadas por tecnologías.', '#10b981'),
+        },
+        {
+            id: 'auditoria-programas-virtuales',
+            title: 'Auditoría de Programas Virtuales',
+            path: '/auditoria-programas-virtuales',
+            description: 'Evaluación de calidad de aulas virtuales con estándares Quality Matters (QM).',
+            category: 'servicios',
+            status: 'published',
+            editor: 'home',
+            template: 'immersive',
+            navLabel: 'Auditoría',
+            showInNavigation: false,
+            previewPath: '/auditoria-programas-virtuales',
+            accentColor: '#10b981',
+            notes: 'Página de servicio de auditoría técnica y pedagógica para programas virtuales.',
+            order: 5,
+            locked: false,
+            blocks: createDefaultBlocksByPage(
+                'auditoria-programas-virtuales',
+                'Auditoría de Programas Virtuales',
+                'Evaluación de calidad de aulas virtuales con estándares Quality Matters (QM).',
+                '#10b981'
+            ),
         },
         {
             id: 'home-inicio',

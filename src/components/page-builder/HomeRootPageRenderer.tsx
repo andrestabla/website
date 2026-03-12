@@ -14,6 +14,7 @@ type HomeRootPageRendererProps = {
 }
 
 type ItemObject = Record<string, unknown>
+type ChartPoint = { x: number; y: number }
 
 type ThemeColors = {
     primary: string
@@ -76,12 +77,26 @@ const THEMES: Record<string, ThemeColors> = {
         bgHighlight: 'bg-emerald-100',
         gradientStart: 'bg-emerald-200/40',
         gradientEnd: 'bg-teal-100/40',
+    },
+    '/auditoria-programas-virtuales': {
+        primary: 'bg-emerald-700',
+        primaryHover: 'hover:bg-emerald-800 hover:border-emerald-800',
+        secondary: 'text-emerald-700',
+        textAccent: 'text-emerald-900',
+        textHighlight: 'text-emerald-800',
+        border: 'border-emerald-200',
+        bgLight: 'bg-emerald-50/50',
+        bgHighlight: 'bg-emerald-100',
+        gradientStart: 'bg-emerald-200/40',
+        gradientEnd: 'bg-teal-100/40',
     }
 }
 
 const DEFAULT_THEME = THEMES['/empresas']
 
 const SERVICE_CARD_ICONS = [Search, Network, Users, Code2, Rocket, LineChart]
+const AUDITORIA_VISUAL_ICONS = [ShieldCheck, BarChart3, LayoutDashboard, Target, BookOpenText, Users, Settings2, Rocket]
+const AUDITORIA_STANDARD_FALLBACK_SCORES = [75, 87, 85, 92, 100, 88, 50, 67]
 const CMS_ICON_COMPONENTS: Record<string, LucideIcon> = {
     search: Search,
     network: Network,
@@ -94,6 +109,14 @@ const CMS_ICON_COMPONENTS: Record<string, LucideIcon> = {
     building2: Building2,
     layers: Layers,
     settings2: Settings2,
+    shieldcheck: ShieldCheck,
+    layoutdashboard: LayoutDashboard,
+    barchart3: BarChart3,
+    target: Target,
+    boxes: Boxes,
+    laptop: Laptop,
+    layout: Layout,
+    activity: Activity,
 }
 
 function handleSelectableBlockClick(
@@ -110,6 +133,41 @@ function handleSelectableBlockClick(
 
 function toText(value: unknown, fallback = '') {
     return typeof value === 'string' ? value : fallback
+}
+
+function toNumber(value: unknown, fallback = 0) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+    if (typeof value === 'string') {
+        const numeric = Number(value.replace(/[^\d.-]/g, ''))
+        if (Number.isFinite(numeric)) return numeric
+    }
+    return fallback
+}
+
+function clampPercentage(value: number) {
+    if (!Number.isFinite(value)) return 0
+    return Math.max(0, Math.min(100, value))
+}
+
+function buildChartPoints(values: number[], width = 300, height = 100, padding = 8): ChartPoint[] {
+    const safeValues = values.length > 0 ? values.map((value) => clampPercentage(value)) : [0]
+    const step = safeValues.length > 1 ? (width - padding * 2) / (safeValues.length - 1) : 0
+    return safeValues.map((value, index) => ({
+        x: Number((padding + index * step).toFixed(2)),
+        y: Number((height - padding - (value / 100) * (height - padding * 2)).toFixed(2)),
+    }))
+}
+
+function chartPointsToPolyline(points: ChartPoint[]) {
+    return points.map((point) => `${point.x},${point.y}`).join(' ')
+}
+
+function chartPointsToAreaPath(points: ChartPoint[], height: number, padding: number) {
+    if (points.length === 0) return ''
+    const first = points[0]
+    const last = points[points.length - 1]
+    const baseline = height - padding
+    return `M ${first.x} ${baseline} L ${chartPointsToPolyline(points)} L ${last.x} ${baseline} Z`
 }
 
 function normalizeCmsHref(value: unknown, fallback = '', currentPath = '/empresas') {
@@ -204,25 +262,41 @@ function getLogoInitials(value: string) {
     return initials || 'CL'
 }
 
+function subscribeToMediaQuery(
+    mediaQuery: MediaQueryList,
+    listener: (event: MediaQueryListEvent) => void
+) {
+    if (typeof mediaQuery.addEventListener === 'function') {
+        mediaQuery.addEventListener('change', listener)
+        return () => mediaQuery.removeEventListener('change', listener)
+    }
+
+    if (typeof mediaQuery.addListener === 'function') {
+        mediaQuery.addListener(listener)
+        return () => mediaQuery.removeListener(listener)
+    }
+
+    return () => undefined
+}
+
 function AnimatedNumber({ value, duration = 2 }: { value: number; duration?: number }) {
     const count = useMotionValue(0)
     const rounded = useTransform(count, (latest) => Math.round(latest))
     const ref = useRef(null)
     const isInView = useInView(ref, { once: true, margin: "-100px" })
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
-        if (typeof window === 'undefined') return false
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
         return window.matchMedia('(max-width: 767px)').matches
     })
 
     useEffect(() => {
-        if (typeof window === 'undefined') return
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
         const mediaQuery = window.matchMedia('(max-width: 767px)')
         const syncViewport = (event?: MediaQueryListEvent) => {
             setIsMobileViewport(event ? event.matches : mediaQuery.matches)
         }
         syncViewport()
-        mediaQuery.addEventListener('change', syncViewport)
-        return () => mediaQuery.removeEventListener('change', syncViewport)
+        return subscribeToMediaQuery(mediaQuery, syncViewport)
     }, [])
 
     useEffect(() => {
@@ -402,6 +476,404 @@ function renderPromisesBlock(block: SitePageBlock, theme: ThemeColors) {
     )
 }
 
+function getAuditoriaScore(item: ItemObject, fallback = 0) {
+    return clampPercentage(toNumber(item.value ?? item.score ?? item.percent, fallback))
+}
+
+function getAuditoriaScoreLabel(item: ItemObject, score: number) {
+    const explicit = toText(item.scoreLabel || item.valueLabel || item.metric)
+    return explicit || `${Math.round(score)}%`
+}
+
+function renderAuditoriaHeroBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
+    const primaryHref = normalizeCmsHref(block.content.primaryHref, '', currentPath)
+    const standardsHref = `${currentPath}#estandares-qm`
+    const chartValues = AUDITORIA_STANDARD_FALLBACK_SCORES
+    const points = buildChartPoints(chartValues, 280, 96, 10)
+    const polyline = chartPointsToPolyline(points)
+
+    return (
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.6rem] border border-slate-200 bg-white shadow-xl md:px-12 md:py-16 px-6 py-12">
+            <div className={`pointer-events-none absolute left-[5%] top-10 h-64 w-64 rounded-full blur-[100px] opacity-40 ${theme.gradientStart}`} />
+            <div className={`pointer-events-none absolute right-[5%] bottom-10 h-72 w-72 rounded-full blur-[110px] opacity-30 ${theme.gradientEnd}`} />
+            <div className="pointer-events-none absolute inset-0 services-grid-pattern opacity-[0.25]" />
+
+            <div className="relative grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
+                <div>
+                    <p className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.26em] bg-white/80 ${theme.border} ${theme.textAccent}`}>
+                        {toText(block.content.eyebrow, 'Auditoría de programas virtuales')}
+                    </p>
+
+                    <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[0.95] tracking-tight text-slate-900 md:text-6xl xl:text-7xl">
+                        {toText(block.content.title, 'Asegura la calidad de tus aulas virtuales con estándares QM')}
+                    </h1>
+
+                    {toText(block.content.body) && (
+                        <p className="mt-6 max-w-3xl text-lg leading-relaxed text-slate-700 md:text-xl">
+                            {toText(block.content.body)}
+                        </p>
+                    )}
+
+                    <div className="mt-10 flex flex-wrap gap-4">
+                        {toText(block.content.primaryLabel) && primaryHref && (
+                            <a
+                                href={primaryHref}
+                                className={`inline-flex items-center gap-2 border px-7 py-3 text-sm font-bold uppercase tracking-[0.2em] text-white transition-colors border-slate-900 bg-slate-900 ${theme.primaryHover}`}
+                            >
+                                {toText(block.content.primaryLabel)}
+                                <ArrowRight className="h-4 w-4" />
+                            </a>
+                        )}
+                        <a
+                            href={standardsHref}
+                            className={`inline-flex items-center gap-2 border px-7 py-3 text-sm font-bold uppercase tracking-[0.2em] text-slate-800 transition-colors border-slate-200 bg-white hover:border-slate-900 hover:text-slate-900 shadow-sm`}
+                        >
+                            Ver matriz QM
+                            <ArrowRight className="h-4 w-4" />
+                        </a>
+                    </div>
+
+                    <div className="mt-10 grid gap-3 sm:grid-cols-3">
+                        {[
+                            { label: 'Cobertura', value: '8 estándares' },
+                            { label: 'Criterios', value: '42 subestándares' },
+                            { label: 'Resultado guía', value: '80% cumplimiento' },
+                        ].map((metric) => (
+                            <article key={metric.label} className="rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{metric.label}</p>
+                                <p className="mt-1 text-base font-black text-slate-900">{metric.value}</p>
+                            </article>
+                        ))}
+                    </div>
+                </div>
+
+                <aside className="rounded-2xl border border-slate-200 bg-white/80 p-6 backdrop-blur-sm shadow-lg ring-1 ring-slate-900/5">
+                    <p className={`text-[11px] font-bold uppercase tracking-[0.24em] ${theme.textHighlight}`}>Panel de calidad</p>
+                    <h3 className="mt-3 text-2xl font-black text-slate-900">Lectura rápida de cumplimiento</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">Vista de referencia por estándar para priorizar la intervención académica y técnica.</p>
+
+                    <div className="mt-5 overflow-hidden rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                        <svg viewBox="0 0 280 96" className="h-24 w-full" preserveAspectRatio="none" role="img" aria-label="Tendencia de cumplimiento">
+                            <defs>
+                                <linearGradient id="auditoriaHeroLine" x1="0%" x2="100%" y1="0%" y2="0%">
+                                    <stop offset="0%" stopColor="#10b981" />
+                                    <stop offset="100%" stopColor="#06b6d4" />
+                                </linearGradient>
+                            </defs>
+                            <polyline fill="none" stroke="url(#auditoriaHeroLine)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={polyline} />
+                            {points.map((point, index) => (
+                                <circle key={`hero-point-${index}`} cx={point.x} cy={point.y} r="2.5" fill="#10b981" />
+                            ))}
+                        </svg>
+                    </div>
+
+                    <div className="mt-5 grid gap-2">
+                        {chartValues.slice(0, 4).map((score, index) => (
+                            <div key={`hero-bar-${index}`} className="flex items-center gap-3">
+                                <span className="w-5 text-[10px] font-bold uppercase text-slate-500">{index + 1}</span>
+                                <div className="h-2 flex-1 rounded-full bg-slate-100">
+                                    <span className="block h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500" style={{ width: `${score}%` }} />
+                                </div>
+                                <span className="w-10 text-right text-xs font-bold text-emerald-600">{score}%</span>
+                            </div>
+                        ))}
+                    </div>
+                </aside>
+            </div>
+        </div>
+    )
+}
+
+function renderAuditoriaMetricsBlock(block: SitePageBlock, _theme: ThemeColors) {
+    const items = ensureObjectItems(block.content.items)
+    if (items.length === 0) return renderPromisesBlock(block, _theme)
+
+    const scoredItems = items.map((item, index) => {
+        const score = getAuditoriaScore(item, AUDITORIA_STANDARD_FALLBACK_SCORES[index] ?? 75)
+        return {
+            item,
+            score,
+            scoreLabel: getAuditoriaScoreLabel(item, score),
+            Icon: resolveCmsIcon(toText(item.icon)) || AUDITORIA_VISUAL_ICONS[index % AUDITORIA_VISUAL_ICONS.length],
+        }
+    })
+    const summaryScore = Math.round(scoredItems.reduce((acc, entry) => acc + entry.score, 0) / Math.max(scoredItems.length, 1))
+    const gaugeStyle = { background: `conic-gradient(#10b981 ${summaryScore * 3.6}deg, rgba(148,163,184,0.2) ${summaryScore * 3.6}deg 360deg)` }
+    const chartPoints = buildChartPoints(scoredItems.map((entry) => entry.score), 300, 96, 10)
+    const chartAreaPath = chartPointsToAreaPath(chartPoints, 96, 10)
+    const chartPolyline = chartPointsToPolyline(chartPoints)
+
+    return (
+        <div className="mx-auto max-w-7xl">
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-800 bg-slate-950 px-6 py-10 shadow-2xl md:px-10 md:py-12">
+                <div className="pointer-events-none absolute left-0 top-0 h-72 w-72 rounded-full bg-emerald-500/20 blur-[100px]" />
+                <div className="pointer-events-none absolute right-0 top-1/3 h-72 w-72 rounded-full bg-cyan-500/10 blur-[120px]" />
+
+                <div className="relative grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
+                    <aside className="rounded-2xl border border-slate-700 bg-slate-900/70 p-6">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-emerald-300">
+                            {toText(block.content.title, 'Indicadores de referencia')}
+                        </p>
+                        {toText(block.content.body) && <p className="mt-3 text-sm leading-relaxed text-slate-300">{toText(block.content.body)}</p>}
+
+                        <div className="mt-6 flex justify-center">
+                            <div className="relative grid h-44 w-44 place-items-center rounded-full p-3" style={gaugeStyle}>
+                                <div className="grid h-full w-full place-items-center rounded-full bg-slate-950">
+                                    <div className="text-center">
+                                        <p className="text-4xl font-black tracking-tight text-white">{summaryScore}%</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Promedio</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
+                            <svg viewBox="0 0 300 96" className="h-24 w-full" preserveAspectRatio="none" role="img" aria-label="Tendencia de indicadores">
+                                <defs>
+                                    <linearGradient id="auditoriaMetricsArea" x1="0%" x2="0%" y1="0%" y2="100%">
+                                        <stop offset="0%" stopColor="rgba(16,185,129,0.45)" />
+                                        <stop offset="100%" stopColor="rgba(16,185,129,0)" />
+                                    </linearGradient>
+                                </defs>
+                                <path d={chartAreaPath} fill="url(#auditoriaMetricsArea)" />
+                                <polyline fill="none" stroke="#34d399" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" points={chartPolyline} />
+                            </svg>
+                        </div>
+                    </aside>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {scoredItems.map((entry, index) => {
+                            const { item, score, scoreLabel, Icon } = entry
+                            return (
+                                <article
+                                    key={`${item.id || index}`}
+                                    className="rounded-2xl border border-slate-700 bg-slate-900/60 p-5 text-white shadow-[0_12px_30px_rgba(2,6,23,0.35)] transition-all hover:-translate-y-1 hover:border-emerald-400/50 hover:bg-slate-900/80"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <p className="text-base font-black leading-tight text-white">
+                                            {toText(item.title || item.label || `Indicador ${index + 1}`)}
+                                        </p>
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-600 bg-slate-950 text-emerald-300">
+                                            <Icon className="h-5 w-5" />
+                                        </div>
+                                    </div>
+
+                                    {toText(item.body) && <p className="mt-3 text-sm leading-relaxed text-slate-300">{toText(item.body)}</p>}
+
+                                    <div className="mt-4">
+                                        <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                            <span>Lectura</span>
+                                            <span className="text-emerald-300">{scoreLabel}</span>
+                                        </div>
+                                        <div className="mt-2 h-2 rounded-full bg-slate-800">
+                                            <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-500" style={{ width: `${score}%` }} />
+                                        </div>
+                                    </div>
+                                </article>
+                            )
+                        })}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function renderAuditoriaScopeBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
+    const items = ensureObjectItems(block.content.items)
+
+    return (
+        <div className="mx-auto max-w-7xl">
+            <div className="max-w-4xl">
+                <p className={`text-[11px] font-bold uppercase tracking-[0.3em] ${theme.textAccent}`}>{toText(block.content.eyebrow, 'Qué auditamos')}</p>
+                <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900 md:text-6xl">{toText(block.content.title, 'Alcance de la auditoría')}</h2>
+                {toText(block.content.body) && <p className="mt-5 text-lg text-slate-700">{toText(block.content.body)}</p>}
+            </div>
+
+            <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                {items.map((item, index) => {
+                    const Icon = resolveCmsIcon(toText(item.icon)) || AUDITORIA_VISUAL_ICONS[index % AUDITORIA_VISUAL_ICONS.length]
+                    const href = normalizeCmsHref(item.url, '', currentPath)
+                    const hasCta = toText(item.label) && href
+
+                    return (
+                        <article
+                            key={`${item.id || index}`}
+                            className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-emerald-200/70 bg-gradient-to-b from-white to-emerald-50/40 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                        >
+                            <span className="pointer-events-none absolute -right-3 top-2 text-7xl font-black text-emerald-900/[0.07]">{index + 1}</span>
+                            <div className="pointer-events-none absolute bottom-0 left-0 h-1 w-0 bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500 group-hover:w-full" />
+
+                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${theme.border} bg-white ${theme.textAccent}`}>
+                                <Icon className="h-6 w-6" />
+                            </div>
+
+                            <h3 className="mt-5 text-xl font-black tracking-tight text-slate-900">{toText(item.title || item.label || `Componente ${index + 1}`)}</h3>
+                            {toText(item.body || item.description) && (
+                                <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-600">{toText(item.body || item.description)}</p>
+                            )}
+
+                            {hasCta && (
+                                <a
+                                    href={href}
+                                    className="mt-6 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-emerald-700 transition-colors hover:text-emerald-800"
+                                >
+                                    {toText(item.label)}
+                                    <ArrowRight className="h-4 w-4" />
+                                </a>
+                            )}
+                        </article>
+                    )
+                })}
+            </div>
+        </div>
+    )
+}
+
+function renderAuditoriaStandardsBlock(block: SitePageBlock, theme: ThemeColors) {
+    const title = toText(block.content.title)
+    const body = toText(block.content.body)
+    const items = ensureObjectItems(block.content.items)
+    if (items.length === 0) return renderFallbackBlock(block, theme)
+
+    const average = Math.round(
+        items.reduce((acc, item, index) => acc + getAuditoriaScore(item, AUDITORIA_STANDARD_FALLBACK_SCORES[index] ?? 75), 0) / Math.max(items.length, 1)
+    )
+
+    return (
+        <div className="mx-auto max-w-6xl">
+            {title && <h2 className="text-4xl font-black tracking-tight text-slate-900 md:text-5xl">{title}</h2>}
+            {body && <p className="mt-4 max-w-4xl text-lg leading-relaxed text-slate-600">{body}</p>}
+
+            <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="grid gap-4 md:grid-cols-2">
+                    {items.map((item, index) => {
+                        const itemTitle = toText(item.title || item.label || `Estándar ${index + 1}`)
+                        const itemBody = toText(item.body || item.description)
+                        const score = getAuditoriaScore(item, AUDITORIA_STANDARD_FALLBACK_SCORES[index] ?? 75)
+                        const scoreLabel = getAuditoriaScoreLabel(item, score)
+                        const Icon = resolveCmsIcon(toText(item.icon)) || AUDITORIA_VISUAL_ICONS[index % AUDITORIA_VISUAL_ICONS.length]
+
+                        return (
+                            <article key={`${item.id || index}`} className={`rounded-2xl border bg-white p-5 shadow-sm ${theme.border}`}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${theme.border} ${theme.bgLight} ${theme.textAccent}`}>
+                                        <Icon className="h-5 w-5" />
+                                    </div>
+                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
+                                        {scoreLabel}
+                                    </span>
+                                </div>
+                                <h3 className="mt-3 text-lg font-black leading-tight text-slate-900">{itemTitle}</h3>
+                                {itemBody && <p className="mt-2 text-sm leading-relaxed text-slate-600">{itemBody}</p>}
+
+                                <div className="mt-4 h-2 rounded-full bg-slate-200">
+                                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" style={{ width: `${score}%` }} />
+                                </div>
+                            </article>
+                        )
+                    })}
+                </div>
+
+                <aside className={`rounded-3xl border bg-white p-6 shadow-sm ${theme.border}`}>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-slate-500">Mapa gráfico</p>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">Distribución de cumplimiento por estándar QM.</p>
+
+                    <div className="mt-6">
+                        <div className="flex h-36 items-end gap-2">
+                            {items.map((item, index) => {
+                                const score = getAuditoriaScore(item, AUDITORIA_STANDARD_FALLBACK_SCORES[index] ?? 75)
+                                return (
+                                    <div key={`bar-${item.id || index}`} className="flex flex-1 flex-col items-center">
+                                        <div className="relative h-28 w-full overflow-hidden rounded-t-md bg-emerald-100/70">
+                                            <span className="absolute bottom-0 left-0 right-0 rounded-t-md bg-emerald-500/90" style={{ height: `${score}%` }} />
+                                        </div>
+                                        <span className="mt-2 text-[10px] font-bold text-slate-500">{index + 1}</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                        <p className="text-3xl font-black tracking-tight text-emerald-800">{average}%</p>
+                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">Promedio general</p>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    )
+}
+
+function renderAuditoriaDeliverablesBlock(block: SitePageBlock, theme: ThemeColors) {
+    const title = toText(block.content.title)
+    const items = ensureObjectItems(block.content.items)
+    if (items.length === 0) return renderFeatureListBlock(block, theme)
+
+    return (
+        <div className="mx-auto max-w-6xl">
+            {title && <h2 className="mb-8 text-4xl font-black tracking-tight text-slate-900 md:text-5xl">{title}</h2>}
+            <div className="grid gap-4 md:grid-cols-2">
+                {items.map((item, index) => {
+                    const Icon = resolveCmsIcon(toText(item.icon)) || AUDITORIA_VISUAL_ICONS[index % AUDITORIA_VISUAL_ICONS.length]
+                    return (
+                        <article key={`${item.id || index}`} className={`flex items-start gap-4 rounded-2xl border bg-white p-5 shadow-sm ${theme.border}`}>
+                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${theme.border} ${theme.bgLight} ${theme.textAccent}`}>
+                                <Icon className="h-5 w-5" />
+                            </div>
+                            <p className="text-base font-semibold leading-relaxed text-slate-800">{toText(item.title || item.label || `Entregable ${index + 1}`)}</p>
+                        </article>
+                    )
+                })}
+            </div>
+        </div>
+    )
+}
+
+function renderAuditoriaResourcesBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
+    const items = ensureObjectItems(block.content.items)
+    if (items.length === 0) return renderFallbackBlock(block, theme)
+
+    return (
+        <div className="mx-auto max-w-6xl">
+            <div className="max-w-4xl">
+                <p className={`text-[11px] font-bold uppercase tracking-[0.3em] ${theme.textAccent}`}>{toText(block.content.eyebrow, 'Recursos')}</p>
+                <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900 md:text-5xl">{toText(block.content.title, 'Recursos')}</h2>
+                {toText(block.content.body) && <p className="mt-4 text-lg text-slate-600">{toText(block.content.body)}</p>}
+            </div>
+
+            <div className="mt-10 grid gap-5 md:grid-cols-2">
+                {items.map((item, index) => {
+                    const href = normalizeCmsHref(item.url, '', currentPath)
+                    const isExternal = /^https?:\/\//i.test(href)
+                    const Icon = resolveCmsIcon(toText(item.icon)) || AUDITORIA_VISUAL_ICONS[index % AUDITORIA_VISUAL_ICONS.length]
+
+                    return (
+                        <article key={`${item.id || index}`} className={`rounded-2xl border bg-white p-6 shadow-sm ${theme.border}`}>
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${theme.border} ${theme.bgLight} ${theme.textAccent}`}>
+                                <Icon className="h-5 w-5" />
+                            </div>
+                            <h3 className="mt-4 text-xl font-black tracking-tight text-slate-900">{toText(item.title || item.label || `Recurso ${index + 1}`)}</h3>
+                            {toText(item.body || item.description) && <p className="mt-2 text-sm leading-relaxed text-slate-600">{toText(item.body || item.description)}</p>}
+                            {toText(item.label) && href && (
+                                <a
+                                    href={href}
+                                    target={isExternal ? '_blank' : undefined}
+                                    rel={isExternal ? 'noopener noreferrer' : undefined}
+                                    className="mt-5 inline-flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-emerald-700 hover:text-emerald-800"
+                                >
+                                    {toText(item.label)}
+                                    <ArrowRight className="h-4 w-4" />
+                                </a>
+                            )}
+                        </article>
+                    )
+                })}
+            </div>
+        </div>
+    )
+}
+
 function renderServicesGridBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
     const items = ensureObjectItems(block.content.items)
     return (
@@ -417,12 +889,15 @@ function renderServicesGridBlock(block: SitePageBlock, currentPath: string, them
                     const Icon = SERVICE_CARD_ICONS[index % SERVICE_CARD_ICONS.length]
                     const outcomes = ensureStringArray(item.outcomes)
                     const iconText = toText(item.icon)
+                    const ExplicitIcon = resolveCmsIcon(iconText)
 
                     return (
                         <article key={`${item.id || index}`} className={`services-card-shadow border bg-white/95 px-8 py-8 ${theme.border}`}>
                             <div className="flex items-start gap-3">
                                 <div className={`mt-0.5 flex h-12 w-12 items-center justify-center border ${theme.border} ${theme.bgLight} ${theme.textAccent}`}>
-                                    {iconText ? (
+                                    {ExplicitIcon ? (
+                                        <ExplicitIcon className="h-5 w-5" />
+                                    ) : iconText ? (
                                         <span className="text-lg leading-none">{iconText}</span>
                                     ) : (
                                         <Icon className="h-5 w-5" />
@@ -888,7 +1363,7 @@ function ExperienceCarouselCard({ item, index }: ExperienceCarouselCardProps) {
     const itemBody = toText(item.body || item.description)
     const images = resolveExperienceImages(item)
     const [isMobileViewport, setIsMobileViewport] = useState(() => {
-        if (typeof window === 'undefined') return false
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
         return window.matchMedia('(max-width: 767px)').matches
     })
     const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -915,14 +1390,13 @@ function ExperienceCarouselCard({ item, index }: ExperienceCarouselCardProps) {
     }, [portfolioModalOpen])
 
     useEffect(() => {
-        if (typeof window === 'undefined') return
+        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
         const mediaQuery = window.matchMedia('(max-width: 767px)')
         const syncViewport = (event?: MediaQueryListEvent) => {
             setIsMobileViewport(event ? event.matches : mediaQuery.matches)
         }
         syncViewport()
-        mediaQuery.addEventListener('change', syncViewport)
-        return () => mediaQuery.removeEventListener('change', syncViewport)
+        return subscribeToMediaQuery(mediaQuery, syncViewport)
     }, [])
 
     useEffect(() => {
@@ -1218,6 +1692,7 @@ export function HomeRootPageRenderer({
     const flowBlock = sortedBlocks.find((block) => block.id === 'flujo') ?? null
 
     const currentTheme = THEMES[page.path] || DEFAULT_THEME
+    const isAuditoriaPage = page.path === '/auditoria-programas-virtuales'
 
     return (
         <div className={`services-landing-theme ${className}`.trim()}>
@@ -1262,9 +1737,12 @@ export function HomeRootPageRenderer({
                             </div>
                         )}
 
-                        {block.id === 'hero' && renderHeroBlock(block, page.path, currentTheme)}
-                        {block.id === 'promesas' && renderPromisesBlock(block, currentTheme)}
-                        {block.id === 'servicios' && renderServicesGridBlock(block, page.path, currentTheme)}
+                        {block.id === 'hero' && (isAuditoriaPage ? renderAuditoriaHeroBlock(block, page.path, currentTheme) : renderHeroBlock(block, page.path, currentTheme))}
+                        {block.id === 'promesas' && (isAuditoriaPage ? renderAuditoriaMetricsBlock(block, currentTheme) : renderPromisesBlock(block, currentTheme))}
+                        {block.id === 'servicios' && (isAuditoriaPage ? renderAuditoriaScopeBlock(block, page.path, currentTheme) : renderServicesGridBlock(block, page.path, currentTheme))}
+                        {block.id === 'estandares-qm' && isAuditoriaPage && renderAuditoriaStandardsBlock(block, currentTheme)}
+                        {block.id === 'entregables' && isAuditoriaPage && renderAuditoriaDeliverablesBlock(block, currentTheme)}
+                        {block.id === 'recursos' && isAuditoriaPage && renderAuditoriaResourcesBlock(block, page.path, currentTheme)}
                         {block.id === 'flujo' && !benefitsBlock && renderStandaloneFlowBlock(block)}
                         {block.id === 'beneficios' && renderBenefitsAndFlow(block, flowBlock, selectable, selectedBlockId, currentTheme, onSelectBlock)}
                         {block.id === 'funcionalidades' && block.type === 'feature-list' && renderFeatureListBlock(block, currentTheme)}
@@ -1274,7 +1752,7 @@ export function HomeRootPageRenderer({
                         {block.id === 'faq' && renderFaqBlock(block, currentTheme)}
                         {block.id === 'contacto' && renderContactBlock(block, page.path, currentTheme)}
                         {block.id === 'cta' && renderCtaBlock(block, page.path, currentTheme)}
-                        {!['hero', 'promesas', 'servicios', 'flujo', 'beneficios', 'funcionalidades', 'clientes', 'faq', 'contacto', 'cta'].includes(block.id) && block.type !== 'carousel' && block.type !== 'tuprofe' && renderFallbackBlock(block, currentTheme)}
+                        {!['hero', 'promesas', 'servicios', 'estandares-qm', 'entregables', 'recursos', 'flujo', 'beneficios', 'funcionalidades', 'clientes', 'faq', 'contacto', 'cta'].includes(block.id) && block.type !== 'carousel' && block.type !== 'tuprofe' && renderFallbackBlock(block, currentTheme)}
                     </section>
                 )
             })}
