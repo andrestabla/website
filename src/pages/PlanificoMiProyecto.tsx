@@ -227,6 +227,17 @@ export default function PlanificoMiProyecto() {
     }
   }, [conversation, aiLoading, screen])
 
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      if (needDraft) {
+        textarea.style.height = `${textarea.scrollHeight}px`
+      }
+    }
+  }, [needDraft])
+
+
   const currentStep = screen === 'intro' ? 'basic' : screen
   const currentStepIndex = FLOW_STEPS.findIndex((item) => item.value === currentStep)
   const isChatting = conversation.length > 1
@@ -288,19 +299,6 @@ export default function PlanificoMiProyecto() {
     }
   }
 
-  const handleFollowUpClick = (question: string) => {
-    setNeedDraft((prev) => {
-      const trimmed = prev.trim()
-      const prefix = `[Respecto a: ${question}]\n`
-      if (!trimmed) return prefix
-      return `${trimmed}\n\n${prefix}`
-    })
-    
-    // Defer focus to ensure state updates don't block
-    setTimeout(() => {
-      textareaRef.current?.focus()
-    }, 50)
-  }
 
 
   const submitChatMessage = async (content: string, type: ProjectNeedType) => {
@@ -744,28 +742,12 @@ export default function PlanificoMiProyecto() {
                               value={needDraft}
                               onChange={(event) => setNeedDraft(event.target.value)}
                               onKeyDown={handleNeedInputKeyDown}
-                              rows={5}
+                              rows={1}
+
                               placeholder="Escríbeme qué necesitas, cómo se hace hoy, quién usa la solución, qué resultado esperas y para cuándo lo necesitas."
                               className="w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-4 py-4 text-base leading-relaxed text-slate-900 outline-none transition-colors focus:border-cyan-400"
                             />
 
-                            {aiState?.followUpQuestions.length ? (
-                              <div className="mt-4">
-                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Conviene responder ahora</p>
-                                <div className="mt-3 flex flex-wrap gap-3">
-                                  {aiState.followUpQuestions.map((question) => (
-                                    <button
-                                      key={question}
-                                      type="button"
-                                      onClick={() => handleFollowUpClick(question)}
-                                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm leading-relaxed text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900"
-                                    >
-                                      {question}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null}
 
                             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <p className="text-sm leading-relaxed text-slate-500">
