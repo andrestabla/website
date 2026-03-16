@@ -240,6 +240,14 @@ export default function PlanificoMiProyecto() {
     setScreen(next)
   }
 
+  const handleNeedInputKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey) return
+    event.preventDefault()
+    if (!aiLoading && needDraft.trim()) {
+      void handleNeedSubmit()
+    }
+  }
+
   const handleNeedOption = (value: ProjectNeedType) => {
     setSelectedNeedType(value)
     const option = NEED_OPTIONS.find((item) => item.value === value)
@@ -479,12 +487,10 @@ export default function PlanificoMiProyecto() {
                 </div>
               </div>
 
-              <div className="-mx-2 mt-6 overflow-x-auto px-2 pb-1">
-                <div className="grid min-w-[760px] gap-3 md:min-w-0 md:grid-cols-5">
+              <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
                   {FLOW_STEPS.map((item) => (
                     <StepBadge key={item.value} step={item} currentStep={currentStep} />
                   ))}
-                </div>
               </div>
 
               <div className="mt-8">
@@ -625,7 +631,7 @@ export default function PlanificoMiProyecto() {
                         </div>
 
                         <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white">
-                          <div className="max-h-[52vh] min-h-[320px] space-y-4 overflow-y-auto p-4 md:max-h-[60vh] md:p-5">
+                          <div className="max-h-[45vh] min-h-[300px] space-y-4 overflow-y-auto p-4 md:max-h-[60vh] md:p-5">
                             {conversation.map((message) => (
                               <div
                                 key={message.id}
@@ -660,6 +666,7 @@ export default function PlanificoMiProyecto() {
                             <textarea
                               value={needDraft}
                               onChange={(event) => setNeedDraft(event.target.value)}
+                              onKeyDown={handleNeedInputKeyDown}
                               rows={5}
                               placeholder="Escríbeme qué necesitas, cómo se hace hoy, quién usa la solución, qué resultado esperas y para cuándo lo necesitas."
                               className="w-full resize-none rounded-[1.25rem] border border-slate-200 bg-white px-4 py-4 text-base leading-relaxed text-slate-900 outline-none transition-colors focus:border-cyan-400"
@@ -685,7 +692,7 @@ export default function PlanificoMiProyecto() {
 
                             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                               <p className="text-sm leading-relaxed text-slate-500">
-                                Mientras más contexto des, mejor será la clasificación y la propuesta.
+                                Mientras más contexto des, mejor será la clasificación y la propuesta. <span className="font-medium">Enter envía, Shift+Enter crea salto de línea.</span>
                               </p>
                               <button type="button" onClick={handleNeedSubmit} disabled={aiLoading || !needDraft.trim()} className={cn(primaryButton, 'w-full sm:w-auto')}>
                                 {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
