@@ -104,6 +104,13 @@ const EMAIL_TEMPLATE_OPTIONS: Array<{ value: EmailTemplateId; label: string; des
     },
 ]
 
+const DEFAULT_EMAIL_CAMPAIGN_NAME = 'Campaña Q1'
+const DEFAULT_EMAIL_OBJECTIVE = 'Invitar a una sesión estratégica de transformación digital.'
+const DEFAULT_EMAIL_AUDIENCE = 'Directores de operaciones'
+const DEFAULT_EMAIL_TONE = 'Consultivo y directo'
+const DEFAULT_EMAIL_FROM_NAME = 'Marketing'
+const DEFAULT_EMAIL_TEMPLATE_ID: EmailTemplateId = 'executive'
+
 const LANDING_WIDGET_TEMPLATES: LandingWidgetTemplate[] = [
     {
         id: 'pain-point',
@@ -275,6 +282,10 @@ function ensureUniqueSectionId(baseId: string, sections: CampaignSection[]) {
     return next
 }
 
+function sanitizeEmailTemplateId(value: string | null): EmailTemplateId {
+    return value === 'minimal' || value === 'spotlight' ? value : 'executive'
+}
+
 export function ManageMarketing() {
     const { state, updateSite } = useCMS()
     const [searchParams, setSearchParams] = useSearchParams()
@@ -301,17 +312,17 @@ export function ManageMarketing() {
     const [scanScore, setScanScore] = useState<number | null>(null)
     const [scanFindings, setScanFindings] = useState<A11yFinding[]>([])
 
-    const [emailCampaignName, setEmailCampaignName] = useState('Campaña Q1')
-    const [emailObjective, setEmailObjective] = useState('Invitar a una sesión estratégica de transformación digital.')
-    const [emailAudience, setEmailAudience] = useState('Directores de operaciones')
-    const [emailTone, setEmailTone] = useState('Consultivo y directo')
+    const [emailCampaignName, setEmailCampaignName] = useState(() => searchParams.get('emailCampaign') || DEFAULT_EMAIL_CAMPAIGN_NAME)
+    const [emailObjective, setEmailObjective] = useState(DEFAULT_EMAIL_OBJECTIVE)
+    const [emailAudience, setEmailAudience] = useState(DEFAULT_EMAIL_AUDIENCE)
+    const [emailTone, setEmailTone] = useState(DEFAULT_EMAIL_TONE)
     const [emailSubject, setEmailSubject] = useState('')
     const [emailPreheader, setEmailPreheader] = useState('')
     const [emailBodyText, setEmailBodyText] = useState('')
     const [emailCtaLabel, setEmailCtaLabel] = useState('Agendar sesión')
     const [emailCtaHref, setEmailCtaHref] = useState('/#contacto')
-    const [emailFromName, setEmailFromName] = useState(state.site.name || 'Marketing')
-    const [emailTemplateId, setEmailTemplateId] = useState<EmailTemplateId>('executive')
+    const [emailFromName, setEmailFromName] = useState(() => searchParams.get('emailFrom') || state.site.name || DEFAULT_EMAIL_FROM_NAME)
+    const [emailTemplateId, setEmailTemplateId] = useState<EmailTemplateId>(() => sanitizeEmailTemplateId(searchParams.get('emailTemplate')))
     const [emailRecipientsText, setEmailRecipientsText] = useState('')
     const [emailImportedCount, setEmailImportedCount] = useState<number | null>(null)
     const [emailLoading, setEmailLoading] = useState(false)
@@ -377,17 +388,38 @@ export function ManageMarketing() {
         const next = new URLSearchParams(searchParamsString)
         if (activeTab === 'popup') next.delete('tab')
         else next.set('tab', activeTab)
+        if (emailCampaignName.trim() && emailCampaignName.trim() !== DEFAULT_EMAIL_CAMPAIGN_NAME) {
+            next.set('emailCampaign', emailCampaignName.trim())
+        } else {
+            next.delete('emailCampaign')
+        }
+        if (emailFromName.trim() && emailFromName.trim() !== (state.site.name || DEFAULT_EMAIL_FROM_NAME)) {
+            next.set('emailFrom', emailFromName.trim())
+        } else {
+            next.delete('emailFrom')
+        }
+        if (emailTemplateId !== DEFAULT_EMAIL_TEMPLATE_ID) {
+            next.set('emailTemplate', emailTemplateId)
+        } else {
+            next.delete('emailTemplate')
+        }
         if (next.toString() !== searchParamsString) {
             setSearchParams(next, { replace: true })
         }
-    }, [activeTab, searchParamsString, setSearchParams])
+    }, [activeTab, emailCampaignName, emailFromName, emailTemplateId, searchParamsString, setSearchParams, state.site.name])
 
     useEffect(() => {
         if (!emailFromName.trim()) {
-            setEmailFromName(state.site.name || 'Marketing')
+            setEmailFromName(state.site.name || DEFAULT_EMAIL_FROM_NAME)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [state.site.name])
+
+    const resetEmailViewFilters = () => {
+        setEmailCampaignName(DEFAULT_EMAIL_CAMPAIGN_NAME)
+        setEmailFromName(state.site.name || DEFAULT_EMAIL_FROM_NAME)
+        setEmailTemplateId(DEFAULT_EMAIL_TEMPLATE_ID)
+    }
 
     const buildUTM = (path: string) => {
         const base = (state.site.url || 'https://algoritmot.com').replace(/\/+$/, '')
@@ -988,9 +1020,47 @@ export function ManageMarketing() {
 
             {activeTab === 'email' && (
                 <div className="bg-white border border-slate-200 p-8 space-y-6">
-                    <div className="flex items-center gap-3">
-                        <Mail className="w-5 h-5 text-brand-primary" />
-                        <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Email Marketing</h2>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <Mail className="w-5 h-5 text-brand-primary" />
+                            <div>
+                                <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Email Marketing</h2>
+                                <p className="mt-1 text-xs text-slate-500">Campaña, remitente y plantilla quedan persistidos en la URL para compartir la vista exacta.</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => copyToClipboard(window.location.href)}
+                                className="h-10 px-3 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                            >
+                                <Copy className="w-3.5 h-3.5 inline mr-2" />
+                                Copiar vista
+                            </button>
+                            <button
+                                type="button"
+                                onClick={resetEmailViewFilters}
+                                className="h-10 px-3 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                            >
+                                Restablecer vista
+                            </button>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Campaña activa</div>
+                            <div className="mt-2 text-sm font-bold text-slate-900">{emailCampaignName || DEFAULT_EMAIL_CAMPAIGN_NAME}</div>
+                        </div>
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Remitente</div>
+                            <div className="mt-2 text-sm font-bold text-slate-900">{emailFromName || state.site.name || DEFAULT_EMAIL_FROM_NAME}</div>
+                        </div>
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Plantilla</div>
+                            <div className="mt-2 text-sm font-bold text-slate-900">
+                                {EMAIL_TEMPLATE_OPTIONS.find((item) => item.value === emailTemplateId)?.label || 'Executive Dark'}
+                            </div>
+                        </div>
                     </div>
                     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                         <div className="space-y-4">
