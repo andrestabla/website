@@ -23,6 +23,8 @@ const ManagedCustomPage = lazy(() => import('./pages/ManagedCustomPage').then((m
 const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })))
 const GeneradorCasosAI = lazy(() => import('./pages/GeneradorCasosAI').then((module) => ({ default: module.GeneradorCasosAI })))
 const PlanificoMiProyecto = lazy(() => import('./pages/PlanificoMiProyecto'))
+const HazloTuMismo = lazy(() => import('./pages/HazloTuMismo'))
+
 const NavigationSelector = lazy(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
 // const HomeEducacion = lazy(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
 
@@ -289,6 +291,8 @@ function App() {
               <Route path="/landing-servicios" element={<ManagedPublishedRoute routePath="/landing-servicios" fallback={<ServiciosLandingSimple />} />} />
               <Route path="/generador-casos" element={<GeneradorCasosAI />} />
               <Route path="/planifico-mi-proyecto" element={<PlanificoMiProyecto />} />
+              <Route path="/hazlo-tu-mismo" element={<HazloTuMismo />} />
+
 
               {/* Admin Routes */}
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
