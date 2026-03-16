@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
     Megaphone,
     Copy,
@@ -76,6 +77,7 @@ type CampaignLanding = {
 }
 
 type LandingViewport = 'desktop' | 'tablet' | 'mobile'
+type MarketingTab = 'popup' | 'email' | 'landing' | 'growth'
 
 type LandingWidgetTemplate = {
     id: string
@@ -177,6 +179,32 @@ function SelectField({
     )
 }
 
+function MarketingTabButton({
+    active,
+    label,
+    icon: Icon,
+    onClick,
+}: {
+    active: boolean
+    label: string
+    icon: typeof Megaphone
+    onClick: () => void
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`flex items-center gap-2 px-6 py-4 font-black text-[11px] uppercase tracking-widest transition-all border-b-2 ${active
+                ? 'border-brand-primary text-brand-primary bg-blue-50/40'
+                : 'border-transparent text-slate-400 hover:text-slate-700'
+                }`}
+        >
+            <Icon className="w-4 h-4" />
+            {label}
+        </button>
+    )
+}
+
 function createEmptyLanding(): CampaignLanding {
     return {
         id: '',
@@ -249,6 +277,7 @@ function ensureUniqueSectionId(baseId: string, sections: CampaignSection[]) {
 
 export function ManageMarketing() {
     const { state, updateSite } = useCMS()
+    const [searchParams, setSearchParams] = useSearchParams()
     const [selected, setSelected] = useState<SelectedVariants>({})
     const [utmSource, setUtmSource] = useState('linkedin')
     const [utmMedium, setUtmMedium] = useState('social')
@@ -304,6 +333,10 @@ export function ManageMarketing() {
     const [landingViewport, setLandingViewport] = useState<LandingViewport>('desktop')
     const [landingSelectedBlock, setLandingSelectedBlock] = useState<'hero' | 'offer' | 'form' | `section:${number}`>('hero')
     const [landingDraggedSectionIndex, setLandingDraggedSectionIndex] = useState<number | null>(null)
+    const [activeTab, setActiveTab] = useState<MarketingTab>(() => {
+        const value = searchParams.get('tab')
+        return value === 'email' || value === 'landing' || value === 'growth' ? value : 'popup'
+    })
 
     const pick = (serviceSlug: string, variant: string) => {
         setSelected((s) => ({ ...s, [serviceSlug]: variant }))
@@ -337,6 +370,17 @@ export function ManageMarketing() {
     useEffect(() => {
         void loadLandings()
     }, [])
+
+    const searchParamsString = searchParams.toString()
+
+    useEffect(() => {
+        const next = new URLSearchParams(searchParamsString)
+        if (activeTab === 'popup') next.delete('tab')
+        else next.set('tab', activeTab)
+        if (next.toString() !== searchParamsString) {
+            setSearchParams(next, { replace: true })
+        }
+    }, [activeTab, searchParamsString, setSearchParams])
 
     useEffect(() => {
         if (!emailFromName.trim()) {
@@ -733,6 +777,15 @@ export function ManageMarketing() {
                 ? 'max-w-3xl'
                 : 'max-w-full'
 
+    const tabIntro =
+        activeTab === 'popup'
+            ? 'Configura captación onsite: popup, copy asistido y mensajes del formulario.'
+            : activeTab === 'email'
+                ? 'Prepara campañas, remitente, plantillas y carga masiva de destinatarios.'
+                : activeTab === 'landing'
+                    ? 'Construye y administra landings focalizadas con canvas visual e IA.'
+                    : 'Herramientas de crecimiento para enlaces, variantes y accesibilidad.'
+
     return (
         <div className="space-y-12 pb-20">
             <div className="flex items-center justify-between gap-4">
@@ -769,275 +822,301 @@ export function ManageMarketing() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <div className="bg-white border border-slate-200 p-8 space-y-6">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Megaphone className="w-5 h-5 text-brand-primary" />
-                        <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Popup Builder</h2>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Field label="Popup activo">
-                            <SelectField
-                                value={draft.popupEnabled}
-                                onChange={(v) => setSite('popupEnabled', v)}
-                                options={[
-                                    { value: 'false', label: 'Desactivado' },
-                                    { value: 'true', label: 'Activado' },
-                                ]}
-                            />
-                        </Field>
-                        <Field label="Trigger">
-                            <SelectField
-                                value={draft.popupTrigger}
-                                onChange={(v) => setSite('popupTrigger', v)}
-                                options={[
-                                    { value: 'time', label: 'Por tiempo' },
-                                    { value: 'scroll', label: 'Por scroll' },
-                                    { value: 'exit', label: 'Por intención de salida' },
-                                ]}
-                            />
-                        </Field>
-                        <Field label="Páginas objetivo">
-                            <SelectField
-                                value={draft.popupPages}
-                                onChange={(v) => setSite('popupPages', v)}
-                                options={[
-                                    { value: 'all', label: 'Todo el sitio' },
-                                    { value: 'home', label: 'Solo Home' },
-                                    { value: 'services', label: 'Servicios' },
-                                    { value: 'products', label: 'Productos' },
-                                    { value: 'protocols', label: 'Protocolos' },
-                                ]}
-                            />
-                        </Field>
-                        <Field label="Frecuencia">
-                            <SelectField
-                                value={draft.popupFrequency}
-                                onChange={(v) => setSite('popupFrequency', v)}
-                                options={[
-                                    { value: 'once_session', label: '1 vez por sesión' },
-                                    { value: 'once_day', label: '1 vez por día' },
-                                    { value: 'always', label: 'Siempre mostrar' },
-                                ]}
-                            />
-                        </Field>
-                        <Field label="Delay (segundos)">
-                            <Input value={draft.popupDelaySeconds} onChange={(e) => setSite('popupDelaySeconds', e.target.value)} />
-                        </Field>
-                        <Field label="Scroll %">
-                            <Input value={draft.popupScrollPercent} onChange={(e) => setSite('popupScrollPercent', e.target.value)} />
-                        </Field>
-                    </div>
-                    <Field label="Título popup">
-                        <Input value={draft.popupTitle} onChange={(e) => setSite('popupTitle', e.target.value)} />
-                    </Field>
-                    <Field label="Mensaje popup">
-                        <Textarea rows={3} value={draft.popupBody} onChange={(e) => setSite('popupBody', e.target.value)} />
-                    </Field>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Field label="CTA label">
-                            <Input value={draft.popupCtaLabel} onChange={(e) => setSite('popupCtaLabel', e.target.value)} />
-                        </Field>
-                        <Field label="CTA URL">
-                            <Input value={draft.popupCtaHref} onChange={(e) => setSite('popupCtaHref', e.target.value)} />
-                        </Field>
-                    </div>
-                    <Field label="Label botón dismiss">
-                        <Input value={draft.popupDismissLabel} onChange={(e) => setSite('popupDismissLabel', e.target.value)} />
-                    </Field>
-                    <div className="border border-slate-200 bg-slate-50 p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Preview</div>
-                        <div className="mt-3 text-xl font-black tracking-tight text-slate-900">{popupPreview.title}</div>
-                        <div className="mt-2 text-sm text-slate-600">{popupPreview.body}</div>
-                        <div className="mt-4 flex items-center gap-2">
-                            <span className="px-3 py-2 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest">{popupPreview.ctaLabel}</span>
-                            <span className="px-3 py-2 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600">{popupPreview.dismissLabel}</span>
-                        </div>
-                    </div>
+            <div className="bg-white border border-slate-200">
+                <div className="flex flex-wrap border-b border-slate-200">
+                    <MarketingTabButton active={activeTab === 'popup'} onClick={() => setActiveTab('popup')} icon={Megaphone} label="Popup y conversión" />
+                    <MarketingTabButton active={activeTab === 'email'} onClick={() => setActiveTab('email')} icon={Mail} label="Email marketing" />
+                    <MarketingTabButton active={activeTab === 'landing'} onClick={() => setActiveTab('landing')} icon={Rocket} label="Landing builder" />
+                    <MarketingTabButton active={activeTab === 'growth'} onClick={() => setActiveTab('growth')} icon={FlaskConical} label="Growth tools" />
                 </div>
-
-                <div className="space-y-8">
-                    <div className="bg-white border border-slate-200 p-8 space-y-5">
-                        <div className="flex items-center gap-3">
-                            <Sparkles className="w-5 h-5 text-brand-primary" />
-                            <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">AI Popup Copy</h2>
-                        </div>
-                        <Field label="Objetivo">
-                            <Textarea rows={3} value={aiObjective} onChange={(e) => setAiObjective(e.target.value)} />
-                        </Field>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="Audiencia">
-                                <Input value={aiAudience} onChange={(e) => setAiAudience(e.target.value)} />
-                            </Field>
-                            <Field label="Tono">
-                                <Input value={aiTone} onChange={(e) => setAiTone(e.target.value)} />
-                            </Field>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={generateAiCopy}
-                                disabled={aiLoading}
-                                className="h-11 px-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 disabled:opacity-60"
-                            >
-                                {aiLoading ? 'Generando...' : 'Generar copy con IA'}
-                            </button>
-                            {aiLoading && <RefreshCw className="w-4 h-4 animate-spin text-slate-400" />}
-                            {aiProviderUsed && (
-                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
-                                    {aiProviderUsed}
-                                </div>
-                            )}
-                        </div>
-                        {aiError && <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{aiError}</div>}
+                <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/60">
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                        {activeTab === 'popup'
+                            ? 'Captación onsite'
+                            : activeTab === 'email'
+                                ? 'Campañas por correo'
+                                : activeTab === 'landing'
+                                    ? 'Activos de conversión'
+                                    : 'Optimización y distribución'}
                     </div>
-
-                    <div className="bg-white border border-slate-200 p-8 space-y-5">
-                        <div className="flex items-center gap-3">
-                            <FlaskConical className="w-5 h-5 text-brand-primary" />
-                            <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Formulario de Conversión</h2>
-                        </div>
-                        <Field label="Mensaje éxito formulario">
-                            <Textarea rows={3} value={draft.formSuccessMessage} onChange={(e) => setSite('formSuccessMessage', e.target.value)} />
-                        </Field>
-                        <Field label="Mensaje error formulario">
-                            <Textarea rows={3} value={draft.formErrorMessage} onChange={(e) => setSite('formErrorMessage', e.target.value)} />
-                        </Field>
-                        <div className="text-xs text-slate-500">
-                            El formulario envía `POST /api/contact-submit`. Puedes integrar automatizaciones vía `CONTACT_FORM_WEBHOOK_URL`.
-                        </div>
-                    </div>
+                    <p className="mt-2 text-sm text-slate-500">{tabIntro}</p>
                 </div>
             </div>
 
-            <div className="bg-white border border-slate-200 p-8 space-y-6">
-                <div className="flex items-center gap-3">
-                    <Mail className="w-5 h-5 text-brand-primary" />
-                    <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Email Marketing</h2>
-                </div>
+            {activeTab === 'popup' && (
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                        <Field label="Nombre de campaña">
-                            <Input value={emailCampaignName} onChange={(e) => setEmailCampaignName(e.target.value)} />
-                        </Field>
-                        <Field label="Objetivo de campaña (IA)">
-                            <Textarea rows={3} value={emailObjective} onChange={(e) => setEmailObjective(e.target.value)} />
-                        </Field>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="Audiencia">
-                                <Input value={emailAudience} onChange={(e) => setEmailAudience(e.target.value)} />
-                            </Field>
-                            <Field label="Tono">
-                                <Input value={emailTone} onChange={(e) => setEmailTone(e.target.value)} />
-                            </Field>
+                    <div className="bg-white border border-slate-200 p-8 space-y-6">
+                        <div className="flex items-center gap-3 mb-2">
+                            <Megaphone className="w-5 h-5 text-brand-primary" />
+                            <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Popup Builder</h2>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={generateAiEmail}
-                                disabled={emailLoading}
-                                className="h-11 px-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 disabled:opacity-60"
-                            >
-                                <WandSparkles className="w-4 h-4 inline mr-2" />
-                                Generar email con IA
-                            </button>
-                            {emailProviderUsed && (
-                                <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
-                                    {emailProviderUsed}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Field label="Nombre remitente">
-                                <Input
-                                    value={emailFromName}
-                                    onChange={(e) => setEmailFromName(e.target.value)}
-                                    placeholder="Ej: Equipo AlgoritmoT"
-                                />
-                            </Field>
-                            <Field label="Plantilla de correo">
+                            <Field label="Popup activo">
                                 <SelectField
-                                    value={emailTemplateId}
-                                    onChange={(value) => setEmailTemplateId(value as EmailTemplateId)}
-                                    options={EMAIL_TEMPLATE_OPTIONS.map((item) => ({ value: item.value, label: item.label }))}
+                                    value={draft.popupEnabled}
+                                    onChange={(v) => setSite('popupEnabled', v)}
+                                    options={[
+                                        { value: 'false', label: 'Desactivado' },
+                                        { value: 'true', label: 'Activado' },
+                                    ]}
                                 />
                             </Field>
+                            <Field label="Trigger">
+                                <SelectField
+                                    value={draft.popupTrigger}
+                                    onChange={(v) => setSite('popupTrigger', v)}
+                                    options={[
+                                        { value: 'time', label: 'Por tiempo' },
+                                        { value: 'scroll', label: 'Por scroll' },
+                                        { value: 'exit', label: 'Por intención de salida' },
+                                    ]}
+                                />
+                            </Field>
+                            <Field label="Páginas objetivo">
+                                <SelectField
+                                    value={draft.popupPages}
+                                    onChange={(v) => setSite('popupPages', v)}
+                                    options={[
+                                        { value: 'all', label: 'Todo el sitio' },
+                                        { value: 'home', label: 'Solo Home' },
+                                        { value: 'services', label: 'Servicios' },
+                                        { value: 'products', label: 'Productos' },
+                                        { value: 'protocols', label: 'Protocolos' },
+                                    ]}
+                                />
+                            </Field>
+                            <Field label="Frecuencia">
+                                <SelectField
+                                    value={draft.popupFrequency}
+                                    onChange={(v) => setSite('popupFrequency', v)}
+                                    options={[
+                                        { value: 'once_session', label: '1 vez por sesión' },
+                                        { value: 'once_day', label: '1 vez por día' },
+                                        { value: 'always', label: 'Siempre mostrar' },
+                                    ]}
+                                />
+                            </Field>
+                            <Field label="Delay (segundos)">
+                                <Input value={draft.popupDelaySeconds} onChange={(e) => setSite('popupDelaySeconds', e.target.value)} />
+                            </Field>
+                            <Field label="Scroll %">
+                                <Input value={draft.popupScrollPercent} onChange={(e) => setSite('popupScrollPercent', e.target.value)} />
+                            </Field>
                         </div>
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                            {(EMAIL_TEMPLATE_OPTIONS.find((item) => item.value === emailTemplateId)?.description) || 'Plantilla estándar para campañas.'}
-                            <span className="ml-2 font-bold text-slate-700">Incluye logo automáticamente.</span>
-                            <span className="ml-2 text-slate-500">Executive Dark y Spotlight Gradient usan logo en blanco por defecto.</span>
-                        </div>
-                        <Field label="Asunto">
-                            <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} />
+                        <Field label="Título popup">
+                            <Input value={draft.popupTitle} onChange={(e) => setSite('popupTitle', e.target.value)} />
                         </Field>
-                        <Field label="Preheader">
-                            <Input value={emailPreheader} onChange={(e) => setEmailPreheader(e.target.value)} />
-                        </Field>
-                        <Field label="Body (texto)">
-                            <Textarea rows={8} value={emailBodyText} onChange={(e) => setEmailBodyText(e.target.value)} />
+                        <Field label="Mensaje popup">
+                            <Textarea rows={3} value={draft.popupBody} onChange={(e) => setSite('popupBody', e.target.value)} />
                         </Field>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Field label="CTA label">
-                                <Input value={emailCtaLabel} onChange={(e) => setEmailCtaLabel(e.target.value)} />
+                                <Input value={draft.popupCtaLabel} onChange={(e) => setSite('popupCtaLabel', e.target.value)} />
                             </Field>
-                            <Field label="CTA href">
-                                <Input value={emailCtaHref} onChange={(e) => setEmailCtaHref(e.target.value)} />
+                            <Field label="CTA URL">
+                                <Input value={draft.popupCtaHref} onChange={(e) => setSite('popupCtaHref', e.target.value)} />
                             </Field>
                         </div>
-                        <Field label="Destinatarios (emails separados por coma o salto de línea)">
-                            <Textarea rows={5} value={emailRecipientsText} onChange={(e) => setEmailRecipientsText(e.target.value)} />
+                        <Field label="Label botón dismiss">
+                            <Input value={draft.popupDismissLabel} onChange={(e) => setSite('popupDismissLabel', e.target.value)} />
                         </Field>
-                        <Field label="Carga masiva de destinatarios (CSV/TXT)">
-                            <div className="space-y-2">
-                                <input
-                                    type="file"
-                                    accept=".csv,.txt"
-                                    onChange={(event) => {
-                                        const file = event.target.files?.[0] || null
-                                        void handleBulkRecipientsUpload(file)
-                                        event.currentTarget.value = ''
-                                    }}
-                                    className="block w-full text-xs text-slate-600 file:mr-3 file:border file:border-slate-200 file:bg-white file:px-3 file:py-2 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:text-slate-600 hover:file:border-slate-300"
-                                />
-                                <div className="flex items-center gap-2 text-xs text-slate-500">
-                                    <Upload className="w-3.5 h-3.5" />
-                                    <span>Sube un archivo con correos; se deduplican automáticamente.</span>
-                                </div>
-                                {emailImportedCount !== null && (
-                                    <div className="text-xs font-bold text-emerald-700">Importados: {emailImportedCount} contactos válidos.</div>
+                        <div className="border border-slate-200 bg-slate-50 p-5">
+                            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Preview</div>
+                            <div className="mt-3 text-xl font-black tracking-tight text-slate-900">{popupPreview.title}</div>
+                            <div className="mt-2 text-sm text-slate-600">{popupPreview.body}</div>
+                            <div className="mt-4 flex items-center gap-2">
+                                <span className="px-3 py-2 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest">{popupPreview.ctaLabel}</span>
+                                <span className="px-3 py-2 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600">{popupPreview.dismissLabel}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-8">
+                        <div className="bg-white border border-slate-200 p-8 space-y-5">
+                            <div className="flex items-center gap-3">
+                                <Sparkles className="w-5 h-5 text-brand-primary" />
+                                <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">AI Popup Copy</h2>
+                            </div>
+                            <Field label="Objetivo">
+                                <Textarea rows={3} value={aiObjective} onChange={(e) => setAiObjective(e.target.value)} />
+                            </Field>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Field label="Audiencia">
+                                    <Input value={aiAudience} onChange={(e) => setAiAudience(e.target.value)} />
+                                </Field>
+                                <Field label="Tono">
+                                    <Input value={aiTone} onChange={(e) => setAiTone(e.target.value)} />
+                                </Field>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={generateAiCopy}
+                                    disabled={aiLoading}
+                                    className="h-11 px-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 disabled:opacity-60"
+                                >
+                                    {aiLoading ? 'Generando...' : 'Generar copy con IA'}
+                                </button>
+                                {aiLoading && <RefreshCw className="w-4 h-4 animate-spin text-slate-400" />}
+                                {aiProviderUsed && (
+                                    <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                        {aiProviderUsed}
+                                    </div>
                                 )}
                             </div>
-                        </Field>
-                        <div className="flex flex-wrap items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={() => sendEmailCampaign(true)}
-                                disabled={emailLoading}
-                                className="h-11 px-4 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
-                            >
-                                Enviar preview
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => sendEmailCampaign(false)}
-                                disabled={emailLoading}
-                                className="h-11 px-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-800 disabled:opacity-60"
-                            >
-                                <Send className="w-4 h-4 inline mr-2" />
-                                Enviar campaña
-                            </button>
-                            {emailLoading && <RefreshCw className="w-4 h-4 animate-spin text-slate-400" />}
+                            {aiError && <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{aiError}</div>}
                         </div>
-                        {emailError && <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{emailError}</div>}
-                        {emailResult && <div className="bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-700">{emailResult}</div>}
+
+                        <div className="bg-white border border-slate-200 p-8 space-y-5">
+                            <div className="flex items-center gap-3">
+                                <FlaskConical className="w-5 h-5 text-brand-primary" />
+                                <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Formulario de Conversión</h2>
+                            </div>
+                            <Field label="Mensaje éxito formulario">
+                                <Textarea rows={3} value={draft.formSuccessMessage} onChange={(e) => setSite('formSuccessMessage', e.target.value)} />
+                            </Field>
+                            <Field label="Mensaje error formulario">
+                                <Textarea rows={3} value={draft.formErrorMessage} onChange={(e) => setSite('formErrorMessage', e.target.value)} />
+                            </Field>
+                            <div className="text-xs text-slate-500">
+                                El formulario envía `POST /api/contact-submit`. Puedes integrar automatizaciones vía `CONTACT_FORM_WEBHOOK_URL`.
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
+            {activeTab === 'email' && (
+                <div className="bg-white border border-slate-200 p-8 space-y-6">
+                    <div className="flex items-center gap-3">
+                        <Mail className="w-5 h-5 text-brand-primary" />
+                        <h2 className="font-black uppercase tracking-[0.3em] text-xs text-slate-900">Email Marketing</h2>
+                    </div>
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                            <Field label="Nombre de campaña">
+                                <Input value={emailCampaignName} onChange={(e) => setEmailCampaignName(e.target.value)} />
+                            </Field>
+                            <Field label="Objetivo de campaña (IA)">
+                                <Textarea rows={3} value={emailObjective} onChange={(e) => setEmailObjective(e.target.value)} />
+                            </Field>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Field label="Audiencia">
+                                    <Input value={emailAudience} onChange={(e) => setEmailAudience(e.target.value)} />
+                                </Field>
+                                <Field label="Tono">
+                                    <Input value={emailTone} onChange={(e) => setEmailTone(e.target.value)} />
+                                </Field>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={generateAiEmail}
+                                    disabled={emailLoading}
+                                    className="h-11 px-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 disabled:opacity-60"
+                                >
+                                    <WandSparkles className="w-4 h-4 inline mr-2" />
+                                    Generar email con IA
+                                </button>
+                                {emailProviderUsed && (
+                                    <div className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full border border-blue-200 bg-blue-50 text-brand-primary">
+                                        {emailProviderUsed}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Field label="Nombre remitente">
+                                    <Input
+                                        value={emailFromName}
+                                        onChange={(e) => setEmailFromName(e.target.value)}
+                                        placeholder="Ej: Equipo AlgoritmoT"
+                                    />
+                                </Field>
+                                <Field label="Plantilla de correo">
+                                    <SelectField
+                                        value={emailTemplateId}
+                                        onChange={(value) => setEmailTemplateId(value as EmailTemplateId)}
+                                        options={EMAIL_TEMPLATE_OPTIONS.map((item) => ({ value: item.value, label: item.label }))}
+                                    />
+                                </Field>
+                            </div>
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                                {(EMAIL_TEMPLATE_OPTIONS.find((item) => item.value === emailTemplateId)?.description) || 'Plantilla estándar para campañas.'}
+                                <span className="ml-2 font-bold text-slate-700">Incluye logo automáticamente.</span>
+                                <span className="ml-2 text-slate-500">Executive Dark y Spotlight Gradient usan logo en blanco por defecto.</span>
+                            </div>
+                            <Field label="Asunto">
+                                <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} />
+                            </Field>
+                            <Field label="Preheader">
+                                <Input value={emailPreheader} onChange={(e) => setEmailPreheader(e.target.value)} />
+                            </Field>
+                            <Field label="Body (texto)">
+                                <Textarea rows={8} value={emailBodyText} onChange={(e) => setEmailBodyText(e.target.value)} />
+                            </Field>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Field label="CTA label">
+                                    <Input value={emailCtaLabel} onChange={(e) => setEmailCtaLabel(e.target.value)} />
+                                </Field>
+                                <Field label="CTA href">
+                                    <Input value={emailCtaHref} onChange={(e) => setEmailCtaHref(e.target.value)} />
+                                </Field>
+                            </div>
+                            <Field label="Destinatarios (emails separados por coma o salto de línea)">
+                                <Textarea rows={5} value={emailRecipientsText} onChange={(e) => setEmailRecipientsText(e.target.value)} />
+                            </Field>
+                            <Field label="Carga masiva de destinatarios (CSV/TXT)">
+                                <div className="space-y-2">
+                                    <input
+                                        type="file"
+                                        accept=".csv,.txt"
+                                        onChange={(event) => {
+                                            const file = event.target.files?.[0] || null
+                                            void handleBulkRecipientsUpload(file)
+                                            event.currentTarget.value = ''
+                                        }}
+                                        className="block w-full text-xs text-slate-600 file:mr-3 file:border file:border-slate-200 file:bg-white file:px-3 file:py-2 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:text-slate-600 hover:file:border-slate-300"
+                                    />
+                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                        <Upload className="w-3.5 h-3.5" />
+                                        <span>Sube un archivo con correos; se deduplican automáticamente.</span>
+                                    </div>
+                                    {emailImportedCount !== null && (
+                                        <div className="text-xs font-bold text-emerald-700">Importados: {emailImportedCount} contactos válidos.</div>
+                                    )}
+                                </div>
+                            </Field>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => sendEmailCampaign(true)}
+                                    disabled={emailLoading}
+                                    className="h-11 px-4 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                                >
+                                    Enviar preview
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => sendEmailCampaign(false)}
+                                    disabled={emailLoading}
+                                    className="h-11 px-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-800 disabled:opacity-60"
+                                >
+                                    <Send className="w-4 h-4 inline mr-2" />
+                                    Enviar campaña
+                                </button>
+                                {emailLoading && <RefreshCw className="w-4 h-4 animate-spin text-slate-400" />}
+                            </div>
+                            {emailError && <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{emailError}</div>}
+                            {emailResult && <div className="bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-700">{emailResult}</div>}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'landing' && (
             <div className="bg-white border border-slate-200 p-8 space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -1522,7 +1601,10 @@ export function ManageMarketing() {
                 )}
                 {landingError && <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{landingError}</div>}
             </div>
+            )}
 
+            {activeTab === 'growth' && (
+            <>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                 <div className="space-y-6">
                     <div className="flex items-center gap-3 mb-2">
@@ -1682,6 +1764,8 @@ export function ManageMarketing() {
                     </div>
                 )}
             </div>
+            </>
+            )}
         </div>
     )
 }
