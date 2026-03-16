@@ -214,6 +214,8 @@ export default function PlanificoMiProyecto() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const conversationEndRef = useRef<HTMLDivElement | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -283,6 +285,21 @@ export default function PlanificoMiProyecto() {
       void handleNeedSubmit()
     }
   }
+
+  const handleFollowUpClick = (question: string) => {
+    setNeedDraft((prev) => {
+      const trimmed = prev.trim()
+      const prefix = `[Respecto a: ${question}]\n`
+      if (!trimmed) return prefix
+      return `${trimmed}\n\n${prefix}`
+    })
+    
+    // Defer focus to ensure state updates don't block
+    setTimeout(() => {
+      textareaRef.current?.focus()
+    }, 50)
+  }
+
 
   const submitChatMessage = async (content: string, type: ProjectNeedType) => {
     const userMessage: ChatMessage = {
@@ -712,6 +729,7 @@ export default function PlanificoMiProyecto() {
 
                           <div className="border-t border-slate-200 bg-slate-50/70 p-4 md:p-5">
                             <textarea
+                              ref={textareaRef}
                               value={needDraft}
                               onChange={(event) => setNeedDraft(event.target.value)}
                               onKeyDown={handleNeedInputKeyDown}
@@ -728,7 +746,7 @@ export default function PlanificoMiProyecto() {
                                     <button
                                       key={question}
                                       type="button"
-                                      onClick={() => setNeedDraft(question)}
+                                      onClick={() => handleFollowUpClick(question)}
                                       className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm leading-relaxed text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900"
                                     >
                                       {question}
