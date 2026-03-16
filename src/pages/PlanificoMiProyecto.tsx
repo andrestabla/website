@@ -229,6 +229,8 @@ export default function PlanificoMiProyecto() {
 
   const currentStep = screen === 'intro' ? 'basic' : screen
   const currentStepIndex = FLOW_STEPS.findIndex((item) => item.value === currentStep)
+  const isChatting = conversation.length > 1
+
 
   const canContinueBasic = useMemo(() => {
     const emailOk = /.+@.+\..+/.test(profile.email)
@@ -628,74 +630,83 @@ export default function PlanificoMiProyecto() {
 
                 {screen === 'need' && (
                   <div className="space-y-6">
-                    <div className={panelClass}>
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-3 text-cyan-700">
-                            <BrainCircuit className="h-6 w-6" />
-                             <p className="text-[11px] font-black uppercase tracking-[0.24em]">Paso 2: Necesidad y alcance</p>
+                     {!isChatting && (
+                      <div className={panelClass}>
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                          <div>
+                            <div className="flex items-center gap-3 text-cyan-700">
+                              <BrainCircuit className="h-6 w-6" />
+                               <p className="text-[11px] font-black uppercase tracking-[0.24em]">Paso 2: Necesidad y alcance</p>
+                            </div>
+                            <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900">Necesidad y alcance.</h2>
+                            <p className="mt-4 max-w-3xl text-lg leading-relaxed text-slate-600">
+                              En esta pantalla trabajamos como conversación. Cuéntame qué necesitas, la IA te hará preguntas para precisar el caso y solo avanzamos cuando tengamos una lectura útil.
+                            </p>
                           </div>
-                          <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900">Necesidad y alcance.</h2>
-                          <p className="mt-4 max-w-3xl text-lg leading-relaxed text-slate-600">
-                            En esta pantalla trabajamos como conversación. Cuéntame qué necesitas, la IA te hará preguntas para precisar el caso y solo avanzamos cuando tengamos una lectura útil.
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {aiState?.providerUsed && (
-                            <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
-                              {aiState.providerUsed === 'openai'
-                                ? 'OpenAI'
-                                : aiState.providerUsed === 'gemini'
-                                  ? 'Gemini'
-                                  : 'Lectura local'}
-                            </span>
-                          )}
-                          {aiState?.complexity && (
-                            <span className="rounded-full border border-cyan-300 bg-cyan-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-cyan-800">
-                              {aiState.complexityLabel}
-                            </span>
-                          )}
+                          <div className="flex flex-wrap items-center gap-2">
+                            {aiState?.providerUsed && (
+                              <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                                {aiState.providerUsed === 'openai'
+                                  ? 'OpenAI'
+                                  : aiState.providerUsed === 'gemini'
+                                    ? 'Gemini'
+                                    : 'Lectura local'}
+                              </span>
+                            )}
+                            {aiState?.complexity && (
+                              <span className="rounded-full border border-cyan-300 bg-cyan-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-cyan-800">
+                                {aiState.complexityLabel}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
+
 
                     <div className={panelClass}>
                       <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 md:p-5">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
-                          <div>
-                            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">Conversación guiada</p>
-                            <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Trabajemos tu caso como si ya estuviéramos en sesión.</h3>
-                          </div>
-                          <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
-                            Paso a paso
-                          </div>
-                        </div>
+                         {!isChatting && (
+                          <>
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+                              <div>
+                                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">Conversación guiada</p>
+                                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">Trabajemos tu caso como si ya estuviéramos en sesión.</h3>
+                              </div>
+                              <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                                Paso a paso
+                              </div>
+                            </div>
 
-                        <div className="mt-4">
-                          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Opciones rápidas para empezar</p>
-                          <div className="mt-3 flex flex-wrap gap-3">
-                            {NEED_OPTIONS.map((option) => {
-                              const active = selectedNeedType === option.value
-                              return (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  onClick={() => handleNeedOption(option.value)}
-                                  className={cn(
-                                    'rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition-colors',
-                                    active
-                                      ? 'border-cyan-500 bg-cyan-50 text-cyan-800'
-                                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                                  )}
-                                >
-                                  {option.label}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </div>
+                            <div className="mt-4">
+                              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Opciones rápidas para empezar</p>
+                              <div className="mt-3 flex flex-wrap gap-3">
+                                {NEED_OPTIONS.map((option) => {
+                                  const active = selectedNeedType === option.value
+                                  return (
+                                    <button
+                                      key={option.value}
+                                      type="button"
+                                      onClick={() => handleNeedOption(option.value)}
+                                      className={cn(
+                                        'rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] transition-colors',
+                                        active
+                                          ? 'border-cyan-500 bg-cyan-50 text-cyan-800'
+                                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                                      )}
+                                    >
+                                      {option.label}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          </>
+                        )}
 
-                        <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white">
+
+                        <div className={cn("rounded-[1.5rem] border border-slate-200 bg-white", isChatting ? "mt-0" : "mt-5")}>
+
                           <div className="max-h-[45vh] min-h-[300px] space-y-4 overflow-y-auto p-4 md:max-h-[60vh] md:p-5">
                             {conversation.map((message) => (
                               <div
