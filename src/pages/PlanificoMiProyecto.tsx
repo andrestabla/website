@@ -780,33 +780,6 @@ export default function PlanificoMiProyecto() {
                         </div>
                       </div>
 
-                      {aiState && (
-                        <div className="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-                          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Tipo detectado</p>
-                            <p className="mt-2 text-xl font-black tracking-tight text-slate-900">{aiState.detectedNeedLabel}</p>
-                            <p className="mt-4 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Resumen actual</p>
-                            <p className="mt-2 text-sm leading-relaxed text-slate-600">{aiState.summary}</p>
-                          </div>
-                          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Estado de la conversación</p>
-                            <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                              {aiState.readyForProposal
-                                ? 'Ya hay suficiente información para avanzar a la definición de metodología.'
-                                : 'Aún conviene seguir conversando uno o dos turnos más para afinar la propuesta.'}
-                            </p>
-                            {aiState.missingInfo.length > 0 && (
-                              <ul className="mt-4 space-y-2 text-sm text-slate-700">
-                                {aiState.missingInfo.map((item) => (
-                                  <li key={item} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        </div>
-                      )}
 
                       <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <button type="button" onClick={() => goToScreen('basic')} className={backButton}>
