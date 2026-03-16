@@ -840,24 +840,17 @@
 
   [data-page-id="hazlo-tu-mismo"] {
     --hazlo-bg: #050816;
-    --hazlo-surface: rgba(10, 16, 34, 0.78);
-    --hazlo-surface-strong: rgba(7, 11, 28, 0.94);
-    --hazlo-card: rgba(11, 17, 32, 0.72);
-    --hazlo-line: rgba(148, 163, 184, 0.14);
-    --hazlo-line-strong: rgba(148, 163, 184, 0.22);
     --hazlo-ink: #f8fafc;
-    --hazlo-muted: rgba(226, 232, 240, 0.78);
-    --hazlo-accent: #38bdf8;
-    --hazlo-accent-soft: rgba(56, 189, 248, 0.16);
-    --hazlo-violet: rgba(129, 140, 248, 0.18);
+    --hazlo-muted: rgba(203, 213, 225, 0.92);
+    --hazlo-line: rgba(148, 163, 184, 0.18);
+    --hazlo-accent: #22d3ee;
     position: relative;
     isolation: isolate;
     color: var(--hazlo-ink);
     background:
-      radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.22), transparent 24%),
-      radial-gradient(circle at 86% 12%, rgba(56, 189, 248, 0.18), transparent 18%),
-      radial-gradient(circle at 16% 12%, rgba(14, 165, 233, 0.12), transparent 20%),
-      linear-gradient(180deg, #030712 0%, #07101f 24%, #091226 52%, #08101f 100%);
+      radial-gradient(circle at 85% 10%, rgba(34, 211, 238, 0.2), transparent 24%),
+      radial-gradient(circle at 15% 12%, rgba(99, 102, 241, 0.18), transparent 24%),
+      linear-gradient(180deg, #040712 0%, #0a1024 40%, #091124 100%);
   }
 
   [data-page-id="hazlo-tu-mismo"]::before {
@@ -866,13 +859,12 @@
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background: url('/assets/landing/hazlo-tu-mismo-mesh.svg') center top / 100% auto no-repeat;
-    opacity: 0.54;
+    background: url('/assets/landing/hazlo-tu-mismo-mesh.svg') center top / cover no-repeat;
+    opacity: 0.42;
     mix-blend-mode: screen;
   }
 
   [data-page-id="hazlo-tu-mismo"] section {
-    position: relative;
     border-top: 1px solid var(--hazlo-line);
   }
 
@@ -881,106 +873,87 @@
   }
 
   [data-page-id="hazlo-tu-mismo"] section>.mx-auto {
-    max-width: min(1280px, calc(100% - 2rem));
+    max-width: min(1080px, calc(100% - 2rem));
   }
 
-  [data-page-id="hazlo-tu-mismo"] h3 {
-    line-height: 0.98;
-    letter-spacing: -0.04em;
+  [data-page-id="hazlo-tu-mismo"] h3,
+  [data-page-id="hazlo-tu-mismo"] h2 {
+    line-height: 1.02;
+    letter-spacing: -0.03em;
     text-wrap: balance;
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] {
-    min-height: 78vh;
+    min-height: 92vh;
     display: flex;
     align-items: center;
     overflow: hidden;
-    box-shadow: inset 0 -1px 0 rgba(148, 163, 184, 0.1);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"]::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(circle at 72% 40%, rgba(125, 211, 252, 0.12), transparent 20%),
-      radial-gradient(circle at 76% 76%, rgba(79, 70, 229, 0.18), transparent 18%),
-      linear-gradient(180deg, rgba(5, 8, 22, 0.18), rgba(5, 8, 22, 0.02));
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"]::after {
     content: "";
     position: absolute;
-    right: max(-7rem, -8vw);
-    top: clamp(4rem, 11vw, 8rem);
-    width: min(42vw, 34rem);
+    right: -7rem;
+    top: 4.5rem;
+    width: min(44vw, 28rem);
     aspect-ratio: 1;
-    pointer-events: none;
     background: url('/assets/landing/hazlo-tu-mismo-orb.svg') center / contain no-repeat;
-    filter: drop-shadow(0 48px 90px rgba(14, 165, 233, 0.18));
-    opacity: 0.96;
-    animation: hazloOrbFloat 16s ease-in-out infinite;
+    filter: drop-shadow(0 34px 66px rgba(2, 6, 23, 0.52));
+    opacity: 0.82;
+    pointer-events: none;
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"]>.mx-auto {
     position: relative;
-    z-index: 1;
+    z-index: 2;
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"]>.mx-auto>div {
-    max-width: min(760px, 100%);
+    max-width: 760px;
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"]>.mx-auto>div>p:first-child {
     display: inline-flex;
-    align-items: center;
-    border: 1px solid rgba(148, 163, 184, 0.26);
-    background: rgba(8, 12, 29, 0.55);
-    backdrop-filter: blur(12px);
+    border: 1px solid rgba(148, 163, 184, 0.32);
     border-radius: 999px;
-    padding: 0.72rem 1rem;
-    color: rgba(226, 232, 240, 0.82);
-    box-shadow: 0 24px 48px -38px rgba(0, 0, 0, 0.72);
+    background: rgba(7, 11, 28, 0.56);
+    padding: 0.68rem 1rem;
+    color: rgba(226, 232, 240, 0.92);
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2 {
     margin-top: 1.2rem;
-    max-width: 10ch;
-    font-size: clamp(3.5rem, 9vw, 8rem);
-    line-height: 0.9;
-    letter-spacing: -0.065em;
+    font-size: clamp(2.8rem, 8vw, 5.4rem);
+    max-width: 14ch;
     color: #f8fbff;
-    text-shadow: 0 18px 48px rgba(2, 6, 23, 0.58);
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2+ p {
-    max-width: 28ch;
-    margin-top: 1.25rem;
-    font-size: clamp(1.2rem, 2vw, 1.75rem);
-    line-height: 1.2;
-    color: rgba(232, 240, 255, 0.96);
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2+p {
+    margin-top: 1rem;
+    max-width: 34ch;
+    font-size: clamp(1.18rem, 2.2vw, 1.6rem);
+    color: #e2e8f0;
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2+ p + p {
-    max-width: 60ch;
-    margin-top: 1.3rem;
-    font-size: 1.05rem;
-    line-height: 1.85;
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2+p+p {
+    margin-top: 1.15rem;
+    max-width: 58ch;
+    font-size: 1.02rem;
+    line-height: 1.8;
     color: var(--hazlo-muted);
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] [href] {
-    min-height: 54px;
-    border-radius: 16px;
-    border-color: rgba(148, 163, 184, 0.26);
-    box-shadow: 0 24px 44px -34px rgba(2, 6, 23, 0.92);
+    min-height: 52px;
+    border-radius: 14px;
+    border-color: rgba(148, 163, 184, 0.34);
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] [href]:first-child {
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.96), rgba(59, 130, 246, 0.96));
-    border-color: rgba(125, 211, 252, 0.55);
+    background: linear-gradient(135deg, #22d3ee 0%, #2563eb 100%);
+    border-color: rgba(34, 211, 238, 0.7);
     color: #020617 !important;
+    box-shadow: 0 24px 44px -30px rgba(37, 99, 235, 0.45);
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] [href]:last-child {
@@ -988,372 +961,237 @@
     color: #f8fafc !important;
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] {
-    margin-top: clamp(-5.5rem, -6vw, -4rem);
-    z-index: 4;
-    border-top: 0;
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="tension"],
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="bloqueos"],
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="rutas"],
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="autoridad"],
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="faq-caso"] {
+    color: #0f172a;
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"]>.mx-auto {
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 28px;
-    background:
-      linear-gradient(140deg, rgba(12, 19, 40, 0.95), rgba(7, 11, 28, 0.88)),
-      linear-gradient(90deg, rgba(56, 189, 248, 0.08), rgba(99, 102, 241, 0.08));
-    backdrop-filter: blur(18px);
-    box-shadow: 0 36px 80px -46px rgba(2, 6, 23, 0.88);
-    padding: clamp(1.1rem, 2vw, 1.6rem);
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="tension"] h3,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="bloqueos"] h3,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="rutas"] h3,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="autoridad"] h3,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="faq-caso"] h3 {
+    color: #0f172a;
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] h3 {
-    color: #f8fafc;
-    font-size: clamp(1.5rem, 2vw, 2rem);
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="tension"] p,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="bloqueos"] p,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="rutas"] p,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="autoridad"] p,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="faq-caso"] p {
+    color: #475569;
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] h3 + p {
-    color: rgba(226, 232, 240, 0.75);
-    max-width: 60ch;
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="bloqueos"] ul,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="metodologia"] ul {
+    gap: 0.9rem !important;
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] .mt-5.grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 0.85rem !important;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] article {
-    border: 1px solid rgba(148, 163, 184, 0.14);
-    border-radius: 20px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] article p.text-4xl {
-    color: #f8fafc;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] article p:last-child {
-    color: rgba(191, 219, 254, 0.75);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="transformacion"],
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="situacion-inicial"] {
-    background-color: transparent !important;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="transformacion"]>.mx-auto,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="situacion-inicial"]>.mx-auto {
-    max-width: min(1180px, calc(100% - 2rem));
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="transformacion"] h3,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="situacion-inicial"] h3 {
-    max-width: 13ch;
-    font-size: clamp(2.6rem, 4.8vw, 4.6rem);
-    color: #f8fafc;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="transformacion"] p:last-child,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="situacion-inicial"] p:last-child {
-    max-width: 68ch;
-    font-size: 1.05rem;
-    line-height: 1.9;
-    color: var(--hazlo-muted);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="consecuencias"] h3,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="servicio-producto"] h3,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="flujo-operativo"] h3,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="resultados-comparativos"] h3,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] h3,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="vista-ejecutiva"] h3,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="faq-caso"] h3,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] h3,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="cta-final"] h2 {
-    color: #f8fafc;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="consecuencias"] p,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="servicio-producto"] p,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="flujo-operativo"] p,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="resultados-comparativos"] p,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] p,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="vista-ejecutiva"] p,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="faq-caso"] p,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] p,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="cta-final"] p {
-    color: var(--hazlo-muted);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="consecuencias"] ul,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="servicio-producto"] ul {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)) !important;
-    gap: 0.95rem !important;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="consecuencias"] li,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="servicio-producto"] li {
-    min-height: 110px;
-    border-radius: 20px;
-    border-color: rgba(148, 163, 184, 0.18);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.022)),
-      linear-gradient(180deg, rgba(8, 12, 29, 0.92), rgba(8, 12, 29, 0.82));
-    box-shadow: 0 28px 52px -40px rgba(2, 6, 23, 0.92);
-    padding: 1rem 1rem 1rem 3rem;
-    color: #e8eefb;
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="bloqueos"] li {
+    border-radius: 16px;
+    border-color: rgba(148, 163, 184, 0.32);
+    background: #ffffff;
+    padding: 1rem 1rem 1rem 2.8rem;
+    color: #1e293b;
+    min-height: 96px;
     display: flex;
     align-items: center;
-    text-wrap: balance;
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="vista-ejecutiva"]>.mx-auto {
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 28px;
-    background: linear-gradient(180deg, rgba(9, 15, 33, 0.92), rgba(8, 12, 29, 0.82));
-    box-shadow: 0 34px 72px -48px rgba(2, 6, 23, 0.88);
-    padding: clamp(1.25rem, 2vw, 2rem);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="vista-ejecutiva"] img {
-    border-radius: 24px;
-    border-color: rgba(125, 211, 252, 0.16);
-    box-shadow: 0 32px 72px -42px rgba(56, 189, 248, 0.18);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="resultados-comparativos"] .mt-5.space-y-3 {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-    gap: 0.9rem;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="resultados-comparativos"] article {
-    border-radius: 22px;
-    border-color: rgba(148, 163, 184, 0.16);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
-    box-shadow: 0 28px 52px -38px rgba(2, 6, 23, 0.88);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] .mt-5.grid {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
-    gap: 1rem !important;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article {
-    position: relative;
-    min-height: 25rem;
-    border-radius: 24px;
-    border-color: rgba(148, 163, 184, 0.16);
-    background: #0a1022;
-    overflow: hidden;
-    box-shadow: 0 32px 66px -42px rgba(2, 6, 23, 0.95);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    background: linear-gradient(180deg, rgba(5, 8, 22, 0.08) 0%, rgba(5, 8, 22, 0.45) 48%, rgba(5, 8, 22, 0.95) 100%);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article>img {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-bottom: 0;
-    opacity: 0.66;
-    filter: saturate(0.95);
-    transition: transform 480ms ease, opacity 320ms ease;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article:hover>img {
-    transform: scale(1.05);
-    opacity: 0.78;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article>div {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    min-height: 100%;
-    padding: 1.4rem 1.35rem 1.45rem;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article h4,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article p,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article a {
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="metodologia"] h3,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="metodologia"] p,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] h3,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] p,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="cta-final"] h2,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="cta-final"] p {
     color: #f8fafc;
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article a {
-    margin-top: 1rem;
-    font-size: 0.66rem;
-    letter-spacing: 0.18em;
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="metodologia"] li {
+    border-radius: 14px;
+    border-color: rgba(148, 163, 184, 0.26);
+    background: rgba(9, 15, 33, 0.78);
+    color: #dbe7ff;
+    min-height: 76px;
+    display: flex;
+    align-items: center;
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="flujo-operativo"] .border-l-2 {
-    border-left-width: 0;
-    padding-left: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-    gap: 0.95rem;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="flujo-operativo"] article {
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 20px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.018));
-    padding: 1rem 1.1rem;
-    min-height: 148px;
-    box-shadow: 0 28px 52px -42px rgba(2, 6, 23, 0.94);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="flujo-operativo"] article>span {
-    display: none;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="arquitectura-simple"]>.mx-auto {
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 28px;
-    background:
-      radial-gradient(circle at 82% 18%, rgba(56, 189, 248, 0.08), transparent 22%),
-      linear-gradient(160deg, rgba(8, 12, 29, 0.96), rgba(7, 11, 28, 0.88));
-    box-shadow: 0 34px 74px -48px rgba(2, 6, 23, 0.88);
-    padding: clamp(1.4rem, 2vw, 2rem);
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="rutas"] article,
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="autoridad"] article {
+    border-radius: 18px;
+    border-color: rgba(148, 163, 184, 0.32);
+    background: #ffffff;
+    box-shadow: 0 22px 44px -34px rgba(15, 23, 42, 0.4);
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="faq-caso"] details {
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.03);
-    box-shadow: 0 24px 46px -40px rgba(2, 6, 23, 0.88);
+    border-radius: 14px;
+    border-color: rgba(148, 163, 184, 0.35);
+    background: #ffffff;
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="faq-caso"] details[open] {
-    background: rgba(56, 189, 248, 0.07);
-    border-color: rgba(56, 189, 248, 0.22);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 18px 38px -36px rgba(37, 99, 235, 0.55);
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"]>.mx-auto {
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    border-radius: 30px;
-    background:
-      radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.09), transparent 20%),
-      linear-gradient(180deg, rgba(9, 15, 33, 0.96), rgba(7, 11, 28, 0.9));
-    box-shadow: 0 40px 88px -56px rgba(2, 6, 23, 0.95);
-    padding: clamp(1.2rem, 2vw, 2rem);
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    border-radius: 24px;
+    background: rgba(8, 12, 29, 0.68);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 30px 62px -45px rgba(2, 6, 23, 0.78);
+    padding: clamp(1rem, 2vw, 1.5rem);
   }
 
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] form label,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] .text-slate-400 {
-    color: rgba(191, 219, 254, 0.66) !important;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] input,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] textarea {
-    background: rgba(5, 8, 22, 0.82) !important;
-    border-color: rgba(148, 163, 184, 0.16) !important;
-    color: #f8fafc !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] input::placeholder,
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] textarea::placeholder {
-    color: rgba(148, 163, 184, 0.58) !important;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] .text-slate-300 {
-    color: rgba(148, 163, 184, 0.76) !important;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] .bg-red-50 {
-    background: rgba(127, 29, 29, 0.28) !important;
-    color: #fecaca !important;
-    border-color: rgba(248, 113, 113, 0.48) !important;
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] button {
-    border-radius: 16px;
-    box-shadow: 0 22px 44px -30px rgba(56, 189, 248, 0.28);
-  }
-
-  [data-page-id="hazlo-tu-mismo"] [data-block-id="cta-final"] {
-    box-shadow: inset 0 1px 0 rgba(148, 163, 184, 0.12);
+  [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"] .hazlo-optin-card {
+    border-color: rgba(148, 163, 184, 0.26);
+    background: linear-gradient(145deg, rgba(7, 11, 28, 0.82), rgba(6, 10, 24, 0.74));
+    border-radius: 20px;
   }
 
   [data-page-id="hazlo-tu-mismo"] [data-block-id="cta-final"] [href] {
-    min-height: 54px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, rgba(56, 189, 248, 0.96), rgba(59, 130, 246, 0.96));
-    border-color: rgba(125, 211, 252, 0.44);
+    min-height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #22d3ee 0%, #2563eb 100%);
+    border-color: rgba(34, 211, 238, 0.62);
     color: #020617 !important;
-    box-shadow: 0 24px 44px -34px rgba(56, 189, 248, 0.3);
   }
 
-  @keyframes hazloOrbFloat {
-    0%,
-    100% {
-      transform: translate3d(0, 0, 0);
-    }
-
-    50% {
-      transform: translate3d(0, -10px, 0) rotate(4deg);
-    }
+  .hazlo-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 95;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(2, 6, 23, 0.74);
+    backdrop-filter: blur(8px);
   }
 
-  @media (max-width: 1024px) {
+  .hazlo-modal-panel {
+    position: relative;
+    width: min(560px, 100%);
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 24px;
+    background:
+      radial-gradient(circle at 88% 12%, rgba(34, 211, 238, 0.12), transparent 30%),
+      linear-gradient(180deg, #050816 0%, #0a1024 100%);
+    padding: clamp(1rem, 3vw, 1.75rem);
+    color: #f8fafc;
+    box-shadow: 0 34px 86px -48px rgba(0, 0, 0, 0.88);
+  }
+
+  .hazlo-modal-close {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .hazlo-modal-eyebrow {
+    margin-top: 0.5rem;
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.23em;
+    font-weight: 800;
+    color: rgba(186, 230, 253, 0.9);
+  }
+
+  .hazlo-modal-title {
+    margin-top: 0.7rem;
+    font-size: clamp(1.7rem, 4vw, 2.2rem);
+    line-height: 1.03;
+    letter-spacing: -0.03em;
+    color: #f8fafc;
+  }
+
+  .hazlo-modal-body {
+    margin-top: 0.8rem;
+    font-size: 0.96rem;
+    line-height: 1.65;
+    color: rgba(203, 213, 225, 0.9);
+  }
+
+  .hazlo-modal-panel form {
+    margin-top: 1rem;
+  }
+
+  .hazlo-modal-panel label,
+  .hazlo-modal-panel .text-slate-400 {
+    color: rgba(186, 230, 253, 0.7) !important;
+  }
+
+  .hazlo-modal-panel input,
+  .hazlo-modal-panel textarea {
+    background: rgba(7, 11, 28, 0.78) !important;
+    border-color: rgba(148, 163, 184, 0.28) !important;
+    color: #f8fafc !important;
+  }
+
+  .hazlo-modal-panel input::placeholder,
+  .hazlo-modal-panel textarea::placeholder {
+    color: rgba(148, 163, 184, 0.62) !important;
+  }
+
+  .hazlo-modal-panel .text-slate-300 {
+    color: rgba(148, 163, 184, 0.8) !important;
+  }
+
+  .hazlo-modal-panel .bg-brand-primary {
+    background: linear-gradient(135deg, #22d3ee 0%, #2563eb 100%) !important;
+    color: #020617 !important;
+  }
+
+  .hazlo-sticky-register {
+    position: fixed;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 70;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(34, 211, 238, 0.58);
+    border-radius: 999px;
+    background: linear-gradient(135deg, #22d3ee 0%, #2563eb 100%);
+    color: #020617;
+    min-height: 52px;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    box-shadow: 0 22px 42px -26px rgba(37, 99, 235, 0.65);
+  }
+
+  @media (max-width: 900px) {
     [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] {
       min-height: auto;
+      padding-top: 5.2rem !important;
+      padding-bottom: 5.5rem !important;
     }
 
     [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"]::after {
-      width: min(52vw, 26rem);
-      right: -4rem;
-      top: 6.5rem;
-      opacity: 0.8;
-    }
-
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] .mt-5.grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    }
-  }
-
-  @media (max-width: 768px) {
-    [data-page-id="hazlo-tu-mismo"] section>.mx-auto {
-      max-width: calc(100% - 1rem);
-    }
-
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] {
-      padding-top: 5.6rem !important;
-      padding-bottom: 7.5rem !important;
-    }
-
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"]::after {
-      width: min(72vw, 19rem);
-      right: -3.5rem;
+      width: min(68vw, 18rem);
+      right: -3rem;
       top: auto;
-      bottom: 1rem;
-      opacity: 0.58;
-    }
-
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2 {
-      font-size: clamp(2.8rem, 13vw, 4.2rem);
-      max-width: 8.5ch;
-    }
-
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2+ p {
-      max-width: 15ch;
-      font-size: 1.06rem;
-    }
-
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2+ p + p {
-      font-size: 0.98rem;
-      line-height: 1.75;
+      bottom: 0.7rem;
+      opacity: 0.62;
     }
 
     [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] [href] {
@@ -1361,35 +1199,42 @@
       justify-content: center;
     }
 
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] {
-      margin-top: -4.25rem;
-    }
-
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"] .mt-5.grid,
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="consecuencias"] ul,
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="servicio-producto"] ul,
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] .mt-5.grid,
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="flujo-operativo"] .border-l-2,
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="resultados-comparativos"] .mt-5.space-y-3 {
+    [data-page-id="hazlo-tu-mismo"] [data-block-id="bloqueos"] ul,
+    [data-page-id="hazlo-tu-mismo"] [data-block-id="rutas"] .mt-5.grid,
+    [data-page-id="hazlo-tu-mismo"] [data-block-id="autoridad"] .mt-5.grid {
       grid-template-columns: 1fr !important;
     }
 
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="productos-generados"] article {
-      min-height: 21rem;
+    .hazlo-sticky-register {
+      display: inline-flex;
     }
 
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="contacto"]>.mx-auto,
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="vista-ejecutiva"]>.mx-auto,
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="arquitectura-simple"]>.mx-auto,
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="kpis-top"]>.mx-auto {
-      border-radius: 22px;
-      padding: 1rem;
+    [data-page-id="hazlo-tu-mismo"] [data-block-id="cta-final"] {
+      padding-bottom: 6.1rem !important;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"]::after {
-      animation: none;
+  @media (max-width: 640px) {
+    [data-page-id="hazlo-tu-mismo"] section>.mx-auto {
+      max-width: calc(100% - 1rem);
+    }
+
+    [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2 {
+      font-size: clamp(2.4rem, 12vw, 3.5rem);
+    }
+
+    [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2+p {
+      font-size: 1.06rem;
+    }
+
+    [data-page-id="hazlo-tu-mismo"] [data-block-id="hero"] h2+p+p {
+      font-size: 0.94rem;
+      line-height: 1.72;
+    }
+
+    .hazlo-modal-panel {
+      border-radius: 18px;
+      padding: 0.95rem;
     }
   }
 }

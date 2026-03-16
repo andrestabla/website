@@ -20,6 +20,9 @@ interface ContactFormProps {
     successTitle?: string
     successMessage?: string
     resetLabel?: string
+    showRequirement?: boolean
+    requirementRequired?: boolean
+    defaultRequirement?: string
 }
 
 export function ContactForm({
@@ -35,9 +38,12 @@ export function ContactForm({
     successTitle,
     successMessage,
     resetLabel,
+    showRequirement = true,
+    requirementRequired = true,
+    defaultRequirement = '',
 }: ContactFormProps) {
     const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
-    const [form, setForm] = useState({ name: '', email: '', requirement: '' })
+    const [form, setForm] = useState({ name: '', email: '', requirement: defaultRequirement })
     const { uiText } = useLanguage()
     const { state } = useCMS()
     const translatedMicrocopy = useTranslatedStatic('contact-form-microcopy', formMicrocopy)
@@ -61,7 +67,7 @@ export function ContactForm({
                 body: JSON.stringify({
                     name: form.name,
                     email: form.email,
-                    requirement: form.requirement,
+                    requirement: showRequirement ? form.requirement : (defaultRequirement || form.requirement || 'Registro de interés'),
                     serviceSlug: serviceSlug || undefined,
                     context,
                     path: window.location.pathname,
@@ -69,7 +75,7 @@ export function ContactForm({
             })
             if (!response.ok) throw new Error(`HTTP ${response.status}`)
             setStatus('success')
-            setForm({ name: '', email: '', requirement: '' })
+            setForm({ name: '', email: '', requirement: defaultRequirement })
         } catch {
             setStatus('error')
         }
@@ -146,25 +152,27 @@ export function ContactForm({
                 </div>
             </div>
 
-            <div className="relative">
-                <label className="block text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 ml-1">
-                    {requirementLabel || uiText.form.labels.requirement}
-                </label>
-                <div className="relative group">
-                    <div className="absolute top-6 left-6 pointer-events-none text-slate-300 group-focus-within:text-brand-primary transition-colors">
-                        <MessageSquare className="w-5 h-5" />
+            {showRequirement && (
+                <div className="relative">
+                    <label className="block text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 ml-1">
+                        {requirementLabel || uiText.form.labels.requirement}
+                    </label>
+                    <div className="relative group">
+                        <div className="absolute top-6 left-6 pointer-events-none text-slate-300 group-focus-within:text-brand-primary transition-colors">
+                            <MessageSquare className="w-5 h-5" />
+                        </div>
+                        <textarea
+                            name="requirement"
+                            rows={4}
+                            required={requirementRequired}
+                            placeholder={placeholders.requirement}
+                            value={form.requirement}
+                            onChange={(e) => setForm((prev) => ({ ...prev, requirement: e.target.value }))}
+                            className="w-full bg-slate-50 border border-slate-200 py-6 pl-16 pr-6 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium resize-none"
+                        />
                     </div>
-                    <textarea
-                        name="requirement"
-                        rows={4}
-                        required
-                        placeholder={placeholders.requirement}
-                        value={form.requirement}
-                        onChange={(e) => setForm((prev) => ({ ...prev, requirement: e.target.value }))}
-                        className="w-full bg-slate-50 border border-slate-200 py-6 pl-16 pr-6 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium resize-none"
-                    />
                 </div>
-            </div>
+            )}
 
             <AnimatePresence>
                 {status === 'error' && (

@@ -68,6 +68,9 @@ export function Layout({ children }: LayoutProps) {
     const contactHref = `${navBasePath}#contacto`
     const contactNavLabel = uiText.nav.contact
     const closeMobileMenu = () => setMobileMenuOpen(false)
+    const isNavigationSelector = location.pathname === '/'
+    const isFocusedLanding = location.pathname === '/hazlo-tu-mismo'
+    const hideGlobalChrome = isNavigationSelector || isFocusedLanding
 
     useEffect(() => {
         if (!location.hash) return
@@ -162,17 +165,15 @@ export function Layout({ children }: LayoutProps) {
         </div>
     )
 
-    const isNavigationSelector = location.pathname === '/'
-
     return (
-        <div className={`selection:bg-brand-primary selection:text-white min-h-screen flex flex-col ${isNavigationSelector ? 'bg-slate-900' : 'bg-white'}`}>
+        <div className={`selection:bg-brand-primary selection:text-white min-h-screen flex flex-col ${hideGlobalChrome ? 'bg-slate-900' : 'bg-white'}`}>
             <a
                 href="#main-content"
                 className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[120] focus:border focus:border-brand-primary focus:bg-white focus:px-3 focus:py-2 focus:text-xs focus:font-black focus:uppercase focus:tracking-[0.2em] focus:text-slate-900"
             >
                 Saltar al contenido
             </a>
-            {!isNavigationSelector && announcementEnabled && (
+            {!hideGlobalChrome && announcementEnabled && (
                 <div
                     className={isHeaderSticky ? 'fixed top-0 left-0 w-full z-[60] border-b border-white/15' : 'relative border-b border-white/15'}
                     style={{ backgroundColor: site.announcementBgColor || '#0f172a', color: site.announcementTextColor || '#ffffff' }}
@@ -199,7 +200,7 @@ export function Layout({ children }: LayoutProps) {
                 </div>
             )}
 
-            {!isNavigationSelector && (
+            {!hideGlobalChrome && (
                 <header className={headerShellClass} style={isHeaderSticky ? { top: announcementHeight } : undefined}>
                 <div className={`px-6 ${headerHeightClass} ${headerVariant === 'split' ? 'max-w-7xl mx-auto w-full grid grid-cols-[auto_1fr_auto] items-center gap-6' : 'flex items-center justify-between'}`}>
                     <a href="https://www.algoritmot.com/" className="text-2xl font-black tracking-tighter text-slate-900 inline-flex items-center">
@@ -257,7 +258,7 @@ export function Layout({ children }: LayoutProps) {
                 </header>
             )}
 
-            {mobileMenuOpen && (
+            {!hideGlobalChrome && mobileMenuOpen && (
                 <div
                     className={`${isHeaderSticky ? 'fixed inset-x-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur-md shadow-lg md:hidden' : 'relative border-b border-slate-100 bg-white md:hidden'}`}
                     style={isHeaderSticky ? { top: announcementHeight + headerHeight } : undefined}
@@ -305,13 +306,13 @@ export function Layout({ children }: LayoutProps) {
             <main
                 id="main-content"
                 className={`flex-grow ${routeTemplate === 'immersive' && !isNavigationSelector ? 'bg-slate-50/40' : ''} ${routeTemplate === 'compact' ? 'text-[0.97rem]' : ''}`}
-                style={isHeaderSticky && !isNavigationSelector ? { paddingTop: `${announcementHeight + headerHeight}px` } : undefined}
+                style={isHeaderSticky && !hideGlobalChrome ? { paddingTop: `${announcementHeight + headerHeight}px` } : undefined}
                 data-page-template={routeTemplate}
             >
                 {children}
             </main>
 
-            {!isNavigationSelector && (
+            {!hideGlobalChrome && (
                 <footer>
                     {footerVariant === 'minimal' && renderMinimalFooter()}
                     {footerVariant === 'compact' && renderCompactFooter()}

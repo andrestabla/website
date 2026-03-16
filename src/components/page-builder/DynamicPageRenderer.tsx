@@ -10,7 +10,7 @@ import {
     Clock3,
     Code2,
     GraduationCap,
-    Infinity,
+    Infinity as InfinityIcon,
     LayoutGrid,
     LineChart,
     Link2,
@@ -27,6 +27,7 @@ import {
     UploadCloud,
     UserRound,
     Users,
+    X,
     type LucideIcon,
 } from 'lucide-react'
 import { type SiteArchitecturePage, type SitePageBlock } from '../../admin/context/CMSContext'
@@ -54,7 +55,7 @@ const CMS_ICON_COMPONENTS: Record<string, LucideIcon> = {
     mappin: MapPin,
     settings2: Settings2,
     barchart3: BarChart3,
-    infinity: Infinity,
+    infinity: InfinityIcon,
     link2: Link2,
     userround: UserRound,
     clipboardcheck: ClipboardCheck,
@@ -583,7 +584,14 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
     )
 }
 
-function renderBlockBody(block: SitePageBlock, accentColor: string) {
+function renderBlockBody(
+    block: SitePageBlock,
+    accentColor: string,
+    options?: {
+        isHazloLanding: boolean
+        openHazloModal?: () => void
+    }
+) {
     const eyebrow = toText(block.content.eyebrow)
     const title = toText(block.content.title)
     const subtitle = toText(block.content.subtitle)
@@ -1240,6 +1248,26 @@ function renderBlockBody(block: SitePageBlock, accentColor: string) {
     }
 
     if (block.type === 'form') {
+        if (options?.isHazloLanding && options?.openHazloModal) {
+            return (
+                <div className="hazlo-optin-card w-full max-w-3xl border border-current/20 bg-white/5 p-8 lg:p-10">
+                    {title && <h3 className="text-3xl font-black tracking-tight">{title}</h3>}
+                    {body && <p className="mt-4 text-lg leading-relaxed opacity-90">{body}</p>}
+                    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <button
+                            type="button"
+                            onClick={options.openHazloModal}
+                            className="inline-flex w-full items-center justify-center gap-2 border border-current/25 bg-white/10 px-6 py-3 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-white/20 sm:w-auto"
+                        >
+                            Quiero registrarme y empezar a construir
+                            <ArrowRight className="h-4 w-4" />
+                        </button>
+                        <p className="text-sm opacity-80">Registro rápido: nombre y correo.</p>
+                    </div>
+                </div>
+            )
+        }
+
         const serviceSlug = toText(block.content.serviceSlug)
         const formContext = toText(block.content.context) || (
             toText(block.content.variant) === 'product'
@@ -1283,16 +1311,20 @@ function PageBlock({
     block,
     pageAccentColor,
     pageTheme,
+    isHazloLanding,
     selectable,
     selected,
     onSelect,
+    onOpenHazloModal,
 }: {
     block: SitePageBlock
     pageAccentColor: string
     pageTheme: PageThemeVariant
+    isHazloLanding: boolean
     selectable: boolean
     selected: boolean
     onSelect?: (id: string) => void
+    onOpenHazloModal?: () => void
 }) {
     if (!block.visible) return null
     const isCasePremium = pageTheme === 'case-premium'
@@ -1367,7 +1399,10 @@ function PageBlock({
             ))}
             {block.type === 'navigation-selector' ? (
                 <div className="w-full">
-                    {renderBlockBody(block, pageAccentColor)}
+                    {renderBlockBody(block, pageAccentColor, {
+                        isHazloLanding,
+                        openHazloModal: onOpenHazloModal,
+                    })}
                 </div>
             ) : (
                 <div className="relative mx-auto flex max-w-6xl flex-col px-6">
@@ -1377,7 +1412,10 @@ function PageBlock({
                         </div>
                     )}
                     <div className={`flex w-full flex-col ${alignment}`} style={{ gap: toCssLength(block.style.gap, '0rem') }}>
-                        {renderBlockBody(block, pageAccentColor)}
+                        {renderBlockBody(block, pageAccentColor, {
+                            isHazloLanding,
+                            openHazloModal: onOpenHazloModal,
+                        })}
                     </div>
                 </div>
             )}
@@ -1394,7 +1432,9 @@ export function DynamicPageRenderer({
 }: DynamicPageRendererProps) {
     const wrapperRef = useRef<HTMLDivElement | null>(null)
     const [caseProgress, setCaseProgress] = useState(0)
+    const [hazloModalOpen, setHazloModalOpen] = useState(false)
     const normalizedPath = page.path !== '/' && page.path.endsWith('/') ? page.path.slice(0, -1) : page.path
+    const isHazloLanding = page.id === 'hazlo-tu-mismo' || normalizedPath === '/hazlo-tu-mismo'
     const isHomeRootPage =
         page.id === 'home-root' ||
         page.id === 'home-edu' ||
@@ -1474,6 +1514,22 @@ export function DynamicPageRenderer({
         }
     }, [isCasePremium, isHomeRootPage, page.id, selectable])
 
+    useEffect(() => {
+        if (!hazloModalOpen) return
+        const previousOverflow = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setHazloModalOpen(false)
+            }
+        }
+        window.addEventListener('keydown', onKeyDown)
+        return () => {
+            window.removeEventListener('keydown', onKeyDown)
+            document.body.style.overflow = previousOverflow
+        }
+    }, [hazloModalOpen])
+
     if (isHomeRootPage) {
         return (
             <HomeRootPageRenderer
@@ -1487,16 +1543,40 @@ export function DynamicPageRenderer({
     }
 
     const blocks = [...page.blocks].sort((a, b) => a.order - b.order)
+    const hazloFormBlock = isHazloLanding
+        ? blocks.find((block) => block.type === 'form' || block.id === 'contacto')
+        : null
     const wrapperClass = [className, pageTheme === 'case-premium' ? 'case-premium-theme' : ''].filter(Boolean).join(' ')
+    const openHazloModal = () => setHazloModalOpen(true)
+    const closeHazloModal = () => setHazloModalOpen(false)
+    const handleHazloCtaCapture = (event: ReactMouseEvent<HTMLDivElement>) => {
+        if (!isHazloLanding || selectable) return
+        const target = event.target as HTMLElement | null
+        if (!target) return
+        const link = target.closest('a[href]') as HTMLAnchorElement | null
+        if (!link) return
+        const href = (link.getAttribute('href') || '').trim()
+        const normalizedHref = href.replace(/\/+$/, '')
+        if (
+            href === '#inscripcion' ||
+            href === '/hazlo-tu-mismo#inscripcion' ||
+            normalizedHref.endsWith('/hazlo-tu-mismo#inscripcion')
+        ) {
+            event.preventDefault()
+            setHazloModalOpen(true)
+        }
+    }
     const renderBlock = (block: SitePageBlock) => (
         <PageBlock
             key={block.id}
             block={block}
             pageAccentColor={page.accentColor || '#2563eb'}
             pageTheme={pageTheme}
+            isHazloLanding={isHazloLanding}
             selectable={selectable}
             selected={selectedBlockId === block.id}
             onSelect={onSelectBlock}
+            onOpenHazloModal={openHazloModal}
         />
     )
 
@@ -1603,8 +1683,67 @@ export function DynamicPageRenderer({
     }
 
     return (
-        <div ref={wrapperRef} className={wrapperClass} data-page-id={page.id} data-page-theme={pageTheme}>
+        <div
+            ref={wrapperRef}
+            className={wrapperClass}
+            data-page-id={page.id}
+            data-page-theme={pageTheme}
+            onClickCapture={handleHazloCtaCapture}
+        >
             {blocks.map(renderBlock)}
+
+            {isHazloLanding && !selectable && (
+                <button
+                    type="button"
+                    onClick={openHazloModal}
+                    className="hazlo-sticky-register"
+                >
+                    Reserva tu lugar gratis
+                </button>
+            )}
+
+            {isHazloLanding && !selectable && hazloModalOpen && hazloFormBlock && (
+                <div
+                    className="hazlo-modal-backdrop"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Registro al webinar Hazlo tú mismo"
+                    onClick={closeHazloModal}
+                >
+                    <div className="hazlo-modal-panel" onClick={(event) => event.stopPropagation()}>
+                        <button
+                            type="button"
+                            aria-label="Cerrar registro"
+                            onClick={closeHazloModal}
+                            className="hazlo-modal-close"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                        <p className="hazlo-modal-eyebrow">Registro en dos pasos</p>
+                        <h3 className="hazlo-modal-title">Reserva tu lugar en el webinar</h3>
+                        <p className="hazlo-modal-body">
+                            Completa nombre y correo. Te enviaremos acceso, recordatorio y material de preparación para que llegues con claridad a la sesión.
+                        </p>
+                        <ContactForm
+                            serviceSlug={toText(hazloFormBlock.content.serviceSlug)}
+                            context={toText(hazloFormBlock.content.context) || 'webinar_hazlo_tu_mismo'}
+                            nameLabel={toText(hazloFormBlock.content.nameLabel, 'Nombre')}
+                            emailLabel={toText(hazloFormBlock.content.emailLabel, 'Correo')}
+                            requirementLabel={toText(hazloFormBlock.content.requirementLabel)}
+                            namePlaceholder={toText(hazloFormBlock.content.namePlaceholder, 'Tu nombre')}
+                            emailPlaceholder={toText(hazloFormBlock.content.emailPlaceholder, 'tu@correo.com')}
+                            requirementPlaceholder={toText(hazloFormBlock.content.requirementPlaceholder)}
+                            submitLabel={toText(hazloFormBlock.content.submitLabel, 'Reservar mi lugar')}
+                            successTitle={toText(hazloFormBlock.content.successTitle)}
+                            successMessage={toText(hazloFormBlock.content.successMessage)}
+                            resetLabel={toText(hazloFormBlock.content.resetLabel)}
+                            showRequirement={false}
+                            requirementRequired={false}
+                            defaultRequirement="Registro webinar Hazlo tú mismo"
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
