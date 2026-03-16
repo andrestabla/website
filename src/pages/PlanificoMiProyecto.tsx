@@ -17,7 +17,9 @@ import {
   Workflow,
 } from 'lucide-react'
 import { Layout } from '../components/layout/Layout'
+import { useLanguage } from '../context/LanguageContext'
 import { getOrCreateVisitorId, getSessionId } from '../lib/privacyConsent'
+
 import {
   buildLocalPlannerResponse,
   buildPlannerProposals,
@@ -46,8 +48,38 @@ type ChatMessage = {
   content: string
 }
 
-const INITIAL_ASSISTANT_MESSAGE =
-  'Cuéntame con la mayor precisión posible qué necesitas construir o automatizar. Puedes comenzar con una opción rápida y luego explicar quién usa la solución, cómo se hace hoy y qué resultado esperas.'
+
+const TRANSLATED_INITIAL_MESSAGE: Record<string, string> = {
+
+  es: 'Cuéntame con la mayor precisión posible qué necesitas construir o automatizar. Puedes comenzar con una opción rápida y luego explicar quién usa la solución, cómo se hace hoy y qué resultado esperas.',
+  en: 'Tell me as precisely as possible what you need to build or automate. You can start with a quick option and then explain who uses the solution, how it is done today and what result you expect.',
+  fr: 'Dites-moi aussi précisément que possible ce que vous devez créer ou automatiser. Vous pouvez commencer par une option rapide, puis expliquer qui utilise la solution, comment elle est réalisée aujourd\'hui et quel résultat vous attendez.'
+}
+
+const TRANSLATED_NEED_OPTIONS: Record<string, Record<ProjectNeedType, { label: string; prompt: string }>> = {
+  es: {
+    'sitio-web': { label: 'Construcción de sitio web', prompt: 'Necesito crear o renovar un sitio web con objetivo claro de negocio, conversión o posicionamiento.' },
+    'automatizacion': { label: 'Automatización de proceso', prompt: 'Necesito automatizar un proceso operativo, comercial o administrativo que hoy se hace manualmente.' },
+    'analitica': { label: 'Analítica de datos', prompt: 'Necesito consolidar datos y generar análisis o reportes automáticos para tomar decisiones.' },
+    'chatbot': { label: 'Agente o chatbot', prompt: 'Necesito un agente conversacional o chatbot para responder, vender, clasificar o acompañar usuarios.' },
+    'otro': { label: 'Otro', prompt: '' }
+  },
+  en: {
+    'sitio-web': { label: 'Website Building', prompt: 'I need to create or renew a website with a clear business objective, conversion, or positioning.' },
+    'automatizacion': { label: 'Process Automation', prompt: 'I need to automate an operational, commercial, or administrative process that is done manually today.' },
+    'analitica': { label: 'Data Analytics', prompt: 'I need to consolidate data and generate automatic analysis or reports to make decisions.' },
+    'chatbot': { label: 'Agent or Chatbot', prompt: 'I need a conversational agent or chatbot to respond, sell, classify, or support users.' },
+    'otro': { label: 'Other', prompt: '' }
+  },
+  fr: {
+    'sitio-web': { label: 'Construction de site web', prompt: 'J\'ai besoin de créer ou de renouveler un site Web avec un objectif commercial, de conversion ou de positionnement clair.' },
+    'automatizacion': { label: 'Automatisation de processus', prompt: 'J\'ai besoin d\'automatiser un processus opérationnel, commercial ou administratif qui est aujourd\'hui effectué manuellement.' },
+    'analitica': { label: 'Analyse de données', prompt: 'J\'ai besoin de consolider des données et de générer des analyses ou des rapports automatiques pour prendre des décisions.' },
+    'chatbot': { label: 'Agent ou Chatbot', prompt: 'J\'ai besoin d\'un agent conversationnel ou d\'un chatbot pour répondre, vendre, classer ou accompagner les utilisateurs.' },
+    'otro': { label: 'Autre', prompt: '' }
+  }
+}
+
 
 const FLOW_STEPS: Array<{ value: FlowStep; label: string; shortLabel: string }> = [
   { value: 'basic', label: 'Datos básicos', shortLabel: 'Datos' },
@@ -158,13 +190,17 @@ function trackPlannerEvent(eventType: string, metadata?: Record<string, unknown>
 }
 
 export default function PlanificoMiProyecto() {
+  const { language } = useLanguage()
+  const initialMessage = TRANSLATED_INITIAL_MESSAGE[language as string] || TRANSLATED_INITIAL_MESSAGE.es
+
   const [screen, setScreen] = useState<Screen>('intro')
   const [profile, setProfile] = useState<PlannerProfile>({ name: '', email: '', industry: 'otro' })
   const [selectedNeedType, setSelectedNeedType] = useState<ProjectNeedType>('otro')
   const [needDraft, setNeedDraft] = useState('')
   const [conversation, setConversation] = useState<ChatMessage[]>([
-    { id: 'assistant-initial', role: 'assistant', content: INITIAL_ASSISTANT_MESSAGE },
+    { id: 'assistant-initial', role: 'assistant', content: initialMessage },
   ])
+
   const [aiState, setAiState] = useState<PlannerAiPayload | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [methodology, setMethodology] = useState<MethodologyChoice | null>(null)
@@ -248,18 +284,7 @@ export default function PlanificoMiProyecto() {
     }
   }
 
-  const handleNeedOption = (value: ProjectNeedType) => {
-    setSelectedNeedType(value)
-    const option = NEED_OPTIONS.find((item) => item.value === value)
-    if (option?.prompt) {
-      setNeedDraft(option.prompt)
-    }
-  }
-
-  const handleNeedSubmit = async () => {
-    const content = needDraft.trim()
-    if (!content) return
-
+  const submitChatMessage = async (content: string, type: ProjectNeedType) => {
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -274,17 +299,21 @@ export default function PlanificoMiProyecto() {
     setNotice(null)
 
     try {
+      // Get current language from context if available, otherwise fallback
+      // (assuming useLanguage is accessible or passing it in)
       const response = await fetch('/api/project-planner-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profile,
-          selectedNeedType,
+          selectedNeedType: type,
           messages: nextConversation.map((message) => ({ role: message.role, content: message.content })),
           visitorId: getOrCreateVisitorId(),
           sessionId: getSessionId(),
+          language,
         }),
       })
+
       const data = await response.json().catch(() => null)
       if (!response.ok || !data) {
         throw new Error(data?.error || 'No pudimos analizar la necesidad en este momento.')
@@ -307,7 +336,7 @@ export default function PlanificoMiProyecto() {
     } catch {
       const fallback = buildLocalPlannerResponse({
         text: content,
-        selectedNeedType,
+        selectedNeedType: type,
       })
 
       const assistantMessage: ChatMessage = {
@@ -327,6 +356,23 @@ export default function PlanificoMiProyecto() {
       setAiLoading(false)
     }
   }
+
+  const handleNeedSubmit = async () => {
+    const content = needDraft.trim()
+    if (!content) return
+    await submitChatMessage(content, selectedNeedType)
+  }
+
+  const handleNeedOption = (value: ProjectNeedType) => {
+    setSelectedNeedType(value)
+    const langDict = TRANSLATED_NEED_OPTIONS[language as string] || TRANSLATED_NEED_OPTIONS.es
+    const option = langDict[value] || NEED_OPTIONS.find((item) => item.value === value)
+    if (option?.prompt) {
+      void submitChatMessage(option.prompt, value)
+    }
+  }
+
+
 
   const handleMethodologyContinue = () => {
     if (!methodology) return
@@ -389,7 +435,8 @@ export default function PlanificoMiProyecto() {
   }, [aiState?.summary])
 
   return (
-    <Layout>
+    <Layout isFocusedFlow={true}>
+
       <main className="min-h-screen bg-slate-50 text-slate-900">
         {screen === 'intro' ? (
           <section className="px-6 py-16 md:py-24">
@@ -483,8 +530,9 @@ export default function PlanificoMiProyecto() {
                   Volver a presentación
                 </button>
                 <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">
-                  Pantalla {currentStepIndex + 2} de 6
+                  Paso {currentStepIndex + 1} de {FLOW_STEPS.length}
                 </div>
+
               </div>
 
               <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -497,7 +545,7 @@ export default function PlanificoMiProyecto() {
                 {screen === 'basic' && (
                   <div className="grid gap-8 lg:grid-cols-[0.84fr_1.16fr] lg:items-start">
                     <div className={panelClass}>
-                      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-700">Segunda pantalla</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-700">Paso 1: Datos básicos</p>
                       <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900">Datos básicos para personalizar la propuesta.</h2>
                       <p className="mt-4 text-lg leading-relaxed text-slate-600">
                         Solo necesitamos tres datos para contextualizar la recomendación y enviarte después la propuesta al correo correcto.
@@ -568,7 +616,7 @@ export default function PlanificoMiProyecto() {
                         <div>
                           <div className="flex items-center gap-3 text-cyan-700">
                             <BrainCircuit className="h-6 w-6" />
-                            <p className="text-[11px] font-black uppercase tracking-[0.24em]">Tercera pantalla</p>
+                             <p className="text-[11px] font-black uppercase tracking-[0.24em]">Paso 2: Necesidad y alcance</p>
                           </div>
                           <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900">Necesidad y alcance.</h2>
                           <p className="mt-4 max-w-3xl text-lg leading-relaxed text-slate-600">
@@ -736,7 +784,7 @@ export default function PlanificoMiProyecto() {
                           <ChevronLeft className="h-4 w-4" />
                           Volver
                         </button>
-                        <button type="button" disabled={!canContinueNeed} onClick={() => goToScreen('methodology')} className={cn(primaryButton, 'w-full sm:w-auto')}>
+                        <button type="button" disabled={!canContinueNeed} onClick={() => goToScreen('methodology')} className={primaryButton}>
                           Continuar
                           <ArrowRight className="h-4 w-4" />
                         </button>
@@ -748,7 +796,7 @@ export default function PlanificoMiProyecto() {
                 {screen === 'methodology' && (
                   <div className="grid gap-8 lg:grid-cols-[0.84fr_1.16fr] lg:items-start">
                     <div className={panelClass}>
-                      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-700">Cuarta pantalla</p>
+                       <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-700">Paso 3: Metodología</p>
                       <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900">Elige la metodología.</h2>
                       <p className="mt-4 text-lg leading-relaxed text-slate-600">
                         Ya entendemos el caso. Ahora define si quieres construir con acompañamiento, delegar el desarrollo o comparar ambas rutas antes de tomar una decisión.
@@ -803,7 +851,7 @@ export default function PlanificoMiProyecto() {
                     <div className={panelClass}>
                       <div className="flex items-center gap-3 text-cyan-700">
                         {selectedMethodologyMeta?.icon}
-                        <p className="text-[11px] font-black uppercase tracking-[0.24em]">Quinta pantalla</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.24em]">Paso 4: Viabilidad de ejecución</p>
                       </div>
                       <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900">Viabilidad de ejecución.</h2>
                       <p className="mt-4 text-lg leading-relaxed text-slate-600">{selectedMethodologyMeta?.description}</p>
@@ -939,7 +987,7 @@ export default function PlanificoMiProyecto() {
                   <div className="space-y-8">
                     <div className="grid gap-8 lg:grid-cols-[0.84fr_1.16fr] lg:items-start">
                       <div className={panelClass}>
-                        <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-700">Sexta pantalla</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-700">Paso 5: Propuesta</p>
                         <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900">Propuesta inicial.</h2>
                         <p className="mt-4 text-lg leading-relaxed text-slate-600">
                           Esta lectura te da una base razonable para decidir si avanzar, comparar caminos o pedir una cotización formal más detallada.

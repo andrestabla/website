@@ -7,7 +7,9 @@ import { useCMS } from '../../admin/context/CMSContext'
 
 interface LayoutProps {
     children: ReactNode
+    isFocusedFlow?: boolean
 }
+
 
 function getRouteTemplate(pathname: string, site: ReturnType<typeof useCMS>['state']['site']) {
     if (pathname === '/') return site.pageTemplateHome || 'immersive'
@@ -18,7 +20,8 @@ function getRouteTemplate(pathname: string, site: ReturnType<typeof useCMS>['sta
     return 'balanced'
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, isFocusedFlow }: LayoutProps) {
+
     const { uiText } = useLanguage()
     const { state } = useCMS()
     const location = useLocation()
@@ -212,11 +215,12 @@ export function Layout({ children }: LayoutProps) {
                     </a>
 
                     <nav className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-7' : 'gap-12'} ${headerVariant === 'split' ? 'justify-center' : ''}`}>
-                        <Link to={servicesHref} className={navLinkClass}>{uiText.nav.services}</Link>
-                        <Link to={workflowHref} className={navLinkClass}>{uiText.nav.workflow}</Link>
-                        <Link to={faqHref} className={navLinkClass}>{uiText.nav.faq}</Link>
-                        <Link to={contactHref} className={navLinkClass}>{contactNavLabel}</Link>
+                        <Link to={servicesHref} target={isFocusedFlow ? "_blank" : undefined} className={navLinkClass}>{uiText.nav.services}</Link>
+                        <Link to={workflowHref} target={isFocusedFlow ? "_blank" : undefined} className={navLinkClass}>{uiText.nav.workflow}</Link>
+                        <Link to={faqHref} target={isFocusedFlow ? "_blank" : undefined} className={navLinkClass}>{uiText.nav.faq}</Link>
+                        <Link to={contactHref} target={isFocusedFlow ? "_blank" : undefined} className={navLinkClass}>{contactNavLabel}</Link>
                     </nav>
+
 
                     <div className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-3' : 'gap-4'} ${headerVariant === 'split' ? 'justify-end' : ''}`}>
                         {headerCtaEnabled && (
@@ -264,18 +268,19 @@ export function Layout({ children }: LayoutProps) {
                     style={isHeaderSticky ? { top: announcementHeight + headerHeight } : undefined}
                 >
                     <nav className="px-6 py-4 flex flex-col gap-2">
-                        <Link to={servicesHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                        <Link to={servicesHref} onClick={closeMobileMenu} target={isFocusedFlow ? "_blank" : undefined} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {uiText.nav.services}
                         </Link>
-                        <Link to={workflowHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                        <Link to={workflowHref} onClick={closeMobileMenu} target={isFocusedFlow ? "_blank" : undefined} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {uiText.nav.workflow}
                         </Link>
-                        <Link to={faqHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                        <Link to={faqHref} onClick={closeMobileMenu} target={isFocusedFlow ? "_blank" : undefined} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {uiText.nav.faq}
                         </Link>
-                        <Link to={contactHref} onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
+                        <Link to={contactHref} onClick={closeMobileMenu} target={isFocusedFlow ? "_blank" : undefined} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {contactNavLabel}
                         </Link>
+
                         {headerCtaEnabled && (
                             isExternalHeaderCta ? (
                                 <a
