@@ -10,6 +10,7 @@ import {
 import { servicesDetail, productsDetail } from '../../data/details'
 import { content as defaultContent } from '../../data/content'
 import { siteConfig as defaultSiteConfig } from '../../data/config'
+import { createHazloTuMismoLandingBlocks, hazloTuMismoLandingPageConfig } from '../../data/hazloTuMismoLanding'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -3226,6 +3227,7 @@ function createDefaultBlocksByPage(pageId: string, title: string, description: s
     if (pageId === 'servicio-plataformas') return createPlataformasLandingBlocks()
     if (pageId === 'virtualizacion-programas') return createVirtualizacionLandingBlocks()
     if (pageId === 'auditoria-programas-virtuales') return createAuditoriaLandingBlocks()
+    if (pageId === 'hazlo-tu-mismo') return createHazloTuMismoLandingBlocks() as SitePageBlock[]
     if (pageId === 'home-inicio') return createClassicHomeBlocks(title, description, accentColor)
     if (pageId === 'case-transversal') return createTransversalCaseBlocks()
     return createDefaultBlocks(title, description, accentColor)
@@ -3938,6 +3940,29 @@ const staticSiteArchitecture: SiteArchitecture = {
             order: 8,
             locked: true,
             blocks: createDefaultBlocks('Política de datos', 'Página legal de consentimiento y tratamiento de datos.', '#334155'),
+        },
+        {
+            id: hazloTuMismoLandingPageConfig.id,
+            title: hazloTuMismoLandingPageConfig.title,
+            path: hazloTuMismoLandingPageConfig.path,
+            description: hazloTuMismoLandingPageConfig.description,
+            category: hazloTuMismoLandingPageConfig.category,
+            status: hazloTuMismoLandingPageConfig.status,
+            editor: hazloTuMismoLandingPageConfig.editor,
+            template: hazloTuMismoLandingPageConfig.template,
+            navLabel: hazloTuMismoLandingPageConfig.navLabel,
+            showInNavigation: hazloTuMismoLandingPageConfig.showInNavigation,
+            previewPath: hazloTuMismoLandingPageConfig.previewPath,
+            accentColor: hazloTuMismoLandingPageConfig.accentColor,
+            notes: hazloTuMismoLandingPageConfig.notes,
+            order: hazloTuMismoLandingPageConfig.order,
+            locked: hazloTuMismoLandingPageConfig.locked,
+            blocks: createDefaultBlocksByPage(
+                hazloTuMismoLandingPageConfig.id,
+                hazloTuMismoLandingPageConfig.title,
+                hazloTuMismoLandingPageConfig.description,
+                hazloTuMismoLandingPageConfig.accentColor
+            ),
         },
         {
             id: 'campaign-template',

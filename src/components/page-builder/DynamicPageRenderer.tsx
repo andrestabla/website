@@ -1241,13 +1241,32 @@ function renderBlockBody(block: SitePageBlock, accentColor: string) {
 
     if (block.type === 'form') {
         const serviceSlug = toText(block.content.serviceSlug)
-        const formVariant = toText(block.content.variant) === 'product' ? 'product' : toText(block.content.variant) === 'service' ? 'service' : 'general'
+        const formContext = toText(block.content.context) || (
+            toText(block.content.variant) === 'product'
+                ? 'product'
+                : toText(block.content.variant) === 'service'
+                    ? 'service'
+                    : 'general'
+        )
         
         return (
             <div className="w-full max-w-xl border border-current/20 bg-white/5 p-8 lg:p-12 shadow-2xl">
                 {title && <h3 className="text-2xl font-black tracking-tight mb-2">{title}</h3>}
                 {body && <p className="mb-8 text-sm opacity-80 leading-relaxed">{body}</p>}
-                <ContactForm serviceSlug={serviceSlug} context={formVariant} />
+                <ContactForm
+                    serviceSlug={serviceSlug}
+                    context={formContext}
+                    nameLabel={toText(block.content.nameLabel)}
+                    emailLabel={toText(block.content.emailLabel)}
+                    requirementLabel={toText(block.content.requirementLabel)}
+                    namePlaceholder={toText(block.content.namePlaceholder)}
+                    emailPlaceholder={toText(block.content.emailPlaceholder)}
+                    requirementPlaceholder={toText(block.content.requirementPlaceholder)}
+                    submitLabel={toText(block.content.submitLabel)}
+                    successTitle={toText(block.content.successTitle)}
+                    successMessage={toText(block.content.successMessage)}
+                    resetLabel={toText(block.content.resetLabel)}
+                />
             </div>
         )
     }
@@ -1383,7 +1402,8 @@ export function DynamicPageRenderer({
         page.id === 'virtualizacion-programas' ||
         page.id === 'auditoria-programas-virtuales' ||
         normalizedPath === '/auditoria-programas-virtuales'
-    const pageTheme: PageThemeVariant = page.id === 'case-transversal' || normalizedPath === '/caso-transversal'
+    const pageTheme: PageThemeVariant = page.id === 'case-transversal' ||
+        normalizedPath === '/caso-transversal'
         ? 'case-premium'
         : 'default'
     const isCasePremium = pageTheme === 'case-premium'
@@ -1484,14 +1504,24 @@ export function DynamicPageRenderer({
         const heroBlock = blocks.find((block) => block.id === 'hero')
         const kpisBlock = blocks.find((block) => block.id === 'kpis-top')
         const storyBlocks = blocks.filter((block) => block.id !== 'hero' && block.id !== 'kpis-top')
-        const railIds = new Set([
-            'situacion-inicial',
-            'servicios-aplicados',
-            'productos-generados',
-            'resultados-comparativos',
-            'donut-operacion',
-            'cta-final',
-        ])
+        const railIds = page.id === 'hazlo-tu-mismo' || normalizedPath === '/hazlo-tu-mismo'
+            ? new Set([
+                'situacion-inicial',
+                'transformacion',
+                'resultados-comparativos',
+                'productos-generados',
+                'flujo-operativo',
+                'contacto',
+                'cta-final',
+            ])
+            : new Set([
+                'situacion-inicial',
+                'servicios-aplicados',
+                'productos-generados',
+                'resultados-comparativos',
+                'donut-operacion',
+                'cta-final',
+            ])
         const railLinks = storyBlocks
             .filter((block) => railIds.has(block.id))
             .map((block) => {

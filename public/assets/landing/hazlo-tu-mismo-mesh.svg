@@ -1,0 +1,48 @@
+<svg width="1600" height="960" viewBox="0 0 1600 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="strokeA" x1="0" y1="0" x2="1600" y2="960" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8" stop-opacity="0.55"/>
+      <stop offset="0.5" stop-color="#818CF8" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0.12"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1240 156) rotate(134.469) scale(403.092 334.733)">
+      <stop stop-color="#60A5FA" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#60A5FA" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(332 104) rotate(83.7781) scale(271.597 330.281)">
+      <stop stop-color="#A78BFA" stop-opacity="0.3"/>
+      <stop offset="1" stop-color="#A78BFA" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur" x="-80" y="-80" width="1760" height="1120" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <pattern id="grid" width="88" height="88" patternUnits="userSpaceOnUse">
+      <path d="M88 0H0V88" stroke="#93C5FD" stroke-opacity="0.08"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="960" fill="url(#grid)"/>
+  <rect width="1600" height="960" fill="url(#glowA)"/>
+  <rect width="1600" height="960" fill="url(#glowB)"/>
+  <g filter="url(#blur)">
+    <path d="M1345 44L1410 80L1410 152L1345 188L1280 152L1280 80L1345 44Z" stroke="url(#strokeA)" stroke-width="3"/>
+    <path d="M1455 112L1520 148L1520 220L1455 256L1390 220L1390 148L1455 112Z" stroke="url(#strokeA)" stroke-width="3"/>
+    <path d="M1238 125L1303 161L1303 233L1238 269L1173 233L1173 161L1238 125Z" stroke="url(#strokeA)" stroke-width="3"/>
+    <path d="M150 118L210 151L210 216L150 249L90 216L90 151L150 118Z" stroke="url(#strokeA)" stroke-width="2.5"/>
+    <path d="M260 182L320 215L320 280L260 313L200 280L200 215L260 182Z" stroke="url(#strokeA)" stroke-width="2.5"/>
+    <path d="M70 238L130 271L130 336L70 369L10 336L10 271L70 238Z" stroke="url(#strokeA)" stroke-width="2.5"/>
+  </g>
+  <g opacity="0.5">
+    <path d="M1155 316L1214 349L1214 414L1155 447L1096 414L1096 349L1155 316Z" stroke="url(#strokeA)" stroke-width="2"/>
+    <path d="M1260 379L1319 412L1319 477L1260 510L1201 477L1201 412L1260 379Z" stroke="url(#strokeA)" stroke-width="2"/>
+    <path d="M1052 385L1111 418L1111 483L1052 516L993 483L993 418L1052 385Z" stroke="url(#strokeA)" stroke-width="2"/>
+    <path d="M282 474L341 507L341 572L282 605L223 572L223 507L282 474Z" stroke="url(#strokeA)" stroke-width="2"/>
+  </g>
+  <g opacity="0.38">
+    <path d="M1188 156L1237 184" stroke="url(#strokeA)" stroke-width="2"/>
+    <path d="M1237 184L1290 156" stroke="url(#strokeA)" stroke-width="2"/>
+    <path d="M1290 156L1345 188" stroke="url(#strokeA)" stroke-width="2"/>
+    <path d="M210 151L260 182" stroke="url(#strokeA)" stroke-width="2"/>
+    <path d="M260 182L320 215" stroke="url(#strokeA)" stroke-width="2"/>
+    <path d="M130 271L200 215" stroke="url(#strokeA)" stroke-width="2"/>
+  </g>
+</svg>

@@ -9,10 +9,33 @@ import { useCMS } from '../../admin/context/CMSContext'
 
 interface ContactFormProps {
     serviceSlug?: string
-    context?: 'general' | 'service' | 'product'
+    context?: string
+    nameLabel?: string
+    emailLabel?: string
+    requirementLabel?: string
+    namePlaceholder?: string
+    emailPlaceholder?: string
+    requirementPlaceholder?: string
+    submitLabel?: string
+    successTitle?: string
+    successMessage?: string
+    resetLabel?: string
 }
 
-export function ContactForm({ serviceSlug, context = 'general' }: ContactFormProps) {
+export function ContactForm({
+    serviceSlug,
+    context = 'general',
+    nameLabel,
+    emailLabel,
+    requirementLabel,
+    namePlaceholder,
+    emailPlaceholder,
+    requirementPlaceholder,
+    submitLabel,
+    successTitle,
+    successMessage,
+    resetLabel,
+}: ContactFormProps) {
     const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
     const [form, setForm] = useState({ name: '', email: '', requirement: '' })
     const { uiText } = useLanguage()
@@ -23,8 +46,9 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
     const getRandom = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]
 
     const placeholders = {
-        name: getRandom(translatedMicrocopy.placeholders.name),
-        email: getRandom(translatedMicrocopy.placeholders.email)
+        name: namePlaceholder || getRandom(translatedMicrocopy.placeholders.name),
+        email: emailPlaceholder || getRandom(translatedMicrocopy.placeholders.email),
+        requirement: requirementPlaceholder || uiText.form.placeholders.requirement,
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -62,17 +86,17 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                     <CheckCircle className="w-10 h-10" />
                 </div>
                 <h3 className="text-3xl font-black text-slate-900 mb-6 tracking-tighter">
-                    {getRandom(translatedMicrocopy.success)}
+                    {successTitle || getRandom(translatedMicrocopy.success)}
                 </h3>
                 <p className="text-slate-500 mb-8 font-light">
-                    {state.site.formSuccessMessage || uiText.form.successBlurb}
+                    {successMessage || state.site.formSuccessMessage || uiText.form.successBlurb}
                 </p>
                 <Button
                     variant="outline"
                     onClick={() => setStatus('idle')}
                     className="mx-auto"
                 >
-                    {getRandom(translatedMicrocopy.confirm)}
+                    {resetLabel || getRandom(translatedMicrocopy.confirm)}
                 </Button>
             </motion.div>
         )
@@ -82,7 +106,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
         <form onSubmit={handleSubmit} className="space-y-8">
             <div className="relative">
                 <label className="block text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 ml-1">
-                    {uiText.form.labels.id}
+                    {nameLabel || uiText.form.labels.id}
                 </label>
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-slate-300 group-focus-within:text-brand-primary transition-colors">
@@ -103,7 +127,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
 
             <div className="relative">
                 <label className="block text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 ml-1">
-                    {uiText.form.labels.channel}
+                    {emailLabel || uiText.form.labels.channel}
                 </label>
                 <div className="relative group">
                     <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-slate-300 group-focus-within:text-brand-primary transition-colors">
@@ -124,7 +148,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
 
             <div className="relative">
                 <label className="block text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 mb-4 ml-1">
-                    {uiText.form.labels.requirement}
+                    {requirementLabel || uiText.form.labels.requirement}
                 </label>
                 <div className="relative group">
                     <div className="absolute top-6 left-6 pointer-events-none text-slate-300 group-focus-within:text-brand-primary transition-colors">
@@ -134,7 +158,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                         name="requirement"
                         rows={4}
                         required
-                        placeholder={uiText.form.placeholders.requirement}
+                        placeholder={placeholders.requirement}
                         value={form.requirement}
                         onChange={(e) => setForm((prev) => ({ ...prev, requirement: e.target.value }))}
                         className="w-full bg-slate-50 border border-slate-200 py-6 pl-16 pr-6 text-slate-900 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium resize-none"
@@ -162,7 +186,7 @@ export function ContactForm({ serviceSlug, context = 'general' }: ContactFormPro
                 className="w-full py-8 text-lg"
                 disabled={status === 'submitting'}
             >
-                {status === 'submitting' ? uiText.form.submitting : getRandom(translatedMicrocopy.submit)}
+                {status === 'submitting' ? uiText.form.submitting : (submitLabel || getRandom(translatedMicrocopy.submit))}
                 <ArrowRight className="ml-3 w-6 h-6" />
             </Button>
 

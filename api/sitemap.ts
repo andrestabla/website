@@ -1,4 +1,5 @@
 import { prisma } from './_lib/prisma.js'
+import { sanitizeCmsSnapshot } from './_lib/cms.js'
 import { CAMPAIGN_LANDINGS_SNAPSHOT_ID, sanitizeCampaignLandingsSnapshot } from './_lib/campaign-landings.js'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
@@ -120,7 +121,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       prisma.cmsSnapshot.findUnique({ where: { id: CAMPAIGN_LANDINGS_SNAPSHOT_ID } }),
     ])
 
-    const cmsData = (cmsSnapshot?.data || {}) as CmsSnapshotData
+    const cmsData = sanitizeCmsSnapshot(cmsSnapshot?.data || {}) as CmsSnapshotData
     const baseUrl = normalizeBaseUrl(String(cmsData?.site?.url || process.env.SITE_URL || 'https://www.algoritmot.com'))
     const lastmodFallback = (cmsSnapshot?.updatedAt || new Date()).toISOString()
 
@@ -139,7 +140,9 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       '/plataformas-de-aprendizaje',
       '/virtualizacion-programas',
       '/auditoria-programas-virtuales',
+      '/hazlo-tu-mismo',
       '/generador-casos',
+      '/planifico-mi-proyecto',
       '/landing-servicios',
       '/politica-tratamiento-datos',
       '/protocolos/ingenieria-humana',

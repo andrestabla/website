@@ -120,6 +120,11 @@ export function SiteSEO() {
       description = 'Genera casos y escenarios accionables por industria y proceso.'
       isKnownRoute = true
       breadcrumbs.push({ name: 'Generador de casos', path: normalizedPath })
+    } else if (normalizedPath === '/planifico-mi-proyecto') {
+      title = `Planifico mi proyecto con IA | ${siteName}`
+      description = 'Asistente IA para definir alcance, complejidad, metodología y presupuesto estimado de tu proyecto digital.'
+      isKnownRoute = true
+      breadcrumbs.push({ name: 'Planifico mi proyecto', path: normalizedPath })
     } else if (normalizedPath.startsWith('/protocolos/')) {
       const map: Record<string, string> = {
         '/protocolos/ingenieria-humana': 'Ingeniería Humana',

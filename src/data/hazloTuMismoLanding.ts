@@ -1,0 +1,470 @@
+const LANDING_PATH = '/hazlo-tu-mismo'
+
+export const hazloTuMismoLandingPageConfig = {
+  id: 'hazlo-tu-mismo',
+  title: 'Hazlo tú mismo(a): metodología aplicada para automatizar procesos con IA y herramientas no-code',
+  path: LANDING_PATH,
+  description:
+    'Descubre Hazlo tú mismo(a), la metodología aplicada de AlgoritmoT para construir automatizaciones y productos no-code con IA, con un webinar en vivo como puerta de entrada.',
+  category: 'marketing',
+  status: 'published',
+  editor: 'marketing',
+  template: 'immersive',
+  navLabel: 'Hazlo tú mismo(a)',
+  showInNavigation: false,
+  previewPath: LANDING_PATH,
+  accentColor: '#38bdf8',
+  notes:
+    'Landing de campaña para promover la metodología "Hazlo tú mismo(a)" con foco en automatización, IA y espacios de trabajo guiados.',
+  order: 10,
+  locked: false,
+} as const
+
+export function createHazloTuMismoLandingBlocks() {
+  return [
+    {
+      id: 'hero',
+      type: 'hero',
+      name: 'Hero metodología',
+      visible: true,
+      order: 0,
+      content: {
+        anchor: 'inicio',
+        eyebrow: 'Metodología aplicada · Webinar en vivo · 24 de marzo de 2026 · 6:00 COT',
+        title: 'Hazlo tú mismo(a)',
+        subtitle: 'La metodología para convertir procesos manuales en sistemas útiles con herramientas no-code e IA',
+        body:
+          'El webinar no es el producto. Es la sesión de entrada para mostrarte cómo funciona la metodología, ver cinco casos prácticos y detectar qué podrías construir primero en tu negocio, tu trabajo o tu proyecto personal.',
+        primaryLabel: 'Reservar mi cupo',
+        primaryHref: `${LANDING_PATH}#inscripcion`,
+        secondaryLabel: 'Ver la metodología',
+        secondaryHref: `${LANDING_PATH}#metodologia`,
+      },
+      style: {
+        backgroundColor: '#050816',
+        backgroundGradient:
+          'radial-gradient(circle at 82% 18%, rgba(56,189,248,0.14), transparent 22%), radial-gradient(circle at 18% 10%, rgba(99,102,241,0.18), transparent 22%), linear-gradient(180deg, #040714 0%, #0a1024 52%, #090f21 100%)',
+        backgroundImageUrl: '/assets/landing/hazlo-tu-mismo-mesh.svg',
+        textColor: '#f8fafc',
+        align: 'left',
+        paddingY: '6.5rem',
+      },
+    },
+    {
+      id: 'kpis-top',
+      type: 'counter',
+      name: 'Lectura rápida',
+      visible: true,
+      order: 1,
+      content: {
+        anchor: 'lectura-rapida',
+        title: 'Webinar de entrada a la metodología',
+        body: 'Una sesión diseñada para entender el método, ver casos prácticos y detectar tu primer proyecto viable.',
+        items: [
+          {
+            label: 'Fecha',
+            value: 24,
+            suffix: ' marzo',
+            description: 'Martes · 6:00 COT',
+            status: 'ok',
+          },
+          {
+            label: 'Casos',
+            value: 5,
+            suffix: '',
+            description: 'Ejemplos listos para adaptar',
+            status: 'ok',
+          },
+          {
+            label: 'Código',
+            value: 0,
+            suffix: ' obligatorio',
+            description: 'No-code primero, criterio siempre',
+            status: 'ok',
+          },
+          {
+            label: 'Resultado',
+            value: 1,
+            suffix: ' ruta aplicable',
+            description: 'Sobre un reto real, no sobre teoría',
+            status: 'ok',
+          },
+        ],
+      },
+      style: {
+        backgroundColor: 'transparent',
+        textColor: '#e2e8f0',
+        columns: '1',
+        paddingY: '1rem',
+      },
+    },
+    {
+      id: 'transformacion',
+      type: 'text',
+      name: 'Promesa metodológica',
+      visible: true,
+      order: 2,
+      content: {
+        anchor: 'metodologia',
+        eyebrow: 'La metodología',
+        title: 'No vienes a consumir contenido. Vienes a construir algo útil con acompañamiento.',
+        body:
+          'Hazlo tú mismo(a) es una metodología guiada para convertir una necesidad concreta en una automatización, un flujo operativo o un producto digital liviano. El webinar existe para mostrarte cómo funciona en la práctica y ayudarte a identificar por dónde empezar.',
+      },
+      style: {
+        backgroundColor: '#0a1022',
+        backgroundGradient:
+          'linear-gradient(180deg, rgba(8,12,29,0.98) 0%, rgba(10,16,34,0.94) 100%)',
+        textColor: '#f8fafc',
+        align: 'left',
+        paddingY: '4.5rem',
+      },
+    },
+    {
+      id: 'situacion-inicial',
+      type: 'text',
+      name: 'Tensión inicial',
+      visible: true,
+      order: 3,
+      content: {
+        anchor: 'por-que-ahora',
+        eyebrow: 'La tensión actual',
+        title: 'Si las herramientas existen, ¿por qué todavía sigues resolviendo todo a mano?',
+        body:
+          'Porque la mayoría de personas y empresas no necesitan más herramientas. Necesitan una ruta clara para priorizar, combinar y aterrizar lo que ya existe a un caso real. Ahí es donde entra la metodología.',
+      },
+      style: {
+        backgroundColor: 'transparent',
+        textColor: '#d8e3f2',
+        align: 'left',
+        paddingY: '4rem',
+      },
+    },
+    {
+      id: 'consecuencias',
+      type: 'feature-list',
+      name: 'Fricciones habituales',
+      visible: true,
+      order: 4,
+      content: {
+        anchor: 'fricciones',
+        eyebrow: 'Lo que bloquea el avance',
+        title: 'El problema no suele ser técnico. Suele ser metodológico.',
+        body:
+          'Estas son las fricciones más comunes cuando alguien intenta automatizar, construir o integrar algo sin una ruta aplicada.',
+        items: [
+          'Exceso de contenido teórico y poca construcción real.',
+          'Demasiadas herramientas y poca claridad sobre cuál combina mejor con tu reto.',
+          'Dependencia de terceros para cosas que ya podrías empezar a resolver.',
+          'Procesos manuales que siguen consumiendo tiempo comercial, operativo o analítico.',
+          'Poca visibilidad del resultado esperado antes de invertir más tiempo o dinero.',
+        ],
+      },
+      style: {
+        backgroundColor: 'transparent',
+        textColor: '#f8fafc',
+        align: 'left',
+        columns: '2',
+        paddingY: '4.5rem',
+      },
+    },
+    {
+      id: 'vista-ejecutiva',
+      type: 'image',
+      name: 'Demo animada',
+      visible: true,
+      order: 5,
+      content: {
+        anchor: 'demo',
+        eyebrow: 'Ejemplo animado',
+        title: 'Así se ve un flujo no-code cuando pasas del reto a un sistema útil',
+        body:
+          'Este ejemplo resume la lógica del método: detectamos el cuello de botella, conectamos herramientas ligeras y construimos una solución funcional que ya produce valor.',
+        imageUrl: '/assets/landing/hazlo-tu-mismo-demo.gif',
+        imageAlt: 'Demostración animada de un flujo no-code para crear un producto digital o automatizar un proceso.',
+      },
+      style: {
+        backgroundColor: '#0a1022',
+        textColor: '#f8fafc',
+        radius: '1.5rem',
+        maxHeight: '720px',
+        paddingY: '2rem',
+      },
+    },
+    {
+      id: 'resultados-comparativos',
+      type: 'progress',
+      name: 'Antes y después',
+      visible: true,
+      order: 6,
+      content: {
+        anchor: 'impacto',
+        title: 'Qué cambia cuando aplicas la metodología',
+        body: 'Pasas de intuición y trabajo manual a sistemas ligeros con impacto visible en tiempo, control y capacidad de decisión.',
+        chartMode: 'compare',
+        compareLabelA: 'Antes',
+        compareLabelB: 'Con Hazlo tú mismo(a)',
+        items: [
+          { label: 'Tiempo en tareas repetitivas', before: 100, value: 38 },
+          { label: 'Velocidad para responder a clientes', before: 34, value: 82 },
+          { label: 'Visibilidad del proceso', before: 28, value: 88 },
+          { label: 'Capacidad para decidir con datos', before: 31, value: 84 },
+          { label: 'Autonomía para mejorar el flujo', before: 22, value: 79 },
+        ],
+      },
+      style: {
+        backgroundColor: 'transparent',
+        textColor: '#f8fafc',
+        align: 'left',
+        paddingY: '5rem',
+      },
+    },
+    {
+      id: 'productos-generados',
+      type: 'grid',
+      name: 'Casos prácticos',
+      visible: true,
+      order: 7,
+      content: {
+        anchor: 'casos',
+        eyebrow: 'Ejemplos aplicables',
+        title: 'Cinco casos para entender la metodología con ejemplos que sí se pueden aterrizar',
+        body:
+          'La oferta de valor no es la herramienta aislada. Es la capacidad de convertir un reto en un sistema ligero, elegante y útil para operar mejor.',
+        items: [
+          {
+            eyebrow: 'Caso 01',
+            icon: 'clipboardcheck',
+            title: 'Cotizador automático',
+            body: 'Reduce tiempos de respuesta y entrega propuestas consistentes en minutos con variables, reglas y salida lista para enviar.',
+            imageUrl: '/assets/landing/corporate.png',
+            label: 'Lo quiero explorar',
+            url: `${LANDING_PATH}#inscripcion`,
+          },
+          {
+            eyebrow: 'Caso 02',
+            icon: 'users',
+            title: 'Agente IA comercial',
+            body: 'Organiza conversaciones, responde preguntas frecuentes y ayuda a mover oportunidades comerciales sin perder tono ni contexto.',
+            imageUrl: '/assets/landing/tuprofe-mockup.png',
+            label: 'Lo quiero explorar',
+            url: `${LANDING_PATH}#inscripcion`,
+          },
+          {
+            eyebrow: 'Caso 03',
+            icon: 'barchart3',
+            title: 'Flujo de análisis de datos automático',
+            body: 'Consolida datos, limpia información y entrega reportes útiles para decidir más rápido sin depender de trabajo manual repetitivo.',
+            imageUrl: '/assets/landing/corporate.png',
+            label: 'Lo quiero explorar',
+            url: `${LANDING_PATH}#inscripcion`,
+          },
+          {
+            eyebrow: 'Caso 04',
+            icon: 'link2',
+            title: 'Seguimiento automático de leads y propuestas',
+            body: 'Centraliza prospectos, recordatorios y estado comercial para que no se pierdan oportunidades por falta de seguimiento ni dispersión.',
+            imageUrl: '/assets/landing/education.png',
+            label: 'Lo quiero explorar',
+            url: `${LANDING_PATH}#inscripcion`,
+          },
+          {
+            eyebrow: 'Caso 05',
+            icon: 'trianglealert',
+            title: 'Tablero operativo con alertas automáticas',
+            body: 'Recibe alertas, semáforos y priorización de decisiones cuando el proceso se sale de control y necesitas intervenir a tiempo.',
+            imageUrl: '/assets/landing/tuprofe-mockup.png',
+            label: 'Lo quiero explorar',
+            url: `${LANDING_PATH}#inscripcion`,
+          },
+        ],
+      },
+      style: {
+        backgroundColor: '#090f21',
+        textColor: '#f8fafc',
+        align: 'left',
+        columns: '2',
+        paddingY: '5rem',
+      },
+    },
+    {
+      id: 'flujo-operativo',
+      type: 'timeline',
+      name: 'Ruta metodológica',
+      visible: true,
+      order: 8,
+      content: {
+        anchor: 'flujo',
+        eyebrow: 'Cómo funciona',
+        title: 'La ruta Hazlo tú mismo(a)',
+        items: [
+          {
+            title: '1. Llegas con un reto concreto',
+            body: 'Definimos el problema, la meta y el proceso que quieres mejorar, acelerar o automatizar.',
+          },
+          {
+            title: '2. Elegimos el espacio ideal',
+            body: 'Seleccionamos herramientas, alcance y entregable mínimo para que avances con foco y sentido de negocio.',
+          },
+          {
+            title: '3. Construyes con acompañamiento',
+            body: 'Trabajas sobre tu caso con asesoría de profesionales que ya recorrieron ese camino y lograron productos reales.',
+          },
+          {
+            title: '4. Sales con un siguiente paso real',
+            body: 'Cierras con una solución útil, una base funcional o una ruta clara para llevarla a implementación.',
+          },
+        ],
+      },
+      style: {
+        backgroundColor: '#0b1328',
+        textColor: '#f8fafc',
+        align: 'left',
+        paddingY: '4.5rem',
+      },
+    },
+    {
+      id: 'servicio-producto',
+      type: 'feature-list',
+      name: 'Habilidades básicas',
+      visible: true,
+      order: 9,
+      content: {
+        anchor: 'habilidades',
+        eyebrow: 'Punto de partida',
+        title: 'Si tienes estas habilidades básicas, ya puedes aprovechar la metodología',
+        body:
+          'No necesitas programar. Necesitas base operativa, curiosidad aplicada y la disposición de construir una solución útil con criterio.',
+        items: [
+          'Manejo básico de navegador, documentos en la nube y hojas de cálculo.',
+          'Capacidad para identificar una tarea repetitiva o un cuello de botella en tu día a día.',
+          'Disposición para probar herramientas nuevas y ajustar a partir del resultado.',
+          'Orden mínimo para documentar pasos, variables y decisiones.',
+          'Interés genuino en construir una solución útil para tu objetivo personal, profesional o de negocio.',
+        ],
+      },
+      style: {
+        backgroundColor: 'transparent',
+        textColor: '#f8fafc',
+        align: 'left',
+        columns: '1',
+        paddingY: '4.5rem',
+      },
+    },
+    {
+      id: 'arquitectura-simple',
+      type: 'text',
+      name: 'Diferencial',
+      visible: true,
+      order: 10,
+      content: {
+        anchor: 'diferencial',
+        eyebrow: 'Lo que hace distinta la experiencia',
+        title: 'No son cursos virtuales. Son espacios reales de trabajo.',
+        body:
+          'Aquí no vienes a consumir contenido genérico. Vienes a resolver un reto con apoyo, criterio y entregables conectados con tus objetivos de negocio, profesionales o personales. El webinar es la excusa para mostrarte cómo funciona la metodología con ejemplos claros.',
+      },
+      style: {
+        backgroundColor: '#0a1022',
+        backgroundGradient:
+          'linear-gradient(135deg, rgba(7,11,28,0.98) 0%, rgba(10,16,34,0.96) 100%)',
+        textColor: '#f8fafc',
+        align: 'left',
+        paddingY: '4.5rem',
+      },
+    },
+    {
+      id: 'faq-caso',
+      type: 'accordion',
+      name: 'Preguntas frecuentes',
+      visible: true,
+      order: 11,
+      content: {
+        anchor: 'faq',
+        eyebrow: 'Preguntas frecuentes',
+        title: 'Antes de reservar tu cupo, esto te interesa',
+        items: [
+          {
+            title: '¿A quién le sirve este webinar?',
+            body: 'A personas, profesionales, emprendedores y equipos que quieren automatizar procesos sin depender por completo del desarrollo tradicional desde el día uno.',
+          },
+          {
+            title: '¿Necesito saber programar?',
+            body: 'No. Necesitas entender tu proceso, tener apertura para probar herramientas y ganas de convertir una idea en una solución útil.',
+          },
+          {
+            title: '¿Qué pasa después del webinar?',
+            body: 'Si tu reto tiene fit, te proponemos un espacio de trabajo personalizado para construir una solución real con acompañamiento profesional.',
+          },
+          {
+            title: '¿Qué recibo al registrarme?',
+            body: 'Recibirás el acceso al webinar, un recordatorio y la posibilidad de priorizar el caso que más te interesa trabajar.',
+          },
+        ],
+      },
+      style: {
+        backgroundColor: 'transparent',
+        textColor: '#f8fafc',
+        align: 'left',
+        paddingY: '4.5rem',
+      },
+    },
+    {
+      id: 'contacto',
+      type: 'form',
+      name: 'Formulario de inscripción',
+      visible: true,
+      order: 12,
+      content: {
+        anchor: 'inscripcion',
+        title: 'Reserva tu lugar',
+        body:
+          'Déjanos tus datos y el proceso que te gustaría automatizar. Te enviaremos acceso, recordatorio y contexto para que llegues al webinar con una idea mucho más clara de por dónde empezar.',
+        serviceSlug: 'hazlo-tu-mismo-webinar',
+        context: 'webinar_hazlo_tu_mismo',
+        nameLabel: 'Nombre y contexto',
+        namePlaceholder: 'Tu nombre y empresa',
+        emailLabel: 'Correo para enviarte acceso',
+        emailPlaceholder: 'tu@correo.com',
+        requirementLabel: '¿Qué quieres automatizar primero?',
+        requirementPlaceholder:
+          'Ejemplo: cotizaciones, seguimiento comercial, reportes, analítica o atención a clientes.',
+        submitLabel: 'Inscribirme al webinar',
+        successTitle: 'Tu inscripción quedó registrada',
+        successMessage:
+          'Te enviaremos el acceso del webinar y un recordatorio antes del martes 24 de marzo de 2026.',
+        resetLabel: 'Registrar otro cupo',
+      },
+      style: {
+        backgroundColor: '#090f21',
+        textColor: '#f8fafc',
+        align: 'left',
+        paddingY: '5rem',
+      },
+    },
+    {
+      id: 'cta-final',
+      type: 'cta',
+      name: 'Cierre final',
+      visible: true,
+      order: 13,
+      content: {
+        anchor: 'cierre',
+        eyebrow: 'Siguiente paso',
+        title: 'El webinar abre la conversación. La metodología construye el resultado.',
+        body:
+          'Si ya sabes qué quieres automatizar, conversemos desde ahora y definimos el espacio de trabajo ideal para tu caso.',
+        primaryLabel: 'Hablar con ProfeTabla',
+        primaryHref: 'https://wa.me/573044544525',
+      },
+      style: {
+        backgroundColor: '#050816',
+        backgroundGradient:
+          'radial-gradient(circle at 18% 18%, rgba(56,189,248,0.12), transparent 24%), radial-gradient(circle at 82% 24%, rgba(99,102,241,0.14), transparent 22%), linear-gradient(180deg, #050816 0%, #090f21 100%)',
+        textColor: '#f8fafc',
+        align: 'center',
+        paddingY: '4.5rem',
+      },
+    },
+  ]
+}

@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { prisma } from './prisma.js'
-import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, sanitizeIntegrations } from './integrations.js'
+import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, defaultIntegrations, sanitizeIntegrations } from './integrations.js'
 
 export type AIProvider = 'gemini' | 'openai' | 'auto'
 
@@ -18,8 +18,13 @@ function extractJson(text: string): string {
 }
 
 async function getServerIntegrations(): Promise<AiIntegrations> {
-  const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
-  return applyServerEnv(sanitizeIntegrations(snapshot?.data))
+  try {
+    const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
+    return applyServerEnv(sanitizeIntegrations(snapshot?.data))
+  } catch (error) {
+    console.error('ai integrations snapshot unavailable, falling back to server env only', error)
+    return applyServerEnv(sanitizeIntegrations(defaultIntegrations))
+  }
 }
 
 function getProviderOrder(provider: AIProvider, integrations: AiIntegrations): Array<'openai' | 'gemini'> {
@@ -46,16 +51,22 @@ async function generateJsonWithOpenAI({
 }) {
   const apiKey = integrations.openai.config.apiKey
   const model = integrations.openai.config.model || process.env.OPENAI_MODEL || 'gpt-4o'
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  }
+  const orgId = integrations.openai.config.orgId || process.env.OPENAI_ORG_ID || ''
+  if (orgId) {
+    headers['OpenAI-Organization'] = orgId
+  }
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
       model,
       temperature,
-      max_tokens: maxTokens,
+      max_tokens: Math.min(maxTokens, integrations.openai.config.maxTokens || maxTokens),
       response_format: { type: 'json_object' },
       messages: [
         {
