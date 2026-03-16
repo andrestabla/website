@@ -17,6 +17,8 @@ import {
     Plus,
     Trash2,
     WandSparkles,
+    Eye,
+    X,
     GripVertical,
     Monitor,
     Tablet,
@@ -78,6 +80,51 @@ type CampaignLanding = {
 
 type LandingViewport = 'desktop' | 'tablet' | 'mobile'
 type MarketingTab = 'popup' | 'email' | 'landing' | 'growth'
+
+type MarketingCampaignHistoryItem = {
+    id: string
+    name: string
+    subject: string
+    templateId: string
+    fromName: string
+    createdAt: string
+    sentCount: number
+    failedCount: number
+    recipientCount: number
+    recipientPreview: string[]
+}
+
+type MarketingCampaignHistoryRecipient = {
+    id: string
+    email: string
+    status: string
+    sentAt: string | null
+    openedAt: string | null
+    lastOpenedAt: string | null
+    openCount: number
+    failureReason: string | null
+}
+
+type MarketingCampaignHistoryDetail = {
+    id: string
+    name: string
+    subject: string
+    preheader: string | null
+    templateId: string
+    bodyText: string | null
+    ctaLabel: string | null
+    ctaHref: string | null
+    renderedHtml: string | null
+    renderedText: string | null
+    fromName: string
+    fromEmail: string
+    previewOnly: boolean
+    sentCount: number
+    failedCount: number
+    createdAt: string
+    updatedAt: string
+    recipients: MarketingCampaignHistoryRecipient[]
+}
 
 type LandingWidgetTemplate = {
     id: string
@@ -329,6 +376,14 @@ export function ManageMarketing() {
     const [emailError, setEmailError] = useState<string | null>(null)
     const [emailResult, setEmailResult] = useState<string | null>(null)
     const [emailProviderUsed, setEmailProviderUsed] = useState<string | null>(null)
+    const [emailHistoryItems, setEmailHistoryItems] = useState<MarketingCampaignHistoryItem[]>([])
+    const [emailHistoryLoading, setEmailHistoryLoading] = useState(false)
+    const [emailHistoryLoaded, setEmailHistoryLoaded] = useState(false)
+    const [emailHistoryError, setEmailHistoryError] = useState<string | null>(null)
+    const [emailHistoryOpen, setEmailHistoryOpen] = useState(false)
+    const [emailHistoryDetail, setEmailHistoryDetail] = useState<MarketingCampaignHistoryDetail | null>(null)
+    const [emailHistoryDetailLoading, setEmailHistoryDetailLoading] = useState(false)
+    const [emailHistoryDetailError, setEmailHistoryDetailError] = useState<string | null>(null)
 
     const [landingItems, setLandingItems] = useState<CampaignLanding[]>([])
     const [landingDraft, setLandingDraft] = useState<CampaignLanding>(() => createEmptyLanding())
@@ -448,6 +503,19 @@ export function ManageMarketing() {
         setTimeout(() => setCopiedId(null), 2000)
     }
 
+    const formatDateTime = (value: string | null | undefined) => {
+        if (!value) return '—'
+        const date = new Date(value)
+        if (Number.isNaN(date.getTime())) return '—'
+        return date.toLocaleString('es-CO', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+        })
+    }
+
     const popupPreview = useMemo(() => ({
         title: draft.popupTitle || 'Agenda una sesión estratégica',
         body: draft.popupBody || 'Te ayudamos a definir un roadmap realista de transformación digital.',
@@ -541,6 +609,40 @@ export function ManageMarketing() {
         }
     }
 
+    const loadEmailHistory = async () => {
+        setEmailHistoryLoading(true)
+        setEmailHistoryError(null)
+        try {
+            const response = await fetch('/api/admin/marketing-campaigns')
+            const json = await response.json().catch(() => null)
+            if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`)
+            setEmailHistoryItems(Array.isArray(json.items) ? json.items : [])
+            setEmailHistoryLoaded(true)
+        } catch (error) {
+            setEmailHistoryError(error instanceof Error ? error.message : 'No se pudo cargar el histórico de campañas')
+            setEmailHistoryLoaded(true)
+        } finally {
+            setEmailHistoryLoading(false)
+        }
+    }
+
+    const openEmailHistoryDetail = async (campaignId: string) => {
+        setEmailHistoryOpen(true)
+        setEmailHistoryDetailLoading(true)
+        setEmailHistoryDetailError(null)
+        try {
+            const response = await fetch(`/api/admin/marketing-campaigns?id=${encodeURIComponent(campaignId)}`)
+            const json = await response.json().catch(() => null)
+            if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`)
+            setEmailHistoryDetail(json.item || null)
+        } catch (error) {
+            setEmailHistoryDetail(null)
+            setEmailHistoryDetailError(error instanceof Error ? error.message : 'No se pudo cargar el detalle de la campaña')
+        } finally {
+            setEmailHistoryDetailLoading(false)
+        }
+    }
+
     const sendEmailCampaign = async (previewOnly: boolean) => {
         setEmailLoading(true)
         setEmailError(null)
@@ -574,6 +676,7 @@ export function ManageMarketing() {
             } else {
                 const skipped = Number(json.skippedUnsubscribed || 0)
                 setEmailResult(`Envío completado: ${json.sent} enviados, ${json.failed} fallidos, ${skipped} omitidos por "No interesado". Plantilla: ${json.templateId || emailTemplateId}.`)
+                void loadEmailHistory()
             }
         } catch (error) {
             setEmailError(error instanceof Error ? error.message : 'No se pudo enviar campaña')
@@ -817,6 +920,23 @@ export function ManageMarketing() {
                 : activeTab === 'landing'
                     ? 'Construye y administra landings focalizadas con canvas visual e IA.'
                     : 'Herramientas de crecimiento para enlaces, variantes y accesibilidad.'
+
+    useEffect(() => {
+        if (activeTab === 'email' && !emailHistoryLoaded && !emailHistoryLoading) {
+            void loadEmailHistory()
+        }
+    }, [activeTab, emailHistoryLoaded, emailHistoryLoading])
+
+    useEffect(() => {
+        if (!emailHistoryOpen) return
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setEmailHistoryOpen(false)
+            }
+        }
+        window.addEventListener('keydown', onKeyDown)
+        return () => window.removeEventListener('keydown', onKeyDown)
+    }, [emailHistoryOpen])
 
     return (
         <div className="space-y-12 pb-20">
@@ -1182,6 +1302,82 @@ export function ManageMarketing() {
                             {emailError && <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{emailError}</div>}
                             {emailResult && <div className="bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-700">{emailResult}</div>}
                         </div>
+                    </div>
+                    <div className="border-t border-slate-200 pt-6 space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Histórico de campañas</div>
+                                <h3 className="mt-2 text-xl font-black tracking-tight text-slate-900">Campañas enviadas</h3>
+                                <p className="mt-1 text-sm text-slate-500">Revisa nombre, fecha, destinatarios y abre el mensaje que salió a producción.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => void loadEmailHistory()}
+                                className="h-10 px-3 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                            >
+                                <RefreshCw className={`w-3.5 h-3.5 inline mr-2 ${emailHistoryLoading ? 'animate-spin' : ''}`} />
+                                Actualizar histórico
+                            </button>
+                        </div>
+
+                        {emailHistoryError && <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{emailHistoryError}</div>}
+
+                        {emailHistoryLoading && !emailHistoryItems.length ? (
+                            <div className="border border-slate-200 bg-slate-50 px-5 py-8 text-sm text-slate-500">Cargando campañas enviadas...</div>
+                        ) : emailHistoryItems.length === 0 ? (
+                            <div className="border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-sm text-slate-500">
+                                Aún no hay campañas enviadas registradas.
+                            </div>
+                        ) : (
+                            <div className="overflow-hidden border border-slate-200">
+                                <div className="hidden lg:grid grid-cols-[1.2fr_1fr_1.4fr_160px] gap-4 px-5 py-3 bg-slate-50 text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">
+                                    <div>Campaña</div>
+                                    <div>Fecha</div>
+                                    <div>Correos destino</div>
+                                    <div>Acción</div>
+                                </div>
+                                {emailHistoryItems.map((item) => (
+                                    <div key={item.id} className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr_1.4fr_160px] gap-4 px-5 py-4 border-t border-slate-200 first:border-t-0">
+                                        <div>
+                                            <div className="text-sm font-black text-slate-900">{item.name}</div>
+                                            <div className="mt-1 text-xs text-slate-500">{item.subject}</div>
+                                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                                                <span className="rounded-full border border-slate-200 px-2 py-1">{item.templateId}</span>
+                                                <span className="rounded-full border border-slate-200 px-2 py-1">Remitente: {item.fromName}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-slate-600">
+                                            <div>{formatDateTime(item.createdAt)}</div>
+                                            <div className="mt-2 text-xs text-slate-500">{item.sentCount} enviados · {item.failedCount} fallidos</div>
+                                        </div>
+                                        <div className="text-sm text-slate-600">
+                                            <div className="flex flex-wrap gap-2">
+                                                {item.recipientPreview.slice(0, 4).map((email) => (
+                                                    <span key={email} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] text-slate-600">
+                                                        {email}
+                                                    </span>
+                                                ))}
+                                                {item.recipientCount > item.recipientPreview.length && (
+                                                    <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] text-slate-600">
+                                                        +{item.recipientCount - item.recipientPreview.length} más
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start lg:items-center">
+                                            <button
+                                                type="button"
+                                                onClick={() => void openEmailHistoryDetail(item.id)}
+                                                className="h-10 px-3 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900"
+                                            >
+                                                <Eye className="w-3.5 h-3.5 inline mr-2" />
+                                                Ver mensaje
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -1674,7 +1870,7 @@ export function ManageMarketing() {
             )}
 
             {activeTab === 'growth' && (
-            <>
+                <>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
                 <div className="space-y-6">
                     <div className="flex items-center gap-3 mb-2">
@@ -1834,7 +2030,105 @@ export function ManageMarketing() {
                     </div>
                 )}
             </div>
-            </>
+                </>
+            )}
+
+            {emailHistoryOpen && (
+                <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+                    <div className="absolute inset-0" onClick={() => setEmailHistoryOpen(false)} />
+                    <div className="relative z-[121] w-full max-w-7xl max-h-[90vh] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                        <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Histórico de email marketing</div>
+                                <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
+                                    {emailHistoryDetail?.name || 'Detalle de campaña'}
+                                </h3>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setEmailHistoryOpen(false)}
+                                className="h-10 w-10 rounded-full border border-slate-200 text-slate-500 hover:text-slate-900"
+                            >
+                                <X className="w-4 h-4 mx-auto" />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] max-h-[calc(90vh-81px)] overflow-hidden">
+                            <div className="border-r border-slate-200 bg-slate-50/60 p-6 overflow-y-auto space-y-5">
+                                {emailHistoryDetailLoading ? (
+                                    <div className="text-sm text-slate-500">Cargando detalle de campaña...</div>
+                                ) : emailHistoryDetailError ? (
+                                    <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{emailHistoryDetailError}</div>
+                                ) : emailHistoryDetail ? (
+                                    <>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Resumen</div>
+                                                <div className="mt-3 space-y-2 text-sm text-slate-600">
+                                                    <div><span className="font-bold text-slate-900">Asunto:</span> {emailHistoryDetail.subject}</div>
+                                                    <div><span className="font-bold text-slate-900">Fecha:</span> {formatDateTime(emailHistoryDetail.createdAt)}</div>
+                                                    <div><span className="font-bold text-slate-900">Remitente:</span> {emailHistoryDetail.fromName} &lt;{emailHistoryDetail.fromEmail}&gt;</div>
+                                                    <div><span className="font-bold text-slate-900">Plantilla:</span> {emailHistoryDetail.templateId}</div>
+                                                    <div><span className="font-bold text-slate-900">CTA:</span> {emailHistoryDetail.ctaLabel || '—'}</div>
+                                                </div>
+                                            </div>
+                                            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                                                <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Destinatarios</div>
+                                                <div className="mt-3 text-sm text-slate-600">
+                                                    {emailHistoryDetail.recipients.length} registros
+                                                </div>
+                                                <div className="mt-4 max-h-[340px] overflow-y-auto space-y-2">
+                                                    {emailHistoryDetail.recipients.map((recipient) => (
+                                                        <div key={recipient.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                                                            <div className="text-sm font-bold text-slate-900 break-all">{recipient.email}</div>
+                                                            <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-slate-500">
+                                                                <span className="rounded-full border border-slate-200 px-2 py-1">{recipient.status}</span>
+                                                                <span className="rounded-full border border-slate-200 px-2 py-1">Enviado: {formatDateTime(recipient.sentAt)}</span>
+                                                                {recipient.openedAt && (
+                                                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700">
+                                                                        Aperturas: {recipient.openCount}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {recipient.failureReason && (
+                                                                <div className="mt-2 text-xs text-red-600">{recipient.failureReason}</div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-sm text-slate-500">Selecciona una campaña para ver su detalle.</div>
+                                )}
+                            </div>
+
+                            <div className="p-6 overflow-y-auto bg-white">
+                                {emailHistoryDetailLoading ? (
+                                    <div className="text-sm text-slate-500">Preparando vista del mensaje...</div>
+                                ) : emailHistoryDetailError ? (
+                                    <div className="bg-red-50 border border-red-200 p-3 text-sm text-red-700">{emailHistoryDetailError}</div>
+                                ) : emailHistoryDetail?.renderedHtml ? (
+                                    <iframe
+                                        title={`Campaña ${emailHistoryDetail.name}`}
+                                        srcDoc={emailHistoryDetail.renderedHtml}
+                                        className="w-full min-h-[70vh] border border-slate-200 rounded-2xl bg-white"
+                                    />
+                                ) : emailHistoryDetail?.renderedText ? (
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+                                        <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Mensaje enviado</div>
+                                        <pre className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700 font-sans">{emailHistoryDetail.renderedText}</pre>
+                                    </div>
+                                ) : (
+                                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+                                        No tenemos snapshot visual de esta campaña. Esto puede pasar con campañas enviadas antes de este ajuste.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     )

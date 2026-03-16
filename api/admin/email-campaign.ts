@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 import nodemailer from 'nodemailer'
 import { prisma } from '../_lib/prisma.js'
 import { requireAdminSession } from '../_lib/admin-auth.js'
@@ -5,8 +6,6 @@ import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, sanitizeIntegrations } from '
 import { safeString } from '../_lib/analytics.js'
 import { buildMarketingEmailHtml, type MarketingEmailTemplateId } from '../_lib/marketing-email-template.js'
 
-type VercelRequest = any
-type VercelResponse = any
 const CMS_ID = 'main'
 const TEMPLATE_IDS: MarketingEmailTemplateId[] = ['executive', 'minimal', 'spotlight']
 
@@ -53,7 +52,10 @@ async function getSmtpConfig() {
 
 async function getSiteBranding() {
   const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: CMS_ID } })
-  const data = (snapshot?.data || {}) as any
+  const data = (snapshot?.data || {}) as {
+    site?: { url?: string; name?: string }
+    design?: { logoUrl?: string; logoFooterUrl?: string }
+  }
   const siteUrl = String(data?.site?.url || 'https://algoritmot.com').replace(/\/+$/, '')
   const siteName = String(data?.site?.name || 'AlgoritmoT').trim() || 'AlgoritmoT'
   const rawLogoUrl = String(data?.design?.logoUrl || data?.design?.logoFooterUrl || '').trim()
@@ -228,6 +230,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         subject,
         preheader: preheader || null,
         templateId,
+        bodyText: bodyText || text || null,
+        ctaLabel,
+        ctaHref,
+        renderedHtml: appendUnsubscribeFooterHtml(htmlBody, templateId, `${siteUrl}/api/marketing/unsubscribe?email={{email}}&cn=${encodeURIComponent(campaignName)}&cs=${encodeURIComponent(subject)}`),
+        renderedText: appendUnsubscribeFooterText(textBody, `${siteUrl}/api/marketing/unsubscribe?email={{email}}&cn=${encodeURIComponent(campaignName)}&cs=${encodeURIComponent(subject)}`),
         fromName: senderName,
         fromEmail: smtp.fromEmail,
         previewOnly: false,

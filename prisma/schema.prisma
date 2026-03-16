@@ -258,6 +258,11 @@ model MarketingEmailCampaign {
   subject         String
   preheader       String?
   templateId      String                  @default("executive")
+  bodyText        String?
+  ctaLabel        String?
+  ctaHref         String?
+  renderedHtml    String?
+  renderedText    String?
   fromName        String
   fromEmail       String
   previewOnly     Boolean                 @default(false)
