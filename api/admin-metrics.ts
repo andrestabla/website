@@ -163,7 +163,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let marketingSentCount = 0
     let marketingOpenedCount = 0
     let marketingUnsubscribedCount = 0
-    let marketingRecipientRows: Array<{ sentAt: Date | null; openedAt: Date | null; status: string; updatedAt: Date }> = []
+    let marketingRecipientRows: Array<{
+      email: string
+      sentAt: Date | null
+      openedAt: Date | null
+      lastOpenedAt: Date | null
+      openCount: number
+      status: string
+      updatedAt: Date
+      campaign: { id: string; name: string; subject: string }
+    }> = []
     let marketingOpenedRecipientsRows: Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }> = []
     let marketingUnsubscribeEventRows: Array<{ createdAt: Date; metadata: any }> = []
     let caseGeneratorRows: Array<{ eventType: string; createdAt: Date; metadata: any }> = []
@@ -218,7 +227,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               { status: 'unsubscribed' },
             ],
           },
-          select: { sentAt: true, openedAt: true, status: true, updatedAt: true },
+          select: {
+            email: true,
+            sentAt: true,
+            openedAt: true,
+            lastOpenedAt: true,
+            openCount: true,
+            status: true,
+            updatedAt: true,
+            campaign: {
+              select: {
+                id: true,
+                name: true,
+                subject: true,
+              },
+            },
+          },
           take: 12000,
           orderBy: { createdAt: 'desc' },
         }),
@@ -289,7 +313,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       marketingSentCount = pick(11, 0)
       marketingOpenedCount = pick(12, 0)
       marketingUnsubscribedCount = pick(13, 0)
-      marketingRecipientRows = pick(14, [] as Array<{ sentAt: Date | null; openedAt: Date | null; status: string; updatedAt: Date }>)
+      marketingRecipientRows = pick(14, [] as Array<{
+        email: string
+        sentAt: Date | null
+        openedAt: Date | null
+        lastOpenedAt: Date | null
+        openCount: number
+        status: string
+        updatedAt: Date
+        campaign: { id: string; name: string; subject: string }
+      }>)
       marketingOpenedRecipientsRows = pick(15, [] as Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }>)
       marketingUnsubscribeEventRows = pick(16, [] as Array<{ createdAt: Date; metadata: any }>)
       caseGeneratorRows = pick(17, [] as Array<{ eventType: string; createdAt: Date; metadata: any }>)
@@ -563,6 +596,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       campaignName: row.campaign?.name || null,
       subject: row.campaign?.subject || null,
     }))
+    const marketingRecipientActivity = marketingRecipientRows
+      .map((row) => ({
+        email: row.email,
+        status: row.status,
+        sentAt: row.sentAt ? row.sentAt.toISOString() : null,
+        openedAt: row.openedAt ? row.openedAt.toISOString() : null,
+        lastOpenedAt: row.lastOpenedAt ? row.lastOpenedAt.toISOString() : null,
+        updatedAt: row.updatedAt ? row.updatedAt.toISOString() : null,
+        openCount: row.openCount || 0,
+        campaignId: row.campaign?.id || null,
+        campaignName: row.campaign?.name || null,
+        subject: row.campaign?.subject || null,
+      }))
+      .sort((a, b) => {
+        const aTime = new Date(a.lastOpenedAt || a.openedAt || a.sentAt || 0).getTime()
+        const bTime = new Date(b.lastOpenedAt || b.openedAt || b.sentAt || 0).getTime()
+        return bTime - aTime
+      })
     const marketingUnsubscribedRecipients = Array.from(marketingUnsubscribeByEmail.values())
       .sort((a, b) => b.unsubscribedAt.getTime() - a.unsubscribedAt.getTime())
       .map((row) => ({
@@ -718,6 +769,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           openRate: marketingOpenRate,
           daily: marketingDaily,
           monthly: marketingMonthly,
+          recipientActivity: marketingRecipientActivity,
           openedRecipients: marketingOpenedRecipients,
           unsubscribedRecipients: marketingUnsubscribedRecipients,
         },
