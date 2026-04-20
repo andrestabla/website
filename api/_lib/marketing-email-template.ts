@@ -24,12 +24,19 @@ function escapeHtml(input: string) {
 }
 
 function bodyToParagraphs(bodyText: string) {
-  const segments = String(bodyText || '')
+  const raw = String(bodyText || '').trim()
+  if (!raw) return '<p>Gracias por tu interés.</p>'
+
+  // If it already looks like HTML (contains <p, <br, <div, <strong, etc.), return as is
+  if (/<(p|br|div|strong|em|u|h1|h2|ul|ol|li|a|span)/i.test(raw)) {
+    return raw
+  }
+
+  const segments = raw
     .split(/\n{2,}/g)
     .map((item) => item.trim())
     .filter(Boolean)
 
-  if (!segments.length) return '<p>Gracias por tu interés.</p>'
   return segments.map((segment) => `<p>${escapeHtml(segment).replace(/\n/g, '<br/>')}</p>`).join('')
 }
 

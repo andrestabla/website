@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { useCMS, type SiteConfig } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
+import { RichTextEditor } from '../components/RichTextEditor'
 
 type SelectedVariants = Record<string, string>
 type AIProvider = 'auto' | 'openai' | 'gemini'
@@ -1244,8 +1245,8 @@ export function ManageMarketing() {
                             <Field label="Preheader">
                                 <Input value={emailPreheader} onChange={(e) => setEmailPreheader(e.target.value)} />
                             </Field>
-                            <Field label="Body (texto)">
-                                <Textarea rows={8} value={emailBodyText} onChange={(e) => setEmailBodyText(e.target.value)} />
+                            <Field label="Body (texto enriquecido)">
+                                <RichTextEditor value={emailBodyText} onChange={setEmailBodyText} placeholder="Escribe el cuerpo de tu correo aquí..." />
                             </Field>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <Field label="CTA label">
