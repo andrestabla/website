@@ -686,6 +686,33 @@ export function ManageMarketing() {
         }
     }
 
+    const handleReuseCampaign = async (campaignId: string) => {
+        setEmailHistoryLoading(true)
+        try {
+            const response = await fetch(`/api/admin/marketing-campaigns?id=${encodeURIComponent(campaignId)}`)
+            const json = await response.json().catch(() => null)
+            if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`)
+            const item = json.item as MarketingCampaignHistoryDetail
+            if (item) {
+                setEmailCampaignName(item.name || DEFAULT_EMAIL_CAMPAIGN_NAME)
+                setEmailSubject(item.subject || '')
+                setEmailPreheader(item.preheader || '')
+                setEmailBodyText(item.bodyText || '')
+                setEmailCtaLabel(item.ctaLabel || 'Agendar sesión')
+                setEmailCtaHref(item.ctaHref || '/#contacto')
+                setEmailFromName(item.fromName || state.site.name || DEFAULT_EMAIL_FROM_NAME)
+                setEmailTemplateId(sanitizeEmailTemplateId(item.templateId))
+                
+                // Scroll up to the form
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+        } catch (error) {
+            console.error('Error reusing campaign', error)
+        } finally {
+            setEmailHistoryLoading(false)
+        }
+    }
+
     const setLandingField = <K extends keyof CampaignLanding>(key: K, value: CampaignLanding[K]) => {
         setLandingDraft((prev) => ({ ...prev, [key]: value }))
     }
@@ -1365,7 +1392,7 @@ export function ManageMarketing() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-start lg:items-center">
+                                        <div className="flex flex-wrap items-start lg:items-center gap-2">
                                             <button
                                                 type="button"
                                                 onClick={() => void openEmailHistoryDetail(item.id)}
@@ -1373,6 +1400,15 @@ export function ManageMarketing() {
                                             >
                                                 <Eye className="w-3.5 h-3.5 inline mr-2" />
                                                 Ver mensaje
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void handleReuseCampaign(item.id)}
+                                                disabled={emailHistoryLoading}
+                                                className="h-10 px-3 border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-brand-primary hover:bg-blue-50 disabled:opacity-50"
+                                            >
+                                                <Copy className="w-3.5 h-3.5 inline mr-2" />
+                                                Reutilizar
                                             </button>
                                         </div>
                                     </div>
