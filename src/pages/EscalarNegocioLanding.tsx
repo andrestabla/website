@@ -10,9 +10,6 @@ import { applySeoPayload, limitText, normalizeBaseUrl, toAbsoluteUrl } from '../
 
 const HERO_VIDEO_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/videos/5070667_International_Team_1920x1080.mp4'
 
-const BOOKING_URL =
-  'https://outlook.office.com/bookwithme/user/9cf8e211b713432295f17969db08b402@algoritmot.com/meetingtype/wZWn6TXuxkyDuN51IAvifQ2?anonymous&ismsaljsauthenabled&ep=mLinkFromTile'
-
 const CASE_GENERATOR_URL = 'https://www.algoritmot.com/generador-casos'
 
 const DISCOVERY_PATHS = [
@@ -394,39 +391,31 @@ export function EscalarNegocioLanding() {
         </section>
 
         <section id="agenda" className="border-y border-[#eee3cf] bg-[#f6eedf] px-6 py-18 md:py-24">
-          <div className="mx-auto grid max-w-[1320px] gap-12 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)] lg:items-stretch">
-            <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">Agendar cita</div>
-              <h2 className="mt-4 max-w-xl text-4xl font-black leading-[0.94] tracking-[-0.045em] text-slate-950 md:text-6xl">
-                Reservemos una conversación para aterrizar tu primer frente de escalabilidad.
-              </h2>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
-                En la llamada revisamos dónde está hoy el cuello de botella, qué caso vale la pena priorizar primero y cómo se puede
-                traducir en una ruta clara para tu equipo.
-              </p>
+          <div className="mx-auto grid max-w-[1320px] gap-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] lg:items-start">
+            <div className="space-y-10">
+              <div>
+                <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">Agendar cita</div>
+                <h2 className="mt-4 max-w-xl text-4xl font-black leading-[0.94] tracking-[-0.045em] text-slate-950 md:text-6xl">
+                  Reservemos una conversación para aterrizar tu primer frente de escalabilidad.
+                </h2>
+                <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
+                  En la llamada revisamos dónde está hoy el cuello de botella, qué caso vale la pena priorizar primero y cómo se puede
+                  traducir en una ruta clara para tu equipo.
+                </p>
+              </div>
 
-              <div className="mt-8 space-y-4">
+              <div className="space-y-4">
                 {AGENDA_POINTS.map((item) => (
-                  <div key={item} className="flex items-start gap-3 rounded-[1.2rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.32)]">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#d9752d]" />
+                  <div key={item} className="flex items-start gap-4 rounded-[1.2rem] border border-slate-200 bg-white px-5 py-5 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.32)]">
+                    <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-[#d9752d]" />
                     <p className="text-sm font-semibold leading-relaxed text-slate-700">{item}</p>
                   </div>
                 ))}
               </div>
-
-              <a
-                href={BOOKING_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-white transition-transform hover:-translate-y-0.5"
-              >
-                Abrir agenda en una pestaña
-                <ArrowUpRight className="h-4 w-4" />
-              </a>
             </div>
 
-            <div className="lg:col-span-12">
-              <div className="bg-white p-8 md:p-12 border border-slate-200 shadow-2xl rounded-[2rem]">
+            <div>
+              <div className="bg-white p-6 md:p-10 border border-slate-200 shadow-2xl rounded-[2.5rem]">
                 <BookingSystem />
               </div>
             </div>
