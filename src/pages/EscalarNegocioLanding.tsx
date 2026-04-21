@@ -445,13 +445,15 @@ export function EscalarNegocioLanding() {
                   </div>
 
                   <div className="mt-12">
-                    <Link
-                      to="/generador-casos"
+                    <a
+                      href="https://www.algoritmot.com/generador-casos"
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-[#f7b267] px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-slate-950 shadow-2xl transition-transform hover:-translate-y-1"
                     >
                       Ir al generador
                       <ArrowRight className="h-5 w-5" />
-                    </Link>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -463,7 +465,7 @@ export function EscalarNegocioLanding() {
           <div className="mx-auto max-w-[1320px] border-t border-slate-200 pt-12">
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">CTA</div>
+                <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">Empecemos</div>
                 <h2 className="mt-3 text-3xl font-black leading-[0.96] tracking-[-0.04em] text-slate-950 md:text-5xl">
                   Agenda la conversación y llega con un caso mejor definido.
                 </h2>
@@ -481,13 +483,20 @@ export function EscalarNegocioLanding() {
                   Reservar cita
                   <CalendarDays className="h-4 w-4" />
                 </a>
-                <a
-                  href="#casos"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950"
+                <button
+                  onClick={() => {
+                    if (!isBooked) {
+                      alert('Para acceder al generador, primero debes agendar tu cita de exploración.')
+                      document.getElementById('agenda')?.scrollIntoView({ behavior: 'smooth' })
+                    } else {
+                      document.getElementById('casos')?.scrollIntoView({ behavior: 'smooth' })
+                    }
+                  }}
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition-colors hover:bg-slate-50"
                 >
                   Ver generador
                   <ArrowRight className="h-4 w-4" />
-                </a>
+                </button>
               </div>
             </div>
           </div>
