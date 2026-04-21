@@ -12,7 +12,7 @@ type Slot = {
   endTime: string
 }
 
-export function BookingSystem() {
+export function BookingSystem({ onSuccess }: { onSuccess?: () => void }) {
   const [step, setStep] = useState<'calendar' | 'form' | 'success'>('calendar')
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -40,6 +40,7 @@ export function BookingSystem() {
 
       if (response.ok) {
         setStep('success')
+        onSuccess?.()
       } else {
         const err = await response.json()
         alert(err.error || 'Ocurrió un error al agendar la cita. Por favor intente de nuevo.')

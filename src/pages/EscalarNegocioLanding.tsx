@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2, Handshake, Route, ScanSearch, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -9,6 +9,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { applySeoPayload, limitText, normalizeBaseUrl, toAbsoluteUrl } from '../lib/seo'
 
 const HERO_VIDEO_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/videos/5070667_International_Team_1920x1080.mp4'
+const SUCCESS_VIDEO_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/videos/0_People_Animation_1920x1080.mp4'
 
 const CASE_GENERATOR_URL = 'https://www.algoritmot.com/generador-casos'
 
@@ -115,22 +116,23 @@ const GENERATOR_SECTORS = [
 ]
 
 export function EscalarNegocioLanding() {
-  const { state } = useCMS()
+  const { snapshot } = useCMS()
   const { language } = useLanguage()
+  const [isBooked, setIsBooked] = useState(false)
   const clientRail = [...TRUSTED_CLIENTS, ...TRUSTED_CLIENTS]
 
   useEffect(() => {
-    const siteName = String(state.site.name || 'AlgoritmoT').trim() || 'AlgoritmoT'
-    const baseUrl = normalizeBaseUrl(state.site.url)
+    const siteName = String(snapshot.data?.site?.name || 'AlgoritmoT').trim() || 'AlgoritmoT'
+    const baseUrl = normalizeBaseUrl(snapshot.data?.site?.url)
     const canonicalUrl = toAbsoluteUrl(baseUrl, '/escalar-negocio')
     const title = `Escalabilidad de negocios con AlgoritmoT | ${siteName}`
     const description = limitText(
       'Landing de AlgoritmoT para empresas que quieren crecer con más orden, una metodología clara y una conversación inicial enfocada en resultados.',
       180,
     )
-    const imageCandidate = state.design.logoUrl || state.design.logoFooterUrl || '/assets/og-default.svg'
+    const imageCandidate = snapshot.data?.design?.logoUrl || snapshot.data?.design?.logoFooterUrl || '/assets/og-default.svg'
     const imageUrl = toAbsoluteUrl(baseUrl, imageCandidate)
-    const faviconUrl = state.design.faviconUrl ? toAbsoluteUrl(baseUrl, state.design.faviconUrl) : undefined
+    const faviconUrl = snapshot.data?.design?.faviconUrl ? toAbsoluteUrl(baseUrl, snapshot.data?.design?.faviconUrl) : undefined
 
     applySeoPayload({
       title: limitText(title, 70),
@@ -416,88 +418,61 @@ export function EscalarNegocioLanding() {
 
             <div>
               <div className="bg-white p-6 md:p-10 border border-slate-200 shadow-2xl rounded-[2.5rem]">
-                <BookingSystem />
+                <BookingSystem onSuccess={() => setIsBooked(true)} />
               </div>
             </div>
           </div>
         </section>
 
-        <section id="casos" className="bg-[#0c1727] px-6 py-18 md:py-24">
-          <div className="mx-auto grid max-w-[1320px] gap-12 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)] lg:items-start">
-            <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.32em] text-white/45">Después de agendar</div>
-              <h2 className="mt-4 max-w-2xl text-4xl font-black leading-[0.94] tracking-[-0.045em] text-white md:text-6xl">
-                Revisa cómo podríamos empezar antes de sentarnos a hablar.
-              </h2>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
-                Usa el generador de casos para convertir una inquietud general en un punto de partida mucho más claro. Así llegas a
-                la conversación con mejor enfoque y con un caso mejor formulado.
-              </p>
+        {isBooked && (
+          <section id="casos" className="relative overflow-hidden px-6 py-24 md:py-32">
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 h-full w-full object-cover"
+            >
+              <source src={SUCCESS_VIDEO_URL} type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
+            
+            <div className="relative z-10 mx-auto max-w-[1320px]">
+              <div className="max-w-3xl">
+                <div className="text-[11px] font-black uppercase tracking-[0.32em] text-white/50">Después de agendar</div>
+                <h2 className="mt-4 text-4xl font-black leading-[0.94] tracking-[-0.045em] text-white md:text-7xl">
+                  Revisa cómo podríamos empezar antes de sentarnos a hablar.
+                </h2>
+                <p className="mt-8 text-xl leading-relaxed text-white/70">
+                  Usa el generador de casos para convertir una inquietud general en un punto de partida mucho más claro. Así llegas a
+                  la conversación con mejor enfoque y con un caso mejor formulado.
+                </p>
 
-              <div className="mt-8 border-t border-white/10 pt-6">
-                <div className="text-sm font-black uppercase tracking-[0.22em] text-[#f7b267]">Ideas para empezar</div>
-                <div className="mt-5 space-y-3">
-                  {STARTER_CASES.map((item) => (
-                    <div key={item} className="flex items-start gap-3 border-b border-white/10 pb-4 last:border-b-0 last:pb-0">
-                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#f7b267]" />
-                      <p className="text-sm font-medium leading-relaxed text-white/82">{item}</p>
-                    </div>
-                  ))}
-                </div>
+                <div className="mt-12 border-t border-white/10 pt-10">
+                  <div className="text-sm font-black uppercase tracking-[0.22em] text-[#f7b267]">Ideas para empezar</div>
+                  <div className="mt-6 space-y-4">
+                    {STARTER_CASES.map((item) => (
+                      <div key={item} className="flex items-start gap-4">
+                        <CheckCircle2 className="mt-1 h-6 w-6 shrink-0 text-[#f7b267]" />
+                        <p className="text-lg font-medium leading-relaxed text-white/90">{item}</p>
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <Link
-                    to="/generador-casos"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#f7b267] px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition-transform hover:-translate-y-0.5"
-                  >
-                    Ir al generador
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                  <a
-                    href={CASE_GENERATOR_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/6 px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-white"
-                  >
-                    Abrir versión publicada
-                    <ArrowUpRight className="h-4 w-4" />
-                  </a>
+                  <div className="mt-12">
+                    <Link
+                      to="/generador-casos"
+                      className="inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-[#f7b267] px-8 py-4 text-sm font-black uppercase tracking-[0.18em] text-slate-950 shadow-2xl transition-transform hover:-translate-y-1"
+                    >
+                      Ir al generador
+                      <ArrowRight className="h-5 w-5" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
-
-            <div className="rounded-[2rem] border border-white/10 bg-[#0f1a2b] px-5 py-6 shadow-[0_36px_100px_-44px_rgba(2,6,23,0.82)] md:px-6">
-              <div className="text-[11px] font-black uppercase tracking-[0.3em] text-white/45">Generador de casos</div>
-              <h3 className="mt-3 text-3xl font-black tracking-tight text-white md:text-[3rem]">¿Cuál es tu industria?</h3>
-              <p className="mt-3 max-w-3xl text-base leading-relaxed text-white/62">
-                Elige el sector que más se parezca a tu realidad y empieza a aterrizar un caso de escalabilidad para conversar con
-                más claridad.
-              </p>
-
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                {GENERATOR_SECTORS.map((sector) => (
-                  <div key={sector} className="border border-white/12 bg-[#0e1a30] px-5 py-4 text-sm font-medium text-white/84">
-                    {sector}
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 grid gap-4 border-t border-white/10 pt-6 md:grid-cols-3">
-                {[
-                  { label: '1', title: 'Industria', body: 'Escoge el contexto donde opera tu negocio.' },
-                  { label: '2', title: 'Proceso', body: 'Define el frente que hoy más valor puede mover.' },
-                  { label: '3', title: 'Madurez', body: 'Ubica el punto de partida para plantear una ruta realista.' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="text-[11px] font-black uppercase tracking-[0.22em] text-[#f7b267]">{item.label}</div>
-                    <div className="mt-2 text-base font-black text-white">{item.title}</div>
-                    <p className="mt-2 text-sm leading-relaxed text-white/62">{item.body}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         <section className="bg-white px-6 py-18 md:py-22">
           <div className="mx-auto max-w-[1320px] border-t border-slate-200 pt-12">
