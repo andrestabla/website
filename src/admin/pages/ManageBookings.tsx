@@ -45,9 +45,12 @@ export function ManageBookings() {
   const [addingSlot, setAddingSlot] = useState(false)
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
 
+  // Bulk mode states
   const [bulkMode, setBulkMode] = useState(false)
   const [bulkDays, setBulkDays] = useState<number[]>([])
-  const [bulkTime, setBulkTime] = useState('')
+  const [bulkStartTime, setBulkStartTime] = useState('')
+  const [bulkEndTime, setBulkEndTime] = useState('')
+  const [bulkDuration, setBulkDuration] = useState<number>(30)
   const [bulkUntil, setBulkUntil] = useState('')
 
   useEffect(() => {
@@ -120,7 +123,7 @@ export function ManageBookings() {
 
   const handleBulkAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (bulkDays.length === 0 || !bulkTime || !bulkUntil) return
+    if (bulkDays.length === 0 || !bulkStartTime || !bulkEndTime || !bulkUntil) return
     setAddingSlot(true)
     try {
       const res = await fetch('/api/admin/booking/slots', {
@@ -129,14 +132,17 @@ export function ManageBookings() {
         body: JSON.stringify({
           bulk: {
             days: bulkDays,
-            time: bulkTime,
+            startTime: bulkStartTime,
+            endTime: bulkEndTime,
+            duration: bulkDuration,
             untilDate: bulkUntil
           }
         })
       })
       if (res.ok) {
         setBulkDays([])
-        setBulkTime('')
+        setBulkStartTime('')
+        setBulkEndTime('')
         setBulkUntil('')
         setBulkMode(false)
         fetchData()
@@ -365,16 +371,43 @@ export function ManageBookings() {
                       ))}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hora de inicio</label>
-                    <input 
-                      type="time" 
-                      value={bulkTime}
-                      onChange={e => setBulkTime(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
-                      required
-                    />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hora inicio</label>
+                      <input 
+                        type="time" 
+                        value={bulkStartTime}
+                        onChange={e => setBulkStartTime(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hora fin</label>
+                      <input 
+                        type="time" 
+                        value={bulkEndTime}
+                        onChange={e => setBulkEndTime(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                        required
+                      />
+                    </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Duración por reunión</label>
+                    <select 
+                      value={bulkDuration}
+                      onChange={e => setBulkDuration(Number(e.target.value))}
+                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                    >
+                      <option value={30}>30 minutos</option>
+                      <option value={45}>45 minutos</option>
+                      <option value={60}>60 minutos</option>
+                    </select>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Repetir hasta</label>
                     <input 

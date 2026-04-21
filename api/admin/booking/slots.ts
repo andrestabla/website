@@ -17,31 +17,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { startTime, endTime, bulk } = req.body
     
     if (bulk) {
-      const { days, time, untilDate } = bulk
-      // days is array of numbers [1,2,3...] where 1=Mon, 7=Sun
-      // time is string "HH:mm"
-      // untilDate is string "YYYY-MM-DD"
+      const { days, startTime: bulkStart, endTime: bulkEnd, duration, untilDate } = bulk
+      // days: [1,2,3...], startTime/endTime: "HH:mm", duration: 30|45|60, untilDate: "YYYY-MM-DD"
       
       const slotsToCreate = []
       let current = new Date()
       const end = new Date(untilDate)
       
+      const [startH, startM] = bulkStart.split(':').map(Number)
+      const [endH, endM] = bulkEnd.split(':').map(Number)
+      const durationMs = duration * 60000
+      
       while (current <= end) {
-        // getDay() is 0=Sun, 1=Mon...
         let dayNum = current.getDay()
-        if (dayNum === 0) dayNum = 7 // normalize to 1-7
+        if (dayNum === 0) dayNum = 7
         
         if (days.includes(dayNum)) {
-          const slotStart = new Date(current)
-          const [hours, minutes] = time.split(':')
-          slotStart.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+          let slotPointer = new Date(current)
+          slotPointer.setHours(startH, startM, 0, 0)
           
-          if (slotStart > new Date()) {
-            const slotEnd = new Date(slotStart.getTime() + 30 * 60000)
-            slotsToCreate.push({
-              startTime: slotStart,
-              endTime: slotEnd
-            })
+          const dayEnd = new Date(current)
+          dayEnd.setHours(endH, endM, 0, 0)
+          
+          while (slotPointer.getTime() + durationMs <= dayEnd.getTime()) {
+            if (slotPointer > new Date()) {
+              slotsToCreate.push({
+                startTime: new Date(slotPointer),
+                endTime: new Date(slotPointer.getTime() + durationMs)
+              })
+            }
+            slotPointer = new Date(slotPointer.getTime() + durationMs)
           }
         }
         current.setDate(current.getDate() + 1)
