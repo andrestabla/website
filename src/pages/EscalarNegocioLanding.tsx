@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2, Handshake, Route, ScanSearch, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Layout } from '../components/layout/Layout'
+import { BookingSystem } from '../components/booking/BookingSystem'
 import { useCMS } from '../admin/context/CMSContext'
 import { useLanguage } from '../context/LanguageContext'
 import { applySeoPayload, limitText, normalizeBaseUrl, toAbsoluteUrl } from '../lib/seo'
@@ -430,43 +431,9 @@ export function EscalarNegocioLanding() {
               </a>
             </div>
 
-            <div className="grid gap-6 rounded-[2rem] border border-white/70 bg-white px-5 py-6 shadow-[0_28px_80px_-34px_rgba(15,23,42,0.3)] md:grid-cols-[0.88fr_1.12fr] md:px-6">
-              <div className="border-b border-slate-200 pb-5 md:border-b-0 md:border-r md:pb-0 md:pr-6">
-                <div className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Reserva inicial</div>
-                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
-                  Conversemos sobre el punto que hoy más frena el crecimiento.
-                </h3>
-                <div className="mt-6 space-y-3">
-                  {AGENDA_PREVIEW.map((item) => (
-                    <div key={item.label} className="border-b border-slate-200 pb-3 last:border-b-0 last:pb-0">
-                      <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{item.label}</div>
-                      <div className="mt-1 text-sm font-bold leading-relaxed text-slate-800">{item.value}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="grid gap-3">
-                  {AGENDA_POINTS.map((item, index) => (
-                    <div key={item} className="flex items-start gap-4 border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-[11px] font-black uppercase tracking-[0.08em] text-white">
-                        {index + 1}
-                      </div>
-                      <p className="text-sm font-semibold leading-relaxed text-slate-700">{item}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <a
-                  href={BOOKING_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#f7b267] px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition-transform hover:-translate-y-0.5"
-                >
-                  Reservar espacio
-                  <CalendarDays className="h-4 w-4" />
-                </a>
+            <div className="lg:col-span-12">
+              <div className="bg-white p-8 md:p-12 border border-slate-200 shadow-2xl rounded-[2rem]">
+                <BookingSystem />
               </div>
             </div>
           </div>

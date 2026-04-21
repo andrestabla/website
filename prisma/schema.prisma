@@ -164,6 +164,7 @@ enum AdminModule {
   INTEGRATIONS
   SETTINGS
   USERS
+  BOOKINGS
 }
 
 model AdminUser {
@@ -297,4 +298,37 @@ model MarketingEmailRecipient {
   @@index([email])
   @@index([openedAt])
   @@index([sentAt])
+}
+
+model Appointment {
+  id              String   @id @default(cuid())
+  name            String
+  email           String
+  company         String
+  role            String
+  industry        String
+  employeeCount   String
+  website         String?
+  message         String
+  startTime       DateTime
+  endTime         DateTime
+  googleEventId   String?
+  status          String   @default("confirmed") // confirmed, cancelled
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([startTime])
+  @@index([email])
+}
+
+model AppointmentSlot {
+  id        String   @id @default(cuid())
+  startTime DateTime
+  endTime   DateTime
+  isBooked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([startTime, endTime])
+  @@index([startTime])
 }

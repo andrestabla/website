@@ -39,6 +39,7 @@ export type IntegrationsState = {
   openai: { enabled: boolean; status: IntegrationStatus; config: OpenAIConfig }
   smtp: { enabled: boolean; status: IntegrationStatus; config: SMTPConfig }
   r2: { enabled: boolean; status: IntegrationStatus; config: R2Config }
+  google_calendar: { enabled: boolean; status: IntegrationStatus; config: { clientId: string; clientSecret: string; refreshToken: string; calendarId: string } }
 }
 
 export const INTEGRATIONS_SNAPSHOT_ID = 'integrations'
@@ -68,6 +69,11 @@ export const defaultIntegrations: IntegrationsState = {
     status: 'unconfigured',
     config: { accountId: '', accessKeyId: '', secretAccessKey: '', bucketName: '', publicUrl: '', region: 'auto' },
   },
+  google_calendar: {
+    enabled: false,
+    status: 'unconfigured',
+    config: { clientId: '', clientSecret: '', refreshToken: '', calendarId: '' },
+  },
 }
 
 export function isConfigured(state: IntegrationsState, key: keyof IntegrationsState): boolean {
@@ -77,6 +83,7 @@ export function isConfigured(state: IntegrationsState, key: keyof IntegrationsSt
     openai: ['apiKey'],
     smtp: ['host', 'user', 'password', 'fromEmail'],
     r2: ['accountId', 'accessKeyId', 'secretAccessKey', 'bucketName'],
+    google_calendar: ['clientId', 'clientSecret', 'refreshToken'],
   }
   return required[key].every((f) => String(cfg[f] || '').trim() !== '')
 }
@@ -92,9 +99,10 @@ export function sanitizeIntegrations(input: unknown): IntegrationsState {
     openai: { ...base.openai, ...(raw.openai || {}), config: { ...base.openai.config, ...(raw.openai?.config || {}) } },
     smtp: { ...base.smtp, ...(raw.smtp || {}), config: { ...base.smtp.config, ...(raw.smtp?.config || {}) } },
     r2: { ...base.r2, ...(raw.r2 || {}), config: { ...base.r2.config, ...(raw.r2?.config || {}) } },
+    google_calendar: { ...base.google_calendar, ...(raw.google_calendar || {}), config: { ...base.google_calendar.config, ...(raw.google_calendar?.config || {}) } },
   } as IntegrationsState
 
-  for (const key of ['gemini', 'openai', 'smtp', 'r2'] as const) {
+  for (const key of ['gemini', 'openai', 'smtp', 'r2', 'google_calendar'] as const) {
     merged[key].status = isConfigured(merged, key) ? 'configured' : 'unconfigured'
     if (!isConfigured(merged, key)) merged[key].enabled = false
   }
@@ -142,6 +150,21 @@ export function applyServerEnv(state: IntegrationsState): IntegrationsState {
     if (isConfigured(next, 'smtp')) {
       next.smtp.enabled = true
       next.smtp.status = 'configured'
+    }
+  }
+
+  const googleClientId = process.env.GOOGLE_CLIENT_ID || ''
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || ''
+  const googleRefreshToken = process.env.GOOGLE_REFRESH_TOKEN || ''
+  const googleCalendarId = process.env.GOOGLE_CALENDAR_ID || ''
+  if (googleClientId || googleClientSecret || googleRefreshToken) {
+    if (googleClientId) next.google_calendar.config.clientId = googleClientId
+    if (googleClientSecret) next.google_calendar.config.clientSecret = googleClientSecret
+    if (googleRefreshToken) next.google_calendar.config.refreshToken = googleRefreshToken
+    if (googleCalendarId) next.google_calendar.config.calendarId = googleCalendarId
+    if (isConfigured(next, 'google_calendar')) {
+      next.google_calendar.enabled = true
+      next.google_calendar.status = 'configured'
     }
   }
 

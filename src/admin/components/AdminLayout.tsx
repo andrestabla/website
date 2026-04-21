@@ -27,7 +27,8 @@ import {
     RotateCcw,
     AlertTriangle,
     Loader2,
-    Mail
+    Mail,
+    Calendar
 } from 'lucide-react'
 import { useCMS } from '../context/CMSContext'
 import { canAccessModule, type AdminModuleKey } from '../lib/permissions'
@@ -56,6 +57,7 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
         { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms', module: 'SERVICES' },
         { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms', module: 'PRODUCTS' },
         { name: 'Contactos', href: '/admin/leads', icon: Mail, group: 'cms', module: 'LEADS' },
+        { name: 'Citas', href: '/admin/bookings', icon: Calendar, group: 'cms', module: 'BOOKINGS' },
         { name: 'Diseño Global', href: '/admin/design', icon: Paintbrush, group: 'cms', module: 'DESIGN' },
         { name: 'SEO Manager', href: '/admin/seo', icon: SearchCheck, group: 'growth', module: 'SEO' },
         { name: 'Marketing', href: '/admin/marketing', icon: Megaphone, group: 'growth', module: 'MARKETING' },
@@ -210,6 +212,17 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                 'Guarda y recarga para validar persistencia.',
                 'Para R2, define `publicUrl` y asegúrate de acceso público habilitado.',
                 'Prueba upload desde Home/Diseño para validar extremo a extremo.',
+            ],
+        },
+        '/admin/bookings': {
+            title: 'Gestión de Citas',
+            intro: 'Administra la disponibilidad (slots) y revisa las reservaciones realizadas por los usuarios.',
+            data: 'Fuente: `Appointment` y `AppointmentSlot` en Neon DB + Integración Google Calendar.',
+            steps: [
+                'Usa la pestaña "Disponibilidad" para habilitar nuevos espacios de 30 minutos.',
+                'Elimina espacios que ya no desees ofrecer (solo si no están reservados).',
+                'Usa la pestaña "Reservaciones" para ver quién ha agendado y sus datos.',
+                'Las citas agendadas se sincronizan automáticamente con tu Google Calendar.',
             ],
         },
     }

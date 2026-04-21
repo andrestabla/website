@@ -43,6 +43,7 @@ const ManageMarketing = lazy(() => import('./admin/pages/ManageMarketing').then(
 const ManageLeads = lazy(() => import('./admin/pages/ManageLeads').then((module) => ({ default: module.ManageLeads })))
 const Analytics = lazy(() => import('./admin/pages/Analytics').then((module) => ({ default: module.Analytics })))
 const ManageUsers = lazy(() => import('./admin/pages/ManageUsers').then((module) => ({ default: module.ManageUsers })))
+const ManageBookings = lazy(() => import('./admin/pages/ManageBookings').then((module) => ({ default: module.ManageBookings })))
 const SetupPasswordPage = lazy(() => import('./admin/pages/SetupPasswordPage').then((module) => ({ default: module.SetupPasswordPage })))
 const AdminLayout = lazy(() => import('./admin/components/AdminLayout').then((module) => ({ default: module.AdminLayout })))
 
@@ -315,6 +316,7 @@ function App() {
               <Route path="/admin/leads" element={<ProtectedRoute requiredModule="LEADS"><ManageLeads /></ProtectedRoute>} />
               <Route path="/admin/analytics" element={<ProtectedRoute requiredModule="ANALYTICS"><Analytics /></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute requiredModule="USERS"><ManageUsers /></ProtectedRoute>} />
+              <Route path="/admin/bookings" element={<ProtectedRoute requiredModule="BOOKINGS"><ManageBookings /></ProtectedRoute>} />
               <Route path="*" element={<SiteArchitectureFallbackRoute />} />
             </Routes>
           </Suspense>

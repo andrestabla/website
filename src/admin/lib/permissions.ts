@@ -11,6 +11,7 @@ export const ADMIN_MODULES = [
   'INTEGRATIONS',
   'SETTINGS',
   'USERS',
+  'BOOKINGS',
 ] as const
 
 export type AdminModuleKey = (typeof ADMIN_MODULES)[number]
@@ -30,6 +31,7 @@ export const ADMIN_MODULE_LABELS: Record<AdminModuleKey, string> = {
   INTEGRATIONS: 'Integraciones',
   SETTINGS: 'Configuración',
   USERS: 'Usuarios',
+  BOOKINGS: 'Citas',
 }
 
 function emptyPermissionMap() {
@@ -96,6 +98,7 @@ const ROUTE_MODULES: Array<{ prefix: string; module: AdminModuleKey }> = [
   { prefix: '/admin/integrations', module: 'INTEGRATIONS' },
   { prefix: '/admin/settings', module: 'SETTINGS' },
   { prefix: '/admin/users', module: 'USERS' },
+  { prefix: '/admin/bookings', module: 'BOOKINGS' },
 ]
 
 export function getAdminModuleForPath(pathname: string): AdminModuleKey | null {
