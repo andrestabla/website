@@ -30,6 +30,13 @@ export async function createCalendarEvent({
   const GOOGLE_REFRESH_TOKEN = config.refreshToken || process.env.GOOGLE_REFRESH_TOKEN || ''
   const GOOGLE_CALENDAR_ID = config.calendarId || process.env.GOOGLE_CALENDAR_ID || 'primary'
 
+  console.log('Google Calendar Config:', {
+    hasClientId: !!GOOGLE_CLIENT_ID,
+    hasClientSecret: !!GOOGLE_CLIENT_SECRET,
+    hasRefreshToken: !!GOOGLE_REFRESH_TOKEN,
+    calendarId: GOOGLE_CALENDAR_ID
+  })
+
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN) {
     console.warn('Google Calendar credentials not fully configured.')
     return null
@@ -47,6 +54,7 @@ export async function createCalendarEvent({
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client })
 
   try {
+    console.log('Inserting event into calendar:', GOOGLE_CALENDAR_ID)
     const event = await calendar.events.insert({
       calendarId: GOOGLE_CALENDAR_ID,
       requestBody: {
@@ -54,11 +62,9 @@ export async function createCalendarEvent({
         description,
         start: {
           dateTime: startTime.toISOString(),
-          timeZone: 'UTC',
         },
         end: {
           dateTime: endTime.toISOString(),
-          timeZone: 'UTC',
         },
         attendees: [
           { email: userEmail, displayName: userName },
@@ -74,6 +80,7 @@ export async function createCalendarEvent({
       sendUpdates: 'all',
     })
 
+    console.log('Google Calendar Event Created:', event.data.id)
     return event.data.id
   } catch (error) {
     console.error('Error creating Google Calendar event:', error)
