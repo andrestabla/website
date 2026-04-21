@@ -24,6 +24,7 @@ const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ defau
 const GeneradorCasosAI = lazy(() => import('./pages/GeneradorCasosAI').then((module) => ({ default: module.GeneradorCasosAI })))
 const PlanificoMiProyecto = lazy(() => import('./pages/PlanificoMiProyecto'))
 const HazloTuMismo = lazy(() => import('./pages/HazloTuMismo'))
+const EscalarNegocioLanding = lazy(() => import('./pages/EscalarNegocioLanding').then((module) => ({ default: module.EscalarNegocioLanding })))
 
 const NavigationSelector = lazy(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
 // const HomeEducacion = lazy(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
@@ -290,6 +291,7 @@ function App() {
               <Route path="/campanias/:slug" element={<CampaignLandingPage />} />
               <Route path="/landing-servicios" element={<ManagedPublishedRoute routePath="/landing-servicios" fallback={<ServiciosLandingSimple />} />} />
               <Route path="/generador-casos" element={<GeneradorCasosAI />} />
+              <Route path="/escalar-negocio" element={<EscalarNegocioLanding />} />
               <Route path="/planifico-mi-proyecto" element={<PlanificoMiProyecto />} />
               <Route path="/hazlo-tu-mismo" element={<HazloTuMismo />} />
 
