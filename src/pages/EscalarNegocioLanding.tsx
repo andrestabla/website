@@ -7,6 +7,8 @@ import { useCMS } from '../admin/context/CMSContext'
 import { useLanguage } from '../context/LanguageContext'
 import { applySeoPayload, limitText, normalizeBaseUrl, toAbsoluteUrl } from '../lib/seo'
 
+const HERO_VIDEO_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/videos/5070667_International_Team_1920x1080.mp4'
+
 const BOOKING_URL =
   'https://outlook.office.com/bookwithme/user/9cf8e211b713432295f17969db08b402@algoritmot.com/meetingtype/wZWn6TXuxkyDuN51IAvifQ2?anonymous&ismsaljsauthenabled&ep=mLinkFromTile'
 
@@ -177,12 +179,25 @@ export function EscalarNegocioLanding() {
     <Layout isFocusedFlow>
       <div className="bg-white text-slate-950">
         <section className="scale-hero-section relative overflow-hidden px-6 pb-20 pt-24 md:pb-24 md:pt-30">
+          <video
+            className="absolute inset-0 h-full w-full object-cover"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            aria-hidden="true"
+          >
+            <source src={HERO_VIDEO_URL} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(25,21,24,0.84)_0%,rgba(13,18,28,0.80)_42%,rgba(11,28,49,0.72)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_35%,rgba(247,178,103,0.18),transparent_26%),radial-gradient(circle_at_88%_18%,rgba(59,130,246,0.18),transparent_30%)]" />
           <div className="scale-grid absolute inset-0 opacity-35" />
           <div className="scale-orb scale-orb-one" />
           <div className="scale-orb scale-orb-two" />
 
-          <div className="relative mx-auto max-w-7xl">
-            <div className="grid gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(380px,0.92fr)] lg:items-center">
+          <div className="relative mx-auto max-w-[1320px]">
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,1.08fr)_minmax(340px,0.92fr)] lg:items-center">
               <div>
                 <motion.div
                   initial={{ opacity: 0, y: 18 }}
@@ -251,10 +266,10 @@ export function EscalarNegocioLanding() {
                   initial={{ opacity: 0, y: 22 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.54, delay: 0.24 }}
-                  className="mt-10 grid gap-4 md:grid-cols-3"
+                  className="mt-10 grid gap-3 border-t border-white/10 pt-6 md:grid-cols-3"
                 >
                   {HERO_PILLARS.map((item) => (
-                    <div key={item} className="scale-hero-pill-card rounded-[1.55rem] border border-white/10 px-5 py-5 text-sm font-semibold leading-relaxed text-white/80">
+                    <div key={item} className="py-3 text-sm font-semibold leading-relaxed text-white/82 md:pr-6 md:not-last:border-r md:not-last:border-white/10">
                       {item}
                     </div>
                   ))}
@@ -265,35 +280,33 @@ export function EscalarNegocioLanding() {
                 initial={{ opacity: 0, x: 24 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.14 }}
-                className="scale-hero-panel rounded-[2.1rem] border border-white/10 p-5 md:p-6"
+                className="border-l border-white/12 pl-6 lg:pl-10"
               >
-                <div className="rounded-[1.6rem] border border-white/8 bg-white/[0.03] p-5 md:p-6">
-                  <div className="text-[11px] font-black uppercase tracking-[0.32em] text-[#f7b267]">Dónde solemos entrar</div>
-                  <h2 className="mt-4 text-2xl font-black leading-tight text-white md:text-[2rem]">
-                    El crecimiento empieza por un punto de tensión que ya se volvió evidente.
-                  </h2>
+                <div className="text-[11px] font-black uppercase tracking-[0.32em] text-[#f7b267]">Dónde solemos entrar</div>
+                <h2 className="mt-4 max-w-md text-2xl font-black leading-tight text-white md:text-[2rem]">
+                  El crecimiento empieza por un punto de tensión que ya se volvió evidente.
+                </h2>
 
-                  <div className="mt-6 space-y-4">
-                    {ENTRY_POINTS.map((item, index) => (
-                      <div key={item.title} className="rounded-[1.45rem] border border-white/10 bg-[#101b2b] px-5 py-5">
-                        <div className="text-[11px] font-black uppercase tracking-[0.24em] text-white/35">Frente {index + 1}</div>
-                        <div className="mt-2 text-lg font-black text-white">{item.title}</div>
-                        <p className="mt-2 text-sm leading-relaxed text-white/66">{item.body}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 rounded-[1.4rem] border border-[#f7b267]/18 bg-[#f7b267]/10 px-5 py-4 text-sm font-medium leading-relaxed text-white/84">
-                    El objetivo es simple: ayudarte a convertir esa fricción en una ruta clara para crecer con mejor estructura.
-                  </div>
+                <div className="mt-7 space-y-5">
+                  {ENTRY_POINTS.map((item, index) => (
+                    <div key={item.title} className="border-b border-white/10 pb-5 last:border-b-0 last:pb-0">
+                      <div className="text-[11px] font-black uppercase tracking-[0.24em] text-white/35">Frente {index + 1}</div>
+                      <div className="mt-2 text-xl font-black text-white">{item.title}</div>
+                      <p className="mt-2 max-w-md text-base leading-relaxed text-white/68">{item.body}</p>
+                    </div>
+                  ))}
                 </div>
+
+                <p className="mt-6 max-w-md text-sm font-medium leading-relaxed text-white/78">
+                  El objetivo es ayudarte a convertir esa fricción en una ruta clara para crecer con mejor estructura.
+                </p>
               </motion.aside>
             </div>
           </div>
         </section>
 
         <section id="metodologia" className="bg-white px-6 py-18 md:py-24">
-          <div className="mx-auto max-w-7xl">
+          <div className="mx-auto max-w-[1320px]">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
               <div>
                 <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">Metodología</div>
@@ -353,7 +366,7 @@ export function EscalarNegocioLanding() {
               </div>
             </div>
 
-            <div id="clientes" className="mt-16 rounded-[2.2rem] border border-slate-200 bg-slate-50 px-4 py-10 md:mt-20 md:px-6">
+            <div id="clientes" className="mt-16 md:mt-20">
               <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
                 <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">Clientes</div>
                 <h3 className="mt-3 text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
@@ -386,7 +399,7 @@ export function EscalarNegocioLanding() {
         </section>
 
         <section id="agenda" className="border-y border-[#eee3cf] bg-[#f6eedf] px-6 py-18 md:py-24">
-          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:items-stretch">
+          <div className="mx-auto grid max-w-[1320px] gap-12 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)] lg:items-stretch">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">Agendar cita</div>
               <h2 className="mt-4 max-w-xl text-4xl font-black leading-[0.94] tracking-[-0.045em] text-slate-950 md:text-6xl">
@@ -417,38 +430,26 @@ export function EscalarNegocioLanding() {
               </a>
             </div>
 
-            <div className="scale-browser-shell rounded-[2.2rem] border border-white/70 bg-white p-4 shadow-[0_28px_80px_-34px_rgba(15,23,42,0.3)] md:p-5">
-              <div className="flex items-center gap-2 px-2 py-1">
-                <span className="h-3 w-3 rounded-full bg-[#e7d9c2]" />
-                <span className="h-3 w-3 rounded-full bg-[#ebc59a]" />
-                <span className="h-3 w-3 rounded-full bg-[#d9b07a]" />
-              </div>
-
-              <div className="mt-3 rounded-[1.8rem] border border-slate-200 bg-[#fbf8f1] p-5 md:p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Reserva inicial</div>
-                    <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
-                      Conversemos sobre el punto que hoy más frena el crecimiento.
-                    </h3>
-                  </div>
-                  <div className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
-                    Outlook
-                  </div>
-                </div>
-
-                <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="grid gap-6 rounded-[2rem] border border-white/70 bg-white px-5 py-6 shadow-[0_28px_80px_-34px_rgba(15,23,42,0.3)] md:grid-cols-[0.88fr_1.12fr] md:px-6">
+              <div className="border-b border-slate-200 pb-5 md:border-b-0 md:border-r md:pb-0 md:pr-6">
+                <div className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Reserva inicial</div>
+                <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
+                  Conversemos sobre el punto que hoy más frena el crecimiento.
+                </h3>
+                <div className="mt-6 space-y-3">
                   {AGENDA_PREVIEW.map((item) => (
-                    <div key={item.label} className="rounded-[1.35rem] border border-slate-200 bg-white px-4 py-4">
+                    <div key={item.label} className="border-b border-slate-200 pb-3 last:border-b-0 last:pb-0">
                       <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{item.label}</div>
-                      <div className="mt-2 text-sm font-bold leading-relaxed text-slate-800">{item.value}</div>
+                      <div className="mt-1 text-sm font-bold leading-relaxed text-slate-800">{item.value}</div>
                     </div>
                   ))}
                 </div>
+              </div>
 
-                <div className="mt-6 grid gap-3">
+              <div>
+                <div className="grid gap-3">
                   {AGENDA_POINTS.map((item, index) => (
-                    <div key={item} className="flex items-start gap-4 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-4">
+                    <div key={item} className="flex items-start gap-4 border-b border-slate-200 pb-4 last:border-b-0 last:pb-0">
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-[11px] font-black uppercase tracking-[0.08em] text-white">
                         {index + 1}
                       </div>
@@ -472,7 +473,7 @@ export function EscalarNegocioLanding() {
         </section>
 
         <section id="casos" className="bg-[#0c1727] px-6 py-18 md:py-24">
-          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.76fr)_minmax(0,1.24fr)] lg:items-start">
+          <div className="mx-auto grid max-w-[1320px] gap-12 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)] lg:items-start">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.32em] text-white/45">Después de agendar</div>
               <h2 className="mt-4 max-w-2xl text-4xl font-black leading-[0.94] tracking-[-0.045em] text-white md:text-6xl">
@@ -483,11 +484,11 @@ export function EscalarNegocioLanding() {
                 la conversación con mejor enfoque y con un caso mejor formulado.
               </p>
 
-              <div className="mt-8 rounded-[1.9rem] border border-white/10 bg-white/[0.05] p-6">
+              <div className="mt-8 border-t border-white/10 pt-6">
                 <div className="text-sm font-black uppercase tracking-[0.22em] text-[#f7b267]">Ideas para empezar</div>
                 <div className="mt-5 space-y-3">
                   {STARTER_CASES.map((item) => (
-                    <div key={item} className="flex items-start gap-3 rounded-[1rem] border border-white/8 bg-[#101b2b] px-4 py-4">
+                    <div key={item} className="flex items-start gap-3 border-b border-white/10 pb-4 last:border-b-0 last:pb-0">
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#f7b267]" />
                       <p className="text-sm font-medium leading-relaxed text-white/82">{item}</p>
                     </div>
@@ -515,78 +516,68 @@ export function EscalarNegocioLanding() {
               </div>
             </div>
 
-            <div className="scale-browser-shell scale-browser-shell-dark rounded-[2.15rem] border border-white/10 bg-[#0f1a2b] p-4 shadow-[0_36px_100px_-44px_rgba(2,6,23,0.82)] md:p-5">
-              <div className="flex items-center gap-2 px-2 py-1">
-                <span className="h-3 w-3 rounded-full bg-white/12" />
-                <span className="h-3 w-3 rounded-full bg-white/12" />
-                <span className="h-3 w-3 rounded-full bg-white/12" />
+            <div className="rounded-[2rem] border border-white/10 bg-[#0f1a2b] px-5 py-6 shadow-[0_36px_100px_-44px_rgba(2,6,23,0.82)] md:px-6">
+              <div className="text-[11px] font-black uppercase tracking-[0.3em] text-white/45">Generador de casos</div>
+              <h3 className="mt-3 text-3xl font-black tracking-tight text-white md:text-[3rem]">¿Cuál es tu industria?</h3>
+              <p className="mt-3 max-w-3xl text-base leading-relaxed text-white/62">
+                Elige el sector que más se parezca a tu realidad y empieza a aterrizar un caso de escalabilidad para conversar con
+                más claridad.
+              </p>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                {GENERATOR_SECTORS.map((sector) => (
+                  <div key={sector} className="border border-white/12 bg-[#0e1a30] px-5 py-4 text-sm font-medium text-white/84">
+                    {sector}
+                  </div>
+                ))}
               </div>
 
-              <div className="mt-3 rounded-[1.8rem] border border-white/10 bg-[#091121] p-5 md:p-6">
-                <div className="text-[11px] font-black uppercase tracking-[0.3em] text-white/45">Generador de casos</div>
-                <h3 className="mt-3 text-3xl font-black tracking-tight text-white md:text-[3rem]">¿Cuál es tu industria?</h3>
-                <p className="mt-3 max-w-3xl text-base leading-relaxed text-white/62">
-                  Elige el sector que más se parezca a tu realidad y empieza a aterrizar un caso de escalabilidad para conversar con
-                  más claridad.
-                </p>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {GENERATOR_SECTORS.map((sector) => (
-                    <div key={sector} className="rounded-[1rem] border border-white/12 bg-[#0e1a30] px-5 py-4 text-sm font-medium text-white/84">
-                      {sector}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 grid gap-4 md:grid-cols-3">
-                  {[
-                    { label: '1', title: 'Industria', body: 'Escoge el contexto donde opera tu negocio.' },
-                    { label: '2', title: 'Proceso', body: 'Define el frente que hoy más valor puede mover.' },
-                    { label: '3', title: 'Madurez', body: 'Ubica el punto de partida para plantear una ruta realista.' },
-                  ].map((item) => (
-                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/[0.04] px-4 py-4">
-                      <div className="text-[11px] font-black uppercase tracking-[0.22em] text-[#f7b267]">{item.label}</div>
-                      <div className="mt-2 text-base font-black text-white">{item.title}</div>
-                      <p className="mt-2 text-sm leading-relaxed text-white/62">{item.body}</p>
-                    </div>
-                  ))}
-                </div>
+              <div className="mt-6 grid gap-4 border-t border-white/10 pt-6 md:grid-cols-3">
+                {[
+                  { label: '1', title: 'Industria', body: 'Escoge el contexto donde opera tu negocio.' },
+                  { label: '2', title: 'Proceso', body: 'Define el frente que hoy más valor puede mover.' },
+                  { label: '3', title: 'Madurez', body: 'Ubica el punto de partida para plantear una ruta realista.' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="text-[11px] font-black uppercase tracking-[0.22em] text-[#f7b267]">{item.label}</div>
+                    <div className="mt-2 text-base font-black text-white">{item.title}</div>
+                    <p className="mt-2 text-sm leading-relaxed text-white/62">{item.body}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
         <section className="bg-white px-6 py-18 md:py-22">
-          <div className="mx-auto max-w-7xl">
-            <div className="rounded-[2.3rem] border border-slate-200 bg-slate-50 px-6 py-8 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.42)] md:px-10 md:py-10">
-              <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                <div>
-                  <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">CTA</div>
-                  <h2 className="mt-3 text-3xl font-black leading-[0.96] tracking-[-0.04em] text-slate-950 md:text-5xl">
-                    Agenda la conversación y llega con un caso mejor definido.
-                  </h2>
-                  <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
-                    La cita y el generador están pensados para darte un punto de partida concreto, útil y accionable desde el primer
-                    contacto.
-                  </p>
-                </div>
+          <div className="mx-auto max-w-[1320px] border-t border-slate-200 pt-12">
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <div>
+                <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">CTA</div>
+                <h2 className="mt-3 text-3xl font-black leading-[0.96] tracking-[-0.04em] text-slate-950 md:text-5xl">
+                  Agenda la conversación y llega con un caso mejor definido.
+                </h2>
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+                  La cita y el generador están pensados para darte un punto de partida concreto, útil y accionable desde el primer
+                  contacto.
+                </p>
+              </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <a
-                    href="#agenda"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-white transition-transform hover:-translate-y-0.5"
-                  >
-                    Reservar cita
-                    <CalendarDays className="h-4 w-4" />
-                  </a>
-                  <a
-                    href="#casos"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950"
-                  >
-                    Ver generador
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="#agenda"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-white transition-transform hover:-translate-y-0.5"
+                >
+                  Reservar cita
+                  <CalendarDays className="h-4 w-4" />
+                </a>
+                <a
+                  href="#casos"
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950"
+                >
+                  Ver generador
+                  <ArrowRight className="h-4 w-4" />
+                </a>
               </div>
             </div>
           </div>
