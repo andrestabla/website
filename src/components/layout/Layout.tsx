@@ -73,6 +73,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
     const closeMobileMenu = () => setMobileMenuOpen(false)
     const isNavigationSelector = location.pathname === '/'
     const isFocusedLanding = location.pathname === '/hazlo-tu-mismo'
+    const isEscalarNegocio = location.pathname === '/escalar-negocio'
     const hideGlobalChrome = isNavigationSelector || isFocusedLanding
 
     useEffect(() => {
@@ -203,7 +204,17 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                 </div>
             )}
 
-            {!hideGlobalChrome && (
+            {isEscalarNegocio ? (
+                <header className="absolute top-0 left-0 w-full z-50 px-6 h-20 flex items-center">
+                    <Link to="/" className="text-2xl font-black tracking-tighter text-white inline-flex items-center">
+                        {useImageLogo ? (
+                            <img src={design.logoUrl} alt={design.logoAlt || site.name} className="h-10 w-auto object-contain brightness-0 invert" />
+                        ) : (
+                            <>ALGORITMO<span className="text-white/30">T</span></>
+                        )}
+                    </Link>
+                </header>
+            ) : !hideGlobalChrome && (
                 <header className={headerShellClass} style={isHeaderSticky ? { top: announcementHeight } : undefined}>
                 <div className={`px-6 ${headerHeightClass} ${headerVariant === 'split' ? 'max-w-7xl mx-auto w-full grid grid-cols-[auto_1fr_auto] items-center gap-6' : 'flex items-center justify-between'}`}>
                     <a href="https://www.algoritmot.com/" className="text-2xl font-black tracking-tighter text-slate-900 inline-flex items-center">
@@ -311,13 +322,23 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
             <main
                 id="main-content"
                 className={`flex-grow ${routeTemplate === 'immersive' && !isNavigationSelector ? 'bg-slate-50/40' : ''} ${routeTemplate === 'compact' ? 'text-[0.97rem]' : ''}`}
-                style={isHeaderSticky && !hideGlobalChrome ? { paddingTop: `${announcementHeight + headerHeight}px` } : undefined}
+                style={isHeaderSticky && !hideGlobalChrome && !isEscalarNegocio ? { paddingTop: `${announcementHeight + headerHeight}px` } : undefined}
                 data-page-template={routeTemplate}
             >
                 {children}
             </main>
 
-            {!hideGlobalChrome && (
+            {isEscalarNegocio ? (
+                <footer className="py-16 bg-slate-950 px-6 flex flex-col items-center justify-center">
+                    <Link to="/" className="text-3xl font-black tracking-tighter text-white inline-flex items-center">
+                        {useImageFooterLogo ? (
+                            <img src={design.logoFooterUrl || design.logoUrl} alt={design.logoAlt || site.name} className="h-12 w-auto object-contain" />
+                        ) : (
+                            <>ALGORITMO<span className="text-white/30">T</span></>
+                        )}
+                    </Link>
+                </footer>
+            ) : !hideGlobalChrome && (
                 <footer>
                     {footerVariant === 'minimal' && renderMinimalFooter()}
                     {footerVariant === 'compact' && renderCompactFooter()}
