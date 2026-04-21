@@ -5,6 +5,7 @@ import { sendEmail } from '../../_lib/email.js'
 import { generateStyledEmail } from '../../_lib/email-templates.js'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { updateCalendarEvent, deleteCalendarEvent } from '../../_lib/google-calendar.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const admin = requireAdminSession(req, res)
@@ -20,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!appointment) return res.status(404).json({ error: 'Appointment not found' })
 
-    // Optional: free up the slot
+    // 1. Free up the slot
     await prisma.appointmentSlot.updateMany({
       where: {
         startTime: appointment.startTime,
@@ -28,6 +29,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       data: { isBooked: false },
     })
+
+    // 2. Delete Google Calendar event if exists
+    if (appointment.googleEventId) {
+      await deleteCalendarEvent(appointment.googleEventId)
+    }
 
     await prisma.appointment.delete({
       where: { id: String(id) },
@@ -44,6 +50,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       where: { id: String(id) },
       data,
     })
+
+    // 2. Update Google Calendar event if exists
+    if (appointment.googleEventId) {
+      await updateCalendarEvent({
+        eventId: appointment.googleEventId,
+        summary: `Cita AlgoritmoT: ${appointment.name} (${appointment.company})`,
+        description: `
+          Nombre: ${appointment.name}
+          Email: ${appointment.email}
+          Empresa: ${appointment.company}
+          Cargo: ${appointment.role}
+          Sector: ${appointment.industry}
+          Empleados: ${appointment.employeeCount}
+          Sitio Web: ${appointment.website || 'N/A'}
+          
+          Mensaje:
+          ${appointment.message}
+        `.trim(),
+        startTime: new Date(appointment.startTime),
+        endTime: new Date(appointment.endTime),
+      })
+    }
 
     return res.status(200).json(appointment)
   }
