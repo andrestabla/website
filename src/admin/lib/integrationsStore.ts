@@ -44,6 +44,7 @@ export type IntegrationsState = {
   openai: { enabled: boolean; status: IntegrationStatus; config: OpenAIConfig }
   smtp: { enabled: boolean; status: IntegrationStatus; config: SMTPConfig }
   r2: { enabled: boolean; status: IntegrationStatus; config: R2Config }
+  google_calendar: { enabled: boolean; status: IntegrationStatus; config: { clientId: string; clientSecret: string; refreshToken: string; calendarId: string; mandatoryGuests?: string } }
 }
 
 export const defaultIntegrations: IntegrationsState = {
@@ -67,6 +68,11 @@ export const defaultIntegrations: IntegrationsState = {
     status: 'unconfigured',
     config: { accountId: '', accessKeyId: '', secretAccessKey: '', bucketName: '', publicUrl: '', region: 'auto' },
   },
+  google_calendar: {
+    enabled: false,
+    status: 'unconfigured',
+    config: { clientId: '', clientSecret: '', refreshToken: '', calendarId: '', mandatoryGuests: '' },
+  },
 }
 
 function clone<T>(value: T): T {
@@ -80,6 +86,7 @@ export function isConfigured(state: IntegrationsState, key: keyof IntegrationsSt
     openai: ['apiKey'],
     smtp: ['host', 'user', 'password', 'fromEmail'],
     r2: ['accountId', 'accessKeyId', 'secretAccessKey', 'bucketName'],
+    google_calendar: ['clientId', 'clientSecret', 'refreshToken'],
   }
   return required[key].every((f) => String(cfg[f] || '').trim() !== '')
 }

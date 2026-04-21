@@ -17,7 +17,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       enabled: config.enabled,
       status: config.status,
       connectedAccount: config.config.calendarId,
-      hasRefreshToken: !!config.config.refreshToken
+      hasRefreshToken: !!config.config.refreshToken,
+      mandatoryGuests: config.config.mandatoryGuests || ''
     })
   } catch (error) {
     console.error('Error fetching Google Calendar status:', error)

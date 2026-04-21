@@ -68,6 +68,11 @@ export async function createCalendarEvent({
         },
         attendees: [
           { email: userEmail, displayName: userName },
+          ...(config.mandatoryGuests || '')
+            .split(',')
+            .map((email: string) => email.trim())
+            .filter((email: string) => email.length > 5 && email.includes('@'))
+            .map((email: string) => ({ email })),
         ],
         conferenceData: {
           createRequest: {

@@ -38,6 +38,8 @@ export function ManageBookings() {
     connectedAccount: string
     hasRefreshToken: boolean
   } | null>(null)
+  const [mandatoryGuests, setMandatoryGuests] = useState('')
+  const [savingSettings, setSavingSettings] = useState(false)
 
   // New slot form
   const [newSlotDate, setNewSlotDate] = useState('')
@@ -81,6 +83,9 @@ export function ManageBookings() {
       const res = await fetch('/api/admin/google-calendar/status')
       const data = await res.json()
       setGoogleStatus(data)
+      if (data.mandatoryGuests) {
+        setMandatoryGuests(data.mandatoryGuests)
+      }
     } catch (err) {
       console.error('Error fetching google status:', err)
     }
@@ -184,6 +189,25 @@ export function ManageBookings() {
       if (res.ok) fetchData()
     } catch (error) {
       console.error('Error deleting slot:', error)
+    }
+  }
+
+  const handleSaveSettings = async () => {
+    setSavingSettings(true)
+    try {
+      const res = await fetch('/api/admin/booking/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mandatoryGuests })
+      })
+      if (res.ok) {
+        alert('Configuración guardada exitosamente')
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error)
+      alert('Error al guardar configuración')
+    } finally {
+      setSavingSettings(false)
     }
   }
 
@@ -531,6 +555,29 @@ export function ManageBookings() {
               </svg>
               {googleStatus?.enabled ? 'Cambiar cuenta de Google' : 'Conectar con Google Calendar'}
             </Button>
+
+            <div className="mt-12 pt-8 border-t border-slate-100">
+              <h4 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-4">Invitados Obligatorios</h4>
+              <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                Agrega los correos electrónicos (separados por coma) de las personas que deben ser invitadas automáticamente a todas las reuniones agendadas.
+              </p>
+              <div className="space-y-4">
+                <input 
+                  type="text"
+                  value={mandatoryGuests}
+                  onChange={e => setMandatoryGuests(e.target.value)}
+                  placeholder="ejemplo1@algoritmot.com, ejemplo2@algoritmot.com"
+                  className="w-full bg-slate-50 border border-slate-200 px-4 py-4 text-sm outline-none focus:border-brand-primary"
+                />
+                <Button 
+                  onClick={handleSaveSettings} 
+                  disabled={savingSettings}
+                  className="w-full"
+                >
+                  {savingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar Invitados'}
+                </Button>
+              </div>
+            </div>
 
             <p className="mt-6 text-[10px] text-center text-slate-400 uppercase font-bold tracking-widest leading-loose">
               Se requiere permiso para editar eventos del calendario <br /> y acceso a Google Meet.

@@ -39,7 +39,7 @@ export type IntegrationsState = {
   openai: { enabled: boolean; status: IntegrationStatus; config: OpenAIConfig }
   smtp: { enabled: boolean; status: IntegrationStatus; config: SMTPConfig }
   r2: { enabled: boolean; status: IntegrationStatus; config: R2Config }
-  google_calendar: { enabled: boolean; status: IntegrationStatus; config: { clientId: string; clientSecret: string; refreshToken: string; calendarId: string } }
+  google_calendar: { enabled: boolean; status: IntegrationStatus; config: { clientId: string; clientSecret: string; refreshToken: string; calendarId: string; mandatoryGuests?: string } }
 }
 
 export const INTEGRATIONS_SNAPSHOT_ID = 'integrations'
@@ -72,7 +72,7 @@ export const defaultIntegrations: IntegrationsState = {
   google_calendar: {
     enabled: false,
     status: 'unconfigured',
-    config: { clientId: '', clientSecret: '', refreshToken: '', calendarId: '' },
+    config: { clientId: '', clientSecret: '', refreshToken: '', calendarId: '', mandatoryGuests: '' },
   },
 }
 
@@ -162,6 +162,8 @@ export function applyServerEnv(state: IntegrationsState): IntegrationsState {
     if (googleClientSecret) next.google_calendar.config.clientSecret = googleClientSecret
     if (googleRefreshToken) next.google_calendar.config.refreshToken = googleRefreshToken
     if (googleCalendarId) next.google_calendar.config.calendarId = googleCalendarId
+    const googleMandatoryGuests = process.env.GOOGLE_MANDATORY_GUESTS || ''
+    if (googleMandatoryGuests) next.google_calendar.config.mandatoryGuests = googleMandatoryGuests
     if (isConfigured(next, 'google_calendar')) {
       next.google_calendar.enabled = true
       next.google_calendar.status = 'configured'
