@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, CalendarDays, CheckCircle2, Handshake, Route, ScanSearch, TrendingUp } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { Layout } from '../components/layout/Layout'
 import { BookingSystem } from '../components/booking/BookingSystem'
 import { useCMS } from '../admin/context/CMSContext'
