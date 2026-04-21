@@ -1,18 +1,6 @@
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
-import {
-  ArrowRight,
-  ArrowUpRight,
-  BrainCircuit,
-  CalendarDays,
-  CheckCircle2,
-  type LucideIcon,
-  ScanSearch,
-  Sparkles,
-  TrendingUp,
-  Users2,
-  Workflow,
-} from 'lucide-react'
+import { ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2, Handshake, Route, ScanSearch, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Layout } from '../components/layout/Layout'
 import { useCMS } from '../admin/context/CMSContext'
@@ -24,60 +12,64 @@ const BOOKING_URL =
 
 const CASE_GENERATOR_URL = 'https://www.algoritmot.com/generador-casos'
 
-const SEARCH_TERMS = [
-  'marketing de revisión de productos',
-  'services for business',
-  'quiero emprender un negocio',
-  'quiero iniciar mi propio negocio',
-  'ayuda del gobierno para pequeños negocios',
-  'marketing de productos',
-  'employee development programs',
-  'artificial intelligence in business',
-  'control de calidad',
-  'digital transformation online',
+const DISCOVERY_PATHS = [
+  'Iniciar un negocio con más estructura',
+  'Fortalecer calidad y operación',
+  'Ordenar procesos comerciales',
+  'Digitalizar sin perder foco',
+  'Preparar al equipo para crecer',
+  'Tomar mejores decisiones de expansión',
 ]
 
-type MethodologyStep = {
-  id: string
-  icon: LucideIcon
-  eyebrow: string
-  title: string
-  body: string
-  outcomes: string[]
-}
+const HERO_PILLARS = [
+  'Más claridad para decidir',
+  'Más orden para ejecutar',
+  'Más capacidad para crecer',
+]
 
-const METHODOLOGY: MethodologyStep[] = [
+const ENTRY_POINTS = [
   {
-    id: 'leer-negocio',
+    title: 'Operación que ya no escala',
+    body: 'Hay demasiado esfuerzo manual, cuellos de botella y variación en la forma de trabajar.',
+  },
+  {
+    title: 'Crecimiento comercial sin sistema',
+    body: 'La oportunidad existe, pero faltan prioridad, proceso y seguimiento para convertirla mejor.',
+  },
+  {
+    title: 'Equipos creciendo sin una ruta común',
+    body: 'Hace falta alinear decisiones, responsables y próximos pasos para no avanzar por intuición.',
+  },
+]
+
+const METHODOLOGY = [
+  {
+    number: '01',
     icon: ScanSearch,
-    eyebrow: '01. Leemos el negocio',
-    title: 'Convertimos la intención de búsqueda en una oportunidad concreta',
-    body: 'Partimos del contexto real: ventas, operación, talento, financiamiento, calidad o transformación digital. Primero entendemos dónde está la fricción y qué resultado movería el negocio.',
-    outcomes: ['Diagnóstico breve', 'Objetivo priorizado', 'Señales de impacto tempranas'],
+    title: 'Entendemos el punto de partida',
+    body: 'Leemos el negocio, el objetivo y la tensión más urgente para concentrar el esfuerzo donde de verdad mueve resultados.',
+    outcomes: ['Contexto', 'Prioridad', 'Objetivo concreto'],
   },
   {
-    id: 'priorizar',
-    icon: Workflow,
-    eyebrow: '02. Diseñamos la ruta',
-    title: 'Priorizamos un caso con el equipo y una hoja de ruta ejecutable',
-    body: 'No proponemos una lista infinita de ideas. Seleccionamos un frente rentable, definimos responsables, dependencias y el entregable mínimo para empezar a escalar sin improvisación.',
-    outcomes: ['Ruta por fases', 'Roles claros', 'Menos riesgo de ejecución'],
+    number: '02',
+    icon: Route,
+    title: 'Definimos una ruta posible',
+    body: 'Traducimos esa prioridad en un primer frente claro, con responsables, foco y una secuencia aterrizada para empezar.',
+    outcomes: ['Ruta inicial', 'Fases claras', 'Menos dispersión'],
   },
   {
-    id: 'activar',
-    icon: BrainCircuit,
-    eyebrow: '03. Activamos capacidades',
-    title: 'Integramos proceso, equipo y tecnología en una sola conversación',
-    body: 'Desde AlgoritmoT co-creamos con tu equipo automatizaciones, rediseño de procesos, criterios de calidad y herramientas prácticas para que el cambio sí ocurra en la operación.',
-    outcomes: ['Implementación acompañada', 'IA con criterio de negocio', 'Cambio adoptable'],
+    number: '03',
+    icon: Handshake,
+    title: 'Implementamos con tu equipo',
+    body: 'No dejamos un documento y nos vamos. Acompañamos la puesta en marcha para que el cambio sí ocurra en la operación.',
+    outcomes: ['Acompañamiento', 'Adopción', 'Ejecución real'],
   },
   {
-    id: 'escalar',
+    number: '04',
     icon: TrendingUp,
-    eyebrow: '04. Escalamos con datos',
-    title: 'Medimos, corregimos y abrimos el siguiente frente de crecimiento',
-    body: 'Lo importante no es lanzar un proyecto, sino repetir una forma de crecer. Medimos qué mejoró y dejamos una base clara para el siguiente caso de escalabilidad.',
-    outcomes: ['Métricas visibles', 'Aprendizajes reutilizables', 'Escala sostenida'],
+    title: 'Medimos y abrimos la siguiente etapa',
+    body: 'Con resultados y aprendizajes en mano, dejamos una base más fuerte para repetir el crecimiento con menos fricción.',
+    outcomes: ['Indicadores', 'Aprendizajes', 'Siguiente paso'],
   },
 ]
 
@@ -97,10 +89,35 @@ const TRUSTED_CLIENTS = [
   { name: 'Estudiemos Web', logoUrl: 'https://imageneseiconos.s3.us-east-1.amazonaws.com/logos/logo+EW.png' },
 ]
 
+const AGENDA_POINTS = [
+  'Diagnóstico del frente que hoy más limita el crecimiento.',
+  'Priorización del primer caso que vale la pena mover.',
+  'Siguiente paso recomendado para arrancar con claridad.',
+]
+
+const AGENDA_PREVIEW = [
+  { label: 'Formato', value: 'Conversación estratégica' },
+  { label: 'Duración', value: '30 minutos' },
+  { label: 'Salida', value: 'Ruta inicial sugerida' },
+]
+
 const STARTER_CASES = [
   'Quiero escalar sin depender de tareas manuales.',
-  'Necesito ordenar procesos antes de meter más tecnología.',
-  'Quiero descubrir dónde sí tiene sentido usar IA en mi negocio.',
+  'Necesito ordenar procesos antes de ampliar capacidad.',
+  'Quiero convertir una oportunidad difusa en un caso claro de negocio.',
+]
+
+const GENERATOR_SECTORS = [
+  'Finanzas y Banca',
+  'Salud y Medicina',
+  'Retail y Comercio Electrónico',
+  'Manufactura y Logística',
+  'Tecnología y Software',
+  'Educación',
+  'Servicios Profesionales',
+  'Bienes Raíces y Construcción',
+  'Energía y Servicios Públicos',
+  'Transporte y Movilidad',
 ]
 
 export function EscalarNegocioLanding() {
@@ -114,7 +131,7 @@ export function EscalarNegocioLanding() {
     const canonicalUrl = toAbsoluteUrl(baseUrl, '/escalar-negocio')
     const title = `Escalabilidad de negocios con AlgoritmoT | ${siteName}`
     const description = limitText(
-      'Landing de AlgoritmoT para empresas que quieren escalar con una metodología práctica: diagnóstico, priorización, agenda embebida y generador de casos.',
+      'Landing de AlgoritmoT para empresas que quieren crecer con más orden, una metodología clara y una conversación inicial enfocada en resultados.',
       180,
     )
     const imageCandidate = state.design.logoUrl || state.design.logoFooterUrl || '/assets/og-default.svg'
@@ -131,7 +148,7 @@ export function EscalarNegocioLanding() {
       siteName,
       ogType: 'website',
       twitterCard: 'summary_large_image',
-      themeColor: '#0f172a',
+      themeColor: '#09111d',
       faviconUrl,
       schemas: [
         {
@@ -158,130 +175,143 @@ export function EscalarNegocioLanding() {
 
   return (
     <Layout isFocusedFlow>
-      <div className="scale-landing-theme">
-        <section className="relative overflow-hidden px-6 pb-18 pt-24 md:pb-24 md:pt-32">
-          <div className="scale-grid absolute inset-0 opacity-40" />
+      <div className="bg-white text-slate-950">
+        <section className="scale-hero-section relative overflow-hidden px-6 pb-20 pt-24 md:pb-24 md:pt-30">
+          <div className="scale-grid absolute inset-0 opacity-35" />
           <div className="scale-orb scale-orb-one" />
           <div className="scale-orb scale-orb-two" />
 
-          <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[minmax(0,1.15fr)_440px] lg:items-end">
-            <div>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-[11px] font-black uppercase tracking-[0.28em] text-white/72"
-              >
-                <Sparkles className="h-4 w-4 text-[#f7b267]" />
-                AlgoritmoT / Empresas
-              </motion.div>
-
-              <motion.h1
-                initial={{ opacity: 0, y: 28 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.65, delay: 0.06 }}
-                className="mt-7 max-w-5xl text-5xl font-black leading-[0.92] tracking-[-0.05em] text-white md:text-7xl"
-              >
-                Si llegaste hasta aquí es porque tu negocio ya te está pidiendo otra velocidad.
-              </motion.h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 28 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.65, delay: 0.12 }}
-                className="mt-6 max-w-3xl text-lg leading-relaxed text-white/72 md:text-xl"
-              >
-                Si buscaste cómo emprender, transformar, financiar, mejorar calidad o integrar inteligencia artificial en tu empresa,
-                esta landing existe para eso: desde AlgoritmoT te acompañamos y construimos con tu equipo lo necesario para escalar
-                en estos nuevos tiempos.
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.18 }}
-                className="mt-10 flex flex-wrap gap-4"
-              >
-                <a
-                  href="#agenda"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#f7b267] px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition-transform hover:-translate-y-0.5"
+          <div className="relative mx-auto max-w-7xl">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(380px,0.92fr)] lg:items-center">
+              <div>
+                <motion.div
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.45 }}
+                  className="inline-flex items-center rounded-full border border-white/12 bg-white/6 px-5 py-3 text-[11px] font-black uppercase tracking-[0.28em] text-white/70"
                 >
-                  Agendar cita
-                  <CalendarDays className="h-4 w-4" />
-                </a>
-                <a
-                  href="#metodologia"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/16 bg-white/6 px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-white/10"
-                >
-                  Ver metodología
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-              </motion.div>
+                  AlgoritmoT / Empresas
+                </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.24 }}
-                className="mt-12 grid gap-4 md:grid-cols-3"
+                <motion.h1
+                  initial={{ opacity: 0, y: 26 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.58, delay: 0.05 }}
+                  className="mt-7 max-w-5xl text-5xl font-black leading-[0.92] tracking-[-0.055em] text-white md:text-7xl"
+                >
+                  Si llegaste hasta aquí es porque tu negocio ya te está pidiendo otra velocidad.
+                </motion.h1>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.58, delay: 0.1 }}
+                  className="mt-6 max-w-3xl text-lg leading-relaxed text-white/72 md:text-[1.35rem]"
+                >
+                  Si vienes buscando más estructura para crecer, mejorar la operación, ordenar procesos o preparar a tu equipo para
+                  una nueva etapa, aquí encontrarás una ruta práctica para avanzar con claridad.
+                </motion.p>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.16 }}
+                  className="mt-9 flex flex-wrap gap-4"
+                >
+                  <a
+                    href="#agenda"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#f7b267] px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition-transform hover:-translate-y-0.5"
+                  >
+                    Agendar cita
+                    <CalendarDays className="h-4 w-4" />
+                  </a>
+                  <a
+                    href="#metodologia"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/14 bg-white/6 px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-white/10"
+                  >
+                    Ver metodología
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.54, delay: 0.2 }}
+                  className="mt-8 flex flex-wrap gap-2.5"
+                >
+                  {DISCOVERY_PATHS.map((item) => (
+                    <span key={item} className="scale-discovery-pill">
+                      {item}
+                    </span>
+                  ))}
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 22 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.54, delay: 0.24 }}
+                  className="mt-10 grid gap-4 md:grid-cols-3"
+                >
+                  {HERO_PILLARS.map((item) => (
+                    <div key={item} className="scale-hero-pill-card rounded-[1.55rem] border border-white/10 px-5 py-5 text-sm font-semibold leading-relaxed text-white/80">
+                      {item}
+                    </div>
+                  ))}
+                </motion.div>
+              </div>
+
+              <motion.aside
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.14 }}
+                className="scale-hero-panel rounded-[2.1rem] border border-white/10 p-5 md:p-6"
               >
-                {[
-                  'Escalabilidad pensada desde negocio, no desde moda.',
-                  'Ruta co-creada con tu equipo y prioridades reales.',
-                  'IA, procesos y adopción operativa en una misma mesa.',
-                ].map((item) => (
-                  <div key={item} className="scale-glass-card rounded-[1.6rem] border border-white/10 px-5 py-5 text-sm font-semibold leading-relaxed text-white/78">
-                    {item}
+                <div className="rounded-[1.6rem] border border-white/8 bg-white/[0.03] p-5 md:p-6">
+                  <div className="text-[11px] font-black uppercase tracking-[0.32em] text-[#f7b267]">Dónde solemos entrar</div>
+                  <h2 className="mt-4 text-2xl font-black leading-tight text-white md:text-[2rem]">
+                    El crecimiento empieza por un punto de tensión que ya se volvió evidente.
+                  </h2>
+
+                  <div className="mt-6 space-y-4">
+                    {ENTRY_POINTS.map((item, index) => (
+                      <div key={item.title} className="rounded-[1.45rem] border border-white/10 bg-[#101b2b] px-5 py-5">
+                        <div className="text-[11px] font-black uppercase tracking-[0.24em] text-white/35">Frente {index + 1}</div>
+                        <div className="mt-2 text-lg font-black text-white">{item.title}</div>
+                        <p className="mt-2 text-sm leading-relaxed text-white/66">{item.body}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </motion.div>
-            </div>
 
-            <motion.aside
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.65, delay: 0.18 }}
-              className="scale-panel rounded-[2rem] border border-white/10 p-6 md:p-8"
-            >
-              <div className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.28em] text-[#f7b267]">
-                <Users2 className="h-4 w-4" />
-                Señales de intención
-              </div>
-              <p className="mt-4 text-lg font-semibold leading-relaxed text-white">
-                Estas búsquedas nos dicen que no estás buscando solo una herramienta: estás buscando una forma viable de crecer.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-2.5">
-                {SEARCH_TERMS.map((term) => (
-                  <span key={term} className="scale-word-pill">
-                    {term}
-                  </span>
-                ))}
-              </div>
-            </motion.aside>
+                  <div className="mt-5 rounded-[1.4rem] border border-[#f7b267]/18 bg-[#f7b267]/10 px-5 py-4 text-sm font-medium leading-relaxed text-white/84">
+                    El objetivo es simple: ayudarte a convertir esa fricción en una ruta clara para crecer con mejor estructura.
+                  </div>
+                </div>
+              </motion.aside>
+            </div>
           </div>
         </section>
 
-        <section id="metodologia" className="px-6 py-18 md:py-24">
+        <section id="metodologia" className="bg-white px-6 py-18 md:py-24">
           <div className="mx-auto max-w-7xl">
-            <div className="grid gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
               <div>
-                <div className="text-[11px] font-black uppercase tracking-[0.32em] text-[#9fb3c8]">Metodología de escalabilidad</div>
-                <h2 className="mt-4 max-w-2xl text-4xl font-black leading-[1] tracking-[-0.04em] text-white md:text-6xl">
-                  Escalar no es correr más. Es resolver mejor lo que hoy frena al negocio.
+                <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">Metodología</div>
+                <h2 className="mt-4 max-w-2xl text-4xl font-black leading-[0.98] tracking-[-0.045em] text-slate-950 md:text-6xl">
+                  Acompañamos el crecimiento con una secuencia clara y ejecutable.
                 </h2>
-                <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[#cad5e2]">
-                  Por eso trabajamos contigo en una secuencia clara: entender, priorizar, activar y escalar. Sin humo, sin
-                  proyectos gigantes que nadie adopta y sin separar estrategia de ejecución.
+                <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
+                  Trabajamos contigo para aterrizar decisiones, alinear al equipo y mover un primer frente de escalabilidad con foco
+                  real en operación y resultados.
                 </p>
 
-                <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                <div className="mt-10 grid gap-4">
                   {[
-                    'Diagnóstico enfocado en operación, ventas, calidad o financiamiento.',
-                    'Ruta mínima viable para empezar con foco y evidencia.',
-                    'Trabajo con tu equipo para que el cambio no quede solo en consultoría.',
-                    'Siguiente paso definido para repetir el crecimiento con menos fricción.',
+                    'Menos dispersión y más foco desde el inicio.',
+                    'Ruta compartida entre dirección, operación y ejecución.',
+                    'Trabajo cercano para que el cambio se sostenga.',
                   ].map((item) => (
-                    <div key={item} className="scale-soft-card rounded-[1.4rem] border border-white/8 p-5 text-sm font-medium leading-relaxed text-[#e2e8f0]">
-                      <CheckCircle2 className="mb-3 h-5 w-5 text-[#f7b267]" />
+                    <div key={item} className="rounded-[1.4rem] border border-slate-200 bg-slate-50 px-5 py-5 text-sm font-semibold leading-relaxed text-slate-700 shadow-[0_20px_48px_-36px_rgba(15,23,42,0.35)]">
                       {item}
                     </div>
                   ))}
@@ -293,24 +323,24 @@ export function EscalarNegocioLanding() {
                   const Icon = step.icon
                   return (
                     <motion.article
-                      key={step.id}
-                      initial={{ opacity: 0, y: 26 }}
+                      key={step.title}
+                      initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.25 }}
-                      transition={{ duration: 0.45, delay: index * 0.06 }}
-                      className="scale-cut-card rounded-[1.8rem] border border-white/10 p-6 md:p-7"
+                      viewport={{ once: true, amount: 0.22 }}
+                      transition={{ duration: 0.44, delay: index * 0.06 }}
+                      className="rounded-[1.85rem] border border-slate-200 bg-white p-6 shadow-[0_26px_64px_-42px_rgba(15,23,42,0.35)] md:p-7"
                     >
-                      <div className="flex flex-col gap-5 md:flex-row md:items-start">
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f7b267]/14 text-[#f7b267]">
+                      <div className="flex flex-col gap-5 md:flex-row">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
                           <Icon className="h-6 w-6" />
                         </div>
-                        <div>
-                          <div className="text-[11px] font-black uppercase tracking-[0.3em] text-[#f7b267]">{step.eyebrow}</div>
-                          <h3 className="mt-3 text-2xl font-black tracking-tight text-white">{step.title}</h3>
-                          <p className="mt-4 text-base leading-relaxed text-[#d6dfeb]">{step.body}</p>
+                        <div className="flex-1">
+                          <div className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{step.number}</div>
+                          <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">{step.title}</h3>
+                          <p className="mt-4 text-base leading-relaxed text-slate-600">{step.body}</p>
                           <div className="mt-5 flex flex-wrap gap-2.5">
                             {step.outcomes.map((outcome) => (
-                              <span key={outcome} className="rounded-full border border-white/10 bg-white/6 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white/70">
+                              <span key={outcome} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
                                 {outcome}
                               </span>
                             ))}
@@ -323,32 +353,30 @@ export function EscalarNegocioLanding() {
               </div>
             </div>
 
-            <div id="clientes" className="mt-16 md:mt-20">
-              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <div className="text-[11px] font-black uppercase tracking-[0.32em] text-[#9fb3c8]">Clientes en AlgoritmoT</div>
-                  <h3 className="mt-3 text-3xl font-black tracking-tight text-white md:text-5xl">
-                    Organizaciones que ya han confiado en nosotros
-                  </h3>
-                </div>
-                <p className="max-w-2xl text-sm leading-relaxed text-[#cad5e2] md:text-base">
-                  Reunimos los logos activos que hoy aparecen cargados en el ecosistema del sitio para mostrar una base diversa de
-                  instituciones y empresas acompañadas por AlgoritmoT.
+            <div id="clientes" className="mt-16 rounded-[2.2rem] border border-slate-200 bg-slate-50 px-4 py-10 md:mt-20 md:px-6">
+              <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
+                <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">Clientes</div>
+                <h3 className="mt-3 text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
+                  Empresas e instituciones que han confiado en nuestro acompañamiento.
+                </h3>
+                <p className="mt-5 max-w-3xl text-base leading-relaxed text-slate-600">
+                  Cada proyecto tiene una realidad distinta, pero todos parten de la misma intención: crecer con más estructura,
+                  mejores decisiones y una ejecución más consistente.
                 </p>
               </div>
 
-              <div className="scale-clients-marquee mt-8 overflow-hidden rounded-[2rem] border border-white/10 bg-white/4 px-4 py-5 md:px-6">
+              <div className="scale-clients-marquee mt-8 overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white px-4 py-5 md:px-6">
                 <div className="scale-clients-marquee-track flex w-max items-stretch gap-4 md:gap-5">
                   {clientRail.map((client, index) => (
                     <article
                       key={`${client.name}-${index}`}
-                      className="flex min-h-[102px] min-w-[220px] items-center gap-4 rounded-[1.4rem] border border-white/10 bg-[#091321] px-5 py-4"
+                      className="flex min-h-[102px] min-w-[220px] items-center gap-4 rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4"
                       aria-label={client.name}
                     >
-                      <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/96 p-2">
+                      <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-50 p-2">
                         <img src={client.logoUrl} alt={`Logo de ${client.name}`} className="h-full w-full object-contain" loading="lazy" />
                       </div>
-                      <p className="text-sm font-bold leading-tight text-white/84">{client.name}</p>
+                      <p className="text-sm font-bold leading-tight text-slate-700">{client.name}</p>
                     </article>
                   ))}
                 </div>
@@ -357,26 +385,22 @@ export function EscalarNegocioLanding() {
           </div>
         </section>
 
-        <section id="agenda" className="border-y border-white/8 bg-[#f5ede0] px-6 py-18 text-slate-950 md:py-24">
-          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
+        <section id="agenda" className="border-y border-[#eee3cf] bg-[#f6eedf] px-6 py-18 md:py-24">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:items-stretch">
             <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-500">Agendar cita</div>
-              <h2 className="mt-4 text-4xl font-black leading-[0.96] tracking-[-0.04em] md:text-6xl">
+              <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">Agendar cita</div>
+              <h2 className="mt-4 max-w-xl text-4xl font-black leading-[0.94] tracking-[-0.045em] text-slate-950 md:text-6xl">
                 Reservemos una conversación para aterrizar tu primer frente de escalabilidad.
               </h2>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-700">
-                En la llamada revisamos dónde está hoy el cuello de botella, qué caso vale la pena priorizar primero y cómo se vería
-                una ruta realista con tu equipo.
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
+                En la llamada revisamos dónde está hoy el cuello de botella, qué caso vale la pena priorizar primero y cómo se puede
+                traducir en una ruta clara para tu equipo.
               </p>
 
               <div className="mt-8 space-y-4">
-                {[
-                  'Espacio pensado para equipos que quieren claridad, no otra reunión genérica.',
-                  'Perfecto para validar si el siguiente paso es proceso, tecnología, formación o IA.',
-                  'Saldrás con una hipótesis de arranque y criterio para decidir.',
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-3 rounded-[1.2rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#c26c2f]" />
+                {AGENDA_POINTS.map((item) => (
+                  <div key={item} className="flex items-start gap-3 rounded-[1.2rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.32)]">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#d9752d]" />
                     <p className="text-sm font-semibold leading-relaxed text-slate-700">{item}</p>
                   </div>
                 ))}
@@ -393,37 +417,79 @@ export function EscalarNegocioLanding() {
               </a>
             </div>
 
-            <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-3 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.35)]">
-              <iframe
-                src={BOOKING_URL}
-                title="Agenda una cita con AlgoritmoT"
-                loading="lazy"
-                className="min-h-[720px] w-full rounded-[1.35rem] border border-slate-100 bg-white"
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
+            <div className="scale-browser-shell rounded-[2.2rem] border border-white/70 bg-white p-4 shadow-[0_28px_80px_-34px_rgba(15,23,42,0.3)] md:p-5">
+              <div className="flex items-center gap-2 px-2 py-1">
+                <span className="h-3 w-3 rounded-full bg-[#e7d9c2]" />
+                <span className="h-3 w-3 rounded-full bg-[#ebc59a]" />
+                <span className="h-3 w-3 rounded-full bg-[#d9b07a]" />
+              </div>
+
+              <div className="mt-3 rounded-[1.8rem] border border-slate-200 bg-[#fbf8f1] p-5 md:p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Reserva inicial</div>
+                    <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
+                      Conversemos sobre el punto que hoy más frena el crecimiento.
+                    </h3>
+                  </div>
+                  <div className="rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                    Outlook
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-4 md:grid-cols-3">
+                  {AGENDA_PREVIEW.map((item) => (
+                    <div key={item.label} className="rounded-[1.35rem] border border-slate-200 bg-white px-4 py-4">
+                      <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">{item.label}</div>
+                      <div className="mt-2 text-sm font-bold leading-relaxed text-slate-800">{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 grid gap-3">
+                  {AGENDA_POINTS.map((item, index) => (
+                    <div key={item} className="flex items-start gap-4 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-4">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-[11px] font-black uppercase tracking-[0.08em] text-white">
+                        {index + 1}
+                      </div>
+                      <p className="text-sm font-semibold leading-relaxed text-slate-700">{item}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <a
+                  href={BOOKING_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#f7b267] px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950 transition-transform hover:-translate-y-0.5"
+                >
+                  Reservar espacio
+                  <CalendarDays className="h-4 w-4" />
+                </a>
+              </div>
             </div>
           </div>
         </section>
 
-        <section id="casos" className="px-6 py-18 md:py-24">
-          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
+        <section id="casos" className="bg-[#0c1727] px-6 py-18 md:py-24">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,0.76fr)_minmax(0,1.24fr)] lg:items-start">
             <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.32em] text-[#9fb3c8]">Después de agendar</div>
-              <h2 className="mt-4 text-4xl font-black leading-[0.98] tracking-[-0.04em] text-white md:text-6xl">
+              <div className="text-[11px] font-black uppercase tracking-[0.32em] text-white/45">Después de agendar</div>
+              <h2 className="mt-4 max-w-2xl text-4xl font-black leading-[0.94] tracking-[-0.045em] text-white md:text-6xl">
                 Revisa cómo podríamos empezar antes de sentarnos a hablar.
               </h2>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-[#cad5e2]">
-                Te invitamos a usar el generador de casos para visualizar un escenario de arranque. Así llegas a la cita con un
-                problema mejor formulado, un proceso candidateado y una conversación mucho más útil.
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
+                Usa el generador de casos para convertir una inquietud general en un punto de partida mucho más claro. Así llegas a
+                la conversación con mejor enfoque y con un caso mejor formulado.
               </p>
 
-              <div className="mt-8 rounded-[1.8rem] border border-white/10 bg-white/5 p-6">
+              <div className="mt-8 rounded-[1.9rem] border border-white/10 bg-white/[0.05] p-6">
                 <div className="text-sm font-black uppercase tracking-[0.22em] text-[#f7b267]">Ideas para empezar</div>
                 <div className="mt-5 space-y-3">
                   {STARTER_CASES.map((item) => (
-                    <div key={item} className="flex items-start gap-3 rounded-[1rem] border border-white/8 bg-[#0d1727] px-4 py-4">
+                    <div key={item} className="flex items-start gap-3 rounded-[1rem] border border-white/8 bg-[#101b2b] px-4 py-4">
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#f7b267]" />
-                      <p className="text-sm font-medium leading-relaxed text-white/80">{item}</p>
+                      <p className="text-sm font-medium leading-relaxed text-white/82">{item}</p>
                     </div>
                   ))}
                 </div>
@@ -449,30 +515,59 @@ export function EscalarNegocioLanding() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#091321] p-3 shadow-[0_36px_100px_-44px_rgba(2,6,23,0.78)]">
-              <iframe
-                src={CASE_GENERATOR_URL}
-                title="Generador de casos de AlgoritmoT"
-                loading="lazy"
-                className="min-h-[760px] w-full rounded-[1.35rem] border border-white/10 bg-white"
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
+            <div className="scale-browser-shell scale-browser-shell-dark rounded-[2.15rem] border border-white/10 bg-[#0f1a2b] p-4 shadow-[0_36px_100px_-44px_rgba(2,6,23,0.82)] md:p-5">
+              <div className="flex items-center gap-2 px-2 py-1">
+                <span className="h-3 w-3 rounded-full bg-white/12" />
+                <span className="h-3 w-3 rounded-full bg-white/12" />
+                <span className="h-3 w-3 rounded-full bg-white/12" />
+              </div>
+
+              <div className="mt-3 rounded-[1.8rem] border border-white/10 bg-[#091121] p-5 md:p-6">
+                <div className="text-[11px] font-black uppercase tracking-[0.3em] text-white/45">Generador de casos</div>
+                <h3 className="mt-3 text-3xl font-black tracking-tight text-white md:text-[3rem]">¿Cuál es tu industria?</h3>
+                <p className="mt-3 max-w-3xl text-base leading-relaxed text-white/62">
+                  Elige el sector que más se parezca a tu realidad y empieza a aterrizar un caso de escalabilidad para conversar con
+                  más claridad.
+                </p>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {GENERATOR_SECTORS.map((sector) => (
+                    <div key={sector} className="rounded-[1rem] border border-white/12 bg-[#0e1a30] px-5 py-4 text-sm font-medium text-white/84">
+                      {sector}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 grid gap-4 md:grid-cols-3">
+                  {[
+                    { label: '1', title: 'Industria', body: 'Escoge el contexto donde opera tu negocio.' },
+                    { label: '2', title: 'Proceso', body: 'Define el frente que hoy más valor puede mover.' },
+                    { label: '3', title: 'Madurez', body: 'Ubica el punto de partida para plantear una ruta realista.' },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-[1.2rem] border border-white/10 bg-white/[0.04] px-4 py-4">
+                      <div className="text-[11px] font-black uppercase tracking-[0.22em] text-[#f7b267]">{item.label}</div>
+                      <div className="mt-2 text-base font-black text-white">{item.title}</div>
+                      <p className="mt-2 text-sm leading-relaxed text-white/62">{item.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="px-6 pb-18 pt-2 md:pb-24">
+        <section className="bg-white px-6 py-18 md:py-22">
           <div className="mx-auto max-w-7xl">
-            <div className="rounded-[2.2rem] border border-white/10 bg-[linear-gradient(135deg,#f7b267_0%,#f1d5a5_46%,#efe9dd_100%)] px-6 py-8 text-slate-950 shadow-[0_36px_120px_-50px_rgba(247,178,103,0.6)] md:px-10 md:py-10">
+            <div className="rounded-[2.3rem] border border-slate-200 bg-slate-50 px-6 py-8 shadow-[0_28px_80px_-48px_rgba(15,23,42,0.42)] md:px-10 md:py-10">
               <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                 <div>
-                  <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-700">CTA final</div>
-                  <h2 className="mt-3 text-3xl font-black leading-[0.96] tracking-[-0.04em] md:text-5xl">
-                    Agenda la conversación y llega con un caso listo para mover.
+                  <div className="text-[11px] font-black uppercase tracking-[0.32em] text-slate-400">CTA</div>
+                  <h2 className="mt-3 text-3xl font-black leading-[0.96] tracking-[-0.04em] text-slate-950 md:text-5xl">
+                    Agenda la conversación y llega con un caso mejor definido.
                   </h2>
-                  <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-700 md:text-lg">
-                    Entre la cita y el generador de casos, esta landing ya te deja el punto de partida para empezar a escalar con más
-                    foco y menos ruido.
+                  <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+                    La cita y el generador están pensados para darte un punto de partida concreto, útil y accionable desde el primer
+                    contacto.
                   </p>
                 </div>
 
@@ -486,7 +581,7 @@ export function EscalarNegocioLanding() {
                   </a>
                   <a
                     href="#casos"
-                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-950/12 bg-white/70 px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-black uppercase tracking-[0.18em] text-slate-950"
                   >
                     Ver generador
                     <ArrowRight className="h-4 w-4" />
