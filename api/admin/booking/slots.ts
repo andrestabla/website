@@ -17,8 +17,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { startTime, endTime, bulk } = req.body
     
     if (bulk) {
-      const { days, startTime: bulkStart, endTime: bulkEnd, duration, untilDate } = bulk
-      // days: [1,2,3...], startTime/endTime: "HH:mm", duration: 30|45|60, untilDate: "YYYY-MM-DD"
+      const { days, startTime: bulkStart, endTime: bulkEnd, duration, untilDate, timezoneOffset } = bulk
+      // days: [1,2,3...], startTime/endTime: "HH:mm", duration: 30|45|60, untilDate: "YYYY-MM-DD", timezoneOffset: minutes
       
       const slotsToCreate = []
       let current = new Date()
@@ -41,9 +41,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           
           while (slotPointer.getTime() + durationMs <= dayEnd.getTime()) {
             if (slotPointer > new Date()) {
+              const start = new Date(slotPointer.getTime() + (timezoneOffset || 0) * 60000)
+              const end = new Date(start.getTime() + durationMs)
               slotsToCreate.push({
-                startTime: new Date(slotPointer),
-                endTime: new Date(slotPointer.getTime() + durationMs)
+                startTime: start,
+                endTime: end
               })
             }
             slotPointer = new Date(slotPointer.getTime() + durationMs)

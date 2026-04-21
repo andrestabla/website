@@ -140,7 +140,8 @@ export function ManageBookings() {
             startTime: bulkStartTime,
             endTime: bulkEndTime,
             duration: bulkDuration,
-            untilDate: bulkUntil
+            untilDate: bulkUntil,
+            timezoneOffset: new Date().getTimezoneOffset()
           }
         })
       })
