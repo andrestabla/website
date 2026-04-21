@@ -80,36 +80,36 @@ export function BookingSystem({ onSuccess }: { onSuccess?: () => void }) {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="bg-slate-950 p-6 mb-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-6 border-b-4 border-brand-primary">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-8 border-y border-slate-100 mb-8">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/10 flex items-center justify-center rounded-full">
+                <div className="w-12 h-12 bg-brand-primary/10 flex items-center justify-center rounded-2xl shrink-0">
                   <Calendar className="w-6 h-6 text-brand-primary" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-white/40">Fecha seleccionada</div>
-                  <div className="text-lg font-bold">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Fecha seleccionada</div>
+                  <div className="text-base font-bold text-slate-900 leading-tight">
                     {format(new Date(selectedSlot.startTime), "EEEE d 'de' MMMM", { locale: es })}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/10 flex items-center justify-center rounded-full">
+                <div className="w-12 h-12 bg-brand-primary/10 flex items-center justify-center rounded-2xl shrink-0">
                   <Clock className="w-6 h-6 text-brand-primary" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-white/40">Hora</div>
-                  <div className="text-lg font-bold">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Hora</div>
+                  <div className="text-base font-bold text-slate-900 leading-tight">
                     {format(new Date(selectedSlot.startTime), 'HH:mm')} (30 min)
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white/10 flex items-center justify-center rounded-full">
+                <div className="w-12 h-12 bg-brand-primary/10 flex items-center justify-center rounded-2xl shrink-0">
                   <MapPin className="w-6 h-6 text-brand-primary" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-white/40">Ubicación</div>
-                  <div className="text-lg font-bold">Virtual / Google Meet</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Ubicación</div>
+                  <div className="text-base font-bold text-slate-900 leading-tight">Virtual / Google Meet</div>
                 </div>
               </div>
             </div>
