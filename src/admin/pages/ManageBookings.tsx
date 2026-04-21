@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, User, Building, Mail, CheckCircle2, Trash2, Plus, Loader2 } from 'lucide-react'
+import { Calendar, Clock, User, Building, Mail, CheckCircle2, Trash2, Plus, Loader2, Pencil, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Button } from '../../components/ui/Button'
@@ -43,6 +43,12 @@ export function ManageBookings() {
   const [newSlotDate, setNewSlotDate] = useState('')
   const [newSlotTime, setNewSlotTime] = useState('')
   const [addingSlot, setAddingSlot] = useState(false)
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
+
+  const [bulkMode, setBulkMode] = useState(false)
+  const [bulkDays, setBulkDays] = useState<number[]>([])
+  const [bulkTime, setBulkTime] = useState('')
+  const [bulkUntil, setBulkUntil] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -112,6 +118,59 @@ export function ManageBookings() {
     }
   }
 
+  const handleBulkAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (bulkDays.length === 0 || !bulkTime || !bulkUntil) return
+    setAddingSlot(true)
+    try {
+      const res = await fetch('/api/admin/booking/slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bulk: {
+            days: bulkDays,
+            time: bulkTime,
+            untilDate: bulkUntil
+          }
+        })
+      })
+      if (res.ok) {
+        setBulkDays([])
+        setBulkTime('')
+        setBulkUntil('')
+        setBulkMode(false)
+        fetchData()
+      }
+    } catch (error) {
+      console.error('Error adding bulk slots:', error)
+    } finally {
+      setAddingSlot(false)
+    }
+  }
+
+  const handleDeleteAppointment = async (id: string) => {
+    if (!confirm('¿Seguro que deseas eliminar esta cita? El espacio de tiempo quedará disponible nuevamente.')) return
+    try {
+      const res = await fetch(`/api/admin/booking/manage?id=${id}`, { method: 'DELETE' })
+      if (res.ok) fetchData()
+    } catch (error) {
+      console.error('Error deleting appointment:', error)
+    }
+  }
+
+  const handleResendEmail = async (id: string) => {
+    try {
+      const res = await fetch('/api/admin/booking/manage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'resend' })
+      })
+      if (res.ok) alert('Correo de confirmación reenviado exitosamente')
+    } catch (error) {
+      console.error('Error resending email:', error)
+    }
+  }
+
   const handleDeleteSlot = async (id: string) => {
     if (!confirm('¿Seguro que deseas eliminar este espacio?')) return
     try {
@@ -119,6 +178,24 @@ export function ManageBookings() {
       if (res.ok) fetchData()
     } catch (error) {
       console.error('Error deleting slot:', error)
+    }
+  }
+
+  const handleUpdateAppointment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingAppointment) return
+    try {
+      const res = await fetch('/api/admin/booking/manage', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingAppointment)
+      })
+      if (res.ok) {
+        setEditingAppointment(null)
+        fetchData()
+      }
+    } catch (error) {
+      console.error('Error updating appointment:', error)
     }
   }
 
@@ -201,11 +278,39 @@ export function ManageBookings() {
                     </div>
                   </div>
 
-                  <div className="md:w-64 border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-8">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mensaje</div>
-                    <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed italic">
-                      "{app.message}"
-                    </p>
+                  <div className="md:w-64 border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-8 flex flex-col justify-between">
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mensaje</div>
+                      <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed italic mb-4">
+                        "{app.message}"
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 mt-auto">
+                      <button 
+                        onClick={() => handleResendEmail(app.id)}
+                        className="p-2 text-slate-400 hover:text-brand-primary hover:bg-brand-primary/5 transition-all rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1"
+                        title="Reenviar confirmación"
+                      >
+                        <Mail className="w-3.5 h-3.5" />
+                        Reenviar
+                      </button>
+                      <button 
+                        onClick={() => setEditingAppointment(app)}
+                        className="p-2 text-slate-400 hover:text-brand-primary hover:bg-brand-primary/5 transition-all rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1"
+                        title="Editar cita"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Editar
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteAppointment(app.id)}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1"
+                        title="Eliminar cita"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Borrar
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -216,36 +321,102 @@ export function ManageBookings() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           <div className="lg:col-span-4">
             <div className="bg-white border border-slate-200 p-8 sticky top-8">
-              <h3 className="text-lg font-black tracking-tight text-slate-900 mb-6 flex items-center gap-3">
-                <Plus className="w-5 h-5 text-brand-primary" />
-                Nuevo espacio
-              </h3>
-              <form onSubmit={handleAddSlot} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha</label>
-                  <input 
-                    type="date" 
-                    value={newSlotDate}
-                    onChange={e => setNewSlotDate(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hora de inicio</label>
-                  <input 
-                    type="time" 
-                    value={newSlotTime}
-                    onChange={e => setNewSlotTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
-                    required
-                  />
-                  <p className="text-[10px] text-slate-400 italic">Duración predefinida: 30 minutos</p>
-                </div>
-                <Button type="submit" className="w-full" disabled={addingSlot}>
-                  {addingSlot ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Habilitar espacio'}
-                </Button>
-              </form>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-3">
+                  <Plus className="w-5 h-5 text-brand-primary" />
+                  {bulkMode ? 'Programación Masiva' : 'Nuevo espacio'}
+                </h3>
+                <button 
+                  onClick={() => setBulkMode(!bulkMode)}
+                  className="text-[10px] font-black uppercase tracking-widest text-brand-secondary hover:underline"
+                >
+                  {bulkMode ? 'Cambiar a Simple' : 'Cambiar a Masivo'}
+                </button>
+              </div>
+
+              {bulkMode ? (
+                <form onSubmit={handleBulkAdd} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Días de la semana</label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: 1, label: 'L' },
+                        { id: 2, label: 'M' },
+                        { id: 3, label: 'X' },
+                        { id: 4, label: 'J' },
+                        { id: 5, label: 'V' },
+                        { id: 6, label: 'S' },
+                        { id: 7, label: 'D' },
+                      ].map(day => (
+                        <button
+                          key={day.id}
+                          type="button"
+                          onClick={() => {
+                            if (bulkDays.includes(day.id)) {
+                              setBulkDays(bulkDays.filter(d => d !== day.id))
+                            } else {
+                              setBulkDays([...bulkDays, day.id])
+                            }
+                          }}
+                          className={`w-9 h-9 rounded-lg text-xs font-bold transition-all border ${bulkDays.includes(day.id) ? 'bg-brand-primary border-brand-primary text-white' : 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'}`}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hora de inicio</label>
+                    <input 
+                      type="time" 
+                      value={bulkTime}
+                      onChange={e => setBulkTime(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Repetir hasta</label>
+                    <input 
+                      type="date" 
+                      value={bulkUntil}
+                      onChange={e => setBulkUntil(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={addingSlot}>
+                    {addingSlot ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generar espacios'}
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleAddSlot} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha</label>
+                    <input 
+                      type="date" 
+                      value={newSlotDate}
+                      onChange={e => setNewSlotDate(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hora de inicio</label>
+                    <input 
+                      type="time" 
+                      value={newSlotTime}
+                      onChange={e => setNewSlotTime(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                      required
+                    />
+                    <p className="text-[10px] text-slate-400 italic">Duración predefinida: 30 minutos</p>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={addingSlot}>
+                    {addingSlot ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Habilitar espacio'}
+                  </Button>
+                </form>
+              )}
             </div>
           </div>
 
@@ -331,6 +502,76 @@ export function ManageBookings() {
             <p className="mt-6 text-[10px] text-center text-slate-400 uppercase font-bold tracking-widest leading-loose">
               Se requiere permiso para editar eventos del calendario <br /> y acceso a Google Meet.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingAppointment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-2xl font-black tracking-tight text-slate-900">Editar Cita</h3>
+              <button onClick={() => setEditingAppointment(null)} className="p-2 hover:bg-slate-50 rounded-full transition-all">
+                <X className="w-6 h-6 text-slate-400" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateAppointment} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nombre</label>
+                <input 
+                  type="text" 
+                  value={editingAppointment.name}
+                  onChange={e => setEditingAppointment({...editingAppointment, name: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-primary"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email</label>
+                <input 
+                  type="email" 
+                  value={editingAppointment.email}
+                  onChange={e => setEditingAppointment({...editingAppointment, email: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-primary"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Empresa</label>
+                <input 
+                  type="text" 
+                  value={editingAppointment.company}
+                  onChange={e => setEditingAppointment({...editingAppointment, company: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-primary"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cargo</label>
+                <input 
+                  type="text" 
+                  value={editingAppointment.role}
+                  onChange={e => setEditingAppointment({...editingAppointment, role: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-primary"
+                  required
+                />
+              </div>
+              <div className="col-span-full space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mensaje</label>
+                <textarea 
+                  value={editingAppointment.message}
+                  onChange={e => setEditingAppointment({...editingAppointment, message: e.target.value})}
+                  rows={4}
+                  className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm outline-none focus:border-brand-primary resize-none"
+                  required
+                />
+              </div>
+              <div className="col-span-full pt-4 flex gap-4">
+                <Button type="submit" className="flex-1">Guardar cambios</Button>
+                <Button type="button" variant="outline" onClick={() => setEditingAppointment(null)} className="flex-1">Cancelar</Button>
+              </div>
+            </form>
           </div>
         </div>
       )}
