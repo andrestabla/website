@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, ArrowUpRight, CalendarDays, CheckCircle2, Handshake, Route, ScanSearch, TrendingUp } from 'lucide-react'
+import { ArrowRight, CalendarDays, CheckCircle2, Handshake, Route, ScanSearch, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Layout } from '../components/layout/Layout'
 import { BookingSystem } from '../components/booking/BookingSystem'
@@ -10,8 +10,6 @@ import { applySeoPayload, limitText, normalizeBaseUrl, toAbsoluteUrl } from '../
 
 const HERO_VIDEO_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/videos/5070667_International_Team_1920x1080.mp4'
 const SUCCESS_VIDEO_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/videos/0_People_Animation_1920x1080.mp4'
-
-const CASE_GENERATOR_URL = 'https://www.algoritmot.com/generador-casos'
 
 const DISCOVERY_PATHS = [
   'Iniciar un negocio con más estructura',
@@ -102,37 +100,24 @@ const STARTER_CASES = [
   'Quiero convertir una oportunidad difusa en un caso claro de negocio.',
 ]
 
-const GENERATOR_SECTORS = [
-  'Finanzas y Banca',
-  'Salud y Medicina',
-  'Retail y Comercio Electrónico',
-  'Manufactura y Logística',
-  'Tecnología y Software',
-  'Educación',
-  'Servicios Profesionales',
-  'Bienes Raíces y Construcción',
-  'Energía y Servicios Públicos',
-  'Transporte y Movilidad',
-]
-
 export function EscalarNegocioLanding() {
-  const { snapshot } = useCMS()
+  const { state } = useCMS()
   const { language } = useLanguage()
   const [isBooked, setIsBooked] = useState(false)
   const clientRail = [...TRUSTED_CLIENTS, ...TRUSTED_CLIENTS]
 
   useEffect(() => {
-    const siteName = String(snapshot.data?.site?.name || 'AlgoritmoT').trim() || 'AlgoritmoT'
-    const baseUrl = normalizeBaseUrl(snapshot.data?.site?.url)
+    const siteName = String(state.site?.name || 'AlgoritmoT').trim() || 'AlgoritmoT'
+    const baseUrl = normalizeBaseUrl(state.site?.url)
     const canonicalUrl = toAbsoluteUrl(baseUrl, '/escalar-negocio')
     const title = `Escalabilidad de negocios con AlgoritmoT | ${siteName}`
     const description = limitText(
       'Landing de AlgoritmoT para empresas que quieren crecer con más orden, una metodología clara y una conversación inicial enfocada en resultados.',
       180,
     )
-    const imageCandidate = snapshot.data?.design?.logoUrl || snapshot.data?.design?.logoFooterUrl || '/assets/og-default.svg'
+    const imageCandidate = state.design?.logoUrl || state.design?.logoFooterUrl || '/assets/og-default.svg'
     const imageUrl = toAbsoluteUrl(baseUrl, imageCandidate)
-    const faviconUrl = snapshot.data?.design?.faviconUrl ? toAbsoluteUrl(baseUrl, snapshot.data?.design?.faviconUrl) : undefined
+    const faviconUrl = state.design?.faviconUrl ? toAbsoluteUrl(baseUrl, state.design?.faviconUrl) : undefined
 
     applySeoPayload({
       title: limitText(title, 70),
@@ -167,7 +152,7 @@ export function EscalarNegocioLanding() {
         },
       ],
     })
-  }, [language, snapshot.data?.design?.faviconUrl, snapshot.data?.design?.logoFooterUrl, snapshot.data?.design?.logoUrl, snapshot.data?.site?.name, snapshot.data?.site?.url])
+  }, [language, state.design?.faviconUrl, state.design?.logoFooterUrl, state.design?.logoUrl, state.site?.name, state.site?.url])
 
   return (
     <Layout isFocusedFlow>
