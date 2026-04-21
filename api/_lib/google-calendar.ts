@@ -1,9 +1,12 @@
 import { google } from 'googleapis'
+import { prisma } from './prisma.js'
+import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations, applyServerEnv } from './integrations.js'
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
-const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN || ''
-const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'primary'
+async function getGoogleConfig() {
+  const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
+  const integrations = applyServerEnv(sanitizeIntegrations(snapshot?.data))
+  return integrations.google_calendar.config
+}
 
 export async function createCalendarEvent({
   summary,
@@ -20,6 +23,13 @@ export async function createCalendarEvent({
   userEmail: string
   userName: string
 }) {
+  const config = await getGoogleConfig()
+  
+  const GOOGLE_CLIENT_ID = config.clientId || process.env.GOOGLE_CLIENT_ID || ''
+  const GOOGLE_CLIENT_SECRET = config.clientSecret || process.env.GOOGLE_CLIENT_SECRET || ''
+  const GOOGLE_REFRESH_TOKEN = config.refreshToken || process.env.GOOGLE_REFRESH_TOKEN || ''
+  const GOOGLE_CALENDAR_ID = config.calendarId || process.env.GOOGLE_CALENDAR_ID || 'primary'
+
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !GOOGLE_REFRESH_TOKEN) {
     console.warn('Google Calendar credentials not fully configured.')
     return null
