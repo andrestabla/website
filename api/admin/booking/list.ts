@@ -1,10 +1,10 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { prisma } from '../../_lib/prisma.js'
-import { verifyToken } from '../../_lib/admin-auth.js'
+import { requireAdminSession } from '../../_lib/admin-auth.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const admin = await verifyToken(req)
-  if (!admin) return res.status(401).json({ error: 'Unauthorized' })
+  const admin = requireAdminSession(req, res)
+  if (!admin) return
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
