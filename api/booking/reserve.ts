@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { prisma } from '../_lib/prisma'
-import { createCalendarEvent } from '../_lib/google-calendar'
+import { prisma } from '../_lib/prisma.js'
+import { createCalendarEvent } from '../_lib/google-calendar.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

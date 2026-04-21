@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { prisma } from '../../_lib/prisma'
-import { verifyToken } from '../../_lib/admin-auth'
+import { prisma } from '../../_lib/prisma.js'
+import { verifyToken } from '../../_lib/admin-auth.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const admin = await verifyToken(req)
