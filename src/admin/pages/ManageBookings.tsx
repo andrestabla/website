@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, User, Building, Mail, CheckCircle2, Trash2, Plus, Loader2, Pencil, X } from 'lucide-react'
-import { format } from 'date-fns'
+import { Calendar, Clock, User, Building, Mail, Trash2, Loader2, Pencil, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Button } from '../../components/ui/Button'
 
@@ -42,8 +42,6 @@ export function ManageBookings() {
   const [savingSettings, setSavingSettings] = useState(false)
 
   // New slot form
-  const [newSlotDate, setNewSlotDate] = useState('')
-  const [newSlotTime, setNewSlotTime] = useState('')
   const [addingSlot, setAddingSlot] = useState(false)
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
 
@@ -52,8 +50,11 @@ export function ManageBookings() {
   const [bulkDays, setBulkDays] = useState<number[]>([])
   const [bulkStartTime, setBulkStartTime] = useState('')
   const [bulkEndTime, setBulkEndTime] = useState('')
-  const [bulkDuration, setBulkDuration] = useState<number>(30)
   const [bulkUntil, setBulkUntil] = useState('')
+
+  // Calendar View states
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(new Date())
 
   useEffect(() => {
     fetchData()
@@ -101,31 +102,6 @@ export function ManageBookings() {
     }
   }
 
-  const handleAddSlot = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newSlotDate || !newSlotTime) return
-    setAddingSlot(true)
-    
-    const startTime = new Date(`${newSlotDate}T${newSlotTime}`)
-    const endTime = new Date(startTime.getTime() + 30 * 60000) // 30 min duration
-
-    try {
-      const res = await fetch('/api/admin/booking/slots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startTime, endTime })
-      })
-      if (res.ok) {
-        setNewSlotTime('')
-        fetchData()
-      }
-    } catch (error) {
-      console.error('Error adding slot:', error)
-    } finally {
-      setAddingSlot(false)
-    }
-  }
-
   const handleBulkAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     if (bulkDays.length === 0 || !bulkStartTime || !bulkEndTime || !bulkUntil) return
@@ -139,7 +115,7 @@ export function ManageBookings() {
             days: bulkDays,
             startTime: bulkStartTime,
             endTime: bulkEndTime,
-            duration: bulkDuration,
+            duration: 30, // Default to 30 mins
             untilDate: bulkUntil,
             timezoneOffset: new Date().getTimezoneOffset()
           }
@@ -210,6 +186,85 @@ export function ManageBookings() {
     } finally {
       setSavingSettings(false)
     }
+  }
+
+  const handleToggleSlot = async (time: string) => {
+    const slotStartTime = new Date(`${format(selectedDate, 'yyyy-MM-dd')}T${time}`)
+    const slotEndTime = new Date(slotStartTime.getTime() + 30 * 60000)
+    
+    const existing = slots.find(s => isSameDay(new Date(s.startTime), selectedDate) && format(new Date(s.startTime), 'HH:mm') === time)
+    
+    if (existing) {
+      if (existing.isBooked) return // Can't toggle booked slots
+      await handleDeleteSlot(existing.id)
+    } else {
+      setAddingSlot(true)
+      try {
+        await fetch('/api/admin/booking/slots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startTime: slotStartTime, endTime: slotEndTime })
+        })
+        fetchData()
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setAddingSlot(false)
+      }
+    }
+  }
+
+  const renderCalendar = () => {
+    const monthStart = startOfMonth(currentMonth)
+    const monthEnd = endOfMonth(monthStart)
+    const startDate = startOfWeek(monthStart)
+    const endDate = endOfWeek(monthEnd)
+
+    const dateFormat = "d"
+    const rows = []
+    let days = []
+    let day = startDate
+    let formattedDate = ""
+
+    while (day <= endDate) {
+      for (let i = 0; i < 7; i++) {
+        formattedDate = format(day, dateFormat)
+        const cloneDay = day
+        const hasSlots = slots.some(s => isSameDay(new Date(s.startTime), cloneDay))
+        const isSelected = isSameDay(day, selectedDate)
+        const isCurrentMonth = isSameMonth(day, monthStart)
+
+        days.push(
+          <div
+            key={day.toString()}
+            className={`relative h-24 border-r border-b border-slate-100 p-2 transition-all cursor-pointer hover:bg-slate-50 ${!isCurrentMonth ? 'bg-slate-50/50' : 'bg-white'} ${isSelected ? 'ring-2 ring-brand-primary ring-inset z-10' : ''}`}
+            onClick={() => setSelectedDate(cloneDay)}
+          >
+            <span className={`text-[10px] font-black tracking-widest ${!isCurrentMonth ? 'text-slate-300' : isSelected ? 'text-brand-primary' : 'text-slate-400'}`}>
+              {formattedDate}
+            </span>
+            {hasSlots && (
+              <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1">
+                {slots.filter(s => isSameDay(new Date(s.startTime), cloneDay)).slice(0, 3).map(s => (
+                  <div key={s.id} className={`w-1.5 h-1.5 rounded-full ${s.isBooked ? 'bg-brand-secondary' : 'bg-brand-primary'}`} />
+                ))}
+                {slots.filter(s => isSameDay(new Date(s.startTime), cloneDay)).length > 3 && (
+                  <span className="text-[8px] font-black text-slate-300">...</span>
+                )}
+              </div>
+            )}
+          </div>
+        )
+        day = addDays(day, 1)
+      }
+      rows.push(
+        <div className="grid grid-cols-7" key={day.toString()}>
+          {days}
+        </div>
+      )
+      days = []
+    }
+    return <div className="border-t border-l border-slate-100">{rows}</div>
   }
 
   const handleUpdateAppointment = async (e: React.FormEvent) => {
@@ -349,19 +404,43 @@ export function ManageBookings() {
           )}
         </div>
       ) : view === 'slots' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          <div className="lg:col-span-4">
-            <div className="bg-white border border-slate-200 p-8 sticky top-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-black tracking-tight text-slate-900 flex items-center gap-3">
-                  <Plus className="w-5 h-5 text-brand-primary" />
-                  {bulkMode ? 'Programación Masiva' : 'Nuevo espacio'}
-                </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Calendar Selector */}
+          <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+            <div className="p-6 flex items-center justify-between border-b border-slate-100">
+              <h3 className="text-xl font-black tracking-tight text-slate-900">
+                {format(currentMonth, 'MMMM yyyy', { locale: es })}
+              </h3>
+              <div className="flex gap-2">
+                <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-slate-50 rounded-xl border border-slate-200"><ChevronLeft className="w-5 h-5" /></button>
+                <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-slate-50 rounded-xl border border-slate-200"><ChevronRight className="w-5 h-5" /></button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-7 bg-slate-50/50 border-b border-slate-100">
+              {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
+                <div key={d} className="py-3 text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{d}</div>
+              ))}
+            </div>
+            
+            {renderCalendar()}
+          </div>
+
+          {/* Time Slots for Selected Day */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-1">Horarios para el</div>
+                  <h3 className="text-2xl font-black tracking-tight text-slate-900">
+                    {format(selectedDate, "d 'de' MMMM", { locale: es })}
+                  </h3>
+                </div>
                 <button 
                   onClick={() => setBulkMode(!bulkMode)}
-                  className="text-[10px] font-black uppercase tracking-widest text-brand-secondary hover:underline"
+                  className="px-4 py-2 bg-slate-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary transition-all"
                 >
-                  {bulkMode ? 'Cambiar a Simple' : 'Cambiar a Masivo'}
+                  {bulkMode ? 'Vista Simple' : 'Prog. Masiva'}
                 </button>
               </div>
 
@@ -404,7 +483,7 @@ export function ManageBookings() {
                         type="time" 
                         value={bulkStartTime}
                         onChange={e => setBulkStartTime(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none rounded-xl"
                         required
                       />
                     </div>
@@ -414,23 +493,10 @@ export function ManageBookings() {
                         type="time" 
                         value={bulkEndTime}
                         onChange={e => setBulkEndTime(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                        className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none rounded-xl"
                         required
                       />
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Duración por reunión</label>
-                    <select 
-                      value={bulkDuration}
-                      onChange={e => setBulkDuration(Number(e.target.value))}
-                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
-                    >
-                      <option value={30}>30 minutos</option>
-                      <option value={45}>45 minutos</option>
-                      <option value={60}>60 minutos</option>
-                    </select>
                   </div>
 
                   <div className="space-y-2">
@@ -439,77 +505,62 @@ export function ManageBookings() {
                       type="date" 
                       value={bulkUntil}
                       onChange={e => setBulkUntil(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
+                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none rounded-xl"
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={addingSlot}>
+                  <Button type="submit" className="w-full py-6 rounded-2xl" disabled={addingSlot}>
                     {addingSlot ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generar espacios'}
                   </Button>
                 </form>
               ) : (
-                <form onSubmit={handleAddSlot} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha</label>
-                    <input 
-                      type="date" 
-                      value={newSlotDate}
-                      onChange={e => setNewSlotDate(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hora de inicio</label>
-                    <input 
-                      type="time" 
-                      value={newSlotTime}
-                      onChange={e => setNewSlotTime(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary outline-none"
-                      required
-                    />
-                    <p className="text-[10px] text-slate-400 italic">Duración predefinida: 30 minutos</p>
-                  </div>
-                  <Button type="submit" className="w-full" disabled={addingSlot}>
-                    {addingSlot ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Habilitar espacio'}
-                  </Button>
-                </form>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+                    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30'
+                  ].map(time => {
+                    const slot = slots.find(s => isSameDay(new Date(s.startTime), selectedDate) && format(new Date(s.startTime), 'HH:mm') === time)
+                    const isEnabled = !!slot
+                    const isBooked = slot?.isBooked
+                    
+                    return (
+                      <button
+                        key={time}
+                        onClick={() => handleToggleSlot(time)}
+                        disabled={isBooked}
+                        className={`py-3 text-xs font-bold rounded-xl transition-all border ${
+                          isBooked 
+                            ? 'bg-brand-secondary/10 border-brand-secondary text-brand-secondary opacity-50 cursor-not-allowed' 
+                            : isEnabled 
+                              ? 'bg-brand-primary border-brand-primary text-white shadow-lg shadow-brand-primary/20' 
+                              : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'
+                        }`}
+                      >
+                        {time}
+                        {isBooked && <div className="text-[8px] font-black uppercase mt-0.5">Reservado</div>}
+                      </button>
+                    )
+                  })}
+                </div>
               )}
             </div>
-          </div>
 
-          <div className="lg:col-span-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {slots.map(slot => (
-                <div key={slot.id} className="bg-white border border-slate-200 p-6 flex justify-between items-center group">
-                  <div>
-                    <div className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
-                      {format(new Date(slot.startTime), "EEEE d 'de' MMM", { locale: es })}
-                    </div>
-                    <div className="text-lg font-bold text-slate-900">
-                      {format(new Date(slot.startTime), 'HH:mm')}
-                    </div>
-                    {slot.isBooked && (
-                      <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 bg-brand-secondary/10 text-brand-secondary text-[10px] font-black uppercase tracking-widest rounded">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Reservado
-                      </div>
-                    )}
-                  </div>
-                  <button 
-                    onClick={() => handleDeleteSlot(slot.id)}
-                    className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all rounded-xl"
-                    disabled={slot.isBooked}
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-              {slots.length === 0 && (
-                <div className="col-span-full py-20 text-center text-slate-300 font-bold uppercase tracking-widest text-xs">
-                  No has habilitado espacios de tiempo todavía
-                </div>
-              )}
+            <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl">
+              <h4 className="text-sm font-black uppercase tracking-widest mb-4">Ayuda rápida</h4>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3 text-xs text-slate-400 leading-relaxed">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-primary mt-1.5 shrink-0" />
+                  Haz clic en un día para ver su disponibilidad.
+                </li>
+                <li className="flex items-start gap-3 text-xs text-slate-400 leading-relaxed">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-primary mt-1.5 shrink-0" />
+                  Pulsa en una hora para activarla o desactivarla.
+                </li>
+                <li className="flex items-start gap-3 text-xs text-slate-400 leading-relaxed">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-secondary mt-1.5 shrink-0" />
+                  Los espacios en naranja ya están reservados y no se pueden modificar.
+                </li>
+              </ul>
             </div>
           </div>
         </div>
