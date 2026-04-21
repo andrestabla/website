@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Calendar, Clock, User, Building, Mail, ChevronRight, CheckCircle2, Trash2, Plus, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Calendar, Clock, User, Building, Mail, CheckCircle2, Trash2, Plus, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Button } from '../../components/ui/Button'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isBefore, startOfDay } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -76,7 +76,7 @@ export function CalendarPicker({ onSelect }: { onSelect: (slot: Slot) => void })
         </div>
 
         <div className="grid grid-cols-7 gap-1">
-          {daysInMonth.map((date, i) => {
+          {daysInMonth.map((date: Date, i: number) => {
             const isAvailable = hasSlots(date)
             const isPast = isBefore(date, startOfDay(new Date()))
             const isSelected = selectedDate && isSameDay(date, selectedDate)

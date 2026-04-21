@@ -98,12 +98,6 @@ const AGENDA_POINTS = [
   'Siguiente paso recomendado para arrancar con claridad.',
 ]
 
-const AGENDA_PREVIEW = [
-  { label: 'Formato', value: 'Conversación estratégica' },
-  { label: 'Duración', value: '30 minutos' },
-  { label: 'Salida', value: 'Ruta inicial sugerida' },
-]
-
 const STARTER_CASES = [
   'Quiero escalar sin depender de tareas manuales.',
   'Necesito ordenar procesos antes de ampliar capacidad.',
