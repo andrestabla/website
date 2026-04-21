@@ -167,7 +167,7 @@ export function EscalarNegocioLanding() {
         },
       ],
     })
-  }, [language, state.design.faviconUrl, state.design.logoFooterUrl, state.design.logoUrl, state.site.name, state.site.url])
+  }, [language, snapshot.data?.design?.faviconUrl, snapshot.data?.design?.logoFooterUrl, snapshot.data?.design?.logoUrl, snapshot.data?.site?.name, snapshot.data?.site?.url])
 
   return (
     <Layout isFocusedFlow>
