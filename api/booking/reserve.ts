@@ -1,6 +1,10 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { prisma } from '../_lib/prisma.js'
 import { createCalendarEvent } from '../_lib/google-calendar.js'
+import { sendEmail } from '../_lib/email.js'
+import { generateStyledEmail } from '../_lib/email-templates.js'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -82,8 +86,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
-    // 4. (Optional) Send email confirmation via SMTP
-    // This could be added here using existing email templates if available.
+    // 4. Send email confirmation via SMTP
+    const formattedDate = format(new Date(slot.startTime), "EEEE d 'de' MMMM", { locale: es })
+    const formattedTime = format(new Date(slot.startTime), "HH:mm")
+
+    const emailHtml = generateStyledEmail({
+      title: '¡Cita Confirmada!',
+      preheader: `Tu cita con AlgoritmoT para el ${formattedDate} ha sido confirmada.`,
+      contentHtml: `
+        <h2 style="color: #0f172a; margin-top: 0;">Hola, ${name}</h2>
+        <p>Tu solicitud de cita para conversar sobre escalabilidad ha sido confirmada exitosamente.</p>
+        
+        <div style="background-color: #f1f5f9; padding: 24px; margin: 30px 0; border-left: 4px solid #2563eb;">
+          <p style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; font-weight: bold;">Detalles de la cita:</p>
+          <p style="margin: 10px 0 0 0; font-size: 18px; font-weight: 900; color: #0f172a;">
+            ${formattedDate} a las ${formattedTime} (hora local)
+          </p>
+          <p style="margin: 5px 0 0 0; font-size: 14px; color: #64748b;">La reunión se realizará vía Google Meet.</p>
+        </div>
+
+        <p>En unos minutos deberías recibir una invitación de Google Calendar con el enlace de la reunión. Si no la ves, revisa tu carpeta de Spam.</p>
+        
+        <p>Estamos ansiosos por conversar y ayudarte a aterrizar tu primer frente de escalabilidad.</p>
+        
+        <p style="margin-top: 30px;">Nos vemos pronto,<br><strong>El equipo de AlgoritmoT</strong></p>
+      `
+    })
+
+    await sendEmail({
+      to: email,
+      subject: `Cita Confirmada: AlgoritmoT - ${formattedDate}`,
+      html: emailHtml,
+    })
 
     return res.status(200).json({ success: true, appointment })
   } catch (error) {
