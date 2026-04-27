@@ -216,6 +216,19 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                 'Prueba upload desde Home/Diseño para validar extremo a extremo.',
             ],
         },
+        '/admin/documentos': {
+            title: 'Gestor Documental',
+            intro: 'Repositorio centralizado de documentos organizado en categorías y subcarpetas (hasta 5 niveles). Soporta búsqueda inteligente, revisión colaborativa y envío externo con analítica.',
+            data: 'Fuente: tablas `DocCategory`, `Document`, `DocShare`, `DocComment`, `DocReview` en Neon DB + Cloudflare R2.',
+            steps: [
+                'Crea categorías (carpetas) desde el panel izquierdo. Usa colores para distinguirlas.',
+                'Sube documentos con el botón "Subir documento" — la IA extrae título, descripción y palabras clave automáticamente.',
+                'Abre el panel derecho de un documento para ver, editar metadatos, comentar o solicitar revisión.',
+                'Usa "Compartir" para enviar el documento por email. El destinatario recibe un enlace único con visor integrado.',
+                'En la pestaña "Analítica" puedes ver cuándo se abrió el email y cuántas veces se visualizó el documento.',
+            ],
+            notes: ['R2 debe tener CORS configurado para subidas directas desde el navegador.', 'La extracción de metadatos con IA requiere OpenAI configurado en Integraciones.'],
+        },
         '/admin/bookings': {
             title: 'Gestión de Citas',
             intro: 'Administra la disponibilidad (slots) y revisa las reservaciones realizadas por los usuarios.',

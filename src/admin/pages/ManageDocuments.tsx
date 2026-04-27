@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { AdminLayout } from '../components/AdminLayout'
-import { useCMS } from '../context/CMSContext'
 import {
   FolderOpen, Folder, FolderPlus, File, FileText, FileSpreadsheet, Presentation,
   Image, Upload, Search, Trash2, Edit3, Share2, Eye,
@@ -161,8 +159,6 @@ function StatusBadge({ status }: { status: string }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ManageDocuments() {
-  const { sessionUser } = useCMS() as any
-
   // Data state
   const [categories, setCategories] = useState<Category[]>([])
   const [documents, setDocuments] = useState<DocumentItem[]>([])
@@ -492,8 +488,7 @@ export function ManageDocuments() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <AdminLayout sessionUser={sessionUser}>
-      <div className="flex h-full min-h-screen bg-zinc-950 text-white">
+    <div className="-m-8 md:-m-12 h-[calc(100vh-6rem)] flex bg-zinc-950 text-white overflow-hidden">
 
         {/* Toast */}
         {toast && (
@@ -1135,8 +1130,7 @@ export function ManageDocuments() {
           </div>
         )}
 
-      </div>
-    </AdminLayout>
+    </div>
   )
 }
 
