@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, CalendarDays, CheckCircle2, Handshake, Route, ScanSearch, TrendingUp } from 'lucide-react'
+import { ArrowRight, CalendarDays, CheckCircle2, Handshake, MessageCircle, Route, ScanSearch, TrendingUp } from 'lucide-react'
 import { Layout } from '../components/layout/Layout'
 import { BookingSystem } from '../components/booking/BookingSystem'
 import { useCMS } from '../admin/context/CMSContext'
@@ -99,6 +99,10 @@ const STARTER_CASES = [
   'Quiero convertir una oportunidad difusa en un caso claro de negocio.',
 ]
 
+const WHATSAPP_HREF = `https://api.whatsapp.com/send/?phone=573006590161&text=${encodeURIComponent(
+  'Estoy interesado en escalar mi negocio integrando tecnologías digitales.',
+)}`
+
 export function EscalarNegocioLanding() {
   const { state } = useCMS()
   const { language } = useLanguage()
@@ -152,6 +156,58 @@ export function EscalarNegocioLanding() {
       ],
     })
   }, [language, state.design?.faviconUrl, state.design?.logoFooterUrl, state.design?.logoUrl, state.site?.name, state.site?.url])
+
+  useEffect(() => {
+    const existingLoader = document.getElementById('google-ads-gtag-loader')
+    const existingConfig = document.getElementById('google-ads-gtag-config')
+    const existingConversion = document.getElementById('google-ads-conversion-helper')
+    if (existingLoader && existingConfig && existingConversion) return
+
+    const loaderScript = document.createElement('script')
+    loaderScript.id = 'google-ads-gtag-loader'
+    loaderScript.async = true
+    loaderScript.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18121588367'
+
+    const configScript = document.createElement('script')
+    configScript.id = 'google-ads-gtag-config'
+    configScript.text = `
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      window.gtag = window.gtag || gtag;
+      gtag('js', new Date());
+      gtag('config', 'AW-18121588367');
+    `
+
+    const conversionScript = document.createElement('script')
+    conversionScript.id = 'google-ads-conversion-helper'
+    conversionScript.text = `
+      function gtag_report_conversion(url) {
+        var callback = function () {
+          if (typeof(url) != 'undefined') {
+            window.location = url;
+          }
+        };
+        gtag('event', 'conversion', {
+          'send_to': 'AW-18121588367/LhydCKOfmaMcEI_9hcFD',
+          'value': 1.0,
+          'currency': 'COP',
+          'event_callback': callback
+        });
+        return false;
+      }
+      window.gtag_report_conversion = gtag_report_conversion;
+    `
+
+    document.head.appendChild(loaderScript)
+    document.head.appendChild(configScript)
+    document.head.appendChild(conversionScript)
+
+    return () => {
+      loaderScript.remove()
+      configScript.remove()
+      conversionScript.remove()
+    }
+  }, [])
 
   return (
     <Layout isFocusedFlow>
@@ -500,6 +556,17 @@ export function EscalarNegocioLanding() {
             </div>
           </div>
         </section>
+
+        <a
+          href={WHATSAPP_HREF}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Escribir por WhatsApp"
+          className="fixed bottom-5 right-5 z-[90] inline-flex items-center gap-3 rounded-full bg-[#25D366] px-4 py-4 text-sm font-black text-white shadow-[0_18px_40px_-18px_rgba(37,211,102,0.75)] transition-transform hover:-translate-y-1 md:bottom-7 md:right-7"
+        >
+          <MessageCircle className="h-5 w-5 shrink-0" />
+          <span className="hidden md:inline">WhatsApp</span>
+        </a>
       </div>
     </Layout>
   )
