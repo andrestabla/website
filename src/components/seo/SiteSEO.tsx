@@ -73,8 +73,8 @@ export function SiteSEO() {
     const breadcrumbs: BreadcrumbItem[] = [{ name: 'Inicio', path: '/empresas' }]
 
     if (normalizedPath === '/' || normalizedPath === '/inicio') {
-      title = `Selecciona tu ruta | ${siteName}`
-      description = 'Elige la línea de negocio que quieres explorar: empresas o educación.'
+      title = `Soluciones digitales con sentdo humano | ${siteName}`
+      description = 'Soluciones digitales con sentdo humano para empresas y educacion.'
       canonicalPath = '/empresas'
       isKnownRoute = true
       shouldNoIndex = true
