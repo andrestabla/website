@@ -1,5 +1,7 @@
 type JsonLdSchema = Record<string, unknown>
 
+export const DEFAULT_FAVICON_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/sitioweb/T.svg'
+
 export type SeoPayload = {
   title: string
   description: string
@@ -132,9 +134,9 @@ export function applySeoPayload(payload: SeoPayload) {
 
   ensureLink('canonical').setAttribute('href', payload.canonicalUrl)
 
-  if (payload.faviconUrl) {
-    ensureLink('icon').setAttribute('href', payload.faviconUrl)
-  }
+  const faviconLink = ensureLink('icon')
+  faviconLink.setAttribute('href', payload.faviconUrl || DEFAULT_FAVICON_URL)
+  faviconLink.setAttribute('type', 'image/svg+xml')
 
   setJsonLdGraph(payload.schemas || [])
 }

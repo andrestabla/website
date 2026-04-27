@@ -11,6 +11,7 @@ import { servicesDetail, productsDetail } from '../../data/details'
 import { content as defaultContent } from '../../data/content'
 import { siteConfig as defaultSiteConfig } from '../../data/config'
 import { createHazloTuMismoLandingBlocks, hazloTuMismoLandingPageConfig } from '../../data/hazloTuMismoLanding'
+import { DEFAULT_FAVICON_URL } from '../../lib/seo'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -489,7 +490,7 @@ export const defaultDesign: DesignTokens = {
     logoUrl: '',
     logoFooterUrl: '',
     logoAlt: 'AlgoritmoT',
-    faviconUrl: '',
+    faviconUrl: DEFAULT_FAVICON_URL,
 
     loaderEnabled: 'false',
     loaderBackgroundColor: '#0f172a',

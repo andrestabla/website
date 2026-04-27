@@ -6,7 +6,7 @@ import { ContactForm } from '../components/forms/ContactForm'
 import { Button } from '../components/ui/Button'
 import { useCMS } from '../admin/context/CMSContext'
 import { useLanguage } from '../context/LanguageContext'
-import { applySeoPayload, limitText, normalizeBaseUrl, toAbsoluteUrl } from '../lib/seo'
+import { DEFAULT_FAVICON_URL, applySeoPayload, limitText, normalizeBaseUrl, toAbsoluteUrl } from '../lib/seo'
 
 type CampaignSection = {
     id: string
@@ -83,7 +83,7 @@ export function CampaignLandingPage() {
         const description = limitText(landing.seoDescription || landing.heroSubtitle || state.site.description, 180)
         const imageCandidate = state.design.logoUrl || state.design.logoFooterUrl || '/assets/og-default.svg'
         const imageUrl = toAbsoluteUrl(baseUrl, imageCandidate)
-        const faviconUrl = state.design.faviconUrl ? toAbsoluteUrl(baseUrl, state.design.faviconUrl) : undefined
+        const faviconUrl = toAbsoluteUrl(baseUrl, state.design.faviconUrl || DEFAULT_FAVICON_URL)
 
         applySeoPayload({
             title: limitText(title, 70),
