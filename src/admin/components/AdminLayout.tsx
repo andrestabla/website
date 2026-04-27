@@ -28,7 +28,8 @@ import {
     AlertTriangle,
     Loader2,
     Mail,
-    Calendar
+    Calendar,
+    FolderOpen
 } from 'lucide-react'
 import { useCMS } from '../context/CMSContext'
 import { canAccessModule, type AdminModuleKey } from '../lib/permissions'
@@ -58,6 +59,7 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
         { name: 'Productos', href: '/admin/products', icon: Package, group: 'cms', module: 'PRODUCTS' },
         { name: 'Contactos', href: '/admin/leads', icon: Mail, group: 'cms', module: 'LEADS' },
         { name: 'Citas', href: '/admin/bookings', icon: Calendar, group: 'cms', module: 'BOOKINGS' },
+        { name: 'Documentos', href: '/admin/documentos', icon: FolderOpen, group: 'cms', module: 'DOCUMENTS' },
         { name: 'Diseño Global', href: '/admin/design', icon: Paintbrush, group: 'cms', module: 'DESIGN' },
         { name: 'SEO Manager', href: '/admin/seo', icon: SearchCheck, group: 'growth', module: 'SEO' },
         { name: 'Marketing', href: '/admin/marketing', icon: Megaphone, group: 'growth', module: 'MARKETING' },

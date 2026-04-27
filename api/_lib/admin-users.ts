@@ -18,6 +18,8 @@ export const ADMIN_MODULES = [
   'INTEGRATIONS',
   'SETTINGS',
   'USERS',
+  'BOOKINGS',
+  'DOCUMENTS',
 ] as const
 
 export type AdminModuleKey = (typeof ADMIN_MODULES)[number]
@@ -80,6 +82,7 @@ export function getDefaultPermissionMapForRole(role: AdminRoleKey): AdminPermiss
     base.DESIGN = true
     base.SEO = true
     base.MARKETING = true
+    base.DOCUMENTS = true
     return base
   }
 

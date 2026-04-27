@@ -165,6 +165,170 @@ enum AdminModule {
   SETTINGS
   USERS
   BOOKINGS
+  DOCUMENTS
+}
+
+// ─── Gestor Documental ───────────────────────────────────────────────────────
+
+model DocCategory {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String
+  path        String        @unique
+  parentId    String?
+  parent      DocCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    DocCategory[] @relation("CategoryTree")
+  level       Int           @default(0)
+  description String?
+  icon        String?
+  color       String?
+  sortOrder   Int           @default(0)
+  permissions Json          @default("[]")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  documents   Document[]
+
+  @@index([parentId])
+  @@index([path])
+}
+
+enum DocumentStatus {
+  DRAFT
+  ACTIVE
+  UNDER_REVIEW
+  ARCHIVED
+}
+
+enum ReviewStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+enum ShareEventType {
+  EMAIL_SENT
+  EMAIL_OPENED
+  DOCUMENT_VIEWED
+  DOCUMENT_DOWNLOADED
+}
+
+model Document {
+  id           String         @id @default(cuid())
+  title        String
+  description  String?
+  keywords     String[]
+  fileName     String
+  originalName String
+  mimeType     String
+  size         Int
+  r2Key        String         @unique
+  publicUrl    String?
+  categoryId   String
+  category     DocCategory    @relation(fields: [categoryId], references: [id])
+  status       DocumentStatus @default(ACTIVE)
+  version      Int            @default(1)
+  uploadedBy   String
+  uploadedByName String?
+  aiProcessed  Boolean        @default(false)
+  metadata     Json           @default("{}")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  versions     DocumentVersion[]
+  reviews      DocReview[]
+  comments     DocComment[]
+  shares       DocShare[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([uploadedBy])
+}
+
+model DocumentVersion {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version    Int
+  r2Key      String
+  size       Int
+  uploadedBy String
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([documentId, version])
+}
+
+model DocReview {
+  id          String       @id @default(cuid())
+  documentId  String
+  document    Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  requestedBy String
+  requestedByName String?
+  assignedTo  String?
+  assignedToName  String?
+  status      ReviewStatus @default(PENDING)
+  dueDate     DateTime?
+  notes       String?
+  resolution  String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([documentId])
+  @@index([status])
+}
+
+model DocComment {
+  id         String       @id @default(cuid())
+  documentId String
+  document   Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     String
+  userName   String?
+  content    String
+  parentId   String?
+  parent     DocComment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies    DocComment[] @relation("CommentThread")
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([documentId, createdAt(sort: Desc)])
+}
+
+model DocShare {
+  id             String          @id @default(cuid())
+  documentId     String
+  document       Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  shareToken     String          @unique @default(cuid())
+  recipientEmail String
+  recipientName  String?
+  sentBy         String
+  sentByName     String?
+  subject        String?
+  message        String?
+  expiresAt      DateTime?
+  maxViews       Int?
+  viewCount      Int             @default(0)
+  createdAt      DateTime        @default(now())
+  events         DocShareEvent[]
+
+  @@index([documentId])
+  @@index([shareToken])
+  @@index([recipientEmail])
+}
+
+model DocShareEvent {
+  id        String         @id @default(cuid())
+  shareId   String
+  share     DocShare       @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  eventType ShareEventType
+  ipAddress String?
+  userAgent String?
+  country   String?
+  createdAt DateTime       @default(now())
+
+  @@index([shareId, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
 }
 
 model AdminUser {

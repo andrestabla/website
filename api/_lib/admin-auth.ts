@@ -97,6 +97,8 @@ function inferModuleFromRequest(req: VercelRequest): AdminModuleKey | null {
   if (path.startsWith('/api/admin/design') || path.startsWith('/api/admin/upload')) return 'DESIGN'
   if (path.startsWith('/api/admin-metrics')) return 'ANALYTICS'
   if (path.startsWith('/api/cms') || path.startsWith('/api/cms-prewarm')) return 'SITE_BUILDER'
+  if (path.startsWith('/api/admin/documents')) return 'DOCUMENTS'
+  if (path.startsWith('/api/admin/booking')) return 'BOOKINGS'
   return null
 }
 

@@ -12,6 +12,7 @@ export const ADMIN_MODULES = [
   'SETTINGS',
   'USERS',
   'BOOKINGS',
+  'DOCUMENTS',
 ] as const
 
 export type AdminModuleKey = (typeof ADMIN_MODULES)[number]
@@ -32,6 +33,7 @@ export const ADMIN_MODULE_LABELS: Record<AdminModuleKey, string> = {
   SETTINGS: 'Configuración',
   USERS: 'Usuarios',
   BOOKINGS: 'Citas',
+  DOCUMENTS: 'Gestor Documental',
 }
 
 function emptyPermissionMap() {
@@ -60,6 +62,7 @@ export function defaultPermissionsForRole(role: AdminRoleKey): AdminPermissionMa
     map.DESIGN = true
     map.SEO = true
     map.MARKETING = true
+    map.DOCUMENTS = true
     return map
   }
   map.DASHBOARD = true
@@ -99,6 +102,7 @@ const ROUTE_MODULES: Array<{ prefix: string; module: AdminModuleKey }> = [
   { prefix: '/admin/settings', module: 'SETTINGS' },
   { prefix: '/admin/users', module: 'USERS' },
   { prefix: '/admin/bookings', module: 'BOOKINGS' },
+  { prefix: '/admin/documentos', module: 'DOCUMENTS' },
 ]
 
 export function getAdminModuleForPath(pathname: string): AdminModuleKey | null {
