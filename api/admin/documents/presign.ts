@@ -79,9 +79,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .replace(/^-+|-+$/g, '')
       .slice(0, 80) || 'documento'
 
-    const stamp = new Date().toISOString().slice(0, 10)
-    const uid = crypto.randomUUID()
-    const key = `documents/${stamp}/${safeBase}-${uid}.${ext}`
+    // Nueva estructura de key basada en la ruta y el ID de la categoría
+    const categoryPathClean = category.path.startsWith('/') ? category.path.slice(1) : category.path
+    const key = `documents/${categoryPathClean}/${category.id}/${safeBase}-${crypto.randomUUID()}.${ext}`.replace(/\/+/g, '/')
 
     const client = new S3Client({
       region: region || 'auto',
@@ -93,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Bucket: bucketName,
       Key: key,
       ContentType: String(contentType),
-      Metadata: { uploadedBy: session.username, category: category.path },
+      Metadata: { uploadedBy: session.username, category: category.path, categoryId: category.id },
     })
 
     const presignedUrl = await getSignedUrl(client, command, { expiresIn: 3600 })

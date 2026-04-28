@@ -356,32 +356,51 @@ export function ManageDocuments() {
     if (!uploadFile || !uploadCategory) return
     setUploading(true); setUploadError(''); setUploadStep('uploading')
     try {
-      // Step 1: Read file as base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = () => reject(new Error('Error al leer el archivo'))
-        reader.readAsDataURL(uploadFile)
-      })
-
-      // Step 2: Upload to R2 via server (creates DB record too)
-      setUploadStep('saving')
-      const uploadRes = await fetch('/api/admin/documents/upload', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      // Step 1: Get Presigned URL
+      const presignRes = await fetch('/api/admin/documents/presign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           filename: uploadFile.name,
           contentType: uploadFile.type,
-          base64,
-          categoryId: uploadCategory,
+          size: uploadFile.size,
+          categoryId: uploadCategory
+        })
+      })
+      const presignData = await presignRes.json()
+      if (!presignData.ok) throw new Error(presignData.error || 'Error al autorizar subida')
+
+      const { presignedUrl, key, publicUrl } = presignData.data
+
+      // Step 2: Direct Upload to R2
+      const uploadToR2Res = await fetch(presignedUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': uploadFile.type },
+        body: uploadFile
+      })
+      if (!uploadToR2Res.ok) throw new Error('Error al subir el archivo directamente a R2')
+
+      // Step 3: Save to DB
+      setUploadStep('saving')
+      const saveRes = await fetch('/api/admin/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           title: uploadTitle || uploadFile.name,
+          originalName: uploadFile.name,
+          mimeType: uploadFile.type,
+          size: uploadFile.size,
+          r2Key: key,
+          publicUrl,
+          categoryId: uploadCategory
         }),
       })
-      const uploadData = await uploadRes.json()
-      if (!uploadData.ok) throw new Error(uploadData.error || 'Error al guardar')
+      const saveData = await saveRes.json()
+      if (!saveData.ok) throw new Error(saveData.error || 'Error al guardar registro')
 
-      // Step 3: Trigger AI processing
+      // Step 4: AI
       setUploadStep('ai')
-      await fetch(`/api/admin/documents/ai-process?id=${uploadData.data.id}`, { method: 'POST' }).catch(() => {})
+      await fetch(`/api/admin/documents/ai-process?id=${saveData.data.id}`, { method: 'POST' }).catch(() => {})
 
       setUploadStep('done')
       setTimeout(() => {
@@ -389,6 +408,7 @@ export function ManageDocuments() {
         loadDocuments(); showToast('Documento subido correctamente')
       }, 800)
     } catch (e: any) {
+      console.error('Upload flow error:', e)
       setUploadError(e.message || 'Error al subir')
       setUploadStep('idle')
     } finally {
