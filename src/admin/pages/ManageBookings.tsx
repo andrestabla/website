@@ -515,32 +515,33 @@ export function ManageBookings() {
                 </form>
               ) : (
                 <div className="grid grid-cols-3 gap-3">
-                  {[
-                    '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
-                    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30'
-                  ].map(time => {
-                    const slot = slots.find(s => isSameDay(new Date(s.startTime), selectedDate) && format(new Date(s.startTime), 'HH:mm') === time)
-                    const isEnabled = !!slot
-                    const isBooked = slot?.isBooked
-                    
-                    return (
-                      <button
-                        key={time}
-                        onClick={() => handleToggleSlot(time)}
-                        disabled={isBooked}
-                        className={`py-3 text-xs font-bold rounded-xl transition-all border ${
-                          isBooked 
-                            ? 'bg-brand-secondary/10 border-brand-secondary text-brand-secondary opacity-50 cursor-not-allowed' 
-                            : isEnabled 
-                              ? 'bg-brand-primary border-brand-primary text-white shadow-lg shadow-brand-primary/20' 
-                              : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'
-                        }`}
-                      >
-                        {time}
-                        {isBooked && <div className="text-[8px] font-black uppercase mt-0.5">Reservado</div>}
-                      </button>
-                    )
-                  })}
+                {Array.from(new Set([
+                  '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+                  '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+                  ...slots.filter(s => isSameDay(new Date(s.startTime), selectedDate)).map(s => format(new Date(s.startTime), 'HH:mm'))
+                ])).sort().map(time => {
+                  const slot = slots.find(s => isSameDay(new Date(s.startTime), selectedDate) && format(new Date(s.startTime), 'HH:mm') === time)
+                  const isEnabled = !!slot
+                  const isBooked = slot?.isBooked
+                  
+                  return (
+                    <button
+                      key={time}
+                      onClick={() => handleToggleSlot(time)}
+                      disabled={isBooked}
+                      className={`py-3 text-xs font-bold rounded-xl transition-all border ${
+                        isBooked 
+                          ? 'bg-brand-secondary/10 border-brand-secondary text-brand-secondary opacity-50 cursor-not-allowed' 
+                          : isEnabled 
+                            ? 'bg-brand-primary border-brand-primary text-white shadow-lg shadow-brand-primary/20' 
+                            : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-300'
+                      }`}
+                    >
+                      {time}
+                      {isBooked && <div className="text-[8px] font-black uppercase mt-0.5">Reservado</div>}
+                    </button>
+                  )
+                })}
                 </div>
               )}
             </div>
