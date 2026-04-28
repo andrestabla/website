@@ -10,7 +10,7 @@ type VercelResponse = any
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '4mb',
+      sizeLimit: '10mb',
     },
   },
 }
@@ -46,7 +46,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const session = requireAdminSession(req, res)
     if (!session) return
 
-    let body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
+    let body = req.body
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body)
+      } catch (e) {
+        console.error('JSON parse error in upload.ts', e)
+        return res.status(400).json({ ok: false, error: 'Invalid JSON body' })
+      }
+    }
 
     const { filename, contentType, base64, categoryId, title } = body
 
@@ -60,11 +68,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const rawBase64 = String(base64).replace(/^data:[^;]+;base64,/, '')
-    if (!rawBase64 || rawBase64.length > MAX_BASE64_BYTES) {
+    if (!rawBase64) {
+      return res.status(400).json({ ok: false, error: 'Payload de archivo vacío' })
+    }
+    
+    const buffer = Buffer.from(rawBase64, 'base64')
+    if (buffer.length > 7.5 * 1024 * 1024) {
       return res.status(400).json({ ok: false, error: 'El archivo supera el límite de 7.5 MB' })
     }
-
-    const buffer = Buffer.from(rawBase64, 'base64')
 
     const category = await prisma.docCategory.findUnique({ where: { id: String(categoryId) } })
     if (!category) return res.status(404).json({ ok: false, error: 'Categoría no encontrada' })
@@ -91,8 +102,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .replace(/^-+|-+$/g, '')
       .slice(0, 80) || 'documento'
 
-    const stamp = new Date().toISOString().slice(0, 10)
-    const key = `documents/${stamp}/${safeBase}-${crypto.randomUUID()}.${ext}`
+    // Nueva estructura de key basada en la ruta y el ID de la categoría
+    const categoryPathClean = category.path.startsWith('/') ? category.path.slice(1) : category.path
+    const key = `documents/${categoryPathClean}/${category.id}/${safeBase}-${crypto.randomUUID()}.${ext}`.replace(/\/+/g, '/')
 
     const client = new S3Client({
       region: region || 'auto',
@@ -106,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       Body: buffer,
       ContentType: String(contentType),
       CacheControl: 'public, max-age=31536000',
-      Metadata: { uploadedBy: session.username, category: category.path },
+      Metadata: { uploadedBy: session.username, category: category.path, categoryId: category.id },
     }))
 
     const derivedPublicBase = publicUrl
