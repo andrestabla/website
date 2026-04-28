@@ -4,7 +4,7 @@ import {
   Image, Upload, Search, Trash2, Edit3, Share2, Eye,
   MessageSquare, ClipboardList, Sparkles, X, ChevronRight, ChevronDown,
   Download, Check, AlertCircle, Loader2, Plus, Tag,
-  BarChart2, User, Mail, FolderEdit, Archive
+  BarChart2, User, Mail, FolderEdit, Archive, MoveRight
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -91,10 +91,11 @@ function buildTree(flat: Category[]): Category[] {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function CategoryNode({
-  node, selectedId, onSelect, onAdd, onEdit, onDelete, depth = 0
+  node, selectedId, onSelect, onAdd, onEdit, onDelete, onMove, depth = 0
 }: {
   node: Category; selectedId: string | null; onSelect: (c: Category) => void
-  onAdd: (parent: Category) => void; onEdit: (c: Category) => void; onDelete: (c: Category) => void; depth?: number
+  onAdd: (parent: Category) => void; onEdit: (c: Category) => void
+  onDelete: (c: Category) => void; onMove: (c: Category) => void; depth?: number
 }) {
   const [expanded, setExpanded] = useState(depth < 2)
   const hasChildren = (node.children?.length ?? 0) > 0
@@ -125,10 +126,13 @@ function CategoryNode({
               <FolderPlus size={12} />
             </button>
           )}
-          <button onClick={e => { e.stopPropagation(); onEdit(node) }} className="p-0.5 rounded hover:bg-zinc-600 text-zinc-500">
+          <button onClick={e => { e.stopPropagation(); onEdit(node) }} className="p-0.5 rounded hover:bg-zinc-600 text-zinc-500" title="Editar">
             <FolderEdit size={12} />
           </button>
-          <button onClick={e => { e.stopPropagation(); onDelete(node) }} className="p-0.5 rounded hover:bg-zinc-600 text-red-500">
+          <button onClick={e => { e.stopPropagation(); onMove(node) }} className="p-0.5 rounded hover:bg-zinc-600 text-zinc-500" title="Mover a...">
+            <MoveRight size={12} />
+          </button>
+          <button onClick={e => { e.stopPropagation(); onDelete(node) }} className="p-0.5 rounded hover:bg-zinc-600 text-red-500" title="Eliminar">
             <Trash2 size={12} />
           </button>
         </div>
@@ -137,7 +141,7 @@ function CategoryNode({
         <div>
           {node.children!.map(child => (
             <CategoryNode key={child.id} node={child} selectedId={selectedId}
-              onSelect={onSelect} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} depth={depth + 1} />
+              onSelect={onSelect} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} onMove={onMove} depth={depth + 1} />
           ))}
         </div>
       )}
@@ -219,6 +223,10 @@ export function ManageDocuments() {
 
   // AI
   const [aiLoading, setAiLoading] = useState(false)
+
+  // Move modals
+  const [moveCatModal, setMoveCatModal] = useState<Category | null>(null)
+  const [moveDocModal, setMoveDocModal] = useState<DocumentItem | null>(null)
 
   // Feedback messages
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
@@ -323,46 +331,57 @@ export function ManageDocuments() {
     else showToast(data.error || 'Error', 'err')
   }
 
-  // ── Upload flow ──
+  async function handleMoveCategory(cat: Category, newParentId: string | null) {
+    const res = await fetch('/api/admin/documents/categories', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: cat.id, action: 'move', newParentId }),
+    })
+    const data = await res.json()
+    if (data.ok) { loadCategories(); setMoveCatModal(null); showToast('Categoría movida') }
+    else showToast(data.error || 'Error', 'err')
+  }
+
+  async function handleMoveDocument(doc: DocumentItem, newCategoryId: string) {
+    const res = await fetch(`/api/admin/documents/manage?id=${doc.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ categoryId: newCategoryId }),
+    })
+    const data = await res.json()
+    if (data.ok) { loadDocuments(); setMoveDocModal(null); showToast('Documento movido') }
+    else showToast(data.error || 'Error', 'err')
+  }
+
+  // ── Upload flow (server-side via base64) ──
   async function handleUpload() {
     if (!uploadFile || !uploadCategory) return
     setUploading(true); setUploadError(''); setUploadStep('uploading')
     try {
-      // Step 1: Get presigned URL
-      const presignRes = await fetch('/api/admin/documents/presign', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: uploadFile.name, contentType: uploadFile.type, size: uploadFile.size, categoryId: uploadCategory }),
+      // Step 1: Read file as base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(new Error('Error al leer el archivo'))
+        reader.readAsDataURL(uploadFile)
       })
-      const presignData = await presignRes.json()
-      if (!presignData.ok) throw new Error(presignData.error || 'Presign failed')
-      const { presignedUrl, key, publicUrl } = presignData.data
 
-      // Step 2: Upload to R2
-      const uploadRes = await fetch(presignedUrl, {
-        method: 'PUT', body: uploadFile, headers: { 'Content-Type': uploadFile.type },
-      })
-      if (!uploadRes.ok) throw new Error('Upload to storage failed')
-
-      // Step 3: Create document record
+      // Step 2: Upload to R2 via server (creates DB record too)
       setUploadStep('saving')
-      const createRes = await fetch('/api/admin/documents', {
+      const uploadRes = await fetch('/api/admin/documents/upload', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: uploadTitle || uploadFile.name,
-          originalName: uploadFile.name,
-          mimeType: uploadFile.type,
-          size: uploadFile.size,
-          r2Key: key,
-          publicUrl,
+          filename: uploadFile.name,
+          contentType: uploadFile.type,
+          base64,
           categoryId: uploadCategory,
+          title: uploadTitle || uploadFile.name,
         }),
       })
-      const createData = await createRes.json()
-      if (!createData.ok) throw new Error(createData.error || 'Save failed')
+      const uploadData = await uploadRes.json()
+      if (!uploadData.ok) throw new Error(uploadData.error || 'Error al guardar')
 
-      // Step 4: Trigger AI processing
+      // Step 3: Trigger AI processing
       setUploadStep('ai')
-      await fetch(`/api/admin/documents/ai-process?id=${createData.data.id}`, { method: 'POST' }).catch(() => {})
+      await fetch(`/api/admin/documents/ai-process?id=${uploadData.data.id}`, { method: 'POST' }).catch(() => {})
 
       setUploadStep('done')
       setTimeout(() => {
@@ -535,6 +554,7 @@ export function ManageDocuments() {
                     onAdd={parent => setCatModal({ mode: 'create', parent })}
                     onEdit={cat => setCatModal({ mode: 'edit', cat })}
                     onDelete={handleDeleteCategory}
+                    onMove={cat => setMoveCatModal(cat)}
                   />
                 ))}
               </>
@@ -661,6 +681,10 @@ export function ManageDocuments() {
                       <button onClick={() => openDoc(doc, 'share')} title="Compartir"
                         className="flex-1 flex items-center justify-center gap-1 py-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white text-xs">
                         <Share2 size={13} /> Enviar
+                      </button>
+                      <button onClick={() => setMoveDocModal(doc)} title="Mover a..."
+                        className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-white">
+                        <MoveRight size={13} />
                       </button>
                       <button onClick={() => handleDeleteDoc(doc)} title="Archivar/Eliminar"
                         className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400">
@@ -1041,6 +1065,30 @@ export function ManageDocuments() {
           onClose={() => setCatModal(null)}
         />}
 
+        {/* ── Move category modal ── */}
+        {moveCatModal && (
+          <MoveModal
+            title={`Mover carpeta "${moveCatModal.name}" a...`}
+            categories={categories}
+            excludeId={moveCatModal.id}
+            currentId={moveCatModal.parentId}
+            allowRoot
+            onConfirm={newParentId => handleMoveCategory(moveCatModal, newParentId)}
+            onClose={() => setMoveCatModal(null)}
+          />
+        )}
+
+        {/* ── Move document modal ── */}
+        {moveDocModal && (
+          <MoveModal
+            title={`Mover "${moveDocModal.title}" a...`}
+            categories={categories}
+            currentId={moveDocModal.categoryId}
+            onConfirm={newId => handleMoveDocument(moveDocModal, newId!)}
+            onClose={() => setMoveDocModal(null)}
+          />
+        )}
+
         {/* ── Upload modal ── */}
         {uploadModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -1130,6 +1178,71 @@ export function ManageDocuments() {
           </div>
         )}
 
+    </div>
+  )
+}
+
+// ── Move Modal ────────────────────────────────────────────────────────────────
+
+function MoveModal({
+  title, categories, excludeId, currentId, allowRoot = false, onConfirm, onClose
+}: {
+  title: string
+  categories: Category[]
+  excludeId?: string | null
+  currentId?: string | null
+  allowRoot?: boolean
+  onConfirm: (newParentId: string | null) => void
+  onClose: () => void
+}) {
+  const [selected, setSelected] = useState<string | null>(currentId ?? null)
+
+  const valid = categories.filter(c => {
+    if (excludeId && (c.id === excludeId || c.path.startsWith(categories.find(x => x.id === excludeId)?.path + '/'))) return false
+    return true
+  })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-sm p-6 flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-white">{title}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400"><X size={18} /></button>
+        </div>
+        <div className="bg-zinc-800 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+          {allowRoot && (
+            <button
+              onClick={() => setSelected(null)}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm border-b border-zinc-700 ${selected === null ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:bg-zinc-700/50'}`}
+            >
+              <FolderOpen size={14} className="text-zinc-400" />
+              Raíz (sin categoría padre)
+            </button>
+          )}
+          {valid.map(c => (
+            <button
+              key={c.id}
+              onClick={() => setSelected(c.id)}
+              className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm border-b border-zinc-700/50 last:border-0 ${selected === c.id ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:bg-zinc-700/50'}`}
+              style={{ paddingLeft: `${12 + c.level * 16}px` }}
+            >
+              <Folder size={13} className={c.color ? '' : 'text-amber-400'} style={c.color ? { color: c.color } : {}} />
+              <span className="truncate">{c.name}</span>
+              {selected === c.id && <Check size={13} className="ml-auto text-emerald-400 flex-shrink-0" />}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2 rounded-xl text-sm text-zinc-400 hover:bg-zinc-800">Cancelar</button>
+          <button
+            onClick={() => onConfirm(selected)}
+            disabled={selected === currentId && !allowRoot}
+            className="flex-1 py-2 rounded-xl text-sm font-medium bg-white text-black hover:bg-zinc-100 disabled:opacity-50"
+          >
+            Mover aquí
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

@@ -78,12 +78,65 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'PUT') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
-      const { id, name, description, icon, color, sortOrder, permissions } = body
+      const { id, name, description, icon, color, sortOrder, permissions, action, newParentId } = body
 
       if (!id) return res.status(400).json({ ok: false, error: 'id is required' })
 
       const existing = await prisma.docCategory.findUnique({ where: { id: String(id) } })
       if (!existing) return res.status(404).json({ ok: false, error: 'Category not found' })
+
+      // Move category to a new parent
+      if (action === 'move') {
+        let newLevel = 0
+        let newParentPath: string | null = null
+
+        if (newParentId) {
+          const newParent = await prisma.docCategory.findUnique({ where: { id: String(newParentId) } })
+          if (!newParent) return res.status(404).json({ ok: false, error: 'New parent not found' })
+          if (newParent.level >= 4) return res.status(400).json({ ok: false, error: 'Maximum 5 levels allowed' })
+          // Prevent moving into own subtree
+          if (newParent.path.startsWith(existing.path + '/') || newParent.path === existing.path) {
+            return res.status(400).json({ ok: false, error: 'Cannot move a category into its own subtree' })
+          }
+          newLevel = newParent.level + 1
+          newParentPath = newParent.path
+        }
+
+        const newSlug = existing.slug
+        const newBasePath = buildCategoryPath(newParentPath, newSlug)
+        let newPath = newBasePath
+        let suffix = 1
+        while (true) {
+          const conflict = await prisma.docCategory.findUnique({ where: { path: newPath } })
+          if (!conflict || conflict.id === existing.id) break
+          newPath = `${newBasePath}-${suffix++}`
+        }
+
+        // Update all descendants' paths recursively
+        const oldPathPrefix = existing.path
+        const descendants = await prisma.docCategory.findMany({
+          where: { path: { startsWith: oldPathPrefix + '/' } },
+        })
+
+        await prisma.$transaction([
+          prisma.docCategory.update({
+            where: { id: String(id) },
+            data: { parentId: newParentId || null, level: newLevel, path: newPath },
+          }),
+          ...descendants.map(d =>
+            prisma.docCategory.update({
+              where: { id: d.id },
+              data: {
+                path: newPath + d.path.slice(oldPathPrefix.length),
+                level: newLevel + (d.level - existing.level),
+              },
+            })
+          ),
+        ])
+
+        const moved = await prisma.docCategory.findUnique({ where: { id: String(id) } })
+        return res.status(200).json({ ok: true, data: moved })
+      }
 
       const updated = await prisma.docCategory.update({
         where: { id: String(id) },
