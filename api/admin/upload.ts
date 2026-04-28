@@ -9,7 +9,9 @@ type VercelResponse = any
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: {
+      sizeLimit: '4mb',
+    },
   },
 }
 
@@ -48,23 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const session = requireAdminSession(req, res)
     if (!session) return
 
-    const rawBody = await new Promise<string>((resolve, reject) => {
-      const chunks: Buffer[] = []
-      req.on('data', chunk => {
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-      })
-      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
-      req.on('error', reject)
-    })
-    
-    let body: any = {}
-    if (rawBody) {
-      try {
-        body = JSON.parse(rawBody)
-      } catch (e) {
-        return res.status(400).json({ ok: false, error: 'Invalid JSON payload' })
-      }
-    }
+    let body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
 
     const filename = String(body.filename || 'image').trim()
     const contentType = String(body.contentType || '').trim().toLowerCase()
