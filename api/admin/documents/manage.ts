@@ -1,4 +1,4 @@
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { AwsClient } from 'aws4fetch'
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../../_lib/integrations.js'
@@ -60,12 +60,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const r2 = integrations.r2
         if (r2.enabled && r2.status === 'configured') {
           const { accountId, accessKeyId, secretAccessKey, bucketName, region } = r2.config
-          const client = new S3Client({
+          const aws = new AwsClient({
+            accessKeyId,
+            secretAccessKey,
+            service: 's3',
             region: region || 'auto',
-            endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-            credentials: { accessKeyId, secretAccessKey },
           })
-          await client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: document.r2Key }))
+          const url = new URL(`https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${document.r2Key}`)
+          await aws.fetch(url, { method: 'DELETE' })
         }
       } catch (r2Error) {
         console.warn('R2 delete failed, proceeding with DB delete:', r2Error)

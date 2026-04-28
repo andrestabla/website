@@ -1,5 +1,5 @@
 import crypto from 'node:crypto'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { AwsClient } from 'aws4fetch'
 import { requireAdminSession } from '../_lib/admin-auth.js'
 import { prisma } from '../_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../_lib/integrations.js'
@@ -91,23 +91,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const stamp = new Date().toISOString().slice(0, 10)
     const key = `${folder}/${stamp}/${safeBase}-${crypto.randomUUID()}.${ext}`
 
-    const endpoint = `https://${accountId}.r2.cloudflarestorage.com`
-    const client = new S3Client({
+    const aws = new AwsClient({
+      accessKeyId,
+      secretAccessKey,
+      service: 's3',
       region: region || 'auto',
-      endpoint,
-      credentials: { accessKeyId, secretAccessKey },
     })
-
-    await client.send(new PutObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-      Body: buffer,
-      ContentType: contentType,
-      CacheControl: 'public, max-age=31536000, immutable',
-      Metadata: {
-        uploadedBy: session.username,
-      },
-    }))
+    
+    const url = new URL(`https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${key}`)
+    await aws.fetch(url, {
+      method: 'PUT',
+      body: buffer,
+      headers: {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Amz-Meta-Uploadedby': session.username,
+      }
+    })
 
     const derivedR2DevUrl = `https://${bucketName}.${accountId}.r2.dev`
     const publicBaseUrl = publicUrl ? normalizePublicBaseUrl(publicUrl) : derivedR2DevUrl

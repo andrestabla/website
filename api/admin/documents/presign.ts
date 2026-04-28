@@ -1,6 +1,5 @@
 import crypto from 'node:crypto'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { AwsClient } from 'aws4fetch'
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../../_lib/integrations.js'
@@ -83,20 +82,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const categoryPathClean = category.path.startsWith('/') ? category.path.slice(1) : category.path
     const key = `documents/${categoryPathClean}/${category.id}/${safeBase}-${crypto.randomUUID()}.${ext}`.replace(/\/+/g, '/')
 
-    const client = new S3Client({
+    const aws = new AwsClient({
+      accessKeyId,
+      secretAccessKey,
+      service: 's3',
       region: region || 'auto',
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId, secretAccessKey },
     })
 
-    const command = new PutObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-      ContentType: String(contentType),
-      Metadata: { uploadedBy: session.username, category: category.path, categoryId: category.id },
+    const url = new URL(`https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${key}`)
+    const signed = await aws.sign(url, {
+      method: 'PUT',
+      aws: { signQuery: true },
+      headers: { 'Content-Type': String(contentType) }
     })
-
-    const presignedUrl = await getSignedUrl(client, command, { expiresIn: 3600 })
+    const presignedUrl = signed.url
 
     const derivedPublicBase = publicUrl
       ? publicUrl.trim().replace(/\/+$/, '')
