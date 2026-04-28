@@ -742,7 +742,7 @@ export function ManageDocuments() {
 
         {/* ── Right: Panel ── */}
         {panel && selectedDoc && (
-          <div className="w-96 flex-shrink-0 border-l border-zinc-800 flex flex-col bg-zinc-900">
+          <div className={`${panel === 'viewer' ? 'w-[55vw] max-w-5xl' : 'w-96'} flex-shrink-0 border-l border-zinc-800 flex flex-col bg-zinc-900 transition-all duration-300 ease-in-out`}>
             {/* Panel tabs */}
             <div className="flex items-center gap-0.5 px-3 pt-3 pb-0 border-b border-zinc-800 overflow-x-auto">
               {[
