@@ -1,6 +1,6 @@
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
-import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../../_lib/integrations.js'
+import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv } from '../../_lib/integrations.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!document) return res.status(404).json({ ok: false, error: 'Document not found' })
 
     const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
-    const integrations = sanitizeIntegrations(snapshot?.data ?? {})
+    const integrations = applyServerEnv(snapshot?.data ?? {})
     const openai = integrations.openai
     if (!openai.enabled || !openai.config.apiKey) {
       return res.status(400).json({ ok: false, error: 'OpenAI integration is not configured' })
@@ -86,7 +86,7 @@ ${contentHint ? `\nDocument content preview:\n${contentHint}` : ''}`
     if (!openaiRes.ok) {
       const errText = await openaiRes.text().catch(() => '')
       console.error('OpenAI API error:', openaiRes.status, errText)
-      return res.status(502).json({ ok: false, error: 'OpenAI request failed' })
+      return res.status(502).json({ ok: false, error: `Error en API de OpenAI (${openaiRes.status}): ${errText.slice(0, 100)}` })
     }
 
     const openaiData = await openaiRes.json()
@@ -110,8 +110,8 @@ ${contentHint ? `\nDocument content preview:\n${contentHint}` : ''}`
     })
 
     return res.status(200).json({ ok: true, data: updated, extracted })
-  } catch (error) {
+  } catch (error: any) {
     console.error('api/admin/documents/ai-process error', error)
-    return res.status(500).json({ ok: false, error: 'Internal server error' })
+    return res.status(500).json({ ok: false, error: `Error del servidor: ${error?.message || 'Excepción desconocida'}` })
   }
 }

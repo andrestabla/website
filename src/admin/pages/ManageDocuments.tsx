@@ -180,6 +180,7 @@ export function ManageDocuments() {
 
   // Panel modes: null | 'viewer' | 'metadata' | 'comments' | 'review' | 'share' | 'analytics'
   const [panel, setPanel] = useState<string | null>(null)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   // Modal modes
   const [catModal, setCatModal] = useState<{ mode: 'create' | 'edit'; parent?: Category; cat?: Category } | null>(null)
@@ -521,7 +522,8 @@ export function ManageDocuments() {
     setEditTitle(doc.title)
     setEditDesc(doc.description || '')
     setEditKeywords((doc.keywords || []).join(', '))
-    setPanel(mode)
+    // Si abrimos el visor, por defecto mostramos metadatos en el lateral
+    setPanel(mode === 'viewer' ? 'metadata' : mode)
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -538,19 +540,35 @@ export function ManageDocuments() {
         )}
 
         {/* ── Left: Category tree ── */}
-        <div className="w-64 flex-shrink-0 border-r border-zinc-800 flex flex-col bg-zinc-900">
-          <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-zinc-300">Categorías</h2>
+        <div className={`${isSidebarCollapsed ? 'w-12' : 'w-64'} transition-all duration-300 ease-in-out flex-shrink-0 border-r border-zinc-800 flex flex-col bg-zinc-900 overflow-hidden`}>
+          <div className={`p-4 border-b border-zinc-800 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+            {!isSidebarCollapsed && <h2 className="text-sm font-semibold text-zinc-300">Categorías</h2>}
             <button
-              onClick={() => setCatModal({ mode: 'create' })}
-              className="p-1.5 rounded-md hover:bg-zinc-700 text-zinc-400 hover:text-white"
-              title="Nueva categoría raíz"
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-white"
+              title={isSidebarCollapsed ? "Expandir" : "Colapsar"}
             >
-              <FolderPlus size={15} />
+              {isSidebarCollapsed ? <Plus size={15} className="rotate-45" /> : <ChevronRight size={15} className="rotate-180" />}
             </button>
+            {!isSidebarCollapsed && (
+              <button
+                onClick={() => setCatModal({ mode: 'create' })}
+                className="p-1.5 rounded-md hover:bg-zinc-700 text-zinc-400 hover:text-white"
+                title="Nueva categoría raíz"
+              >
+                <FolderPlus size={15} />
+              </button>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto p-2">
-            {loading ? (
+            {isSidebarCollapsed ? (
+              <div className="flex flex-col items-center gap-4 py-4">
+                <Folder size={18} className="text-zinc-600" />
+                <button onClick={() => setSelectedCategory(null)} className={`p-2 rounded-md ${!selectedCategory ? 'bg-zinc-800 text-amber-400' : 'text-zinc-600'}`}>
+                  <FileText size={18} />
+                </button>
+              </div>
+            ) : loading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 size={20} className="animate-spin text-zinc-500" />
               </div>
@@ -582,8 +600,13 @@ export function ManageDocuments() {
           </div>
         </div>
 
-        {/* ── Center: Document list ── */}
-        <div className="flex-1 flex flex-col min-w-0">
+        {/* ── Main Workspace Area ── */}
+        <div className="flex-1 flex min-w-0 overflow-hidden relative">
+          
+          {/* View Mode: List vs Viewer */}
+          {!selectedDoc ? (
+            /* ── Center: Document list ── */
+            <div className="flex-1 flex flex-col min-w-0">
           {/* Header */}
           <div className="border-b border-zinc-800 px-6 py-4 flex items-center gap-3 flex-wrap bg-zinc-900/50">
             <div className="flex-1 min-w-0">
@@ -737,64 +760,87 @@ export function ManageDocuments() {
                 </button>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* ── Right: Panel ── */}
-        {panel && selectedDoc && (
-          <div className={`${panel === 'viewer' ? 'w-[55vw] max-w-5xl' : 'w-96'} flex-shrink-0 border-l border-zinc-800 flex flex-col bg-zinc-900 transition-all duration-300 ease-in-out`}>
-            {/* Panel tabs */}
-            <div className="flex items-center gap-0.5 px-3 pt-3 pb-0 border-b border-zinc-800 overflow-x-auto">
-              {[
-                { key: 'viewer', icon: <Eye size={13} />, label: 'Ver', show: !!selectedDoc.publicUrl },
-                { key: 'metadata', icon: <Edit3 size={13} />, label: 'Metadatos', show: true },
-                { key: 'comments', icon: <MessageSquare size={13} />, label: 'Comentarios', show: true },
-                { key: 'review', icon: <ClipboardList size={13} />, label: 'Revisión', show: true },
-                { key: 'share', icon: <Share2 size={13} />, label: 'Compartir', show: true },
-                { key: 'analytics', icon: <BarChart2 size={13} />, label: 'Analítica', show: true },
-              ].filter(t => t.show).map(t => (
-                <button key={t.key} onClick={() => setPanel(t.key)}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${panel === t.key ? 'border-white text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}>
-                  {t.icon}{t.label}
-                </button>
-              ))}
-              <button onClick={() => { setPanel(null); setSelectedDoc(null) }} className="ml-auto p-1.5 rounded hover:bg-zinc-800 text-zinc-500 flex-shrink-0">
-                <X size={15} />
-              </button>
             </div>
-
-            <div className="flex-1 overflow-y-auto">
-
-              {/* ── Viewer panel ── */}
-              {panel === 'viewer' && selectedDoc.publicUrl && (
-                <div className="flex flex-col h-full">
-                  <div className="p-3 flex items-center gap-2 border-b border-zinc-800">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{selectedDoc.title}</p>
-                      <p className="text-xs text-zinc-500">{getMimeLabel(selectedDoc.mimeType)}</p>
+          ) : (
+            /* ── Main Area: Document Viewer ── */
+            <div className="flex-1 flex flex-col bg-black overflow-hidden">
+              <div className="p-3 flex items-center justify-between bg-zinc-900 border-b border-zinc-800">
+                <div className="flex items-center gap-3 min-w-0">
+                  <button 
+                    onClick={() => { setSelectedDoc(null); setPanel(null) }}
+                    className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400 hover:text-white flex-shrink-0"
+                  >
+                    <ChevronRight className="rotate-180" size={18} />
+                  </button>
+                  <div className="flex items-center gap-3 truncate">
+                    <div className="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                      {getMimeIcon(selectedDoc.mimeType)}
                     </div>
-                    <a href={selectedDoc.publicUrl} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white px-2 py-1 rounded hover:bg-zinc-800">
-                      <Download size={12} /> Descargar
-                    </a>
+                    <div className="truncate">
+                      <p className="text-sm font-medium text-white truncate">{selectedDoc.title}</p>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{getMimeLabel(selectedDoc.mimeType)} · {formatBytes(selectedDoc.size)}</p>
+                    </div>
                   </div>
-                  {selectedDoc.mimeType === 'application/pdf' ? (
-                    <iframe src={selectedDoc.publicUrl} className="flex-1 w-full border-none" title={selectedDoc.title} />
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedDoc.publicUrl && (
+                    <a href={selectedDoc.publicUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 transition-colors">
+                      <Download size={14} /> Descargar
+                    </a>
+                  )}
+                  <button onClick={() => { setSelectedDoc(null); setPanel(null) }} 
+                    className="p-1.5 rounded-md hover:bg-red-500/10 text-zinc-500 hover:text-red-400">
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 relative overflow-hidden">
+                {selectedDoc.publicUrl ? (
+                  selectedDoc.mimeType === 'application/pdf' ? (
+                    <iframe src={selectedDoc.publicUrl} className="w-full h-full border-none" title={selectedDoc.title} />
                   ) : selectedDoc.mimeType.startsWith('image/') ? (
-                    <div className="flex-1 flex items-center justify-center p-4 bg-zinc-950">
-                      <img src={selectedDoc.publicUrl} alt={selectedDoc.title} className="max-w-full max-h-full object-contain rounded" />
+                    <div className="w-full h-full flex items-center justify-center p-8 bg-zinc-950/50">
+                      <img src={selectedDoc.publicUrl} alt={selectedDoc.title} className="max-w-full max-h-full object-contain rounded shadow-2xl" />
                     </div>
                   ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6 text-center">
-                      <FileText size={40} className="text-zinc-600" />
-                      <p className="text-sm text-zinc-400">Vista previa no disponible</p>
-                      <a href={selectedDoc.publicUrl} download className="flex items-center gap-2 bg-zinc-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-zinc-700">
-                        <Download size={14} /> Descargar archivo
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-4 p-6 text-center">
+                      <FileText size={48} className="text-zinc-700" />
+                      <p className="text-sm text-zinc-400">Vista previa no disponible para este formato</p>
+                      <a href={selectedDoc.publicUrl} download className="flex items-center gap-2 bg-white text-black px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-zinc-100 transition-colors">
+                        <Download size={16} /> Descargar documento
                       </a>
                     </div>
-                  )}
-                </div>
-              )}
+                  )
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                    Archivo no disponible
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Right: Sidebar Tools ── */}
+          {selectedDoc && (
+            <div className="w-96 flex-shrink-0 border-l border-zinc-800 flex flex-col bg-zinc-900 transition-all duration-300 shadow-2xl">
+              {/* Tool tabs */}
+              <div className="flex items-center gap-0.5 px-3 pt-3 border-b border-zinc-800 overflow-x-auto">
+                {[
+                  { key: 'metadata', icon: <Edit3 size={13} />, label: 'Metadatos' },
+                  { key: 'comments', icon: <MessageSquare size={13} />, label: 'Comentarios' },
+                  { key: 'review', icon: <ClipboardList size={13} />, label: 'Revisión' },
+                  { key: 'share', icon: <Share2 size={13} />, label: 'Compartir' },
+                  { key: 'analytics', icon: <BarChart2 size={13} />, label: 'Analítica' },
+                ].map(t => (
+                  <button key={t.key} onClick={() => setPanel(t.key)}
+                    className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${panel === t.key ? 'border-white text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}>
+                    {t.icon}{t.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex-1 overflow-y-auto">
+
 
               {/* ── Metadata panel ── */}
               {panel === 'metadata' && (
@@ -1075,6 +1121,7 @@ export function ManageDocuments() {
             </div>
           </div>
         )}
+      </div>
 
         {/* ── Category modal ── */}
         {catModal && <CategoryModal
