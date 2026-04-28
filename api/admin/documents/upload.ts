@@ -9,9 +9,7 @@ type VercelResponse = any
 
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
+    bodyParser: false,
   },
 }
 
@@ -34,7 +32,6 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
   'application/zip': 'zip',
 }
 
-// ~10 MB base64 payload limit (≈7.5 MB raw file)
 const MAX_BASE64_BYTES = 10 * 1024 * 1024
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -47,7 +44,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const session = requireAdminSession(req, res)
     if (!session) return
 
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
+    const buffers = []
+    for await (const chunk of req) {
+      buffers.push(chunk)
+    }
+    const rawBody = Buffer.concat(buffers).toString('utf8')
+    let body: any = {}
+    if (rawBody) {
+      try {
+        body = JSON.parse(rawBody)
+      } catch (e) {
+        return res.status(400).json({ ok: false, error: 'Invalid JSON payload' })
+      }
+    }
+
     const { filename, contentType, base64, categoryId, title } = body
 
     if (!filename || !contentType || !base64 || !categoryId) {
