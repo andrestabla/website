@@ -17,6 +17,10 @@ const bookingSchema = z.object({
 
 type BookingFormValues = z.infer<typeof bookingSchema>
 
+type ConversionWindow = Window & {
+  gtag_report_conversion?: (url?: string) => boolean
+}
+
 export function BookingForm({ 
   onSubmit, 
   onBack,
@@ -29,6 +33,10 @@ export function BookingForm({
   const { register, handleSubmit, formState: { errors } } = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema)
   })
+
+  const handleConversionClick = () => {
+    ;(window as ConversionWindow).gtag_report_conversion?.()
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -142,6 +150,7 @@ export function BookingForm({
         </button>
         <Button 
           type="submit" 
+          onClick={handleConversionClick}
           className="flex-[2] py-4"
           disabled={isSubmitting}
         >
@@ -152,7 +161,7 @@ export function BookingForm({
             </>
           ) : (
             <>
-              Confirmar y Agendar Cita
+              Confirmar y agendar cita
               <ArrowRight className="ml-2 w-4 h-4" />
             </>
           )}

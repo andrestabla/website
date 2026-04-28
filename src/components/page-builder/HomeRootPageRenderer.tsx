@@ -1231,49 +1231,55 @@ function renderBenefitsAndFlow(benefitsBlock: SitePageBlock, flowBlock: SitePage
 function renderStandaloneFlowBlock(block: SitePageBlock) {
     const items = ensureObjectItems(block.content.items)
     const badges = ensureStringArray(block.content.badges)
+    const title = toText(block.content.title, 'Tu plataforma en 4 pasos')
+    const eyebrow = toText(block.content.eyebrow, 'Cómo trabajamos')
+    const isLightFlow = Boolean(block.content.lightSurface) || title.toLowerCase().includes('procesos ágiles')
 
     return (
-        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-slate-950 px-6 py-20 md:px-12 md:py-24 shadow-2xl">
-            {/* Background elements */}
-            <div className="pointer-events-none absolute left-1/4 top-0 h-96 w-96 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-[100px]" />
-            <div className="pointer-events-none absolute right-1/4 bottom-0 h-96 w-96 translate-y-1/2 rounded-full bg-blue-500/10 blur-[100px]" />
+        <div className={`relative mx-auto max-w-7xl overflow-hidden px-6 md:px-12 ${isLightFlow ? 'py-8 md:py-10' : 'rounded-[2.5rem] bg-slate-950 py-20 md:py-24 shadow-2xl'}`}>
+            {!isLightFlow && (
+                <>
+                    <div className="pointer-events-none absolute left-1/4 top-0 h-96 w-96 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-[100px]" />
+                    <div className="pointer-events-none absolute right-1/4 bottom-0 h-96 w-96 translate-y-1/2 rounded-full bg-blue-500/10 blur-[100px]" />
+                </>
+            )}
 
             <div className="relative text-center">
-                <p className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/5 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.3em] text-emerald-400/80">
-                    {toText(block.content.eyebrow, 'Cómo trabajamos')}
+                <p className={`inline-flex items-center rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.3em] ${isLightFlow ? 'border border-emerald-200 bg-white text-emerald-700' : 'border border-emerald-400/30 bg-emerald-400/5 text-emerald-400/80'}`}>
+                    {eyebrow}
                 </p>
-                <h3 className="mx-auto mt-6 max-w-3xl text-4xl font-black leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">
-                    {toText(block.content.title, 'Tu plataforma en 4 pasos')}
+                <h3 className={`mx-auto mt-6 max-w-3xl text-4xl font-black leading-[1.1] tracking-tight md:text-5xl lg:text-6xl ${isLightFlow ? 'text-slate-900' : 'text-white'}`}>
+                    {title}
                 </h3>
             </div>
 
-            <div className="relative mx-auto mt-20 max-w-6xl">
+            <div className="relative mx-auto mt-16 max-w-6xl">
                 {/* Horizontal flow line for desktop */}
-                <div className="absolute left-0 right-0 top-1/2 hidden h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-slate-800 to-transparent lg:block" />
+                <div className={`absolute left-0 right-0 top-1/2 hidden h-px -translate-y-1/2 lg:block ${isLightFlow ? 'bg-gradient-to-r from-transparent via-slate-200 to-transparent' : 'bg-gradient-to-r from-transparent via-slate-800 to-transparent'}`} />
 
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">
                     {items.map((item, index) => (
                         <div key={`${item.id || index}`} className="group relative">
                             {/* Decorative numbering behind */}
-                            <span className="absolute -top-10 left-0 select-none text-8xl font-black text-white/[0.03] transition-colors group-hover:text-emerald-500/[0.05]">
+                            <span className={`absolute -top-10 left-0 select-none text-8xl font-black transition-colors group-hover:text-emerald-500/[0.08] ${isLightFlow ? 'text-slate-900/[0.05]' : 'text-white/[0.03]'}`}>
                                 {index + 1}
                             </span>
                             
-                            <article className="relative flex h-full flex-col rounded-3xl border border-slate-800 bg-slate-900/40 p-8 backdrop-blur-sm transition-all duration-300 hover:-translate-y-2 hover:border-emerald-500/30 hover:bg-slate-900/60 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
-                                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl font-black text-emerald-400 ring-1 ring-emerald-500/20 transition-transform duration-500 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-slate-950">
+                            <article className={`relative flex h-full flex-col rounded-3xl p-8 transition-all duration-300 hover:-translate-y-2 ${isLightFlow ? 'border border-slate-200 bg-white hover:border-emerald-300 hover:shadow-[0_20px_40px_rgba(15,23,42,0.08)]' : 'border border-slate-800 bg-slate-900/40 backdrop-blur-sm hover:border-emerald-500/30 hover:bg-slate-900/60 hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)]'}`}>
+                                <div className={`mb-6 flex h-12 w-12 items-center justify-center rounded-2xl text-2xl font-black transition-transform duration-500 group-hover:scale-110 ${isLightFlow ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 group-hover:bg-emerald-500 group-hover:text-white' : 'bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-slate-950'}`}>
                                     {index + 1}
                                 </div>
-                                <h4 className="text-xl font-bold leading-tight text-white transition-colors group-hover:text-emerald-300">
+                                <h4 className={`text-xl font-bold leading-tight transition-colors ${isLightFlow ? 'text-slate-900 group-hover:text-emerald-700' : 'text-white group-hover:text-emerald-300'}`}>
                                     {toText(item.title || item.label || `Paso ${index + 1}`)}
                                 </h4>
-                                <p className="mt-4 text-sm leading-relaxed text-slate-400">
+                                <p className={`mt-4 text-sm leading-relaxed ${isLightFlow ? 'text-slate-600' : 'text-slate-400'}`}>
                                     {toText(item.body || item.description)}
                                 </p>
 
                                 {/* Connecting dot for desktop timeline */}
                                 <div className="absolute -right-3 top-1/2 hidden h-6 w-6 -translate-y-1/2 items-center justify-center lg:flex">
                                     {index < items.length - 1 && (
-                                        <div className="h-1.5 w-1.5 rounded-full bg-slate-700 transition-colors group-hover:bg-emerald-500" />
+                                        <div className={`h-1.5 w-1.5 rounded-full transition-colors group-hover:bg-emerald-500 ${isLightFlow ? 'bg-slate-300' : 'bg-slate-700'}`} />
                                     )}
                                 </div>
                             </article>
@@ -1285,7 +1291,7 @@ function renderStandaloneFlowBlock(block: SitePageBlock) {
             {badges.length > 0 && (
                 <div className="mx-auto mt-20 flex max-w-4xl flex-wrap justify-center gap-4">
                     {badges.map((badge) => (
-                        <div key={badge} className="rounded-lg border border-slate-800 bg-slate-900/50 px-6 py-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 transition-colors hover:border-emerald-500/30 hover:text-emerald-400">
+                        <div key={badge} className={`rounded-lg px-6 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors ${isLightFlow ? 'border border-slate-200 bg-white text-slate-500 hover:border-emerald-300 hover:text-emerald-700' : 'border border-slate-800 bg-slate-900/50 text-slate-400 hover:border-emerald-500/30 hover:text-emerald-400'}`}>
                             {badge}
                         </div>
                     ))}
@@ -1916,14 +1922,15 @@ function renderTuProfeBlock(block: SitePageBlock) {
     const items = ensureObjectItems(block.content.items)
     const primaryHref = normalizeCmsHref(block.content.primaryHref, 'https://profetabla.com/', '/')
     const imageUrl = toText(block.content.imageUrl) || '/assets/landing/tuprofe-mockup.png'
+    const isCompact = block.id === 'maturity360' || Boolean(block.content.hideImage)
 
     return (
-        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] bg-[#0b1323] px-6 py-16 md:px-12 md:py-24 lg:px-20 shadow-2xl">
+        <div className={`relative mx-auto overflow-hidden rounded-[2.5rem] bg-[#0b1323] shadow-2xl ${isCompact ? 'max-w-6xl px-6 py-12 md:px-10 md:py-14 lg:px-14' : 'max-w-7xl px-6 py-16 md:px-12 md:py-24 lg:px-20'}`}>
             <div className="pointer-events-none absolute right-0 top-0 h-[800px] w-[800px] -translate-y-1/3 translate-x-1/3 rounded-full bg-emerald-900/20 blur-[120px]" />
             <div className="pointer-events-none absolute bottom-0 left-0 h-[600px] w-[600px] -translate-x-1/3 translate-y-1/3 rounded-full bg-emerald-600/10 blur-[100px]" />
             
-            <div className="relative grid gap-16 lg:grid-cols-2 lg:items-center">
-                <div className="max-w-xl order-2 lg:order-1">
+            <div className={`relative ${isCompact ? '' : 'grid gap-16 lg:grid-cols-2 lg:items-center'}`}>
+                <div className={`${isCompact ? 'mx-auto max-w-5xl' : 'max-w-xl order-2 lg:order-1'}`}>
                     {eyebrow && (
                         <div className="inline-flex items-center rounded-full border border-emerald-400/40 bg-emerald-400/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
                             <span className="mr-2 flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)] animate-pulse"></span>
@@ -1931,9 +1938,9 @@ function renderTuProfeBlock(block: SitePageBlock) {
                         </div>
                     )}
                     {title && <h2 className="mt-6 text-4xl font-black leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">{title}</h2>}
-                    {body && <p className="mt-6 text-lg leading-relaxed text-slate-300 md:text-xl">{body}</p>}
+                    {body && <p className={`mt-6 leading-relaxed text-slate-300 ${isCompact ? 'max-w-4xl text-base md:text-lg' : 'text-lg md:text-xl'}`}>{body}</p>}
                     
-                    <div className="mt-12 grid gap-6 sm:grid-cols-1">
+                    <div className={`mt-10 grid gap-5 ${isCompact ? 'md:grid-cols-2' : 'sm:grid-cols-1'}`}>
                         {items.map((item, index) => {
                             const itemTitle = toText(item.title).toLowerCase()
                             let Icon = Code2
@@ -1945,7 +1952,7 @@ function renderTuProfeBlock(block: SitePageBlock) {
                             return (
                                 <div 
                                     key={index}
-                                    className="group relative flex items-start gap-4 rounded-xl border border-slate-700/50 bg-slate-800/20 p-5 transition-all hover:border-emerald-400/50 hover:bg-slate-800/60"
+                                    className={`group relative flex items-start gap-4 rounded-xl border border-slate-700/50 bg-slate-800/20 transition-all hover:border-emerald-400/50 hover:bg-slate-800/60 ${isCompact ? 'p-4' : 'p-5'}`}
                                 >
                                     <div className="mt-1 shrink-0 rounded-lg bg-emerald-400/10 p-2 text-emerald-400 group-hover:bg-emerald-400 group-hover:text-slate-900 transition-colors">
                                         <Icon className="h-5 w-5" />
@@ -1974,29 +1981,31 @@ function renderTuProfeBlock(block: SitePageBlock) {
                     </div>
                 </div>
 
-                <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none order-1 lg:order-2">
-                    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-slate-800 shadow-2xl lg:aspect-[3/4]">
-                        <img 
-                            src={imageUrl} 
-                            alt="Plataforma Mockup" 
-                            className="h-full w-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#0b1323] via-transparent to-transparent opacity-60" />
-                        <div className="absolute bottom-0 left-0 right-0 p-8">
-                            <div className="backdrop-blur-md bg-white/10 rounded-2xl border border-white/20 p-6 shadow-2xl">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/30">
-                                        <Activity className="h-6 w-6 animate-pulse" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-white tracking-widest uppercase">Operacional</p>
-                                        <p className="text-emerald-400 text-sm mt-1">Conectado al 100%</p>
+                {!isCompact && (
+                    <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none order-1 lg:order-2">
+                        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl border border-slate-800 shadow-2xl lg:aspect-[3/4]">
+                            <img 
+                                src={imageUrl} 
+                                alt="Plataforma Mockup" 
+                                className="h-full w-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0b1323] via-transparent to-transparent opacity-60" />
+                            <div className="absolute bottom-0 left-0 right-0 p-8">
+                                <div className="backdrop-blur-md bg-white/10 rounded-2xl border border-white/20 p-6 shadow-2xl">
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-12 w-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 border border-emerald-500/30">
+                                            <Activity className="h-6 w-6 animate-pulse" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-white tracking-widest uppercase">Operacional</p>
+                                            <p className="text-emerald-400 text-sm mt-1">Conectado al 100%</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     )

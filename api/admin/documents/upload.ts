@@ -7,6 +7,14 @@ import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../../_lib/integ
 type VercelRequest = any
 type VercelResponse = any
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+}
+
 const ALLOWED_MIME_TYPES: Record<string, string> = {
   'application/pdf': 'pdf',
   'application/msword': 'doc',

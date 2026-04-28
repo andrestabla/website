@@ -2922,11 +2922,39 @@ function createVirtualizacionLandingBlocks(): SitePageBlock[] {
             },
         },
         {
+            id: 'maturity360',
+            type: 'tuprofe' as SitePageBlockType,
+            name: 'Plataforma Maturity360',
+            visible: true,
+            order: 4,
+            content: {
+                eyebrow: 'Plataforma especializada',
+                title: 'Maturity360',
+                body: 'Maturity360 centraliza la producción de cursos universitarios en una sola plataforma para coordinar flujo, roles, trazabilidad y control de calidad durante todo el proceso de virtualización.',
+                primaryLabel: 'Ir a Maturity360',
+                primaryHref: 'https://maturity360.co/',
+                hideImage: true,
+                imageUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80',
+                items: [
+                    { title: 'Objetivo claro de operación', body: 'Organizar de punta a punta la producción académica y técnica para que cada curso avance con responsables, etapas y evidencias visibles.' },
+                    { title: 'Trazabilidad del proceso', body: 'Permite seguir cada curso por fases como planeación, escritura, validación instruccional, producción multimedia, LMS, QA y entrega.' },
+                    { title: 'Roles y gobierno', body: 'Centraliza la coordinación entre equipos académicos, producción, soporte y gobierno institucional en un mismo entorno operativo.' },
+                    { title: 'Analítica e indicadores', body: 'Integra lectura de desempeño, estado de avance e indicadores para tomar decisiones sobre tiempos, calidad y operación.' },
+                    { title: 'Biblioteca y soporte', body: 'Articula recursos, curación de materiales y mesa de ayuda para sostener una operación más ordenada y escalable.' }
+                ]
+            },
+            style: {
+                backgroundColor: '#0f172a',
+                textColor: '#ffffff',
+                paddingY: '6rem',
+            },
+        },
+        {
             id: 'flujo',
             type: 'timeline',
             name: 'Procesos ágiles',
             visible: true,
-            order: 4,
+            order: 5,
             content: {
                 eyebrow: 'Calidad asegurada',
                 title: 'Procesos ágiles que generan valor',
@@ -2946,7 +2974,7 @@ function createVirtualizacionLandingBlocks(): SitePageBlock[] {
             type: 'contact',
             name: 'Contacto Servicio',
             visible: true,
-            order: 5,
+            order: 6,
             content: {
                 eyebrow: 'Iniciemos tu proyecto',
                 title: 'Hablemos de tus necesidades de virtualización',
@@ -3538,6 +3566,34 @@ function isOutdatedVirtualizacionBlocks(blocks: SitePageBlock[]) {
     return !blocks.some((block) => block.id === 'experiencias')
 }
 
+function ensureVirtualizacionMaturityBlock(blocks: SitePageBlock[]) {
+    if (!Array.isArray(blocks) || blocks.length === 0) return blocks
+    if (blocks.some((block) => block.id === 'maturity360')) {
+        return blocks.map((block, index) => ({ ...block, order: index }))
+    }
+
+    const defaultMaturityBlock = createVirtualizacionLandingBlocks().find((block) => block.id === 'maturity360')
+    if (!defaultMaturityBlock) {
+        return blocks.map((block, index) => ({ ...block, order: index }))
+    }
+
+    const nextBlocks = blocks.map((block) => ({
+        ...block,
+        content: block.content && typeof block.content === 'object' ? { ...block.content } : block.content,
+        style: block.style && typeof block.style === 'object' ? { ...block.style } : block.style,
+    }))
+
+    const experienciasIndex = nextBlocks.findIndex((block) => block.id === 'experiencias')
+    const insertAt = experienciasIndex >= 0 ? experienciasIndex + 1 : nextBlocks.length
+    nextBlocks.splice(insertAt, 0, {
+        ...defaultMaturityBlock,
+        content: { ...defaultMaturityBlock.content },
+        style: { ...defaultMaturityBlock.style },
+    })
+
+    return nextBlocks.map((block, index) => ({ ...block, order: index }))
+}
+
 function isOutdatedCaseTransversalBlocks(blocks: SitePageBlock[]) {
     if (!Array.isArray(blocks) || blocks.length === 0) return true
     const heroBlock = blocks.find((block) => block.id === 'hero')
@@ -3582,6 +3638,9 @@ function migrateLegacyBuilderPage(pageId: string, title: string, description: st
     }
     if (pageId === 'virtualizacion-programas' && isOutdatedVirtualizacionBlocks(blocks)) {
         return createDefaultBlocksByPage(pageId, title, description, accentColor)
+    }
+    if (pageId === 'virtualizacion-programas') {
+        return ensureVirtualizacionMaturityBlock(blocks)
     }
     if (pageId === 'auditoria-programas-virtuales') {
         return ensureAuditoriaPremiumBlocks(blocks)

@@ -7,6 +7,14 @@ import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../_lib/integrat
 type VercelRequest = any
 type VercelResponse = any
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+}
+
 const MAX_BYTES = 4 * 1024 * 1024
 
 function isAllowedImageMime(contentType: string) {

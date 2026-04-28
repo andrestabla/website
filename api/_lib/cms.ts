@@ -1383,6 +1383,52 @@ function isOutdatedHomeRootBlocks(blocks: any[]) {
   return !('inSimpleWords' in firstObjectItem) || !('businessBenefit' in firstObjectItem) || !('idealWhen' in firstObjectItem)
 }
 
+function ensureVirtualizacionMaturityBlock(blocks: any[]) {
+  if (!Array.isArray(blocks) || blocks.length === 0) return blocks
+  if (blocks.some((block) => block?.id === 'maturity360')) {
+    return blocks.map((block, index) => ({ ...block, order: index }))
+  }
+
+  const maturityBlock = {
+    id: 'maturity360',
+    type: 'tuprofe',
+    name: 'Plataforma Maturity360',
+    visible: true,
+    order: 0,
+    content: {
+      eyebrow: 'Plataforma especializada',
+      title: 'Maturity360',
+      body: 'Maturity360 centraliza la producción de cursos universitarios en una sola plataforma para coordinar flujo, roles, trazabilidad y control de calidad durante todo el proceso de virtualización.',
+      primaryLabel: 'Ir a Maturity360',
+      primaryHref: 'https://maturity360.co/',
+      hideImage: true,
+      imageUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80',
+      items: [
+        { title: 'Objetivo claro de operación', body: 'Organizar de punta a punta la producción académica y técnica para que cada curso avance con responsables, etapas y evidencias visibles.' },
+        { title: 'Trazabilidad del proceso', body: 'Permite seguir cada curso por fases como planeación, escritura, validación instruccional, producción multimedia, LMS, QA y entrega.' },
+        { title: 'Roles y gobierno', body: 'Centraliza la coordinación entre equipos académicos, producción, soporte y gobierno institucional en un mismo entorno operativo.' },
+        { title: 'Analítica e indicadores', body: 'Integra lectura de desempeño, estado de avance e indicadores para tomar decisiones sobre tiempos, calidad y operación.' },
+        { title: 'Biblioteca y soporte', body: 'Articula recursos, curación de materiales y mesa de ayuda para sostener una operación más ordenada y escalable.' },
+      ],
+    },
+    style: {
+      backgroundColor: '#0f172a',
+      textColor: '#ffffff',
+      paddingY: '6rem',
+    },
+  }
+
+  const nextBlocks = blocks.map((block) => ({
+    ...block,
+    content: block?.content && typeof block.content === 'object' ? { ...block.content } : block?.content,
+    style: block?.style && typeof block.style === 'object' ? { ...block.style } : block?.style,
+  }))
+  const experienciasIndex = nextBlocks.findIndex((block) => block?.id === 'experiencias')
+  const insertAt = experienciasIndex >= 0 ? experienciasIndex + 1 : nextBlocks.length
+  nextBlocks.splice(insertAt, 0, maturityBlock)
+  return nextBlocks.map((block, index) => ({ ...block, order: index }))
+}
+
 function isOutdatedCaseTransversalBlocks(blocks: any[]) {
   if (!Array.isArray(blocks) || blocks.length === 0) return true
   const heroBlock = blocks.find((block) => block.id === 'hero')
@@ -1417,6 +1463,9 @@ function isOutdatedCaseTransversalBlocks(blocks: any[]) {
 function migrateLegacyBuilderPage(pageId: string, title: string, description: string, accentColor: string, blocks: any[], siteEmail: string) {
   if (pageId === 'home-root' && isOutdatedHomeRootBlocks(blocks)) {
     return createDefaultBlocksByPage(pageId, title, description, accentColor, siteEmail)
+  }
+  if (pageId === 'virtualizacion-programas') {
+    return ensureVirtualizacionMaturityBlock(blocks)
   }
   if (pageId === 'case-transversal' && isOutdatedCaseTransversalBlocks(blocks)) {
     return createDefaultBlocksByPage(pageId, title, description, accentColor, siteEmail)
