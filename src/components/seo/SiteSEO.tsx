@@ -125,6 +125,12 @@ export function SiteSEO() {
       description = 'Asistente IA para definir alcance, complejidad, metodología y presupuesto estimado de tu proyecto digital.'
       isKnownRoute = true
       breadcrumbs.push({ name: 'Planifico mi proyecto', path: normalizedPath })
+    } else if (normalizedPath === '/empresas/simulador') {
+      title = `Simulador transformación digital | ${siteName}`
+      description = 'Simula tu transformación digital fase por fase: diagnóstico de madurez, inversión estimada, intervenciones y productos para tu organización.'
+      isKnownRoute = true
+      breadcrumbs.push({ name: 'Empresas', path: '/empresas' })
+      breadcrumbs.push({ name: 'Simulador', path: normalizedPath })
     } else if (normalizedPath.startsWith('/protocolos/')) {
       const map: Record<string, string> = {
         '/protocolos/ingenieria-humana': 'Ingeniería Humana',

@@ -239,15 +239,24 @@ function PhaseRail({
   )
 }
 
+const MD_SHORT_NAMES: Record<string, string> = {
+  estrategia: 'Estrategia',
+  infra: 'Infraestructura',
+  talento: 'Talento',
+  gob: 'Gobernanza',
+  procesos: 'Procesos',
+  cx: 'Experiencia',
+}
+
 function MaturityDiagnosticView({ diagnostic }: { diagnostic: MaturityDiagnostic }) {
   const radarData = diagnostic.dimensions.map((d) => ({
-    dimension: d.name,
+    dimension: MD_SHORT_NAMES[d.id] || d.name,
     Tú: d.score,
     Benchmark: d.benchmark,
   }))
 
   return (
-    <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+    <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-2">
           <Gauge className="h-4 w-4 text-brand-secondary" />
@@ -269,10 +278,10 @@ function MaturityDiagnosticView({ diagnostic }: { diagnostic: MaturityDiagnostic
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <ResponsiveContainer width="100%" height={320}>
-            <RadarChart data={radarData} outerRadius="72%">
+          <ResponsiveContainer width="100%" height={300}>
+            <RadarChart data={radarData} outerRadius="68%" margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
               <PolarGrid stroke="#e2e8f0" />
-              <PolarAngleAxis dataKey="dimension" tick={{ fill: '#475569', fontSize: 11 }} />
+              <PolarAngleAxis dataKey="dimension" tick={{ fill: '#475569', fontSize: 10 }} />
               <PolarRadiusAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 9 }} axisLine={false} />
               <Radar name="Benchmark" dataKey="Benchmark" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.12} />
               <Radar name="Tú" dataKey="Tú" stroke="#2563eb" fill="#2563eb" fillOpacity={0.3} />
@@ -529,7 +538,7 @@ export function SimuladorEmpresas() {
         </span>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 pb-24 pt-32">
+      <main className="mx-auto max-w-5xl px-5 pb-28 pt-28 sm:px-6 sm:pt-32">
         {/* INTRO */}
         {step === 'intro' && (
           <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
@@ -768,7 +777,7 @@ export function SimuladorEmpresas() {
               {/* Qué se hace / Cómo se hace */}
               <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {currentPhase.whatWeDo && (
-                  <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                  <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                     <h4 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
                       <ListChecks className="h-4 w-4 text-brand-secondary" /> ¿Qué se hace?
                     </h4>
@@ -776,7 +785,7 @@ export function SimuladorEmpresas() {
                   </div>
                 )}
                 {currentPhase.howWeDo && (
-                  <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                  <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                     <h4 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
                       <Cog className="h-4 w-4 text-brand-secondary" /> ¿Cómo se hace?
                     </h4>
@@ -798,7 +807,7 @@ export function SimuladorEmpresas() {
 
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
                 {/* Interventions */}
-                <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                   <h4 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
                     <Wrench className="h-4 w-4 text-brand-secondary" /> Intervenciones / Consultoría
                   </h4>
@@ -820,7 +829,7 @@ export function SimuladorEmpresas() {
                 </div>
 
                 {/* Products */}
-                <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                   <h4 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
                     <Package className="h-4 w-4 text-brand-secondary" /> Productos para tu organización
                   </h4>
@@ -846,14 +855,14 @@ export function SimuladorEmpresas() {
 
               {/* Investment */}
               <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div className="rounded-3xl border border-blue-200 bg-blue-50 p-8">
+                <div className="rounded-3xl border border-blue-200 bg-blue-50 p-6 sm:p-8">
                   <div className="text-xs font-bold uppercase tracking-widest text-brand-secondary">
                     {currentPhase.recurring ? 'Retainer mensual' : 'Inversión de esta fase'}
                   </div>
                   <div className="mt-2 text-2xl font-black text-slate-900">{moneyLabel(currentPhase)}</div>
                   {currentPhase.rationale && <p className="mt-3 text-sm text-slate-500">{currentPhase.rationale}</p>}
                 </div>
-                <div className="rounded-3xl bg-brand-primary p-8 text-white">
+                <div className="rounded-3xl bg-brand-primary p-6 text-white sm:p-8">
                   <div className="text-xs font-bold uppercase tracking-widest text-blue-200">
                     {currentPhase.recurring ? 'Inversión del proyecto (Fases 1–5)' : `Inversión acumulada (Fases 1–${currentPhase.index})`}
                   </div>
@@ -880,7 +889,7 @@ export function SimuladorEmpresas() {
                     setPhaseIndex((i) => i - 1)
                   }
                 }}
-                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-slate-600 transition-colors hover:bg-slate-50"
+                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-4 text-xs font-black uppercase tracking-[0.15em] text-slate-600 transition-colors hover:bg-slate-50 sm:px-8 sm:text-sm sm:tracking-[0.2em]"
               >
                 <ChevronLeft className="h-4 w-4" /> Anterior
               </button>
@@ -890,14 +899,14 @@ export function SimuladorEmpresas() {
                     setDirection('next')
                     setPhaseIndex((i) => i + 1)
                   }}
-                  className="flex items-center gap-3 rounded-full bg-brand-primary px-10 py-4 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-brand-secondary"
+                  className="flex items-center gap-2 rounded-full bg-brand-primary px-6 py-4 text-xs font-black uppercase tracking-[0.15em] text-white transition-all hover:bg-brand-secondary sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.2em]"
                 >
                   Siguiente fase <ArrowRight className="h-4 w-4" />
                 </button>
               ) : (
                 <button
                   onClick={() => setStep('summary')}
-                  className="flex items-center gap-3 rounded-full bg-brand-primary px-10 py-4 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-brand-secondary"
+                  className="flex items-center gap-2 rounded-full bg-brand-primary px-6 py-4 text-xs font-black uppercase tracking-[0.15em] text-white transition-all hover:bg-brand-secondary sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.2em]"
                 >
                   Ver resumen <ArrowRight className="h-4 w-4" />
                 </button>
@@ -946,13 +955,13 @@ export function SimuladorEmpresas() {
             </div>
 
             <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div className="rounded-3xl bg-brand-primary p-8 text-center text-white">
+              <div className="rounded-3xl bg-brand-primary p-6 text-center text-white sm:p-8">
                 <div className="text-xs font-bold uppercase tracking-widest text-blue-200">Inversión del proyecto · Fases 1–5</div>
                 <div className="mt-3 text-3xl font-black sm:text-4xl">
                   {formatUsdRange(proposal.totalProject.min, proposal.totalProject.max)}
                 </div>
               </div>
-              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Mejora continua · Fase 6</div>
                 <div className="mt-3 text-3xl font-black text-slate-900 sm:text-4xl">
                   {formatUsd(proposal.monthly.min)} – {formatUsd(proposal.monthly.max)}
