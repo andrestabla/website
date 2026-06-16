@@ -73,8 +73,14 @@ function buildProposalHtml(proposal: any, sector: string, orgType: string, headc
 
     ${proposal?.diagnostic?.dimensions?.length ? `
       <div style="margin-top: 28px; padding: 24px; background-color: #f1f5f9; border-radius: 12px;">
-        <h3 style="margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b;">Diagnóstico de Madurez Digital (MD-IA)</h3>
-        <p style="margin: 0 0 14px 0; color: #0f172a; font-weight: bold;">DQ ${escapeHtml(String(proposal.diagnostic.dq))} · AIQ ${escapeHtml(String(proposal.diagnostic.aiq))}</p>
+        <div style="margin: 0 0 8px 0;">
+          <span style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; font-weight: bold;">Diagnóstico de Madurez Digital (MD-IA)</span>
+          <span style="display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background-color: #fef3c7; color: #b45309; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.08em;">Ejemplo ilustrativo</span>
+        </div>
+        <p style="margin: 0 0 14px 0; padding: 10px 12px; background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; color: #92400e; font-size: 12px; line-height: 1.5;">
+          Estos valores son una <strong>estimación de referencia</strong> a partir del nivel de madurez que indicaste, <strong>no un diagnóstico real</strong>. El diagnóstico MD-IA real se realiza con encuestas a tu equipo, entrevistas y análisis de tus datos, comparando contra benchmarks de tu sector.
+        </p>
+        <p style="margin: 0 0 14px 0; color: #0f172a; font-weight: bold;">DQ ${escapeHtml(String(proposal.diagnostic.dq))} · AIQ ${escapeHtml(String(proposal.diagnostic.aiq))} <span style="color:#94a3b8; font-weight:500;">(referencial)</span></p>
         ${proposal.diagnostic.summary ? `<p style="margin: 0 0 14px 0; color: #475569; line-height: 1.6;">${escapeHtml(proposal.diagnostic.summary)}</p>` : ''}
         <table style="width:100%; border-collapse: collapse;">
           ${proposal.diagnostic.dimensions.map((d: any) => `<tr>
