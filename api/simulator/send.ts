@@ -71,6 +71,19 @@ function buildProposalHtml(proposal: any, sector: string, orgType: string, headc
     </table>
     ${proposal?.executiveSummary ? `<p style="color: #475569; line-height: 1.6; margin-top: 20px;">${escapeHtml(proposal.executiveSummary)}</p>` : ''}
 
+    ${proposal?.diagnostic?.dimensions?.length ? `
+      <div style="margin-top: 28px; padding: 24px; background-color: #f1f5f9; border-radius: 12px;">
+        <h3 style="margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b;">Diagnóstico de Madurez Digital (MD-IA)</h3>
+        <p style="margin: 0 0 14px 0; color: #0f172a; font-weight: bold;">DQ ${escapeHtml(String(proposal.diagnostic.dq))} · AIQ ${escapeHtml(String(proposal.diagnostic.aiq))}</p>
+        ${proposal.diagnostic.summary ? `<p style="margin: 0 0 14px 0; color: #475569; line-height: 1.6;">${escapeHtml(proposal.diagnostic.summary)}</p>` : ''}
+        <table style="width:100%; border-collapse: collapse;">
+          ${proposal.diagnostic.dimensions.map((d: any) => `<tr>
+            <td style="padding: 6px 0; color: #475569; font-size: 14px;">${escapeHtml(d.name)}</td>
+            <td style="padding: 6px 0; text-align: right; color: #0f172a; font-weight: bold; font-size: 14px;">${escapeHtml(String(d.score))}/100 <span style="color:#94a3b8; font-weight:500;">(${escapeHtml(d.level)})</span></td>
+          </tr>`).join('')}
+        </table>
+      </div>` : ''}
+
     <div style="margin-top: 28px; padding: 24px; background-color: #0f172a; color: #e2e8f0; text-align: center;">
       <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #93c5fd;">Inversión del proyecto (Fases 1–5)</div>
       <div style="font-size: 24px; font-weight: 900; color: #ffffff; margin-top: 8px;">${escapeHtml(formatUsdRange(totalProject.min || 0, totalProject.max || 0))}</div>

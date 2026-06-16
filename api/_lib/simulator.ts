@@ -231,6 +231,88 @@ export function computeEstimate(headcount: string, maturity: string): SimulatorE
   }
 }
 
+// ---- Diagnóstico de Madurez Digital (MD-IA) — Fase 1 ----
+// Modelo fiel al deliverable real: 6 dimensiones, radar vs benchmark, DQ y AIQ.
+
+export type MaturityDimension = { id: string; name: string; weightAIQ: number }
+
+export const MD_DIMENSIONS: MaturityDimension[] = [
+  { id: 'estrategia', name: 'Estrategia', weightAIQ: 0.25 },
+  { id: 'infra', name: 'Infraestructura & Datos', weightAIQ: 0.3 },
+  { id: 'talento', name: 'Talento & Cultura', weightAIQ: 0.1 },
+  { id: 'gob', name: 'Gobernanza & Liderazgo', weightAIQ: 0.25 },
+  { id: 'procesos', name: 'Procesos & Automatización', weightAIQ: 0.05 },
+  { id: 'cx', name: 'Experiencia del cliente', weightAIQ: 0.05 },
+]
+
+// Benchmark de industria (referencia del deliverable MD-IA original).
+const MD_BENCHMARK: Record<string, number> = {
+  estrategia: 72,
+  infra: 75,
+  talento: 68,
+  gob: 70,
+  procesos: 66,
+  cx: 71,
+}
+
+const MD_BASE_BY_MATURITY: Record<MaturityKey, number> = {
+  inicial: 28,
+  'en-desarrollo': 50,
+  consolidado: 70,
+}
+
+export type MaturityLevel = 'bajo' | 'intermedio' | 'alto'
+
+export function levelForScore(score: number): MaturityLevel {
+  if (score < 34) return 'bajo'
+  if (score < 67) return 'intermedio'
+  return 'alto'
+}
+
+function hashString(value: string): number {
+  let h = 0
+  for (let i = 0; i < value.length; i++) {
+    h = (h * 31 + value.charCodeAt(i)) >>> 0
+  }
+  return h
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
+
+export type MaturityDiagnostic = {
+  dimensions: Array<{ id: string; name: string; score: number; benchmark: number; level: MaturityLevel; weightAIQ: number }>
+  dq: number
+  aiq: number
+}
+
+/**
+ * Calcula un Diagnóstico de Madurez Digital coherente con el nivel declarado y
+ * el sector. Los puntajes son deterministas por (sector, madurez) para que el
+ * radar sea estable; la IA solo añade la interpretación textual.
+ */
+export function computeMaturityDiagnostic(sector: string, maturity: string): MaturityDiagnostic {
+  const base = isMaturityKey(maturity) ? MD_BASE_BY_MATURITY[maturity] : 50
+  const dimensions = MD_DIMENSIONS.map((dim) => {
+    const offset = (hashString(`${sector}|${dim.id}`) % 25) - 12 // -12..+12
+    const score = Math.round(clamp(base + offset, 5, 95))
+    return {
+      id: dim.id,
+      name: dim.name,
+      score,
+      benchmark: MD_BENCHMARK[dim.id] ?? 70,
+      level: levelForScore(score),
+      weightAIQ: dim.weightAIQ,
+    }
+  })
+
+  const dq = Math.round((dimensions.reduce((s, d) => s + d.score, 0) / dimensions.length) * 10) / 10
+  const aiq = Math.round(dimensions.reduce((s, d) => s + d.score * d.weightAIQ, 0) * 10) / 10
+
+  return { dimensions, dq, aiq }
+}
+
 export function formatUsd(value: number): string {
   return `$${Math.round(value).toLocaleString('en-US')} USD`
 }

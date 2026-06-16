@@ -6,6 +6,7 @@ import {
   SIMULATOR_PHASES,
   SIMULATOR_CURRENCY,
   computeEstimate,
+  computeMaturityDiagnostic,
   getHeadcountLabel,
   getMaturityLabel,
   formatUsdRange,
@@ -29,8 +30,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const estimate = computeEstimate(headcount, maturity)
+    const diagnostic = computeMaturityDiagnostic(sector, maturity)
     const headcountLabel = getHeadcountLabel(headcount)
     const maturityLabel = getMaturityLabel(maturity)
+
+    const diagnosticForPrompt = diagnostic.dimensions
+      .map((d) => `  - ${d.name}: ${d.score}/100 (nivel ${d.level}; benchmark industria ${d.benchmark})`)
+      .join('\n')
 
     const phasesForPrompt = SIMULATOR_PHASES.map((phase, i) => {
       const est = estimate.phases[i]
@@ -58,6 +64,9 @@ CONTEXTO DEL CLIENTE (úsalo para personalizar TODO):
 - Retainer mensual (Fase 6): ${formatUsdRange(estimate.monthly.min, estimate.monthly.max)} / mes
 - Moneda: ${SIMULATOR_CURRENCY}
 
+DIAGNÓSTICO DE MADUREZ DIGITAL (MD-IA) ya calculado por el sistema (NO cambies los puntajes; DQ=${diagnostic.dq}, AIQ=${diagnostic.aiq}):
+${diagnosticForPrompt}
+
 LAS 6 FASES (con su inversión YA asignada por el sistema, NO inventes montos):
 ${phasesForPrompt}
 
@@ -83,6 +92,9 @@ Además genera:
 - "agentIntro": un saludo en primera persona (2-3 frases) donde te presentas, reconoces su contexto (sector, tamaño, madurez) y resumes la oportunidad de transformación.
 - "headline": un título de propuesta atractivo y específico para este cliente.
 - "executiveSummary": 2-3 frases que resuman la oportunidad para este sector, tamaño y madurez.
+- "diagnostic": objeto del Diagnóstico de Madurez Digital con:
+    - "summary": 2-3 frases interpretando el resultado global (DQ ${diagnostic.dq}, AIQ ${diagnostic.aiq}) para este sector.
+    - "dimensions": array con una entrada por dimensión { "id": "...", "interpretation": "1 frase específica del sector según su nivel y la brecha vs el benchmark" }. Usa estos ids en orden: ${diagnostic.dimensions.map((d) => d.id).join(', ')}.
 
 RESTRICCIONES:
 - Responde en español.
@@ -94,6 +106,7 @@ RESTRICCIONES:
   "agentIntro": "...",
   "headline": "...",
   "executiveSummary": "...",
+  "diagnostic": { "summary": "...", "dimensions": [ { "id": "estrategia", "interpretation": "..." } ] },
   "phases": [
     { "id": "adn", "whatWeDo": "...", "howWeDo": "...", "interventions": ["..."], "products": ["..."], "kpi": "...", "rationale": "...", "agentNote": "..." },
     { "id": "bpmn", "whatWeDo": "...", "howWeDo": "...", "interventions": ["..."], "products": ["..."], "kpi": "...", "rationale": "...", "agentNote": "..." },
@@ -108,7 +121,7 @@ RESTRICCIONES:
     const { data, providerUsed } = await generateJsonWithAI({
       prompt,
       temperature: 0.6,
-      maxTokens: 3600,
+      maxTokens: 4200,
     })
 
     const aiPhases: Record<string, any> = {}
@@ -146,11 +159,32 @@ RESTRICCIONES:
       }
     })
 
+    const aiDiagDims: Record<string, string> = {}
+    if (data?.diagnostic && Array.isArray(data.diagnostic.dimensions)) {
+      for (const d of data.diagnostic.dimensions) {
+        if (d && typeof d.id === 'string') aiDiagDims[d.id] = toStr(d.interpretation)
+      }
+    }
+    const diagnosticOut = {
+      dq: diagnostic.dq,
+      aiq: diagnostic.aiq,
+      summary: toStr(data?.diagnostic?.summary),
+      dimensions: diagnostic.dimensions.map((d) => ({
+        id: d.id,
+        name: d.name,
+        score: d.score,
+        benchmark: d.benchmark,
+        level: d.level,
+        interpretation: aiDiagDims[d.id] || '',
+      })),
+    }
+
     const proposal = {
       agentName: toStr(data?.agentName) || AGENT_NAME,
       agentIntro: toStr(data?.agentIntro),
       headline: toStr(data?.headline) || `Transformación digital para ${sector}`,
       executiveSummary: toStr(data?.executiveSummary),
+      diagnostic: diagnosticOut,
       currency: SIMULATOR_CURRENCY,
       sector,
       orgType,

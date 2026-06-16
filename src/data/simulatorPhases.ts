@@ -138,11 +138,28 @@ export type SimulatorProposalPhase = {
   agentNote: string
 }
 
+export type MaturityDiagnosticDimension = {
+  id: string
+  name: string
+  score: number
+  benchmark: number
+  level: 'bajo' | 'intermedio' | 'alto'
+  interpretation: string
+}
+
+export type MaturityDiagnostic = {
+  dq: number
+  aiq: number
+  summary: string
+  dimensions: MaturityDiagnosticDimension[]
+}
+
 export type SimulatorProposal = {
   agentName: string
   agentIntro: string
   headline: string
   executiveSummary: string
+  diagnostic: MaturityDiagnostic
   currency: string
   sector: string
   orgType: string

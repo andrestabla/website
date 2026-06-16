@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from 'recharts'
+import {
   ArrowRight,
   ChevronLeft,
   Sparkles,
@@ -39,7 +49,87 @@ import {
   formatUsdRange,
   type SimulatorProposal,
   type SimulatorProposalPhase,
+  type MaturityDiagnostic,
 } from '../data/simulatorPhases'
+
+const MD_LEVEL_STYLES: Record<string, { label: string; badge: string; text: string }> = {
+  bajo: { label: 'Bajo', badge: 'bg-red-500/15 text-red-300 border-red-500/30', text: 'text-red-300' },
+  intermedio: { label: 'Intermedio', badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30', text: 'text-amber-300' },
+  alto: { label: 'Alto', badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30', text: 'text-emerald-300' },
+}
+
+function MaturityDiagnosticView({ diagnostic }: { diagnostic: MaturityDiagnostic }) {
+  const radarData = diagnostic.dimensions.map((d) => ({
+    dimension: d.name,
+    Tú: d.score,
+    Benchmark: d.benchmark,
+  }))
+
+  return (
+    <div className="mb-8 rounded-3xl border border-emerald-500/15 bg-slate-900/40 p-8 backdrop-blur-sm">
+      <div className="mb-6 flex items-center gap-2 border-b border-white/5 pb-4">
+        <Gauge className="h-4 w-4 text-emerald-400" />
+        <h4 className="text-sm font-bold uppercase tracking-widest text-slate-300">Diagnóstico de Madurez Digital (MD-IA)</h4>
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={320}>
+            <RadarChart data={radarData} outerRadius="72%">
+              <PolarGrid stroke="#334155" />
+              <PolarAngleAxis dataKey="dimension" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+              <PolarRadiusAxis domain={[0, 100]} tick={{ fill: '#475569', fontSize: 9 }} axisLine={false} />
+              <Radar name="Benchmark" dataKey="Benchmark" stroke="#64748b" fill="#64748b" fillOpacity={0.12} />
+              <Radar name="Tú" dataKey="Tú" stroke="#10b981" fill="#10b981" fillOpacity={0.35} />
+              <Legend formatter={(value) => <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{value}</span>} />
+              <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, fontSize: 12, color: '#e2e8f0' }} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-emerald-400/30 bg-emerald-900/30 p-5 text-center">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-300">DQ</div>
+              <div className="mt-1 text-3xl font-black text-white">{diagnostic.dq}</div>
+              <div className="text-[10px] text-emerald-200/60">Digital Quotient</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-slate-800/40 p-5 text-center">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-300">AIQ</div>
+              <div className="mt-1 text-3xl font-black text-white">{diagnostic.aiq}</div>
+              <div className="text-[10px] text-slate-400/70">AI Quotient</div>
+            </div>
+          </div>
+          {diagnostic.summary && <p className="text-sm leading-relaxed text-slate-300">{diagnostic.summary}</p>}
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {diagnostic.dimensions.map((d) => {
+          const style = MD_LEVEL_STYLES[d.level] || MD_LEVEL_STYLES.intermedio
+          return (
+            <div key={d.id} className="rounded-2xl border border-white/5 bg-slate-800/30 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-bold text-white">{d.name}</span>
+                <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${style.badge}`}>
+                  {style.label}
+                </span>
+              </div>
+              <div className="mt-2 flex items-end gap-2">
+                <span className={`text-2xl font-black ${style.text}`}>{d.score}</span>
+                <span className="mb-0.5 text-xs text-slate-500">/ 100 · bench {d.benchmark}</span>
+              </div>
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-700/50">
+                <div className="h-full rounded-full bg-emerald-400/70" style={{ width: `${Math.min(100, d.score)}%` }} />
+              </div>
+              {d.interpretation && <p className="mt-3 text-xs leading-relaxed text-slate-400">{d.interpretation}</p>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 const PHASE_ICONS: Record<string, LucideIcon> = {
   ScanSearch,
@@ -606,6 +696,11 @@ export function SimuladorEmpresas() {
               <p className="mb-8 max-w-3xl text-lg text-slate-400">{currentPhase.description}</p>
 
               {currentPhase.agentNote && <div className="mb-10 max-w-3xl"><AgentBubble>{currentPhase.agentNote}</AgentBubble></div>}
+
+              {/* Diagnóstico de Madurez Digital (solo Fase 1) */}
+              {currentPhase.id === 'adn' && proposal.diagnostic?.dimensions?.length > 0 && (
+                <MaturityDiagnosticView diagnostic={proposal.diagnostic} />
+              )}
 
               {/* Qué se hace / Cómo se hace */}
               <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
