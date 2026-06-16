@@ -788,9 +788,9 @@ export function SimuladorEmpresas() {
                 <Bot className="h-8 w-8" />
               </div>
             </div>
-            <h3 className="text-3xl font-black tracking-tight text-slate-900">{AGENT_NAME} está construyendo tu propuesta…</h3>
-            <p className="mt-6 h-7 max-w-md text-lg text-brand-secondary transition-all">{THINKING_MESSAGES[thinkingIdx]}</p>
-            <p className="mt-2 max-w-md text-sm text-slate-400">
+            <h3 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">{AGENT_NAME} está construyendo tu propuesta…</h3>
+            <p className="mt-6 min-h-[3.25rem] max-w-md px-4 text-base text-brand-secondary sm:text-lg">{THINKING_MESSAGES[thinkingIdx]}</p>
+            <p className="mt-1 max-w-md px-4 text-sm text-slate-400">
               Sector <strong className="text-slate-600">{sector}</strong> · {headcountLabel} · Madurez {maturityLabel}
             </p>
           </div>
@@ -1016,13 +1016,13 @@ export function SimuladorEmpresas() {
             <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="rounded-3xl bg-brand-primary p-6 text-center text-white sm:p-8">
                 <div className="text-xs font-bold uppercase tracking-widest text-blue-200">Inversión del proyecto · Fases 1–5</div>
-                <div className="mt-3 text-3xl font-black sm:text-4xl">
+                <div className="mt-3 text-2xl font-black sm:text-4xl">
                   {formatUsdRange(proposal.totalProject.min, proposal.totalProject.max)}
                 </div>
               </div>
               <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Mejora continua · Fase 6</div>
-                <div className="mt-3 text-3xl font-black text-slate-900 sm:text-4xl">
+                <div className="mt-3 text-2xl font-black text-slate-900 sm:text-4xl">
                   {formatUsd(proposal.monthly.min)} – {formatUsd(proposal.monthly.max)}
                 </div>
                 <div className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">Retainer mensual</div>
