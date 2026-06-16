@@ -39,6 +39,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { getOrCreateVisitorId, getSessionId } from '../lib/privacyConsent'
+import { MethodologyChatbot } from '../components/MethodologyChatbot'
 import {
   SIMULATOR_PHASES,
   SIMULATOR_SECTORS,
@@ -51,85 +52,6 @@ import {
   type SimulatorProposalPhase,
   type MaturityDiagnostic,
 } from '../data/simulatorPhases'
-
-const MD_LEVEL_STYLES: Record<string, { label: string; badge: string; text: string }> = {
-  bajo: { label: 'Bajo', badge: 'bg-red-500/15 text-red-300 border-red-500/30', text: 'text-red-300' },
-  intermedio: { label: 'Intermedio', badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30', text: 'text-amber-300' },
-  alto: { label: 'Alto', badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30', text: 'text-emerald-300' },
-}
-
-function MaturityDiagnosticView({ diagnostic }: { diagnostic: MaturityDiagnostic }) {
-  const radarData = diagnostic.dimensions.map((d) => ({
-    dimension: d.name,
-    Tú: d.score,
-    Benchmark: d.benchmark,
-  }))
-
-  return (
-    <div className="mb-8 rounded-3xl border border-emerald-500/15 bg-slate-900/40 p-8 backdrop-blur-sm">
-      <div className="mb-6 flex items-center gap-2 border-b border-white/5 pb-4">
-        <Gauge className="h-4 w-4 text-emerald-400" />
-        <h4 className="text-sm font-bold uppercase tracking-widest text-slate-300">Diagnóstico de Madurez Digital (MD-IA)</h4>
-      </div>
-
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ResponsiveContainer width="100%" height={320}>
-            <RadarChart data={radarData} outerRadius="72%">
-              <PolarGrid stroke="#334155" />
-              <PolarAngleAxis dataKey="dimension" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-              <PolarRadiusAxis domain={[0, 100]} tick={{ fill: '#475569', fontSize: 9 }} axisLine={false} />
-              <Radar name="Benchmark" dataKey="Benchmark" stroke="#64748b" fill="#64748b" fillOpacity={0.12} />
-              <Radar name="Tú" dataKey="Tú" stroke="#10b981" fill="#10b981" fillOpacity={0.35} />
-              <Legend formatter={(value) => <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{value}</span>} />
-              <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #334155', borderRadius: 12, fontSize: 12, color: '#e2e8f0' }} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl border border-emerald-400/30 bg-emerald-900/30 p-5 text-center">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-300">DQ</div>
-              <div className="mt-1 text-3xl font-black text-white">{diagnostic.dq}</div>
-              <div className="text-[10px] text-emerald-200/60">Digital Quotient</div>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-800/40 p-5 text-center">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-300">AIQ</div>
-              <div className="mt-1 text-3xl font-black text-white">{diagnostic.aiq}</div>
-              <div className="text-[10px] text-slate-400/70">AI Quotient</div>
-            </div>
-          </div>
-          {diagnostic.summary && <p className="text-sm leading-relaxed text-slate-300">{diagnostic.summary}</p>}
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {diagnostic.dimensions.map((d) => {
-          const style = MD_LEVEL_STYLES[d.level] || MD_LEVEL_STYLES.intermedio
-          return (
-            <div key={d.id} className="rounded-2xl border border-white/5 bg-slate-800/30 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-bold text-white">{d.name}</span>
-                <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${style.badge}`}>
-                  {style.label}
-                </span>
-              </div>
-              <div className="mt-2 flex items-end gap-2">
-                <span className={`text-2xl font-black ${style.text}`}>{d.score}</span>
-                <span className="mb-0.5 text-xs text-slate-500">/ 100 · bench {d.benchmark}</span>
-              </div>
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-700/50">
-                <div className="h-full rounded-full bg-emerald-400/70" style={{ width: `${Math.min(100, d.score)}%` }} />
-              </div>
-              {d.interpretation && <p className="mt-3 text-xs leading-relaxed text-slate-400">{d.interpretation}</p>}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
 
 const PHASE_ICONS: Record<string, LucideIcon> = {
   ScanSearch,
@@ -146,8 +68,14 @@ const THINKING_MESSAGES = [
   'Analizando tu sector y modelo de negocio…',
   'Estimando procesos y soluciones digitales…',
   'Dimensionando la inversión por fase…',
-  'Redactando los productos específicos para tu organización…',
+  'Redactando los productos para tu organización…',
 ]
+
+const MD_LEVEL_STYLES: Record<string, { label: string; badge: string; text: string }> = {
+  bajo: { label: 'Bajo', badge: 'bg-red-50 text-red-600 border-red-200', text: 'text-red-600' },
+  intermedio: { label: 'Intermedio', badge: 'bg-amber-50 text-amber-600 border-amber-200', text: 'text-amber-600' },
+  alto: { label: 'Alto', badge: 'bg-emerald-50 text-emerald-600 border-emerald-200', text: 'text-emerald-600' },
+}
 
 type Step = 'intro' | 'sector' | 'orgType' | 'headcount' | 'maturity' | 'loading' | 'phase' | 'summary'
 
@@ -185,20 +113,20 @@ function moneyLabel(phase: SimulatorProposalPhase) {
 function AgentAvatar({ size = 'md' }: { size?: 'sm' | 'md' }) {
   const dim = size === 'sm' ? 'h-9 w-9' : 'h-11 w-11'
   return (
-    <div className={`relative flex ${dim} flex-shrink-0 items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-500/10 text-emerald-300`}>
+    <div className={`relative flex ${dim} flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-brand-primary`}>
       <Bot className={size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'} />
-      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#020617] bg-emerald-400" />
+      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-400" />
     </div>
   )
 }
 
 function AgentBubble({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-5">
+    <div className="flex items-start gap-4 rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
       <AgentAvatar />
       <div>
-        <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-300">{AGENT_NAME} · Agente IA</div>
-        <div className="mt-1 leading-relaxed text-slate-200">{children}</div>
+        <div className="text-[10px] font-bold uppercase tracking-widest text-brand-secondary">{AGENT_NAME} · Agente IA</div>
+        <div className="mt-1 leading-relaxed text-slate-700">{children}</div>
       </div>
     </div>
   )
@@ -211,7 +139,7 @@ function ProgressDots({ current, total }: { current: number; total: number }) {
         <div
           key={i}
           className={`h-1.5 w-7 rounded-full transition-colors duration-500 ${
-            i <= current ? 'bg-emerald-400' : 'bg-slate-800'
+            i <= current ? 'bg-brand-secondary' : 'bg-slate-200'
           }`}
         />
       ))}
@@ -234,10 +162,10 @@ function OptionGrid({
         <button
           key={opt.value}
           onClick={() => onSelect(opt.value)}
-          className="group flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800/30 px-6 py-5 text-left text-sm font-medium text-slate-300 transition-all hover:-translate-y-1 hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-white active:scale-95"
+          className="group flex items-center justify-between rounded-xl border border-slate-200 bg-white px-6 py-5 text-left text-sm font-medium text-slate-700 shadow-sm transition-all hover:-translate-y-1 hover:border-brand-secondary hover:bg-blue-50/60 hover:text-slate-900 active:scale-95"
         >
           {opt.label}
-          <ArrowRight className="h-4 w-4 text-emerald-400 opacity-0 transition-opacity group-hover:opacity-100" />
+          <ArrowRight className="h-4 w-4 text-brand-secondary opacity-0 transition-opacity group-hover:opacity-100" />
         </button>
       ))}
     </div>
@@ -269,10 +197,10 @@ function PhaseRail({
                 <div
                   className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all ${
                     isCurrent
-                      ? 'border-emerald-400 bg-emerald-400/15 text-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.25)]'
+                      ? 'border-brand-secondary bg-blue-50 text-brand-primary shadow-[0_0_0_4px_rgba(37,99,235,0.08)]'
                       : isDone
-                        ? 'border-emerald-500/60 bg-emerald-500/20 text-emerald-400'
-                        : 'border-slate-700 bg-slate-800/40 text-slate-500 group-hover:border-slate-500 group-hover:text-slate-300'
+                        ? 'border-brand-secondary bg-brand-secondary text-white'
+                        : 'border-slate-300 bg-white text-slate-400 group-hover:border-slate-400'
                   }`}
                 >
                   {isDone ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
@@ -280,14 +208,14 @@ function PhaseRail({
                 <div className="flex flex-col gap-0.5">
                   <span
                     className={`text-[10px] font-bold uppercase tracking-widest ${
-                      isCurrent ? 'text-emerald-300' : 'text-slate-500'
+                      isCurrent ? 'text-brand-secondary' : 'text-slate-400'
                     }`}
                   >
                     Fase {phase.index}
                   </span>
                   <span
                     className={`text-xs font-semibold leading-tight ${
-                      isCurrent ? 'text-white' : isDone ? 'text-slate-300' : 'text-slate-500'
+                      isCurrent ? 'text-slate-900' : isDone ? 'text-slate-600' : 'text-slate-400'
                     }`}
                   >
                     {phase.name}
@@ -297,10 +225,83 @@ function PhaseRail({
               {i < phases.length - 1 && (
                 <div
                   className={`mt-6 h-0.5 w-6 flex-shrink-0 rounded sm:w-10 ${
-                    i < current ? 'bg-emerald-500/60' : 'bg-slate-700'
+                    i < current ? 'bg-brand-secondary' : 'bg-slate-200'
                   }`}
                 />
               )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function MaturityDiagnosticView({ diagnostic }: { diagnostic: MaturityDiagnostic }) {
+  const radarData = diagnostic.dimensions.map((d) => ({
+    dimension: d.name,
+    Tú: d.score,
+    Benchmark: d.benchmark,
+  }))
+
+  return (
+    <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="mb-6 flex items-center gap-2 border-b border-slate-100 pb-4">
+        <Gauge className="h-4 w-4 text-brand-secondary" />
+        <h4 className="text-sm font-bold uppercase tracking-widest text-slate-600">Diagnóstico de Madurez Digital (MD-IA)</h4>
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={320}>
+            <RadarChart data={radarData} outerRadius="72%">
+              <PolarGrid stroke="#e2e8f0" />
+              <PolarAngleAxis dataKey="dimension" tick={{ fill: '#475569', fontSize: 11 }} />
+              <PolarRadiusAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 9 }} axisLine={false} />
+              <Radar name="Benchmark" dataKey="Benchmark" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.12} />
+              <Radar name="Tú" dataKey="Tú" stroke="#2563eb" fill="#2563eb" fillOpacity={0.3} />
+              <Legend formatter={(value) => <span className="text-xs font-bold uppercase tracking-widest text-slate-500">{value}</span>} />
+              <Tooltip contentStyle={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, fontSize: 12, color: '#0f172a' }} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl bg-brand-primary p-5 text-center text-white">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-blue-200">DQ</div>
+              <div className="mt-1 text-3xl font-black">{diagnostic.dq}</div>
+              <div className="text-[10px] text-blue-200/80">Digital Quotient</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">AIQ</div>
+              <div className="mt-1 text-3xl font-black text-slate-900">{diagnostic.aiq}</div>
+              <div className="text-[10px] text-slate-400">AI Quotient</div>
+            </div>
+          </div>
+          {diagnostic.summary && <p className="text-sm leading-relaxed text-slate-600">{diagnostic.summary}</p>}
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {diagnostic.dimensions.map((d) => {
+          const style = MD_LEVEL_STYLES[d.level] || MD_LEVEL_STYLES.intermedio
+          return (
+            <div key={d.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-bold text-slate-900">{d.name}</span>
+                <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${style.badge}`}>
+                  {style.label}
+                </span>
+              </div>
+              <div className="mt-2 flex items-end gap-2">
+                <span className={`text-2xl font-black ${style.text}`}>{d.score}</span>
+                <span className="mb-0.5 text-xs text-slate-400">/ 100 · bench {d.benchmark}</span>
+              </div>
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-brand-secondary" style={{ width: `${Math.min(100, d.score)}%` }} />
+              </div>
+              {d.interpretation && <p className="mt-3 text-xs leading-relaxed text-slate-500">{d.interpretation}</p>}
             </div>
           )
         })}
@@ -348,7 +349,6 @@ export function SimuladorEmpresas() {
     [maturity]
   )
 
-  // Inversión del proyecto acumulada (solo fases one-time, hasta la fase actual).
   const accumulatedProject = useMemo(() => {
     if (!proposal) return { min: 0, max: 0 }
     return proposal.phases
@@ -452,17 +452,17 @@ export function SimuladorEmpresas() {
   const PhaseIcon = currentPhase ? PHASE_ICONS[SIMULATOR_PHASES[phaseIndex]?.icon] || Layers : Layers
 
   return (
-    <div className="min-h-screen bg-[#020617] text-slate-200">
-      <header className="fixed inset-x-0 top-0 z-50 flex h-20 items-center justify-between px-6 border-b border-white/5 bg-[#020617]/80 backdrop-blur-md">
+    <div className="min-h-screen bg-slate-50 text-slate-700">
+      <header className="fixed inset-x-0 top-0 z-50 flex h-20 items-center justify-between border-b border-slate-200 bg-white/90 px-6 backdrop-blur-md">
         <Link
           to="/empresas"
-          className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-emerald-400 transition-colors hover:text-emerald-300"
+          className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-brand-secondary transition-colors hover:text-brand-primary"
         >
           <ChevronLeft className="h-5 w-5" />
           Volver a Empresas
         </Link>
-        <span className="hidden items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 sm:flex">
-          <Sparkles className="h-4 w-4 text-emerald-400" />
+        <span className="hidden items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 sm:flex">
+          <Sparkles className="h-4 w-4 text-brand-secondary" />
           Simulador de Transformación Digital
         </span>
       </header>
@@ -471,22 +471,23 @@ export function SimuladorEmpresas() {
         {/* INTRO */}
         {step === 'intro' && (
           <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-2 text-xs font-bold uppercase tracking-widest text-emerald-300">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-5 py-2 text-xs font-bold uppercase tracking-widest text-brand-secondary">
               <Sparkles className="h-4 w-4" /> Experiencia guiada por IA
             </div>
-            <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-6xl">
+            <h1 className="mb-6 text-4xl font-black leading-tight tracking-tight text-slate-900 sm:text-6xl">
               Simula tu Transformación Digital, fase por fase
             </h1>
-            <p className="mb-8 max-w-2xl text-xl text-slate-400">
+            <p className="mb-8 max-w-2xl text-xl text-slate-500">
               La transformación digital no es comprar tecnología: es un proceso ordenado para reducir fricción operativa,
-              ganar control interno y servir mejor a tus clientes. Te guiaré por las <strong className="text-slate-200">6 fases</strong> de
-              nuestra metodología, estimando inversión, intervenciones y los productos concretos que obtendrías en cada una.
+              ganar control interno y servir mejor a tus clientes. Te guiaré por las{' '}
+              <strong className="text-slate-800">6 fases</strong> de nuestra metodología, estimando inversión,
+              intervenciones y los productos concretos que obtendrías en cada una.
             </p>
 
             <div className="mb-12 max-w-2xl">
               <AgentBubble>
-                Hola, soy <strong className="text-white">{AGENT_NAME}</strong>, tu agente de transformación digital. Cuéntame
-                cuatro datos de tu organización y construiré contigo una propuesta personalizada, fase por fase.
+                Hola, soy <strong className="text-slate-900">{AGENT_NAME}</strong>, tu agente de transformación digital.
+                Cuéntame cuatro datos de tu organización y construiré contigo una propuesta personalizada, fase por fase.
               </AgentBubble>
             </div>
 
@@ -494,13 +495,13 @@ export function SimuladorEmpresas() {
               {SIMULATOR_PHASES.map((phase) => {
                 const Icon = PHASE_ICONS[phase.icon] || Layers
                 return (
-                  <div key={phase.id} className="rounded-2xl border border-white/5 bg-slate-800/30 p-6 backdrop-blur-sm">
-                    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/50 text-emerald-400">
+                  <div key={phase.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-brand-primary">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Fase {phase.index}</div>
-                    <div className="mt-1 text-lg font-bold text-white">{phase.name}</div>
-                    <div className="mt-1 text-sm text-slate-400">{phase.tagline}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Fase {phase.index}</div>
+                    <div className="mt-1 text-lg font-bold text-slate-900">{phase.name}</div>
+                    <div className="mt-1 text-sm text-slate-500">{phase.tagline}</div>
                   </div>
                 )
               })}
@@ -511,7 +512,7 @@ export function SimuladorEmpresas() {
                 trackEvent('simulator_started')
                 setStep('sector')
               }}
-              className="inline-flex items-center gap-3 rounded-full border border-emerald-400/50 bg-emerald-400/10 px-10 py-4 text-sm font-black uppercase tracking-[0.2em] text-emerald-300 transition-all hover:bg-emerald-400/20"
+              className="inline-flex items-center gap-3 rounded-full bg-brand-primary px-10 py-4 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-brand-secondary"
             >
               Comenzar simulación <ArrowRight className="h-5 w-5" />
             </button>
@@ -522,7 +523,7 @@ export function SimuladorEmpresas() {
         {(step === 'sector' || step === 'orgType' || step === 'headcount' || step === 'maturity') && (
           <div className="animate-in slide-in-from-right-8 duration-500">
             <div className="mb-12 flex items-center justify-between">
-              <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-400">
+              <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-brand-secondary">
                 <Sparkles className="h-4 w-4" /> Cuéntame de tu organización
               </span>
               <ProgressDots current={['sector', 'orgType', 'headcount', 'maturity'].indexOf(step)} total={4} />
@@ -532,15 +533,15 @@ export function SimuladorEmpresas() {
               <>
                 <button
                   onClick={() => setStep('intro')}
-                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-300"
+                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-slate-700"
                 >
                   <ChevronLeft className="h-4 w-4" /> Volver a la introducción
                 </button>
-                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-800/50 text-slate-300">
+                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-brand-primary shadow-sm">
                   <Building2 className="h-8 w-8" />
                 </div>
-                <h2 className="mb-4 text-4xl font-black text-white sm:text-5xl">¿Cuál es tu sector?</h2>
-                <p className="mb-10 text-xl text-slate-400 md:w-2/3">
+                <h2 className="mb-4 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">¿Cuál es tu sector?</h2>
+                <p className="mb-10 text-xl text-slate-500 md:w-2/3">
                   Selecciona la industria que mejor describe tu organización para personalizar la propuesta.
                 </p>
                 <OptionGrid
@@ -557,15 +558,15 @@ export function SimuladorEmpresas() {
               <>
                 <button
                   onClick={() => setStep('sector')}
-                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-300"
+                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-slate-700"
                 >
                   <ChevronLeft className="h-4 w-4" /> Volver a Sector
                 </button>
-                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-800/50 text-slate-300">
+                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-brand-primary shadow-sm">
                   <Layers className="h-8 w-8" />
                 </div>
-                <h2 className="mb-4 text-4xl font-black text-white sm:text-5xl">¿Qué tipo de organización eres?</h2>
-                <p className="mb-10 text-xl text-slate-400 md:w-2/3">
+                <h2 className="mb-4 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">¿Qué tipo de organización eres?</h2>
+                <p className="mb-10 text-xl text-slate-500 md:w-2/3">
                   Ajustamos el alcance y la inversión según la naturaleza de tu organización.
                 </p>
                 <OptionGrid
@@ -582,15 +583,15 @@ export function SimuladorEmpresas() {
               <>
                 <button
                   onClick={() => setStep('orgType')}
-                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-300"
+                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-slate-700"
                 >
                   <ChevronLeft className="h-4 w-4" /> Volver a Tipo de organización
                 </button>
-                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-800/50 text-slate-300">
+                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-brand-primary shadow-sm">
                   <Users className="h-8 w-8" />
                 </div>
-                <h2 className="mb-4 text-4xl font-black text-white sm:text-5xl">¿Cuántos colaboradores tienen?</h2>
-                <p className="mb-10 text-xl text-slate-400 md:w-2/3">
+                <h2 className="mb-4 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">¿Cuántos colaboradores tienen?</h2>
+                <p className="mb-10 text-xl text-slate-500 md:w-2/3">
                   El tamaño del equipo nos permite estimar cuántos procesos hay que mapear: a más personas, más procesos.
                 </p>
                 <OptionGrid
@@ -608,19 +609,19 @@ export function SimuladorEmpresas() {
               <>
                 <button
                   onClick={() => setStep('headcount')}
-                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-300"
+                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-slate-700"
                 >
                   <ChevronLeft className="h-4 w-4" /> Volver a Colaboradores
                 </button>
-                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-800/50 text-slate-300">
+                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-brand-primary shadow-sm">
                   <Gauge className="h-8 w-8" />
                 </div>
-                <h2 className="mb-4 text-4xl font-black text-white sm:text-5xl">¿Cuál es tu madurez digital?</h2>
-                <p className="mb-10 text-xl text-slate-400 md:w-2/3">
+                <h2 className="mb-4 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">¿Cuál es tu madurez digital?</h2>
+                <p className="mb-10 text-xl text-slate-500 md:w-2/3">
                   Esto nos dice si partimos desde cero o construimos sobre sistemas existentes, y ajusta el esfuerzo estimado.
                 </p>
                 {error && (
-                  <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 p-5 text-sm font-medium text-red-400">
+                  <div className="mb-8 rounded-xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-600">
                     {error}
                   </div>
                 )}
@@ -632,13 +633,13 @@ export function SimuladorEmpresas() {
                         setMaturity(mat.value)
                         handleGenerate(mat.value)
                       }}
-                      className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-700 bg-slate-800/30 px-8 py-6 text-left transition-all hover:-translate-y-1 hover:border-emerald-500/40 hover:bg-emerald-500/10 active:scale-95"
+                      className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-8 py-6 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-brand-secondary hover:bg-blue-50/60 active:scale-95"
                     >
                       <div>
-                        <div className="text-lg font-bold text-white">{mat.label}</div>
-                        <div className="mt-1 text-sm text-slate-400">{mat.description}</div>
+                        <div className="text-lg font-bold text-slate-900">{mat.label}</div>
+                        <div className="mt-1 text-sm text-slate-500">{mat.description}</div>
                       </div>
-                      <ArrowRight className="h-5 w-5 flex-shrink-0 text-emerald-400 opacity-0 transition-opacity group-hover:opacity-100" />
+                      <ArrowRight className="h-5 w-5 flex-shrink-0 text-brand-secondary opacity-0 transition-opacity group-hover:opacity-100" />
                     </button>
                   ))}
                 </div>
@@ -651,16 +652,16 @@ export function SimuladorEmpresas() {
         {step === 'loading' && (
           <div className="flex flex-col items-center justify-center py-28 text-center animate-in zoom-in duration-500">
             <div className="relative mb-10 flex h-28 w-28 items-center justify-center">
-              <div className="absolute inset-0 animate-ping rounded-full bg-emerald-500/20" />
-              <div className="absolute inset-4 animate-pulse rounded-full bg-emerald-500/20" />
-              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-500/10 text-emerald-300">
+              <div className="absolute inset-0 animate-ping rounded-full bg-blue-500/10" />
+              <div className="absolute inset-4 animate-pulse rounded-full bg-blue-500/10" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-brand-primary">
                 <Bot className="h-8 w-8" />
               </div>
             </div>
-            <h3 className="text-3xl font-black text-white">{AGENT_NAME} está construyendo tu propuesta…</h3>
-            <p className="mt-6 h-7 max-w-md text-lg text-emerald-300/90 transition-all">{THINKING_MESSAGES[thinkingIdx]}</p>
-            <p className="mt-2 max-w-md text-sm text-slate-500">
-              Sector <strong className="text-slate-300">{sector}</strong> · {headcountLabel} · Madurez {maturityLabel}
+            <h3 className="text-3xl font-black tracking-tight text-slate-900">{AGENT_NAME} está construyendo tu propuesta…</h3>
+            <p className="mt-6 h-7 max-w-md text-lg text-brand-secondary transition-all">{THINKING_MESSAGES[thinkingIdx]}</p>
+            <p className="mt-2 max-w-md text-sm text-slate-400">
+              Sector <strong className="text-slate-600">{sector}</strong> · {headcountLabel} · Madurez {maturityLabel}
             </p>
           </div>
         )}
@@ -668,7 +669,7 @@ export function SimuladorEmpresas() {
         {/* PHASE NAVIGATION */}
         {step === 'phase' && proposal && currentPhase && (
           <div>
-            <div className="mb-8 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-400">
+            <div className="mb-8 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-brand-secondary">
               <Sparkles className="h-4 w-4" /> Navegación por fases · {currentPhase.index} de 6
             </div>
 
@@ -682,18 +683,18 @@ export function SimuladorEmpresas() {
                   : 'animate-in slide-in-from-right-8 fade-in duration-500'
               }
             >
-              <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+              <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-brand-primary">
                 <PhaseIcon className="h-8 w-8" />
               </div>
 
-              <div className="text-sm font-bold uppercase tracking-widest text-slate-500">{currentPhase.tagline}</div>
-              <h2 className="mb-4 mt-2 text-4xl font-black text-white sm:text-5xl">
+              <div className="text-sm font-bold uppercase tracking-widest text-brand-secondary">{currentPhase.tagline}</div>
+              <h2 className="mb-4 mt-2 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
                 {currentPhase.name}
                 {currentPhase.basis && (
-                  <span className="ml-3 align-middle text-base font-bold text-emerald-300">· {currentPhase.basis}</span>
+                  <span className="ml-3 align-middle text-base font-bold text-brand-secondary">· {currentPhase.basis}</span>
                 )}
               </h2>
-              <p className="mb-8 max-w-3xl text-lg text-slate-400">{currentPhase.description}</p>
+              <p className="mb-8 max-w-3xl text-lg text-slate-500">{currentPhase.description}</p>
 
               {currentPhase.agentNote && <div className="mb-10 max-w-3xl"><AgentBubble>{currentPhase.agentNote}</AgentBubble></div>}
 
@@ -705,19 +706,19 @@ export function SimuladorEmpresas() {
               {/* Qué se hace / Cómo se hace */}
               <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {currentPhase.whatWeDo && (
-                  <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
-                    <h4 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-400">
-                      <ListChecks className="h-4 w-4" /> ¿Qué se hace?
+                  <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                    <h4 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
+                      <ListChecks className="h-4 w-4 text-brand-secondary" /> ¿Qué se hace?
                     </h4>
-                    <p className="leading-relaxed text-slate-200">{currentPhase.whatWeDo}</p>
+                    <p className="leading-relaxed text-slate-700">{currentPhase.whatWeDo}</p>
                   </div>
                 )}
                 {currentPhase.howWeDo && (
-                  <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
-                    <h4 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-400">
-                      <Cog className="h-4 w-4" /> ¿Cómo se hace?
+                  <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                    <h4 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
+                      <Cog className="h-4 w-4 text-brand-secondary" /> ¿Cómo se hace?
                     </h4>
-                    <p className="leading-relaxed text-slate-200">{currentPhase.howWeDo}</p>
+                    <p className="leading-relaxed text-slate-700">{currentPhase.howWeDo}</p>
                   </div>
                 )}
               </div>
@@ -726,7 +727,7 @@ export function SimuladorEmpresas() {
                 {currentPhase.methods.map((m) => (
                   <span
                     key={m}
-                    className="rounded-full border border-slate-700 bg-slate-800/40 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-300"
+                    className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-600"
                   >
                     {m}
                   </span>
@@ -735,32 +736,32 @@ export function SimuladorEmpresas() {
 
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
                 {/* Interventions */}
-                <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
-                  <h4 className="mb-6 flex items-center gap-2 border-b border-white/5 pb-4 text-sm font-bold uppercase tracking-widest text-slate-400">
-                    <Wrench className="h-4 w-4" /> Intervenciones / Consultoría
+                <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                  <h4 className="mb-6 flex items-center gap-2 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-500">
+                    <Wrench className="h-4 w-4 text-brand-secondary" /> Intervenciones / Consultoría
                   </h4>
                   <ul className="flex flex-col gap-4">
                     {currentPhase.interventions.map((item, idx) => (
                       <li key={idx} className="flex items-start gap-3">
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-400" />
-                        <span className="text-slate-200">{item}</span>
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-secondary" />
+                        <span className="text-slate-700">{item}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
                 {/* Products */}
-                <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
-                  <h4 className="mb-6 flex items-center gap-2 border-b border-white/5 pb-4 text-sm font-bold uppercase tracking-widest text-slate-400">
-                    <Package className="h-4 w-4" /> Productos para tu organización
+                <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                  <h4 className="mb-6 flex items-center gap-2 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-500">
+                    <Package className="h-4 w-4 text-brand-secondary" /> Productos para tu organización
                   </h4>
                   <ul className="flex flex-col gap-4">
                     {currentPhase.products.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-3 rounded-2xl border border-white/5 bg-slate-900/50 p-4">
-                        <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+                      <li key={idx} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-50 text-brand-primary">
                           <Package className="h-3.5 w-3.5" />
                         </div>
-                        <span className="text-slate-200">{item}</span>
+                        <span className="text-slate-700">{item}</span>
                       </li>
                     ))}
                   </ul>
@@ -769,22 +770,22 @@ export function SimuladorEmpresas() {
 
               {/* Investment */}
               <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div className="rounded-3xl border border-emerald-500/20 bg-emerald-950/20 p-8">
-                  <div className="text-xs font-bold uppercase tracking-widest text-emerald-500/70">
+                <div className="rounded-3xl border border-blue-200 bg-blue-50 p-8">
+                  <div className="text-xs font-bold uppercase tracking-widest text-brand-secondary">
                     {currentPhase.recurring ? 'Retainer mensual' : 'Inversión de esta fase'}
                   </div>
-                  <div className="mt-2 text-2xl font-black text-white">{moneyLabel(currentPhase)}</div>
-                  {currentPhase.rationale && <p className="mt-3 text-sm text-slate-400">{currentPhase.rationale}</p>}
+                  <div className="mt-2 text-2xl font-black text-slate-900">{moneyLabel(currentPhase)}</div>
+                  {currentPhase.rationale && <p className="mt-3 text-sm text-slate-500">{currentPhase.rationale}</p>}
                 </div>
-                <div className="rounded-3xl border border-emerald-400/30 bg-emerald-900/40 p-8 shadow-[0_0_40px_rgba(16,185,129,0.1)]">
-                  <div className="text-xs font-bold uppercase tracking-widest text-emerald-300">
+                <div className="rounded-3xl bg-brand-primary p-8 text-white">
+                  <div className="text-xs font-bold uppercase tracking-widest text-blue-200">
                     {currentPhase.recurring ? 'Inversión del proyecto (Fases 1–5)' : `Inversión acumulada (Fases 1–${currentPhase.index})`}
                   </div>
-                  <div className="mt-2 text-2xl font-black text-emerald-50">
+                  <div className="mt-2 text-2xl font-black">
                     {formatUsdRange(accumulatedProject.min, accumulatedProject.max)}
                   </div>
                   {currentPhase.kpi && (
-                    <p className="mt-3 flex items-center gap-2 text-sm font-medium text-emerald-300">
+                    <p className="mt-3 flex items-center gap-2 text-sm font-medium text-blue-100">
                       <TrendingUp className="h-4 w-4" /> {currentPhase.kpi}
                     </p>
                   )}
@@ -793,7 +794,7 @@ export function SimuladorEmpresas() {
             </div>
 
             {/* Navigation */}
-            <div className="mt-12 flex items-center justify-between border-t border-white/5 pt-8">
+            <div className="mt-12 flex items-center justify-between border-t border-slate-200 pt-8">
               <button
                 onClick={() => {
                   if (phaseIndex === 0) {
@@ -803,7 +804,7 @@ export function SimuladorEmpresas() {
                     setPhaseIndex((i) => i - 1)
                   }
                 }}
-                className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-white/70 transition-colors hover:bg-white/10"
+                className="flex items-center gap-2 rounded-full border border-slate-300 bg-white px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-slate-600 transition-colors hover:bg-slate-50"
               >
                 <ChevronLeft className="h-4 w-4" /> Anterior
               </button>
@@ -813,14 +814,14 @@ export function SimuladorEmpresas() {
                     setDirection('next')
                     setPhaseIndex((i) => i + 1)
                   }}
-                  className="flex items-center gap-3 rounded-full border border-emerald-400/50 bg-emerald-400/10 px-10 py-4 text-sm font-black uppercase tracking-[0.2em] text-emerald-300 transition-all hover:bg-emerald-400/20"
+                  className="flex items-center gap-3 rounded-full bg-brand-primary px-10 py-4 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-brand-secondary"
                 >
                   Siguiente fase <ArrowRight className="h-4 w-4" />
                 </button>
               ) : (
                 <button
                   onClick={() => setStep('summary')}
-                  className="flex items-center gap-3 rounded-full bg-emerald-500 px-10 py-4 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-emerald-400"
+                  className="flex items-center gap-3 rounded-full bg-brand-primary px-10 py-4 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-brand-secondary"
                 >
                   Ver resumen <ArrowRight className="h-4 w-4" />
                 </button>
@@ -832,10 +833,10 @@ export function SimuladorEmpresas() {
         {/* SUMMARY */}
         {step === 'summary' && proposal && (
           <div className="animate-in slide-in-from-bottom-8 duration-700">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-5 py-2 text-xs font-bold uppercase tracking-widest text-emerald-300">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-5 py-2 text-xs font-bold uppercase tracking-widest text-brand-secondary">
               <CheckCircle2 className="h-4 w-4" /> Propuesta construida
             </div>
-            <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-5xl">{proposal.headline}</h1>
+            <h1 className="mb-6 text-4xl font-black leading-tight tracking-tight text-slate-900 sm:text-5xl">{proposal.headline}</h1>
 
             {(proposal.agentIntro || proposal.executiveSummary) && (
               <div className="mb-10 max-w-3xl">
@@ -844,47 +845,47 @@ export function SimuladorEmpresas() {
             )}
 
             <div className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-5">
-              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Sector</div>
-                <div className="mt-1 text-sm font-bold text-white">{sector}</div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sector</div>
+                <div className="mt-1 text-sm font-bold text-slate-900">{sector}</div>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Organización</div>
-                <div className="mt-1 text-sm font-bold text-white">{orgType}</div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Organización</div>
+                <div className="mt-1 text-sm font-bold text-slate-900">{orgType}</div>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Tamaño</div>
-                <div className="mt-1 text-sm font-bold text-white">{headcountLabel}</div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Tamaño</div>
+                <div className="mt-1 text-sm font-bold text-slate-900">{headcountLabel}</div>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Madurez</div>
-                <div className="mt-1 text-sm font-bold text-white">{maturityLabel}</div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Madurez</div>
+                <div className="mt-1 text-sm font-bold text-slate-900">{maturityLabel}</div>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Procesos / Soluciones</div>
-                <div className="mt-1 text-sm font-bold text-white">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Procesos / Soluciones</div>
+                <div className="mt-1 text-sm font-bold text-slate-900">
                   {proposal.processes.min}–{proposal.processes.max} / {proposal.solutions.min}–{proposal.solutions.max}
                 </div>
               </div>
             </div>
 
             <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div className="rounded-3xl border border-emerald-400/30 bg-emerald-900/40 p-8 text-center shadow-[0_0_50px_rgba(16,185,129,0.12)]">
-                <div className="text-xs font-bold uppercase tracking-widest text-emerald-300">Inversión del proyecto · Fases 1–5</div>
-                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">
+              <div className="rounded-3xl bg-brand-primary p-8 text-center text-white">
+                <div className="text-xs font-bold uppercase tracking-widest text-blue-200">Inversión del proyecto · Fases 1–5</div>
+                <div className="mt-3 text-3xl font-black sm:text-4xl">
                   {formatUsdRange(proposal.totalProject.min, proposal.totalProject.max)}
                 </div>
               </div>
-              <div className="rounded-3xl border border-white/10 bg-slate-800/40 p-8 text-center">
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Mejora continua · Fase 6</div>
-                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">
+              <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-500">Mejora continua · Fase 6</div>
+                <div className="mt-3 text-3xl font-black text-slate-900 sm:text-4xl">
                   {formatUsd(proposal.monthly.min)} – {formatUsd(proposal.monthly.max)}
                 </div>
-                <div className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-500">Retainer mensual</div>
+                <div className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">Retainer mensual</div>
               </div>
             </div>
 
-            <p className="mb-10 max-w-3xl text-sm text-slate-400">
+            <p className="mb-10 max-w-3xl text-sm text-slate-500">
               Estimación referencial según sector, tamaño y madurez. El diagnóstico (entrada desde {formatUsd(5000)}) precisa
               el alcance real, el número de procesos y las soluciones a desarrollar.
             </p>
@@ -893,16 +894,16 @@ export function SimuladorEmpresas() {
               {proposal.phases.map((phase) => (
                 <div
                   key={phase.id}
-                  className="flex flex-col gap-2 rounded-2xl border border-white/5 bg-slate-800/30 p-6 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                       Fase {phase.index} · {phase.tagline}
                       {phase.basis ? ` · ${phase.basis}` : ''}
                     </div>
-                    <div className="mt-1 text-lg font-bold text-white">{phase.name}</div>
+                    <div className="mt-1 text-lg font-bold text-slate-900">{phase.name}</div>
                   </div>
-                  <div className="text-base font-black text-emerald-300">{moneyLabel(phase)}</div>
+                  <div className="text-base font-black text-brand-secondary">{moneyLabel(phase)}</div>
                 </div>
               ))}
             </div>
@@ -914,7 +915,7 @@ export function SimuladorEmpresas() {
                   setError(null)
                   setEmailModalOpen(true)
                 }}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-emerald-400"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-brand-primary px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-brand-secondary"
               >
                 <Mail className="h-4 w-4" /> Recibir propuesta por correo
               </button>
@@ -924,13 +925,13 @@ export function SimuladorEmpresas() {
                   setDirection('next')
                   setStep('phase')
                 }}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/10"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-slate-700 transition-colors hover:bg-slate-50"
               >
                 Revisar fases
               </button>
               <button
                 onClick={restart}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-white/50 transition-colors hover:bg-white/10"
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-slate-400 transition-colors hover:bg-slate-50"
               >
                 Reiniciar
               </button>
@@ -941,29 +942,29 @@ export function SimuladorEmpresas() {
         {/* EMAIL MODAL */}
         {emailModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
-            <div className="absolute inset-0 bg-[#020617]/90 backdrop-blur-sm" onClick={() => setEmailModalOpen(false)} />
-            <div className="relative w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 p-8 shadow-2xl animate-in zoom-in-95 duration-300 md:p-10">
+            <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setEmailModalOpen(false)} />
+            <div className="relative w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-8 shadow-2xl animate-in zoom-in-95 duration-300 md:p-10">
               <button
                 onClick={() => setEmailModalOpen(false)}
-                className="absolute right-6 top-6 text-slate-500 transition-colors hover:text-white"
+                className="absolute right-6 top-6 text-slate-400 transition-colors hover:text-slate-700"
               >
                 <X className="h-6 w-6" />
               </button>
 
-              <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+              <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-brand-primary">
                 <Mail className="h-8 w-8" />
               </div>
 
-              <h3 className="mb-2 text-2xl font-black text-white">Recibe tu propuesta</h3>
-              <p className="mb-8 text-slate-400">
+              <h3 className="mb-2 text-2xl font-black tracking-tight text-slate-900">Recibe tu propuesta</h3>
+              <p className="mb-8 text-slate-500">
                 Déjanos tus datos y te enviaremos la propuesta completa de transformación digital a tu correo.
               </p>
 
               {sent ? (
-                <div className="animate-in fade-in rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-6 text-center text-emerald-400 duration-500">
+                <div className="animate-in fade-in rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center text-emerald-700 duration-500">
                   <CheckCircle2 className="mx-auto mb-4 h-10 w-10" />
                   <p className="font-bold">¡Propuesta enviada con éxito!</p>
-                  <p className="mt-1 text-sm text-emerald-400/70">Revisa tu bandeja de entrada en unos instantes.</p>
+                  <p className="mt-1 text-sm text-emerald-600/80">Revisa tu bandeja de entrada en unos instantes.</p>
                 </div>
               ) : (
                 <form onSubmit={handleSend} className="space-y-4">
@@ -973,7 +974,7 @@ export function SimuladorEmpresas() {
                     placeholder="Nombre completo"
                     value={leadName}
                     onChange={(e) => setLeadName(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-800/50 px-6 py-4 font-medium text-white placeholder:text-slate-500 transition-all focus:border-emerald-500/50 focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 font-medium text-slate-800 placeholder:text-slate-400 transition-all focus:border-brand-secondary focus:outline-none focus:ring-4 focus:ring-blue-100"
                   />
                   <input
                     type="tel"
@@ -981,7 +982,7 @@ export function SimuladorEmpresas() {
                     placeholder="Número de contacto"
                     value={leadPhone}
                     onChange={(e) => setLeadPhone(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-800/50 px-6 py-4 font-medium text-white placeholder:text-slate-500 transition-all focus:border-emerald-500/50 focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 font-medium text-slate-800 placeholder:text-slate-400 transition-all focus:border-brand-secondary focus:outline-none focus:ring-4 focus:ring-blue-100"
                   />
                   <input
                     type="email"
@@ -989,17 +990,17 @@ export function SimuladorEmpresas() {
                     placeholder="tu@correo.com"
                     value={leadEmail}
                     onChange={(e) => setLeadEmail(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-700 bg-slate-800/50 px-6 py-4 font-medium text-white placeholder:text-slate-500 transition-all focus:border-emerald-500/50 focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 font-medium text-slate-800 placeholder:text-slate-400 transition-all focus:border-brand-secondary focus:outline-none focus:ring-4 focus:ring-blue-100"
                   />
 
                   {error && (
-                    <p className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">{error}</p>
+                    <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</p>
                   )}
 
                   <button
                     type="submit"
                     disabled={sending}
-                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-emerald-500 px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-emerald-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-3 rounded-2xl bg-brand-primary px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-brand-secondary active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {sending ? (
                       <>
@@ -1017,6 +1018,8 @@ export function SimuladorEmpresas() {
           </div>
         )}
       </main>
+
+      <MethodologyChatbot />
     </div>
   )
 }

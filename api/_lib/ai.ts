@@ -109,6 +109,111 @@ async function generateJsonWithGemini({
   return JSON.parse(extractJson(response.text()))
 }
 
+type ChatMessage = { role: 'user' | 'assistant'; content: string }
+
+async function generateChatWithOpenAI({
+  system,
+  messages,
+  integrations,
+  temperature,
+  maxTokens,
+}: {
+  system: string
+  messages: ChatMessage[]
+  integrations: AiIntegrations
+  temperature: number
+  maxTokens: number
+}) {
+  const apiKey = integrations.openai.config.apiKey
+  const model = integrations.openai.config.model || process.env.OPENAI_MODEL || 'gpt-4o'
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  }
+  const orgId = integrations.openai.config.orgId || process.env.OPENAI_ORG_ID || ''
+  if (orgId) headers['OpenAI-Organization'] = orgId
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model,
+      temperature,
+      max_tokens: Math.min(maxTokens, integrations.openai.config.maxTokens || maxTokens),
+      messages: [{ role: 'system', content: system }, ...messages],
+    }),
+  })
+  const json = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(json?.error?.message || `OpenAI request failed (${response.status})`)
+  }
+  return String(json?.choices?.[0]?.message?.content || '').trim()
+}
+
+async function generateChatWithGemini({
+  system,
+  messages,
+  integrations,
+  temperature,
+}: {
+  system: string
+  messages: ChatMessage[]
+  integrations: AiIntegrations
+  temperature: number
+}) {
+  const apiKey = integrations.gemini.config.apiKey
+  const modelName = integrations.gemini.config.model || process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+  const ai = new GoogleGenerativeAI(apiKey)
+  const model = ai.getGenerativeModel({
+    model: modelName,
+    systemInstruction: system,
+    generationConfig: { temperature },
+  })
+  const contents = messages.map((m) => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }))
+  const result = await model.generateContent({ contents } as any)
+  const response = await result.response
+  return String(response.text() || '').trim()
+}
+
+export async function generateChatWithAI({
+  system,
+  messages,
+  provider = 'auto',
+  temperature = 0.4,
+  maxTokens = 700,
+}: {
+  system: string
+  messages: ChatMessage[]
+  provider?: AIProvider
+  temperature?: number
+  maxTokens?: number
+}): Promise<{ providerUsed: 'openai' | 'gemini'; text: string }> {
+  const integrations = await getServerIntegrations()
+  const order = getProviderOrder(provider, integrations)
+  if (order.length === 0) {
+    throw new Error('No AI provider configured (OpenAI/Gemini)')
+  }
+
+  let lastError: unknown = null
+  for (const selected of order) {
+    try {
+      if (selected === 'openai') {
+        const text = await generateChatWithOpenAI({ system, messages, integrations, temperature, maxTokens })
+        return { providerUsed: 'openai', text }
+      }
+      const text = await generateChatWithGemini({ system, messages, integrations, temperature })
+      return { providerUsed: 'gemini', text }
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw new Error(lastError instanceof Error ? lastError.message : 'AI chat failed')
+}
+
 export async function getAiAvailability() {
   const integrations = await getServerIntegrations()
   return {

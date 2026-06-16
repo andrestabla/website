@@ -97,7 +97,7 @@ Además genera:
     - "dimensions": array con una entrada por dimensión { "id": "...", "interpretation": "1 frase específica del sector según su nivel y la brecha vs el benchmark" }. Usa estos ids en orden: ${diagnostic.dimensions.map((d) => d.id).join(', ')}.
 
 RESTRICCIONES:
-- Responde en español.
+- Responde en español natural y profesional. Evita clichés y muletillas de IA: no uses frases como "en la era digital", "desbloquear el potencial", "sin fisuras", "robusto", "de vanguardia", "aprovechar el poder de", ni rayas decorativas (—). Escribe como un consultor humano: concreto, directo y específico.
 - NO inventes ni cambies cifras de inversión: ya están asignadas por el sistema.
 - Específico del cliente, sin relleno genérico.
 - Respuesta en JSON PURO con esta estructura EXACTA:
