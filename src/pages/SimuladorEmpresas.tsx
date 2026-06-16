@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   RadarChart,
@@ -28,6 +28,8 @@ import {
   Package,
   TrendingUp,
   Bot,
+  Info,
+  ChevronRight,
   ListChecks,
   Cog,
   ScanSearch,
@@ -246,9 +248,23 @@ function MaturityDiagnosticView({ diagnostic }: { diagnostic: MaturityDiagnostic
 
   return (
     <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <div className="mb-6 flex items-center gap-2 border-b border-slate-100 pb-4">
-        <Gauge className="h-4 w-4 text-brand-secondary" />
-        <h4 className="text-sm font-bold uppercase tracking-widest text-slate-600">Diagnóstico de Madurez Digital (MD-IA)</h4>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div className="flex items-center gap-2">
+          <Gauge className="h-4 w-4 text-brand-secondary" />
+          <h4 className="text-sm font-bold uppercase tracking-widest text-slate-600">Diagnóstico de Madurez Digital (MD-IA)</h4>
+        </div>
+        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-600">
+          Ejemplo ilustrativo
+        </span>
+      </div>
+
+      <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+        <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+        <p className="text-sm leading-relaxed text-amber-800">
+          Esto es un <strong>ejemplo simulado</strong> a partir del nivel de madurez que indicaste, no un diagnóstico real.
+          El diagnóstico MD-IA real se realiza en la Fase 1 con encuestas a tu equipo, entrevistas y análisis de tus datos,
+          comparando contra benchmarks de tu sector.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -329,6 +345,13 @@ export function SimuladorEmpresas() {
   const [leadEmail, setLeadEmail] = useState('')
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+
+  // Drawer lateral de detalle por ítem (intervención / producto)
+  const [detailItem, setDetailItem] = useState<{ kind: 'intervention' | 'product'; item: string } | null>(null)
+  const [detailData, setDetailData] = useState<{ title: string; paragraphs: string[]; examples: string[] } | null>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [detailError, setDetailError] = useState<string | null>(null)
+  const detailCacheRef = useRef<Map<string, { title: string; paragraphs: string[]; examples: string[] }>>(new Map())
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -424,6 +447,45 @@ export function SimuladorEmpresas() {
       setError(err.message)
     } finally {
       setSending(false)
+    }
+  }
+
+  const openDetail = async (kind: 'intervention' | 'product', item: string) => {
+    const phase = proposal?.phases[phaseIndex]
+    setDetailItem({ kind, item })
+    setDetailError(null)
+    const key = `${phase?.id}|${kind}|${item}`
+    const cached = detailCacheRef.current.get(key)
+    if (cached) {
+      setDetailData(cached)
+      setDetailLoading(false)
+      return
+    }
+    setDetailData(null)
+    setDetailLoading(true)
+    try {
+      const res = await fetch('/api/simulator/detail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind,
+          item,
+          phaseName: phase?.name,
+          phaseTagline: phase?.tagline,
+          sector,
+          orgType,
+          headcount,
+          maturity,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'No se pudo cargar el detalle')
+      detailCacheRef.current.set(key, data.detail)
+      setDetailData(data.detail)
+    } catch (err: any) {
+      setDetailError(err.message || 'Ocurrió un error')
+    } finally {
+      setDetailLoading(false)
     }
   }
 
@@ -737,14 +799,21 @@ export function SimuladorEmpresas() {
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
                 {/* Interventions */}
                 <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                  <h4 className="mb-6 flex items-center gap-2 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-500">
+                  <h4 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
                     <Wrench className="h-4 w-4 text-brand-secondary" /> Intervenciones / Consultoría
                   </h4>
-                  <ul className="flex flex-col gap-4">
+                  <p className="mb-6 border-b border-slate-100 pb-4 text-xs text-slate-400">Toca cada ítem para ver el detalle y ejemplos.</p>
+                  <ul className="flex flex-col gap-2">
                     {currentPhase.interventions.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-secondary" />
-                        <span className="text-slate-700">{item}</span>
+                      <li key={idx}>
+                        <button
+                          onClick={() => openDetail('intervention', item)}
+                          className="group flex w-full items-start gap-3 rounded-2xl border border-transparent p-3 text-left transition-colors hover:border-slate-200 hover:bg-slate-50"
+                        >
+                          <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-brand-secondary" />
+                          <span className="flex-1 text-slate-700">{item}</span>
+                          <ChevronRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-300 transition-colors group-hover:text-brand-secondary" />
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -752,16 +821,23 @@ export function SimuladorEmpresas() {
 
                 {/* Products */}
                 <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                  <h4 className="mb-6 flex items-center gap-2 border-b border-slate-100 pb-4 text-sm font-bold uppercase tracking-widest text-slate-500">
+                  <h4 className="mb-1 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
                     <Package className="h-4 w-4 text-brand-secondary" /> Productos para tu organización
                   </h4>
-                  <ul className="flex flex-col gap-4">
+                  <p className="mb-6 border-b border-slate-100 pb-4 text-xs text-slate-400">Toca cada ítem para ver qué incluye y ejemplos.</p>
+                  <ul className="flex flex-col gap-3">
                     {currentPhase.products.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                        <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-50 text-brand-primary">
-                          <Package className="h-3.5 w-3.5" />
-                        </div>
-                        <span className="text-slate-700">{item}</span>
+                      <li key={idx}>
+                        <button
+                          onClick={() => openDetail('product', item)}
+                          className="group flex w-full items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left transition-colors hover:border-brand-secondary hover:bg-blue-50/60"
+                        >
+                          <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-50 text-brand-primary">
+                            <Package className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="flex-1 text-slate-700">{item}</span>
+                          <ChevronRight className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-300 transition-colors group-hover:text-brand-secondary" />
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -1018,6 +1094,75 @@ export function SimuladorEmpresas() {
           </div>
         )}
       </main>
+
+      {/* DETAIL SIDE DRAWER */}
+      {detailItem && (
+        <div className="fixed inset-0 z-[65]">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setDetailItem(null)} />
+          <div className="absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-white shadow-2xl animate-in slide-in-from-right-[28rem] duration-300">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-6">
+              <div>
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-brand-secondary">
+                  {detailItem.kind === 'intervention' ? <Wrench className="h-3.5 w-3.5" /> : <Package className="h-3.5 w-3.5" />}
+                  {detailItem.kind === 'intervention' ? 'Intervención / Consultoría' : 'Producto / Entregable'}
+                </div>
+                <h3 className="mt-2 text-xl font-black leading-tight tracking-tight text-slate-900">
+                  {detailData?.title || detailItem.item}
+                </h3>
+              </div>
+              <button
+                onClick={() => setDetailItem(null)}
+                className="flex-shrink-0 text-slate-400 transition-colors hover:text-slate-700"
+                aria-label="Cerrar"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {detailLoading && (
+                <div className="flex items-center gap-3 text-sm text-slate-500">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Atenea está preparando el detalle…
+                </div>
+              )}
+
+              {detailError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">{detailError}</div>
+              )}
+
+              {detailData && !detailLoading && (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    {detailData.paragraphs.map((p, i) => (
+                      <p key={i} className="leading-relaxed text-slate-700">{p}</p>
+                    ))}
+                  </div>
+
+                  {detailData.examples.length > 0 && (
+                    <div>
+                      <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500">
+                        <Info className="h-4 w-4 text-brand-secondary" /> Ejemplos
+                      </h4>
+                      <ul className="space-y-3">
+                        {detailData.examples.map((ex, i) => (
+                          <li key={i} className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-700">
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-secondary" />
+                            <span>{ex}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <p className="border-t border-slate-100 pt-4 text-xs text-slate-400">
+                    Ejemplo orientativo generado para tu organización simulada. El alcance final se define en el diagnóstico.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <MethodologyChatbot />
     </div>
