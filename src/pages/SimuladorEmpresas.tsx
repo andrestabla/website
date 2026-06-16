@@ -554,10 +554,10 @@ export function SimuladorEmpresas() {
               Simula tu Transformación Digital, fase por fase
             </h1>
             <p className="mb-8 max-w-2xl text-xl text-slate-500">
-              La transformación digital no es comprar tecnología: es un proceso ordenado para reducir fricción operativa,
-              ganar control interno y servir mejor a tus clientes. Te guiaré por las{' '}
-              <strong className="text-slate-800">6 fases</strong> de nuestra metodología, estimando inversión,
-              intervenciones y los productos concretos que obtendrías en cada una.
+              La transformación digital es un proceso estratégico para medir la madurez de una organización, priorizar
+              brechas y activar una hoja de ruta que mejore procesos, datos, tecnología, liderazgo y experiencia del
+              cliente. Te guiaré por las <strong className="text-slate-800">6 fases</strong> de nuestra metodología,
+              estimando inversión, intervenciones y los productos concretos que obtendrías en cada una.
             </p>
 
             <div className="mb-12 max-w-2xl">
