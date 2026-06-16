@@ -30,6 +30,7 @@ import {
   Bot,
   Info,
   ChevronRight,
+  PenLine,
   ListChecks,
   Cog,
   ScanSearch,
@@ -79,7 +80,7 @@ const MD_LEVEL_STYLES: Record<string, { label: string; badge: string; text: stri
   alto: { label: 'Alto', badge: 'bg-emerald-50 text-emerald-600 border-emerald-200', text: 'text-emerald-600' },
 }
 
-type Step = 'intro' | 'sector' | 'orgType' | 'headcount' | 'maturity' | 'loading' | 'phase' | 'summary'
+type Step = 'intro' | 'sector' | 'orgType' | 'headcount' | 'maturity' | 'context' | 'loading' | 'phase' | 'summary'
 
 function trackEvent(eventType: string, metadata?: Record<string, unknown>) {
   try {
@@ -341,6 +342,7 @@ export function SimuladorEmpresas() {
   const [orgType, setOrgType] = useState('')
   const [headcount, setHeadcount] = useState('')
   const [maturity, setMaturity] = useState('')
+  const [orgContext, setOrgContext] = useState('')
   const [phaseIndex, setPhaseIndex] = useState(0)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
   const [proposal, setProposal] = useState<SimulatorProposal | null>(null)
@@ -389,7 +391,7 @@ export function SimuladorEmpresas() {
       .reduce((acc, p) => ({ min: acc.min + p.investment.min, max: acc.max + p.investment.max }), { min: 0, max: 0 })
   }, [proposal, phaseIndex])
 
-  const handleGenerate = async (selectedMaturity: string) => {
+  const handleGenerate = async () => {
     setStep('loading')
     setThinkingIdx(0)
     setError(null)
@@ -401,7 +403,8 @@ export function SimuladorEmpresas() {
           sector,
           orgType,
           headcount,
-          maturity: selectedMaturity,
+          maturity,
+          orgContext,
           visitorId: getOrCreateVisitorId(),
           sessionId: getSessionId(),
         }),
@@ -421,7 +424,7 @@ export function SimuladorEmpresas() {
       setStep('phase')
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error al generar la propuesta.')
-      setStep('maturity')
+      setStep('context')
     }
   }
 
@@ -485,6 +488,7 @@ export function SimuladorEmpresas() {
           orgType,
           headcount,
           maturity,
+          orgContext,
         }),
       })
       const data = await res.json()
@@ -511,6 +515,7 @@ export function SimuladorEmpresas() {
     setOrgType('')
     setHeadcount('')
     setMaturity('')
+    setOrgContext('')
     setPhaseIndex(0)
     setSent(false)
     setLeadName('')
@@ -591,13 +596,13 @@ export function SimuladorEmpresas() {
         )}
 
         {/* CAPTURE STEPS */}
-        {(step === 'sector' || step === 'orgType' || step === 'headcount' || step === 'maturity') && (
+        {(step === 'sector' || step === 'orgType' || step === 'headcount' || step === 'maturity' || step === 'context') && (
           <div className="animate-in slide-in-from-right-8 duration-500">
             <div className="mb-12 flex items-center justify-between">
               <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-brand-secondary">
                 <Sparkles className="h-4 w-4" /> Cuéntame de tu organización
               </span>
-              <ProgressDots current={['sector', 'orgType', 'headcount', 'maturity'].indexOf(step)} total={4} />
+              <ProgressDots current={['sector', 'orgType', 'headcount', 'maturity', 'context'].indexOf(step)} total={5} />
             </div>
 
             {step === 'sector' && (
@@ -691,20 +696,17 @@ export function SimuladorEmpresas() {
                 <p className="mb-10 text-xl text-slate-500 md:w-2/3">
                   Esto nos dice si partimos desde cero o construimos sobre sistemas existentes, y ajusta el esfuerzo estimado.
                 </p>
-                {error && (
-                  <div className="mb-8 rounded-xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-600">
-                    {error}
-                  </div>
-                )}
                 <div className="flex flex-col gap-4">
                   {SIMULATOR_MATURITIES.map((mat) => (
                     <button
                       key={mat.value}
                       onClick={() => {
                         setMaturity(mat.value)
-                        handleGenerate(mat.value)
+                        setStep('context')
                       }}
-                      className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-8 py-6 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-brand-secondary hover:bg-blue-50/60 active:scale-95"
+                      className={`group flex items-center justify-between gap-4 rounded-2xl border bg-white px-8 py-6 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-brand-secondary hover:bg-blue-50/60 active:scale-95 ${
+                        maturity === mat.value ? 'border-brand-secondary bg-blue-50/60' : 'border-slate-200'
+                      }`}
                     >
                       <div>
                         <div className="text-lg font-bold text-slate-900">{mat.label}</div>
@@ -713,6 +715,63 @@ export function SimuladorEmpresas() {
                       <ArrowRight className="h-5 w-5 flex-shrink-0 text-brand-secondary opacity-0 transition-opacity group-hover:opacity-100" />
                     </button>
                   ))}
+                </div>
+              </>
+            )}
+
+            {step === 'context' && (
+              <>
+                <button
+                  onClick={() => setStep('maturity')}
+                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors hover:text-slate-700"
+                >
+                  <ChevronLeft className="h-4 w-4" /> Volver a Madurez digital
+                </button>
+                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white text-brand-primary shadow-sm">
+                  <PenLine className="h-8 w-8" />
+                </div>
+                <h2 className="mb-4 text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">Cuéntame sobre tu organización</h2>
+                <p className="mb-8 max-w-2xl text-xl text-slate-500">
+                  Con esto personalizo mucho más la propuesta y podré responder tus dudas con tu contexto. Es opcional, pero ayuda bastante.
+                </p>
+
+                <div className="mb-6 max-w-3xl rounded-2xl border border-blue-100 bg-blue-50/60 p-5 text-sm text-slate-600">
+                  <p className="mb-2 font-bold text-brand-secondary">Preguntas guía</p>
+                  <ul className="list-disc space-y-1 pl-5">
+                    <li>¿Cuál es la misión de tu organización o empresa?</li>
+                    <li>¿A qué se dedican y qué los hace diferentes?</li>
+                    <li>Comparte tu sitio web (si tienes).</li>
+                  </ul>
+                </div>
+
+                {error && (
+                  <div className="mb-6 max-w-3xl rounded-xl border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-600">
+                    {error}
+                  </div>
+                )}
+
+                <textarea
+                  value={orgContext}
+                  onChange={(e) => setOrgContext(e.target.value.slice(0, 1500))}
+                  rows={6}
+                  placeholder="Ej.: Somos una clínica dental con 3 sedes. Nuestra misión es dar atención cercana y sin esperas. Queremos digitalizar agenda, historia clínica y recordatorios. Sitio: https://…"
+                  className="mb-2 w-full max-w-3xl rounded-2xl border border-slate-200 bg-white px-6 py-4 text-base text-slate-800 placeholder:text-slate-400 transition-all focus:border-brand-secondary focus:outline-none focus:ring-4 focus:ring-blue-100"
+                />
+                <div className="mb-10 max-w-3xl text-right text-xs text-slate-400">{orgContext.length}/1500</div>
+
+                <div className="flex flex-col gap-4 sm:flex-row">
+                  <button
+                    onClick={handleGenerate}
+                    className="flex items-center justify-center gap-3 rounded-full bg-brand-primary px-10 py-4 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-brand-secondary"
+                  >
+                    Construir mi propuesta <ArrowRight className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={handleGenerate}
+                    className="flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-8 py-4 text-sm font-black uppercase tracking-[0.2em] text-slate-500 transition-colors hover:bg-slate-50"
+                  >
+                    Omitir este paso
+                  </button>
                 </div>
               </>
             )}
@@ -883,7 +942,7 @@ export function SimuladorEmpresas() {
               <button
                 onClick={() => {
                   if (phaseIndex === 0) {
-                    setStep('maturity')
+                    setStep('context')
                   } else {
                     setDirection('prev')
                     setPhaseIndex((i) => i - 1)
@@ -1173,7 +1232,7 @@ export function SimuladorEmpresas() {
         </div>
       )}
 
-      <MethodologyChatbot />
+      <MethodologyChatbot context={{ sector, orgType, headcount, maturity, orgContext }} />
     </div>
   )
 }

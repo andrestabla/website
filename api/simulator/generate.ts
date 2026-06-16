@@ -24,6 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const body = req.body || {}
     const { sector, orgType, headcount, maturity, visitorId, sessionId } = body
+    const orgContext = safeString(body.orgContext, 1500) || ''
 
     if (!sector || !orgType || !headcount || !maturity) {
       return res.status(400).json({ error: 'Faltan datos del simulador (sector, organización, colaboradores o madurez)' })
@@ -66,6 +67,7 @@ CONTEXTO DEL CLIENTE (úsalo para personalizar TODO):
 
 DIAGNÓSTICO DE MADUREZ DIGITAL (MD-IA) ya calculado por el sistema (NO cambies los puntajes; DQ=${diagnostic.dq}, AIQ=${diagnostic.aiq}):
 ${diagnosticForPrompt}
+${orgContext ? `\nLO QUE EL CLIENTE CONTÓ SOBRE SU ORGANIZACIÓN (misión, a qué se dedica, sitio web — úsalo para personalizar TODO):\n"""${orgContext}"""` : ''}
 
 LAS 6 FASES (con su inversión YA asignada por el sistema, NO inventes montos):
 ${phasesForPrompt}
@@ -190,6 +192,7 @@ RESTRICCIONES:
       orgType,
       headcount,
       maturity,
+      orgContext,
       processes: estimate.processes,
       solutions: estimate.solutions,
       totalProject: estimate.totalProject,
@@ -209,6 +212,7 @@ RESTRICCIONES:
           orgType: safeString(orgType, 120) || 'No definido',
           headcount: safeString(headcount, 40) || 'No definido',
           maturity: safeString(maturity, 40),
+          orgContext: orgContext || null,
           proposal: proposal as any,
           headline: safeString(proposal.headline, 240),
           investmentMin: estimate.totalProject.min,

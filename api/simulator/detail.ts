@@ -12,6 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const body = req.body || {}
     const { kind, item, phaseName, phaseTagline, sector, orgType, headcount, maturity } = body
+    const orgContext = typeof body.orgContext === 'string' ? body.orgContext.slice(0, 1500) : ''
 
     if (!item || (kind !== 'intervention' && kind !== 'product')) {
       return res.status(400).json({ error: 'Datos insuficientes para el detalle' })
@@ -39,6 +40,7 @@ Contexto del cliente:
 - Tamaño: ${headcountLabel}
 - Madurez digital: ${maturityLabel}
 - Fase del servicio: ${phaseName || ''} (${phaseTagline || ''})
+${orgContext ? `- En sus palabras sobre su organización: "${orgContext}"` : ''}
 
 Profundiza en ${subject}.
 ${guidance}

@@ -14,7 +14,15 @@ const SUGGESTIONS = [
 const WELCOME =
   'Hola, soy Atenea. Puedo explicarte la metodología de transformación digital de AlgoritmoT, de forma simple o técnica. ¿Qué te gustaría saber?'
 
-export function MethodologyChatbot() {
+export type ChatbotContext = {
+  sector?: string
+  orgType?: string
+  headcount?: string
+  maturity?: string
+  orgContext?: string
+}
+
+export function MethodologyChatbot({ context }: { context?: ChatbotContext }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>('simple')
   const [input, setInput] = useState('')
@@ -43,6 +51,7 @@ export function MethodologyChatbot() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           mode,
+          context,
           messages: nextMessages.filter((m) => m.role === 'user' || m.role === 'assistant').slice(-10),
           visitorId: getOrCreateVisitorId(),
           sessionId: getSessionId(),

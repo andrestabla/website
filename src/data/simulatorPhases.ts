@@ -165,6 +165,7 @@ export type SimulatorProposal = {
   orgType: string
   headcount: string
   maturity: string
+  orgContext: string
   processes: { min: number; max: number }
   solutions: { min: number; max: number }
   totalProject: { min: number; max: number }

@@ -34,6 +34,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? 'El usuario pidió una explicación TÉCNICA: usa el vocabulario preciso de la metodología (DQ/AIQ, dimensiones MD-IA, BPMN, horizontes H1/H2/H3, ponderaciones) y sé riguroso.'
         : 'El usuario pidió una explicación SIMPLE: usa lenguaje claro de negocio, sin tecnicismos innecesarios, con analogías si ayudan.'
 
+    const ctx = body.context && typeof body.context === 'object' ? body.context : {}
+    const contextParts = [
+      ctx.sector ? `Sector: ${safeString(ctx.sector, 160)}` : '',
+      ctx.orgType ? `Tipo de organización: ${safeString(ctx.orgType, 120)}` : '',
+      ctx.headcount ? `Tamaño: ${safeString(ctx.headcount, 40)}` : '',
+      ctx.maturity ? `Madurez digital: ${safeString(ctx.maturity, 40)}` : '',
+      ctx.orgContext ? `En sus palabras sobre su organización (misión / a qué se dedica / sitio web): "${safeString(ctx.orgContext, 1500)}"` : '',
+    ].filter(Boolean)
+    const contextBlock = contextParts.length
+      ? `\n\nCONTEXTO DEL VISITANTE (úsalo para personalizar tus respuestas a su organización cuando aplique; no lo repitas literalmente):\n- ${contextParts.join('\n- ')}`
+      : ''
+
     const system = `Eres ${AGENT_NAME}, la agente de transformación digital de AlgoritmoT. Respondes dudas de visitantes sobre la metodología y el servicio de transformación digital de AlgoritmoT.
 
 Reglas:
@@ -42,7 +54,7 @@ Reglas:
 - Sé concreta y breve (2-5 frases salvo que pidan más detalle). Usa viñetas solo si aportan claridad.
 - Escribe en español natural; evita clichés y muletillas de IA (no uses frases como "en la era digital", "desbloquear el potencial", "sin fisuras", "robusto", "aprovechar el poder de", ni rayas decorativas).
 - No inventes cifras ni prometas resultados garantizados; la inversión y los puntajes del simulador son referenciales y se precisan tras el diagnóstico.
-- ${toneInstruction}
+- ${toneInstruction}${contextBlock}
 
 === BASE DE CONOCIMIENTO (Metodología AlgoritmoT) ===
 ${METHODOLOGY_KB}
