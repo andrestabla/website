@@ -176,6 +176,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let marketingOpenedRecipientsRows: Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }> = []
     let marketingUnsubscribeEventRows: Array<{ createdAt: Date; metadata: any }> = []
     let caseGeneratorRows: Array<{ eventType: string; createdAt: Date; metadata: any }> = []
+    let simulatorEventRows: Array<{ eventType: string; createdAt: Date; metadata: any }> = []
+    let simulatorRunRows: Array<{
+      sector: string
+      orgType: string
+      headcount: string
+      headline: string | null
+      investmentMin: number | null
+      investmentMax: number | null
+      leadName: string | null
+      leadPhone: string | null
+      leadEmail: string | null
+      status: string
+      emailSentAt: Date | null
+      createdAt: Date
+    }> = []
 
     try {
       const analyticsResults = await Promise.allSettled([
@@ -287,6 +302,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             metadata: true,
           },
         }),
+        prisma.analyticsEvent.findMany({
+          where: {
+            eventType: {
+              in: ['simulator_started', 'simulator_completed', 'simulator_email_sent'],
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 5000,
+          select: {
+            eventType: true,
+            createdAt: true,
+            metadata: true,
+          },
+        }),
+        prisma.simulatorRun.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 5000,
+          select: {
+            sector: true,
+            orgType: true,
+            headcount: true,
+            headline: true,
+            investmentMin: true,
+            investmentMax: true,
+            leadName: true,
+            leadPhone: true,
+            leadEmail: true,
+            status: true,
+            emailSentAt: true,
+            createdAt: true,
+          },
+        }),
       ] as const)
 
       const pick = <T,>(index: number, fallback: T): T => {
@@ -326,6 +373,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       marketingOpenedRecipientsRows = pick(15, [] as Array<{ email: string; openCount: number; openedAt: Date | null; lastOpenedAt: Date | null; campaign: { id: string; name: string; subject: string } }>)
       marketingUnsubscribeEventRows = pick(16, [] as Array<{ createdAt: Date; metadata: any }>)
       caseGeneratorRows = pick(17, [] as Array<{ eventType: string; createdAt: Date; metadata: any }>)
+      simulatorEventRows = pick(18, [] as Array<{ eventType: string; createdAt: Date; metadata: any }>)
+      simulatorRunRows = pick(19, [] as typeof simulatorRunRows)
     } catch (analyticsError) {
       console.error('api/admin-metrics analytics block degraded', analyticsError)
     }
@@ -712,6 +761,70 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const caseGeneratorActiveIndustries = caseGeneratorByIndustry.length
     const caseGeneratorActiveProcesses = caseGeneratorByProcess.length
 
+    // ---- Simulador de Transformación Digital ----
+    const simulatorDaily = Array.from({ length: 30 }, (_, i) => {
+      const d = startOfDay(new Date(Date.now() - (29 - i) * 86400000))
+      return { day: formatDay(d), started: 0, completed: 0, emails: 0 }
+    })
+    const simulatorDayIndex = new Map(simulatorDaily.map((entry, index) => [entry.day, index]))
+    for (const row of simulatorEventRows) {
+      const day = formatDay(new Date(row.createdAt))
+      const idx = simulatorDayIndex.get(day)
+      if (idx === undefined) continue
+      if (row.eventType === 'simulator_started') simulatorDaily[idx].started += 1
+      if (row.eventType === 'simulator_completed') simulatorDaily[idx].completed += 1
+      if (row.eventType === 'simulator_email_sent') simulatorDaily[idx].emails += 1
+    }
+
+    const simulatorBySectorMap = new Map<string, number>()
+    const simulatorByOrgTypeMap = new Map<string, number>()
+    const simulatorByHeadcountMap = new Map<string, number>()
+    let simulatorInvestmentSum = 0
+    let simulatorInvestmentCount = 0
+    for (const run of simulatorRunRows) {
+      const sector = safeString(run.sector, 160) || 'No definido'
+      const orgType = safeString(run.orgType, 120) || 'No definido'
+      const headcount = safeString(run.headcount, 40) || 'No definido'
+      simulatorBySectorMap.set(sector, (simulatorBySectorMap.get(sector) || 0) + 1)
+      simulatorByOrgTypeMap.set(orgType, (simulatorByOrgTypeMap.get(orgType) || 0) + 1)
+      simulatorByHeadcountMap.set(headcount, (simulatorByHeadcountMap.get(headcount) || 0) + 1)
+      if (run.investmentMin != null && run.investmentMax != null) {
+        simulatorInvestmentSum += (run.investmentMin + run.investmentMax) / 2
+        simulatorInvestmentCount += 1
+      }
+    }
+
+    const simulatorBySector = Array.from(simulatorBySectorMap.entries())
+      .map(([sector, count]) => ({ sector, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 12)
+    const simulatorByOrgType = Array.from(simulatorByOrgTypeMap.entries())
+      .map(([orgType, count]) => ({ orgType, count }))
+      .sort((a, b) => b.count - a.count)
+    const simulatorByHeadcount = Array.from(simulatorByHeadcountMap.entries())
+      .map(([headcount, count]) => ({ headcount, count }))
+      .sort((a, b) => b.count - a.count)
+
+    const simulatorLeads = simulatorRunRows
+      .filter((run) => run.leadEmail)
+      .slice(0, 200)
+      .map((run) => ({
+        name: run.leadName,
+        phone: run.leadPhone,
+        email: run.leadEmail,
+        sector: run.sector,
+        orgType: run.orgType,
+        headcount: run.headcount,
+        investmentMin: run.investmentMin,
+        investmentMax: run.investmentMax,
+        sentAt: run.emailSentAt ? run.emailSentAt.toISOString() : run.createdAt.toISOString(),
+      }))
+
+    const simulatorTotalStarted = simulatorEventRows.filter((r) => r.eventType === 'simulator_started').length
+    const simulatorTotalCompleted = simulatorRunRows.length
+    const simulatorTotalEmails = simulatorRunRows.filter((r) => r.status === 'sent' || r.leadEmail).length
+    const simulatorAvgInvestment = simulatorInvestmentCount > 0 ? Math.round(simulatorInvestmentSum / simulatorInvestmentCount) : 0
+
     return res.status(200).json({
       ok: true,
       data: {
@@ -783,6 +896,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           byProcess: caseGeneratorByProcess,
           byType: caseGeneratorByType,
           emails: caseGeneratorEmails,
+        },
+        simulator: {
+          totalStarted: simulatorTotalStarted,
+          totalCompleted: simulatorTotalCompleted,
+          totalEmails: simulatorTotalEmails,
+          activeSectors: simulatorBySector.length,
+          avgInvestment: simulatorAvgInvestment,
+          daily: simulatorDaily,
+          bySector: simulatorBySector,
+          byOrgType: simulatorByOrgType,
+          byHeadcount: simulatorByHeadcount,
+          leads: simulatorLeads,
         },
         recentActivity,
       },

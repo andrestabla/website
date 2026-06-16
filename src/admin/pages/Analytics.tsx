@@ -28,6 +28,9 @@ import {
   UserX,
   LayoutGrid,
   Filter,
+  Gauge,
+  Building2,
+  DollarSign,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -114,9 +117,31 @@ type MetricsData = {
     byType: Array<{ type: string; count: number }>
     emails: Array<{ email: string; count: number; lastSentAt: string; industry: string | null; processName: string | null }>
   }
+  simulator: {
+    totalStarted: number
+    totalCompleted: number
+    totalEmails: number
+    activeSectors: number
+    avgInvestment: number
+    daily: Array<{ day: string; started: number; completed: number; emails: number }>
+    bySector: Array<{ sector: string; count: number }>
+    byOrgType: Array<{ orgType: string; count: number }>
+    byHeadcount: Array<{ headcount: string; count: number }>
+    leads: Array<{
+      name: string | null
+      phone: string | null
+      email: string | null
+      sector: string
+      orgType: string
+      headcount: string
+      investmentMin: number | null
+      investmentMax: number | null
+      sentAt: string
+    }>
+  }
 }
 
-type AnalyticsTab = 'general' | 'cases' | 'marketing'
+type AnalyticsTab = 'general' | 'cases' | 'marketing' | 'simulator'
 type MarketingDateFilter = 'all' | '7d' | '30d' | '90d'
 type MarketingOpenFilter = 'all' | 'opened' | 'not-opened'
 
@@ -283,7 +308,7 @@ export function Analytics() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<AnalyticsTab>(() => {
     const value = searchParams.get('tab')
-    return value === 'cases' || value === 'marketing' ? value : 'general'
+    return value === 'cases' || value === 'marketing' || value === 'simulator' ? value : 'general'
   })
   const [campaignFilter, setCampaignFilter] = useState(() => searchParams.get('campaign') || 'all')
   const [dateFilter, setDateFilter] = useState<MarketingDateFilter>(() => {
@@ -385,6 +410,10 @@ export function Analytics() {
   const caseGeneratorProcessChart = metrics?.caseGenerator.byProcess.slice(0, 8) ?? []
   const caseGeneratorTypes = metrics?.caseGenerator.byType.slice(0, 8) ?? []
   const caseGeneratorEmails = metrics?.caseGenerator.emails.slice(0, 100) ?? []
+  const simulatorBySector = metrics?.simulator.bySector.slice(0, 10) ?? []
+  const simulatorByOrgType = metrics?.simulator.byOrgType.slice(0, 8) ?? []
+  const simulatorByHeadcount = metrics?.simulator.byHeadcount ?? []
+  const simulatorLeads = metrics?.simulator.leads.slice(0, 120) ?? []
   const i18nLangRows = metrics
     ? Object.entries(metrics.i18n.byLang).map(([lang, bucket]) => ({ lang: lang.toUpperCase(), ...bucket }))
     : []
@@ -1097,6 +1126,156 @@ export function Analytics() {
         </div>
       </>
     ),
+    simulator: (
+      <>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="bg-white border border-slate-200 p-7">
+            <div className="flex items-center justify-between mb-4">
+              <Gauge className="w-5 h-5 text-brand-primary" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">simulador</span>
+            </div>
+            <div className="text-3xl font-black text-slate-900">{metrics.simulator.totalStarted}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Simulaciones iniciadas</div>
+          </div>
+          <div className="bg-white border border-slate-200 p-7">
+            <div className="flex items-center justify-between mb-4">
+              <CheckCircle2 className="w-5 h-5 text-slate-700" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">propuestas</span>
+            </div>
+            <div className="text-3xl font-black text-slate-900">{metrics.simulator.totalCompleted}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Propuestas generadas</div>
+          </div>
+          <div className="bg-white border border-slate-200 p-7">
+            <div className="flex items-center justify-between mb-4">
+              <Mail className="w-5 h-5 text-emerald-600" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">leads</span>
+            </div>
+            <div className="text-3xl font-black text-slate-900">{metrics.simulator.totalEmails}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Propuestas enviadas (leads)</div>
+          </div>
+          <div className="bg-white border border-slate-200 p-7">
+            <div className="flex items-center justify-between mb-4">
+              <DollarSign className="w-5 h-5 text-slate-700" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">USD</span>
+            </div>
+            <div className="text-3xl font-black text-slate-900">${(metrics.simulator.avgInvestment || 0).toLocaleString('en-US')}</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Inversión promedio estimada</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div className="xl:col-span-2 bg-white border border-slate-200 p-8">
+            <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Interacción en /empresas/simulador por Día (30d)</h3>
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={metrics.simulator.daily}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
+                <Area type="monotone" dataKey="started" stroke="#1d4ed8" fillOpacity={0.08} fill="#1d4ed8" name="Iniciadas" />
+                <Area type="monotone" dataKey="completed" stroke="#0f172a" fillOpacity={0.06} fill="#0f172a" name="Propuestas" />
+                <Area type="monotone" dataKey="emails" stroke="#10b981" fillOpacity={0.08} fill="#10b981" name="Enviadas por correo" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white border border-slate-200 p-8">
+            <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Por tipo de organización</h3>
+            {simulatorByOrgType.length === 0 ? (
+              <p className="text-sm text-slate-500">Aún no hay datos registrados.</p>
+            ) : (
+              <div className="space-y-3">
+                {simulatorByOrgType.map((row, index) => (
+                  <div key={`${row.orgType}-${index}`} className="flex items-center justify-between border border-slate-200 px-4 py-3">
+                    <span className="text-sm font-semibold text-slate-700">{row.orgType}</span>
+                    <span className="text-sm font-black text-slate-900">{row.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <div className="bg-white border border-slate-200 p-8">
+            <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Simulaciones por Sector</h3>
+            {simulatorBySector.length === 0 ? (
+              <div className="text-sm text-slate-500">Aún no hay datos de sector.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={simulatorBySector} layout="vertical" margin={{ left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis dataKey="sector" type="category" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 700 }} axisLine={false} tickLine={false} width={200} />
+                  <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
+                  <Bar dataKey="count" fill="#1d4ed8" radius={[0, 2, 2, 0]} maxBarSize={24} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          <div className="bg-white border border-slate-200 p-8">
+            <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-8">Por tamaño (colaboradores)</h3>
+            {simulatorByHeadcount.length === 0 ? (
+              <div className="text-sm text-slate-500">Aún no hay datos de tamaño.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={simulatorByHeadcount}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="headcount" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ border: '1px solid #e2e8f0', borderRadius: 0, fontSize: 12 }} />
+                  <Bar dataKey="count" name="Simulaciones" fill="#0f172a" radius={[2, 2, 0, 0]} maxBarSize={48} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200">
+          <div className="p-8 border-b border-slate-100 flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-brand-primary" />
+            <h3 className="font-black uppercase tracking-widest text-xs text-slate-900">Leads del simulador (contacto entregado)</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500 uppercase tracking-[0.2em] text-[10px] font-black">
+                <tr>
+                  <th className="text-left px-6 py-4">Nombre</th>
+                  <th className="text-left px-6 py-4">Teléfono</th>
+                  <th className="text-left px-6 py-4">Email</th>
+                  <th className="text-left px-6 py-4">Sector</th>
+                  <th className="text-left px-6 py-4">Organización</th>
+                  <th className="text-left px-6 py-4">Tamaño</th>
+                  <th className="text-left px-6 py-4">Inversión (USD)</th>
+                  <th className="text-left px-6 py-4">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {simulatorLeads.length === 0 ? (
+                  <tr><td className="px-6 py-8 text-slate-500" colSpan={8}>Aún no hay leads generados desde el simulador.</td></tr>
+                ) : simulatorLeads.map((row, index) => (
+                  <tr key={`${row.email}-${index}`} className="border-t border-slate-100">
+                    <td className="px-6 py-4 font-medium text-slate-800">{row.name || 'N/D'}</td>
+                    <td className="px-6 py-4 text-slate-600">{row.phone || 'N/D'}</td>
+                    <td className="px-6 py-4 text-slate-600">{row.email || 'N/D'}</td>
+                    <td className="px-6 py-4 text-slate-600">{row.sector}</td>
+                    <td className="px-6 py-4 text-slate-600">{row.orgType}</td>
+                    <td className="px-6 py-4 text-slate-600">{row.headcount}</td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {row.investmentMin != null && row.investmentMax != null
+                        ? `$${row.investmentMin.toLocaleString('en-US')} – $${row.investmentMax.toLocaleString('en-US')}`
+                        : 'N/D'}
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">{formatDateTime(row.sentAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </>
+    ),
   } : null
 
   return (
@@ -1123,6 +1302,7 @@ export function Analytics() {
               <AnalyticsTabButton active={activeTab === 'general'} onClick={() => setActiveTab('general')} icon={LayoutGrid} label="Datos generales" />
               <AnalyticsTabButton active={activeTab === 'cases'} onClick={() => setActiveTab('cases')} icon={Sparkles} label="Interacción con generador de casos" />
               <AnalyticsTabButton active={activeTab === 'marketing'} onClick={() => setActiveTab('marketing')} icon={Mail} label="Campañas de email marketing" />
+              <AnalyticsTabButton active={activeTab === 'simulator'} onClick={() => setActiveTab('simulator')} icon={Gauge} label="Simulador" />
             </div>
             <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/60">
               <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
@@ -1130,7 +1310,9 @@ export function Analytics() {
                   ? 'Vista operativa consolidada'
                   : activeTab === 'cases'
                     ? 'Analítica específica del asistente /generador-casos'
-                    : 'Seguimiento detallado de campañas, aperturas y bajas'}
+                    : activeTab === 'simulator'
+                      ? 'Interacción y leads del simulador /empresas/simulador'
+                      : 'Seguimiento detallado de campañas, aperturas y bajas'}
               </div>
             </div>
           </div>
@@ -1139,6 +1321,7 @@ export function Analytics() {
             {activeTab === 'general' && tabContent?.general}
             {activeTab === 'cases' && tabContent?.cases}
             {activeTab === 'marketing' && tabContent?.marketing}
+            {activeTab === 'simulator' && tabContent?.simulator}
           </div>
         </>
       )}

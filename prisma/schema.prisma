@@ -144,6 +144,45 @@ model AnalyticsEvent {
   @@index([country, createdAt(sort: Desc)])
 }
 
+model SimulatorRun {
+  id             String   @id @default(cuid())
+  visitorId      String
+  sessionId      String?
+
+  // Inputs capturados en el simulador
+  sector         String
+  orgType        String
+  headcount      String
+
+  // Propuesta construida por IA (fases acumulativas + totales)
+  proposal       Json
+  headline       String?
+  investmentMin  Int?
+  investmentMax  Int?
+  currency       String   @default("USD")
+  providerUsed   String?
+
+  // Datos de contacto (solo si el usuario solicita el envío de la propuesta)
+  leadName       String?
+  leadPhone      String?
+  leadEmail      String?
+
+  status         String   @default("completed") // completed | sent
+  emailSentAt    DateTime?
+
+  country        String?
+  region         String?
+  city           String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([sector, createdAt(sort: Desc)])
+  @@index([leadEmail, createdAt(sort: Desc)])
+}
+
 enum AdminRole {
   SUPERADMIN
   ADMIN
