@@ -112,6 +112,12 @@ export const SIMULATOR_HEADCOUNTS: Array<{ value: string; label: string }> = [
   { value: '500+', label: 'Más de 500 colaboradores' },
 ]
 
+export const SIMULATOR_MATURITIES: Array<{ value: string; label: string; description: string }> = [
+  { value: 'inicial', label: 'Inicial', description: 'Procesos manuales o no documentados; poca o nula digitalización.' },
+  { value: 'en-desarrollo', label: 'En desarrollo', description: 'Algunos procesos digitales o documentados; herramientas dispersas.' },
+  { value: 'consolidado', label: 'Consolidado', description: 'Sistemas integrados; se busca optimización avanzada e IA.' },
+]
+
 export type SimulatorProposalPhase = {
   id: string
   index: number
@@ -120,16 +126,32 @@ export type SimulatorProposalPhase = {
   description: string
   methods: string[]
   investment: { min: number; max: number }
+  recurring: boolean
+  period: string | null
+  basis: string | null
+  whatWeDo: string
+  howWeDo: string
   interventions: string[]
   products: string[]
   rationale: string
   kpi: string
+  agentNote: string
 }
 
 export type SimulatorProposal = {
+  agentName: string
+  agentIntro: string
   headline: string
   executiveSummary: string
   currency: string
+  sector: string
+  orgType: string
+  headcount: string
+  maturity: string
+  processes: { min: number; max: number }
+  solutions: { min: number; max: number }
+  totalProject: { min: number; max: number }
+  monthly: { min: number; max: number }
   total: { min: number; max: number }
   phases: SimulatorProposalPhase[]
 }

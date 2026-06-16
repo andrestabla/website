@@ -5,12 +5,15 @@ import { getGeoFromRequest, safeString } from '../_lib/analytics.js'
 import {
   SIMULATOR_PHASES,
   SIMULATOR_CURRENCY,
-  computeInvestment,
+  computeEstimate,
   getHeadcountLabel,
+  getMaturityLabel,
   formatUsdRange,
 } from '../_lib/simulator.js'
 
 export const maxDuration = 60
+
+const AGENT_NAME = 'Atenea'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -19,62 +22,85 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = req.body || {}
-    const { sector, orgType, headcount, visitorId, sessionId } = body
+    const { sector, orgType, headcount, maturity, visitorId, sessionId } = body
 
-    if (!sector || !orgType || !headcount) {
-      return res.status(400).json({ error: 'Faltan datos del simulador (sector, tipo de organización o colaboradores)' })
+    if (!sector || !orgType || !headcount || !maturity) {
+      return res.status(400).json({ error: 'Faltan datos del simulador (sector, organización, colaboradores o madurez)' })
     }
 
-    const investment = computeInvestment(headcount)
+    const estimate = computeEstimate(headcount, maturity)
     const headcountLabel = getHeadcountLabel(headcount)
+    const maturityLabel = getMaturityLabel(maturity)
 
     const phasesForPrompt = SIMULATOR_PHASES.map((phase, i) => {
-      const inv = investment.phases[i]
+      const est = estimate.phases[i]
+      const money = est.recurring
+        ? `${formatUsdRange(est.min, est.max)} / mes (retainer recurrente)`
+        : formatUsdRange(est.min, est.max)
       return `Fase ${phase.index} — ${phase.name} (${phase.tagline})
-  Descripción: ${phase.description}
+  Descripción base: ${phase.description}
   Métodos: ${phase.methods.join(', ')}
-  Inversión asignada (NO la modifiques, úsala como referencia): ${formatUsdRange(inv.min, inv.max)}`
+  ${est.basis ? `Base de cálculo: ${est.basis}` : ''}
+  Inversión asignada (NO la modifiques): ${money}`
     }).join('\n\n')
 
     const prompt = `
-Eres un consultor senior de transformación digital de Algoritmo T. Tu tono es experto, directo y contundente, pero claro para una audiencia de negocio.
+Eres ${AGENT_NAME}, una agente de IA experta en transformación digital de Algoritmo T. Hablas en PRIMERA PERSONA, te diriges al cliente de forma cercana, consultiva y profesional (trato de "tú"). Eres concreta y contundente, sin relleno.
 
-CONTEXTO DEL CLIENTE:
+CONTEXTO DEL CLIENTE (úsalo para personalizar TODO):
 - Sector / Industria: ${sector}
 - Tipo de organización: ${orgType}
-- Tamaño (colaboradores): ${headcountLabel}
-- Moneda de la simulación: ${SIMULATOR_CURRENCY}
-- Inversión total estimada de la transformación completa: ${formatUsdRange(investment.total.min, investment.total.max)}
+- Tamaño: ${headcountLabel}
+- Madurez digital actual: ${maturityLabel}
+- Procesos estimados a mapear: ${estimate.processes.min}–${estimate.processes.max}
+- Soluciones digitales estimadas: ${estimate.solutions.min}–${estimate.solutions.max}
+- Inversión del proyecto (Fases 1–5): ${formatUsdRange(estimate.totalProject.min, estimate.totalProject.max)}
+- Retainer mensual (Fase 6): ${formatUsdRange(estimate.monthly.min, estimate.monthly.max)} / mes
+- Moneda: ${SIMULATOR_CURRENCY}
 
-LAS 6 FASES (con su inversión ya asignada por el sistema, NO inventes montos):
+LAS 6 FASES (con su inversión YA asignada por el sistema, NO inventes montos):
 ${phasesForPrompt}
 
 OBJETIVO:
-Personaliza una propuesta de transformación digital ACUMULATIVA para este cliente. Para CADA una de las 6 fases (en el mismo orden e ids) genera contenido específico para el sector "${sector}" y una organización de ${headcountLabel}:
-- "interventions": 3 a 4 intervenciones o actividades de consultoría concretas que Algoritmo T realizaría en esa fase para este sector.
-- "products": 3 a 4 ejemplos de productos/entregables tangibles que el cliente obtendría en esa fase (específicos del sector, no genéricos).
-- "rationale": 1 frase que justifique por qué la inversión de esa fase tiene sentido para este cliente.
-- "kpi": 1 métrica de impacto esperada y realista para esa fase en este sector (ej. "-40% en tiempo de ciclo").
+Construye una propuesta de transformación digital ACUMULATIVA, MUY ESPECÍFICA para este cliente (sector "${sector}", ${headcountLabel}, madurez "${maturityLabel}"). La profundidad importa: para CADA fase explica con detalle qué se hace, cómo se hace y qué productos concretos quedarían para ESTA organización.
+
+Para CADA una de las 6 fases (en el mismo orden e ids) genera:
+- "whatWeDo": 2-3 frases que expliquen QUÉ se hace en esta fase para este cliente concreto.
+- "howWeDo": 2-3 frases que expliquen CÓMO se hace (método, herramientas, marcos), aterrizado a su contexto.
+- "interventions": 3 a 5 intervenciones/actividades de consultoría concretas para este sector.
+- "products": 3 a 5 EJEMPLOS de productos/entregables específicos y tangibles que quedarían para esta organización (nómbralos como si ya existieran para este cliente; específicos del sector, no genéricos).
+- "kpi": 1 métrica de impacto realista para esta fase en este sector.
+- "rationale": 1 frase que justifique la inversión de esta fase para este cliente.
+- "agentNote": 1 frase breve en PRIMERA PERSONA tuya (${AGENT_NAME}) comentando esta fase al cliente.
+
+Consideraciones especiales:
+- En la Fase 2 (Mapeo), refiérete explícitamente a los ${estimate.processes.min}–${estimate.processes.max} procesos estimados.
+- En la Fase 4 (Diseño y Desarrollo), refiérete a las ${estimate.solutions.min}–${estimate.solutions.max} soluciones digitales y su alcance técnico.
+- Si la madurez es "Inicial", enfatiza más base/documentación; si es "Consolidado", enfatiza optimización avanzada e IA.
 
 Además genera:
+- "agentName": "${AGENT_NAME}".
+- "agentIntro": un saludo en primera persona (2-3 frases) donde te presentas, reconoces su contexto (sector, tamaño, madurez) y resumes la oportunidad de transformación.
 - "headline": un título de propuesta atractivo y específico para este cliente.
-- "executiveSummary": 2-3 frases que resuman la oportunidad de transformación digital para este sector y tamaño.
+- "executiveSummary": 2-3 frases que resuman la oportunidad para este sector, tamaño y madurez.
 
 RESTRICCIONES:
 - Responde en español.
 - NO inventes ni cambies cifras de inversión: ya están asignadas por el sistema.
-- Específico del sector "${sector}", sin relleno genérico.
+- Específico del cliente, sin relleno genérico.
 - Respuesta en JSON PURO con esta estructura EXACTA:
 {
+  "agentName": "${AGENT_NAME}",
+  "agentIntro": "...",
   "headline": "...",
   "executiveSummary": "...",
   "phases": [
-    { "id": "adn", "interventions": ["..."], "products": ["..."], "rationale": "...", "kpi": "..." },
-    { "id": "bpmn", "interventions": ["..."], "products": ["..."], "rationale": "...", "kpi": "..." },
-    { "id": "sociotecnico", "interventions": ["..."], "products": ["..."], "rationale": "...", "kpi": "..." },
-    { "id": "desarrollo", "interventions": ["..."], "products": ["..."], "rationale": "...", "kpi": "..." },
-    { "id": "implementacion", "interventions": ["..."], "products": ["..."], "rationale": "...", "kpi": "..." },
-    { "id": "mejora", "interventions": ["..."], "products": ["..."], "rationale": "...", "kpi": "..." }
+    { "id": "adn", "whatWeDo": "...", "howWeDo": "...", "interventions": ["..."], "products": ["..."], "kpi": "...", "rationale": "...", "agentNote": "..." },
+    { "id": "bpmn", "whatWeDo": "...", "howWeDo": "...", "interventions": ["..."], "products": ["..."], "kpi": "...", "rationale": "...", "agentNote": "..." },
+    { "id": "sociotecnico", "whatWeDo": "...", "howWeDo": "...", "interventions": ["..."], "products": ["..."], "kpi": "...", "rationale": "...", "agentNote": "..." },
+    { "id": "desarrollo", "whatWeDo": "...", "howWeDo": "...", "interventions": ["..."], "products": ["..."], "kpi": "...", "rationale": "...", "agentNote": "..." },
+    { "id": "implementacion", "whatWeDo": "...", "howWeDo": "...", "interventions": ["..."], "products": ["..."], "kpi": "...", "rationale": "...", "agentNote": "..." },
+    { "id": "mejora", "whatWeDo": "...", "howWeDo": "...", "interventions": ["..."], "products": ["..."], "kpi": "...", "rationale": "...", "agentNote": "..." }
   ]
 }
 `
@@ -82,7 +108,7 @@ RESTRICCIONES:
     const { data, providerUsed } = await generateJsonWithAI({
       prompt,
       temperature: 0.6,
-      maxTokens: 2400,
+      maxTokens: 3600,
     })
 
     const aiPhases: Record<string, any> = {}
@@ -94,9 +120,10 @@ RESTRICCIONES:
 
     const toStringArray = (value: unknown): string[] =>
       Array.isArray(value) ? value.map((v) => String(v)).filter(Boolean).slice(0, 6) : []
+    const toStr = (value: unknown): string => (typeof value === 'string' ? value : '')
 
     const phases = SIMULATOR_PHASES.map((phase, i) => {
-      const inv = investment.phases[i]
+      const est = estimate.phases[i]
       const ai = aiPhases[phase.id] || {}
       return {
         id: phase.id,
@@ -105,19 +132,35 @@ RESTRICCIONES:
         tagline: phase.tagline,
         description: phase.description,
         methods: phase.methods,
-        investment: { min: inv.min, max: inv.max },
+        investment: { min: est.min, max: est.max },
+        recurring: !!est.recurring,
+        period: est.period || null,
+        basis: est.basis || null,
+        whatWeDo: toStr(ai.whatWeDo),
+        howWeDo: toStr(ai.howWeDo),
         interventions: toStringArray(ai.interventions),
         products: toStringArray(ai.products),
-        rationale: typeof ai.rationale === 'string' ? ai.rationale : '',
-        kpi: typeof ai.kpi === 'string' ? ai.kpi : '',
+        kpi: toStr(ai.kpi),
+        rationale: toStr(ai.rationale),
+        agentNote: toStr(ai.agentNote),
       }
     })
 
     const proposal = {
-      headline: typeof data?.headline === 'string' ? data.headline : `Transformación digital para ${sector}`,
-      executiveSummary: typeof data?.executiveSummary === 'string' ? data.executiveSummary : '',
+      agentName: toStr(data?.agentName) || AGENT_NAME,
+      agentIntro: toStr(data?.agentIntro),
+      headline: toStr(data?.headline) || `Transformación digital para ${sector}`,
+      executiveSummary: toStr(data?.executiveSummary),
       currency: SIMULATOR_CURRENCY,
-      total: investment.total,
+      sector,
+      orgType,
+      headcount,
+      maturity,
+      processes: estimate.processes,
+      solutions: estimate.solutions,
+      totalProject: estimate.totalProject,
+      monthly: estimate.monthly,
+      total: estimate.totalProject,
       phases,
     }
 
@@ -131,10 +174,11 @@ RESTRICCIONES:
           sector: safeString(sector, 160) || 'No definido',
           orgType: safeString(orgType, 120) || 'No definido',
           headcount: safeString(headcount, 40) || 'No definido',
+          maturity: safeString(maturity, 40),
           proposal: proposal as any,
           headline: safeString(proposal.headline, 240),
-          investmentMin: investment.total.min,
-          investmentMax: investment.total.max,
+          investmentMin: estimate.totalProject.min,
+          investmentMax: estimate.totalProject.max,
           currency: SIMULATOR_CURRENCY,
           providerUsed: safeString(providerUsed, 80),
           status: 'completed',
@@ -166,8 +210,9 @@ RESTRICCIONES:
             sector: safeString(sector, 160),
             orgType: safeString(orgType, 120),
             headcount: safeString(headcount, 40),
-            investmentMin: investment.total.min,
-            investmentMax: investment.total.max,
+            maturity: safeString(maturity, 40),
+            investmentMin: estimate.totalProject.min,
+            investmentMax: estimate.totalProject.max,
             providerUsed: safeString(providerUsed, 80),
           },
         },

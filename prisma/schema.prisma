@@ -153,6 +153,7 @@ model SimulatorRun {
   sector         String
   orgType        String
   headcount      String
+  maturity       String?
 
   // Propuesta construida por IA (fases acumulativas + totales)
   proposal       Json

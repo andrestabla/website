@@ -181,6 +181,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sector: string
       orgType: string
       headcount: string
+      maturity: string | null
       headline: string | null
       investmentMin: number | null
       investmentMax: number | null
@@ -323,6 +324,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             sector: true,
             orgType: true,
             headcount: true,
+            maturity: true,
             headline: true,
             investmentMin: true,
             investmentMax: true,
@@ -779,15 +781,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const simulatorBySectorMap = new Map<string, number>()
     const simulatorByOrgTypeMap = new Map<string, number>()
     const simulatorByHeadcountMap = new Map<string, number>()
+    const simulatorByMaturityMap = new Map<string, number>()
     let simulatorInvestmentSum = 0
     let simulatorInvestmentCount = 0
     for (const run of simulatorRunRows) {
       const sector = safeString(run.sector, 160) || 'No definido'
       const orgType = safeString(run.orgType, 120) || 'No definido'
       const headcount = safeString(run.headcount, 40) || 'No definido'
+      const maturity = safeString(run.maturity, 40) || 'No definida'
       simulatorBySectorMap.set(sector, (simulatorBySectorMap.get(sector) || 0) + 1)
       simulatorByOrgTypeMap.set(orgType, (simulatorByOrgTypeMap.get(orgType) || 0) + 1)
       simulatorByHeadcountMap.set(headcount, (simulatorByHeadcountMap.get(headcount) || 0) + 1)
+      simulatorByMaturityMap.set(maturity, (simulatorByMaturityMap.get(maturity) || 0) + 1)
       if (run.investmentMin != null && run.investmentMax != null) {
         simulatorInvestmentSum += (run.investmentMin + run.investmentMax) / 2
         simulatorInvestmentCount += 1
@@ -804,6 +809,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const simulatorByHeadcount = Array.from(simulatorByHeadcountMap.entries())
       .map(([headcount, count]) => ({ headcount, count }))
       .sort((a, b) => b.count - a.count)
+    const simulatorByMaturity = Array.from(simulatorByMaturityMap.entries())
+      .map(([maturity, count]) => ({ maturity, count }))
+      .sort((a, b) => b.count - a.count)
 
     const simulatorLeads = simulatorRunRows
       .filter((run) => run.leadEmail)
@@ -815,6 +823,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sector: run.sector,
         orgType: run.orgType,
         headcount: run.headcount,
+        maturity: run.maturity,
         investmentMin: run.investmentMin,
         investmentMax: run.investmentMax,
         sentAt: run.emailSentAt ? run.emailSentAt.toISOString() : run.createdAt.toISOString(),
@@ -907,6 +916,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           bySector: simulatorBySector,
           byOrgType: simulatorByOrgType,
           byHeadcount: simulatorByHeadcount,
+          byMaturity: simulatorByMaturity,
           leads: simulatorLeads,
         },
         recentActivity,

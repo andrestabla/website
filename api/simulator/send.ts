@@ -4,7 +4,7 @@ import { prisma } from '../_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, sanitizeIntegrations } from '../_lib/integrations.js'
 import { generateStyledEmail } from '../_lib/email-templates.js'
 import { getGeoFromRequest, safeString } from '../_lib/analytics.js'
-import { formatUsdRange, getHeadcountLabel } from '../_lib/simulator.js'
+import { formatUsd, formatUsdRange, getHeadcountLabel, getMaturityLabel } from '../_lib/simulator.js'
 
 async function getSmtpConfig() {
   const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
@@ -23,26 +23,34 @@ const escapeHtml = (value: unknown): string =>
 
 function buildProposalHtml(proposal: any, sector: string, orgType: string, headcount: string): string {
   const phases = Array.isArray(proposal?.phases) ? proposal.phases : []
-  const total = proposal?.total || {}
+  const totalProject = proposal?.totalProject || proposal?.total || {}
+  const monthly = proposal?.monthly || {}
+  const maturity = proposal?.maturity || ''
+  const processes = proposal?.processes || {}
+  const solutions = proposal?.solutions || {}
 
   const phasesHtml = phases
     .map((phase: any) => {
       const inv = phase?.investment || {}
       const interventions = Array.isArray(phase?.interventions) ? phase.interventions : []
       const products = Array.isArray(phase?.products) ? phase.products : []
+      const money = phase?.recurring
+        ? `${formatUsdRange(inv.min || 0, inv.max || 0)} / mes`
+        : formatUsdRange(inv.min || 0, inv.max || 0)
       return `
         <div style="margin-top: 24px; padding: 24px; background-color: #f8fafc; border-left: 4px solid #2563eb;">
           <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; font-weight: bold;">Fase ${phase.index} · ${escapeHtml(phase.tagline)}</div>
-          <h3 style="margin: 6px 0 10px 0; font-size: 18px; color: #0f172a;">${escapeHtml(phase.name)}</h3>
-          <p style="color: #475569; line-height: 1.6; margin: 0 0 14px 0;">${escapeHtml(phase.description)}</p>
-          <p style="margin: 0 0 14px 0; font-size: 15px; color: #0f172a;"><strong>Inversión estimada:</strong> ${escapeHtml(formatUsdRange(inv.min || 0, inv.max || 0))}</p>
+          <h3 style="margin: 6px 0 10px 0; font-size: 18px; color: #0f172a;">${escapeHtml(phase.name)}${phase.basis ? ` <span style="font-size: 12px; color: #64748b; font-weight: 500;">(${escapeHtml(phase.basis)})</span>` : ''}</h3>
+          ${phase.whatWeDo ? `<p style="color: #475569; line-height: 1.6; margin: 0 0 8px 0;"><strong style="color:#0f172a;">Qué se hace:</strong> ${escapeHtml(phase.whatWeDo)}</p>` : ''}
+          ${phase.howWeDo ? `<p style="color: #475569; line-height: 1.6; margin: 0 0 14px 0;"><strong style="color:#0f172a;">Cómo se hace:</strong> ${escapeHtml(phase.howWeDo)}</p>` : `<p style="color: #475569; line-height: 1.6; margin: 0 0 14px 0;">${escapeHtml(phase.description)}</p>`}
+          <p style="margin: 0 0 14px 0; font-size: 15px; color: #0f172a;"><strong>Inversión estimada:</strong> ${escapeHtml(money)}</p>
           ${interventions.length ? `
             <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; font-weight: bold; margin: 0 0 6px 0;">Intervenciones</p>
             <ul style="padding-left: 18px; color: #475569; margin: 0 0 14px 0;">
               ${interventions.map((i: string) => `<li style="margin-bottom: 4px;">${escapeHtml(i)}</li>`).join('')}
             </ul>` : ''}
           ${products.length ? `
-            <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; font-weight: bold; margin: 0 0 6px 0;">Productos obtenidos</p>
+            <p style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; font-weight: bold; margin: 0 0 6px 0;">Productos específicos para tu organización</p>
             <ul style="padding-left: 18px; color: #475569; margin: 0;">
               ${products.map((p: string) => `<li style="margin-bottom: 4px;">${escapeHtml(p)}</li>`).join('')}
             </ul>` : ''}
@@ -57,12 +65,16 @@ function buildProposalHtml(proposal: any, sector: string, orgType: string, headc
       <tr><td class="label">Sector</td><td>${escapeHtml(sector)}</td></tr>
       <tr><td class="label">Organización</td><td>${escapeHtml(orgType)}</td></tr>
       <tr><td class="label">Tamaño</td><td>${escapeHtml(getHeadcountLabel(headcount))}</td></tr>
+      <tr><td class="label">Madurez</td><td>${escapeHtml(getMaturityLabel(maturity))}</td></tr>
+      ${processes.min != null ? `<tr><td class="label">Procesos est.</td><td>${escapeHtml(`${processes.min}–${processes.max}`)}</td></tr>` : ''}
+      ${solutions.min != null ? `<tr><td class="label">Soluciones est.</td><td>${escapeHtml(`${solutions.min}–${solutions.max}`)}</td></tr>` : ''}
     </table>
     ${proposal?.executiveSummary ? `<p style="color: #475569; line-height: 1.6; margin-top: 20px;">${escapeHtml(proposal.executiveSummary)}</p>` : ''}
 
     <div style="margin-top: 28px; padding: 24px; background-color: #0f172a; color: #e2e8f0; text-align: center;">
-      <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #93c5fd;">Inversión total estimada</div>
-      <div style="font-size: 24px; font-weight: 900; color: #ffffff; margin-top: 8px;">${escapeHtml(formatUsdRange(total.min || 0, total.max || 0))}</div>
+      <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #93c5fd;">Inversión del proyecto (Fases 1–5)</div>
+      <div style="font-size: 24px; font-weight: 900; color: #ffffff; margin-top: 8px;">${escapeHtml(formatUsdRange(totalProject.min || 0, totalProject.max || 0))}</div>
+      ${monthly.min != null ? `<div style="font-size: 13px; color: #93c5fd; margin-top: 12px;">+ Mejora continua (Fase 6): <strong style="color:#fff;">${escapeHtml(formatUsd(monthly.min))} – ${escapeHtml(formatUsd(monthly.max))} / mes</strong></div>` : ''}
     </div>
 
     ${phasesHtml}
@@ -71,7 +83,7 @@ function buildProposalHtml(proposal: any, sector: string, orgType: string, headc
       <p style="color: #64748b; font-size: 14px;">¿Quieres profundizar esta propuesta con un consultor senior?</p>
       <a href="https://wa.me/573044544525" class="button">Agendar Consulta</a>
     </div>
-    <p style="margin-top: 24px; font-size: 12px; color: #94a3b8; line-height: 1.5;">Las cifras son una estimación referencial basada en el tamaño de tu organización y se ajustan tras un diagnóstico detallado.</p>
+    <p style="margin-top: 24px; font-size: 12px; color: #94a3b8; line-height: 1.5;">Las cifras son una estimación referencial basada en el sector, el tamaño y la madurez digital de tu organización. El diagnóstico (entrada desde ${escapeHtml(formatUsd(5000))}) precisa el alcance real, el número de procesos y las soluciones a desarrollar.</p>
   `
 }
 

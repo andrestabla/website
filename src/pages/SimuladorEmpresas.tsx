@@ -10,12 +10,16 @@ import {
   Building2,
   Users,
   Layers,
+  Gauge,
   Mail,
   X,
   Send,
   Wrench,
   Package,
   TrendingUp,
+  Bot,
+  ListChecks,
+  Cog,
   ScanSearch,
   Workflow,
   Scale,
@@ -30,6 +34,8 @@ import {
   SIMULATOR_SECTORS,
   SIMULATOR_ORG_TYPES,
   SIMULATOR_HEADCOUNTS,
+  SIMULATOR_MATURITIES,
+  formatUsd,
   formatUsdRange,
   type SimulatorProposal,
   type SimulatorProposalPhase,
@@ -44,7 +50,16 @@ const PHASE_ICONS: Record<string, LucideIcon> = {
   RefreshCw,
 }
 
-type Step = 'intro' | 'sector' | 'orgType' | 'headcount' | 'loading' | 'phase' | 'summary'
+const AGENT_NAME = 'Atenea'
+
+const THINKING_MESSAGES = [
+  'Analizando tu sector y modelo de negocio…',
+  'Estimando procesos y soluciones digitales…',
+  'Dimensionando la inversión por fase…',
+  'Redactando los productos específicos para tu organización…',
+]
+
+type Step = 'intro' | 'sector' | 'orgType' | 'headcount' | 'maturity' | 'loading' | 'phase' | 'summary'
 
 function trackEvent(eventType: string, metadata?: Record<string, unknown>) {
   try {
@@ -69,6 +84,34 @@ function trackEvent(eventType: string, metadata?: Record<string, unknown>) {
   } catch {
     // fire and forget
   }
+}
+
+function moneyLabel(phase: SimulatorProposalPhase) {
+  return phase.recurring
+    ? `${formatUsdRange(phase.investment.min, phase.investment.max)} / mes`
+    : formatUsdRange(phase.investment.min, phase.investment.max)
+}
+
+function AgentAvatar({ size = 'md' }: { size?: 'sm' | 'md' }) {
+  const dim = size === 'sm' ? 'h-9 w-9' : 'h-11 w-11'
+  return (
+    <div className={`relative flex ${dim} flex-shrink-0 items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-500/10 text-emerald-300`}>
+      <Bot className={size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'} />
+      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#020617] bg-emerald-400" />
+    </div>
+  )
+}
+
+function AgentBubble({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-5">
+      <AgentAvatar />
+      <div>
+        <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-300">{AGENT_NAME} · Agente IA</div>
+        <div className="mt-1 leading-relaxed text-slate-200">{children}</div>
+      </div>
+    </div>
+  )
 }
 
 function ProgressDots({ current, total }: { current: number; total: number }) {
@@ -96,9 +139,7 @@ function OptionGrid({
   columns?: number
 }) {
   return (
-    <div
-      className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${columns >= 3 ? 'lg:grid-cols-3' : ''}`}
-    >
+    <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${columns >= 3 ? 'lg:grid-cols-3' : ''}`}>
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -183,11 +224,13 @@ export function SimuladorEmpresas() {
   const [sector, setSector] = useState('')
   const [orgType, setOrgType] = useState('')
   const [headcount, setHeadcount] = useState('')
+  const [maturity, setMaturity] = useState('')
   const [phaseIndex, setPhaseIndex] = useState(0)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
   const [proposal, setProposal] = useState<SimulatorProposal | null>(null)
   const [runId, setRunId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [thinkingIdx, setThinkingIdx] = useState(0)
 
   const [emailModalOpen, setEmailModalOpen] = useState(false)
   const [leadName, setLeadName] = useState('')
@@ -200,21 +243,33 @@ export function SimuladorEmpresas() {
     window.scrollTo(0, 0)
   }, [step, phaseIndex])
 
+  useEffect(() => {
+    if (step !== 'loading') return
+    const id = window.setInterval(() => setThinkingIdx((i) => (i + 1) % THINKING_MESSAGES.length), 1800)
+    return () => window.clearInterval(id)
+  }, [step])
+
   const headcountLabel = useMemo(
     () => SIMULATOR_HEADCOUNTS.find((h) => h.value === headcount)?.label || headcount,
     [headcount]
   )
+  const maturityLabel = useMemo(
+    () => SIMULATOR_MATURITIES.find((m) => m.value === maturity)?.label || maturity,
+    [maturity]
+  )
 
-  const accumulatedInvestment = useMemo(() => {
+  // Inversión del proyecto acumulada (solo fases one-time, hasta la fase actual).
+  const accumulatedProject = useMemo(() => {
     if (!proposal) return { min: 0, max: 0 }
-    return proposal.phases.slice(0, phaseIndex + 1).reduce(
-      (acc, p) => ({ min: acc.min + (p.investment?.min || 0), max: acc.max + (p.investment?.max || 0) }),
-      { min: 0, max: 0 }
-    )
+    return proposal.phases
+      .slice(0, phaseIndex + 1)
+      .filter((p) => !p.recurring)
+      .reduce((acc, p) => ({ min: acc.min + p.investment.min, max: acc.max + p.investment.max }), { min: 0, max: 0 })
   }, [proposal, phaseIndex])
 
-  const handleGenerate = async (selectedHeadcount: string) => {
+  const handleGenerate = async (selectedMaturity: string) => {
     setStep('loading')
+    setThinkingIdx(0)
     setError(null)
     try {
       const res = await fetch('/api/simulator/generate', {
@@ -223,7 +278,8 @@ export function SimuladorEmpresas() {
         body: JSON.stringify({
           sector,
           orgType,
-          headcount: selectedHeadcount,
+          headcount,
+          maturity: selectedMaturity,
           visitorId: getOrCreateVisitorId(),
           sessionId: getSessionId(),
         }),
@@ -239,10 +295,11 @@ export function SimuladorEmpresas() {
       setProposal(data.proposal)
       setRunId(data.runId || null)
       setPhaseIndex(0)
+      setDirection('next')
       setStep('phase')
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error al generar la propuesta.')
-      setStep('headcount')
+      setStep('maturity')
     }
   }
 
@@ -264,6 +321,7 @@ export function SimuladorEmpresas() {
           sector,
           orgType,
           headcount,
+          maturity,
           visitorId: getOrCreateVisitorId(),
           sessionId: getSessionId(),
         }),
@@ -291,6 +349,7 @@ export function SimuladorEmpresas() {
     setSector('')
     setOrgType('')
     setHeadcount('')
+    setMaturity('')
     setPhaseIndex(0)
     setSent(false)
     setLeadName('')
@@ -328,26 +387,28 @@ export function SimuladorEmpresas() {
             <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-6xl">
               Simula tu Transformación Digital, fase por fase
             </h1>
-            <p className="mb-10 max-w-2xl text-xl text-slate-400">
+            <p className="mb-8 max-w-2xl text-xl text-slate-400">
               La transformación digital no es comprar tecnología: es un proceso ordenado para reducir fricción operativa,
-              ganar control interno y servir mejor a tus clientes. Te guiaremos por las <strong className="text-slate-200">6 fases</strong> de
-              nuestra metodología, calculando inversión, intervenciones y los productos que obtendrías en cada una.
+              ganar control interno y servir mejor a tus clientes. Te guiaré por las <strong className="text-slate-200">6 fases</strong> de
+              nuestra metodología, estimando inversión, intervenciones y los productos concretos que obtendrías en cada una.
             </p>
+
+            <div className="mb-12 max-w-2xl">
+              <AgentBubble>
+                Hola, soy <strong className="text-white">{AGENT_NAME}</strong>, tu agente de transformación digital. Cuéntame
+                cuatro datos de tu organización y construiré contigo una propuesta personalizada, fase por fase.
+              </AgentBubble>
+            </div>
 
             <div className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {SIMULATOR_PHASES.map((phase) => {
                 const Icon = PHASE_ICONS[phase.icon] || Layers
                 return (
-                  <div
-                    key={phase.id}
-                    className="rounded-2xl border border-white/5 bg-slate-800/30 p-6 backdrop-blur-sm"
-                  >
+                  <div key={phase.id} className="rounded-2xl border border-white/5 bg-slate-800/30 p-6 backdrop-blur-sm">
                     <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/50 text-emerald-400">
                       <Icon className="h-5 w-5" />
                     </div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                      Fase {phase.index}
-                    </div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Fase {phase.index}</div>
                     <div className="mt-1 text-lg font-bold text-white">{phase.name}</div>
                     <div className="mt-1 text-sm text-slate-400">{phase.tagline}</div>
                   </div>
@@ -368,13 +429,13 @@ export function SimuladorEmpresas() {
         )}
 
         {/* CAPTURE STEPS */}
-        {(step === 'sector' || step === 'orgType' || step === 'headcount') && (
+        {(step === 'sector' || step === 'orgType' || step === 'headcount' || step === 'maturity') && (
           <div className="animate-in slide-in-from-right-8 duration-500">
             <div className="mb-12 flex items-center justify-between">
               <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-emerald-400">
-                <Sparkles className="h-4 w-4" /> Cuéntanos de tu organización
+                <Sparkles className="h-4 w-4" /> Cuéntame de tu organización
               </span>
-              <ProgressDots current={['sector', 'orgType', 'headcount'].indexOf(step)} total={3} />
+              <ProgressDots current={['sector', 'orgType', 'headcount', 'maturity'].indexOf(step)} total={4} />
             </div>
 
             {step === 'sector' && (
@@ -440,21 +501,57 @@ export function SimuladorEmpresas() {
                 </div>
                 <h2 className="mb-4 text-4xl font-black text-white sm:text-5xl">¿Cuántos colaboradores tienen?</h2>
                 <p className="mb-10 text-xl text-slate-400 md:w-2/3">
-                  El tamaño del equipo determina el rango de inversión estimada de la transformación.
+                  El tamaño del equipo nos permite estimar cuántos procesos hay que mapear: a más personas, más procesos.
+                </p>
+                <OptionGrid
+                  columns={2}
+                  options={SIMULATOR_HEADCOUNTS}
+                  onSelect={(value) => {
+                    setHeadcount(value)
+                    setStep('maturity')
+                  }}
+                />
+              </>
+            )}
+
+            {step === 'maturity' && (
+              <>
+                <button
+                  onClick={() => setStep('headcount')}
+                  className="mb-10 flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-300"
+                >
+                  <ChevronLeft className="h-4 w-4" /> Volver a Colaboradores
+                </button>
+                <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-800/50 text-slate-300">
+                  <Gauge className="h-8 w-8" />
+                </div>
+                <h2 className="mb-4 text-4xl font-black text-white sm:text-5xl">¿Cuál es tu madurez digital?</h2>
+                <p className="mb-10 text-xl text-slate-400 md:w-2/3">
+                  Esto nos dice si partimos desde cero o construimos sobre sistemas existentes, y ajusta el esfuerzo estimado.
                 </p>
                 {error && (
                   <div className="mb-8 rounded-xl border border-red-500/20 bg-red-500/10 p-5 text-sm font-medium text-red-400">
                     {error}
                   </div>
                 )}
-                <OptionGrid
-                  columns={2}
-                  options={SIMULATOR_HEADCOUNTS}
-                  onSelect={(value) => {
-                    setHeadcount(value)
-                    handleGenerate(value)
-                  }}
-                />
+                <div className="flex flex-col gap-4">
+                  {SIMULATOR_MATURITIES.map((mat) => (
+                    <button
+                      key={mat.value}
+                      onClick={() => {
+                        setMaturity(mat.value)
+                        handleGenerate(mat.value)
+                      }}
+                      className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-700 bg-slate-800/30 px-8 py-6 text-left transition-all hover:-translate-y-1 hover:border-emerald-500/40 hover:bg-emerald-500/10 active:scale-95"
+                    >
+                      <div>
+                        <div className="text-lg font-bold text-white">{mat.label}</div>
+                        <div className="mt-1 text-sm text-slate-400">{mat.description}</div>
+                      </div>
+                      <ArrowRight className="h-5 w-5 flex-shrink-0 text-emerald-400 opacity-0 transition-opacity group-hover:opacity-100" />
+                    </button>
+                  ))}
+                </div>
               </>
             )}
           </div>
@@ -462,16 +559,18 @@ export function SimuladorEmpresas() {
 
         {/* LOADING */}
         {step === 'loading' && (
-          <div className="flex flex-col items-center justify-center py-32 text-center animate-in zoom-in duration-500">
-            <div className="relative mb-12 flex h-32 w-32 items-center justify-center">
+          <div className="flex flex-col items-center justify-center py-28 text-center animate-in zoom-in duration-500">
+            <div className="relative mb-10 flex h-28 w-28 items-center justify-center">
               <div className="absolute inset-0 animate-ping rounded-full bg-emerald-500/20" />
               <div className="absolute inset-4 animate-pulse rounded-full bg-emerald-500/20" />
-              <Loader2 className="h-12 w-12 animate-spin text-emerald-400" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-500/10 text-emerald-300">
+                <Bot className="h-8 w-8" />
+              </div>
             </div>
-            <h3 className="text-3xl font-black text-white">Construyendo tu propuesta...</h3>
-            <p className="mt-6 max-w-md text-xl text-slate-400">
-              Nuestra IA está personalizando las 6 fases de transformación digital para el sector{' '}
-              <strong>{sector}</strong>.
+            <h3 className="text-3xl font-black text-white">{AGENT_NAME} está construyendo tu propuesta…</h3>
+            <p className="mt-6 h-7 max-w-md text-lg text-emerald-300/90 transition-all">{THINKING_MESSAGES[thinkingIdx]}</p>
+            <p className="mt-2 max-w-md text-sm text-slate-500">
+              Sector <strong className="text-slate-300">{sector}</strong> · {headcountLabel} · Madurez {maturityLabel}
             </p>
           </div>
         )}
@@ -493,83 +592,109 @@ export function SimuladorEmpresas() {
                   : 'animate-in slide-in-from-right-8 fade-in duration-500'
               }
             >
-            <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
-              <PhaseIcon className="h-8 w-8" />
-            </div>
-
-            <div className="text-sm font-bold uppercase tracking-widest text-slate-500">{currentPhase.tagline}</div>
-            <h2 className="mb-6 mt-2 text-4xl font-black text-white sm:text-5xl">{currentPhase.name}</h2>
-            <p className="mb-8 max-w-3xl text-lg text-slate-400">{currentPhase.description}</p>
-
-            <div className="mb-10 flex flex-wrap gap-3">
-              {currentPhase.methods.map((m) => (
-                <span
-                  key={m}
-                  className="rounded-full border border-slate-700 bg-slate-800/40 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-300"
-                >
-                  {m}
-                </span>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-              {/* Interventions */}
-              <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
-                <h4 className="mb-6 flex items-center gap-2 border-b border-white/5 pb-4 text-sm font-bold uppercase tracking-widest text-slate-400">
-                  <Wrench className="h-4 w-4" /> Intervenciones / Consultoría
-                </h4>
-                <ul className="flex flex-col gap-4">
-                  {currentPhase.interventions.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
-                      <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-400" />
-                      <span className="text-slate-200">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+              <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                <PhaseIcon className="h-8 w-8" />
               </div>
 
-              {/* Products */}
-              <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
-                <h4 className="mb-6 flex items-center gap-2 border-b border-white/5 pb-4 text-sm font-bold uppercase tracking-widest text-slate-400">
-                  <Package className="h-4 w-4" /> Productos obtenidos
-                </h4>
-                <ul className="flex flex-col gap-4">
-                  {currentPhase.products.map((item, idx) => (
-                    <li
-                      key={idx}
-                      className="flex items-start gap-3 rounded-2xl border border-white/5 bg-slate-900/50 p-4"
-                    >
-                      <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
-                        <Package className="h-3.5 w-3.5" />
-                      </div>
-                      <span className="text-slate-200">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+              <div className="text-sm font-bold uppercase tracking-widest text-slate-500">{currentPhase.tagline}</div>
+              <h2 className="mb-4 mt-2 text-4xl font-black text-white sm:text-5xl">
+                {currentPhase.name}
+                {currentPhase.basis && (
+                  <span className="ml-3 align-middle text-base font-bold text-emerald-300">· {currentPhase.basis}</span>
+                )}
+              </h2>
+              <p className="mb-8 max-w-3xl text-lg text-slate-400">{currentPhase.description}</p>
 
-            {/* Investment */}
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div className="rounded-3xl border border-emerald-500/20 bg-emerald-950/20 p-8">
-                <div className="text-xs font-bold uppercase tracking-widest text-emerald-500/70">Inversión de esta fase</div>
-                <div className="mt-2 text-2xl font-black text-white">
-                  {formatUsdRange(currentPhase.investment.min, currentPhase.investment.max)}
-                </div>
-                {currentPhase.rationale && <p className="mt-3 text-sm text-slate-400">{currentPhase.rationale}</p>}
-              </div>
-              <div className="rounded-3xl border border-emerald-400/30 bg-emerald-900/40 p-8 shadow-[0_0_40px_rgba(16,185,129,0.1)]">
-                <div className="text-xs font-bold uppercase tracking-widest text-emerald-300">Inversión acumulada (Fases 1–{currentPhase.index})</div>
-                <div className="mt-2 text-2xl font-black text-emerald-50">
-                  {formatUsdRange(accumulatedInvestment.min, accumulatedInvestment.max)}
-                </div>
-                {currentPhase.kpi && (
-                  <p className="mt-3 flex items-center gap-2 text-sm font-medium text-emerald-300">
-                    <TrendingUp className="h-4 w-4" /> {currentPhase.kpi}
-                  </p>
+              {currentPhase.agentNote && <div className="mb-10 max-w-3xl"><AgentBubble>{currentPhase.agentNote}</AgentBubble></div>}
+
+              {/* Qué se hace / Cómo se hace */}
+              <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                {currentPhase.whatWeDo && (
+                  <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
+                    <h4 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-400">
+                      <ListChecks className="h-4 w-4" /> ¿Qué se hace?
+                    </h4>
+                    <p className="leading-relaxed text-slate-200">{currentPhase.whatWeDo}</p>
+                  </div>
+                )}
+                {currentPhase.howWeDo && (
+                  <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
+                    <h4 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-400">
+                      <Cog className="h-4 w-4" /> ¿Cómo se hace?
+                    </h4>
+                    <p className="leading-relaxed text-slate-200">{currentPhase.howWeDo}</p>
+                  </div>
                 )}
               </div>
-            </div>
+
+              <div className="mb-10 flex flex-wrap gap-3">
+                {currentPhase.methods.map((m) => (
+                  <span
+                    key={m}
+                    className="rounded-full border border-slate-700 bg-slate-800/40 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-300"
+                  >
+                    {m}
+                  </span>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                {/* Interventions */}
+                <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
+                  <h4 className="mb-6 flex items-center gap-2 border-b border-white/5 pb-4 text-sm font-bold uppercase tracking-widest text-slate-400">
+                    <Wrench className="h-4 w-4" /> Intervenciones / Consultoría
+                  </h4>
+                  <ul className="flex flex-col gap-4">
+                    {currentPhase.interventions.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-3">
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-400" />
+                        <span className="text-slate-200">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Products */}
+                <div className="rounded-3xl border border-white/5 bg-slate-800/30 p-8 backdrop-blur-sm">
+                  <h4 className="mb-6 flex items-center gap-2 border-b border-white/5 pb-4 text-sm font-bold uppercase tracking-widest text-slate-400">
+                    <Package className="h-4 w-4" /> Productos para tu organización
+                  </h4>
+                  <ul className="flex flex-col gap-4">
+                    {currentPhase.products.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-3 rounded-2xl border border-white/5 bg-slate-900/50 p-4">
+                        <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
+                          <Package className="h-3.5 w-3.5" />
+                        </div>
+                        <span className="text-slate-200">{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Investment */}
+              <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div className="rounded-3xl border border-emerald-500/20 bg-emerald-950/20 p-8">
+                  <div className="text-xs font-bold uppercase tracking-widest text-emerald-500/70">
+                    {currentPhase.recurring ? 'Retainer mensual' : 'Inversión de esta fase'}
+                  </div>
+                  <div className="mt-2 text-2xl font-black text-white">{moneyLabel(currentPhase)}</div>
+                  {currentPhase.rationale && <p className="mt-3 text-sm text-slate-400">{currentPhase.rationale}</p>}
+                </div>
+                <div className="rounded-3xl border border-emerald-400/30 bg-emerald-900/40 p-8 shadow-[0_0_40px_rgba(16,185,129,0.1)]">
+                  <div className="text-xs font-bold uppercase tracking-widest text-emerald-300">
+                    {currentPhase.recurring ? 'Inversión del proyecto (Fases 1–5)' : `Inversión acumulada (Fases 1–${currentPhase.index})`}
+                  </div>
+                  <div className="mt-2 text-2xl font-black text-emerald-50">
+                    {formatUsdRange(accumulatedProject.min, accumulatedProject.max)}
+                  </div>
+                  {currentPhase.kpi && (
+                    <p className="mt-3 flex items-center gap-2 text-sm font-medium text-emerald-300">
+                      <TrendingUp className="h-4 w-4" /> {currentPhase.kpi}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Navigation */}
@@ -577,7 +702,7 @@ export function SimuladorEmpresas() {
               <button
                 onClick={() => {
                   if (phaseIndex === 0) {
-                    setStep('headcount')
+                    setStep('maturity')
                   } else {
                     setDirection('prev')
                     setPhaseIndex((i) => i - 1)
@@ -616,34 +741,58 @@ export function SimuladorEmpresas() {
               <CheckCircle2 className="h-4 w-4" /> Propuesta construida
             </div>
             <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-5xl">{proposal.headline}</h1>
-            {proposal.executiveSummary && (
-              <p className="mb-10 max-w-3xl text-lg text-slate-400">{proposal.executiveSummary}</p>
+
+            {(proposal.agentIntro || proposal.executiveSummary) && (
+              <div className="mb-10 max-w-3xl">
+                <AgentBubble>{proposal.agentIntro || proposal.executiveSummary}</AgentBubble>
+              </div>
             )}
 
-            <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-6">
+            <div className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-5">
+              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Sector</div>
-                <div className="mt-1 font-bold text-white">{sector}</div>
+                <div className="mt-1 text-sm font-bold text-white">{sector}</div>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-6">
+              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Organización</div>
-                <div className="mt-1 font-bold text-white">{orgType}</div>
+                <div className="mt-1 text-sm font-bold text-white">{orgType}</div>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-6">
+              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Tamaño</div>
-                <div className="mt-1 font-bold text-white">{headcountLabel}</div>
+                <div className="mt-1 text-sm font-bold text-white">{headcountLabel}</div>
+              </div>
+              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Madurez</div>
+                <div className="mt-1 text-sm font-bold text-white">{maturityLabel}</div>
+              </div>
+              <div className="rounded-2xl border border-white/5 bg-slate-800/30 p-5">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Procesos / Soluciones</div>
+                <div className="mt-1 text-sm font-bold text-white">
+                  {proposal.processes.min}–{proposal.processes.max} / {proposal.solutions.min}–{proposal.solutions.max}
+                </div>
               </div>
             </div>
 
-            <div className="mb-10 rounded-3xl border border-emerald-400/30 bg-emerald-900/40 p-10 text-center shadow-[0_0_50px_rgba(16,185,129,0.12)]">
-              <div className="text-xs font-bold uppercase tracking-widest text-emerald-300">Inversión total estimada</div>
-              <div className="mt-3 text-4xl font-black text-white sm:text-5xl">
-                {formatUsdRange(proposal.total.min, proposal.total.max)}
+            <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="rounded-3xl border border-emerald-400/30 bg-emerald-900/40 p-8 text-center shadow-[0_0_50px_rgba(16,185,129,0.12)]">
+                <div className="text-xs font-bold uppercase tracking-widest text-emerald-300">Inversión del proyecto · Fases 1–5</div>
+                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">
+                  {formatUsdRange(proposal.totalProject.min, proposal.totalProject.max)}
+                </div>
               </div>
-              <p className="mx-auto mt-4 max-w-xl text-sm text-emerald-200/70">
-                Estimación referencial basada en el tamaño de tu organización. Se ajusta tras el diagnóstico inicial.
-              </p>
+              <div className="rounded-3xl border border-white/10 bg-slate-800/40 p-8 text-center">
+                <div className="text-xs font-bold uppercase tracking-widest text-slate-400">Mejora continua · Fase 6</div>
+                <div className="mt-3 text-3xl font-black text-white sm:text-4xl">
+                  {formatUsd(proposal.monthly.min)} – {formatUsd(proposal.monthly.max)}
+                </div>
+                <div className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-500">Retainer mensual</div>
+              </div>
             </div>
+
+            <p className="mb-10 max-w-3xl text-sm text-slate-400">
+              Estimación referencial según sector, tamaño y madurez. El diagnóstico (entrada desde {formatUsd(5000)}) precisa
+              el alcance real, el número de procesos y las soluciones a desarrollar.
+            </p>
 
             <div className="mb-12 space-y-4">
               {proposal.phases.map((phase) => (
@@ -654,12 +803,11 @@ export function SimuladorEmpresas() {
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                       Fase {phase.index} · {phase.tagline}
+                      {phase.basis ? ` · ${phase.basis}` : ''}
                     </div>
                     <div className="mt-1 text-lg font-bold text-white">{phase.name}</div>
                   </div>
-                  <div className="text-base font-black text-emerald-300">
-                    {formatUsdRange(phase.investment.min, phase.investment.max)}
-                  </div>
+                  <div className="text-base font-black text-emerald-300">{moneyLabel(phase)}</div>
                 </div>
               ))}
             </div>
@@ -676,7 +824,11 @@ export function SimuladorEmpresas() {
                 <Mail className="h-4 w-4" /> Recibir propuesta por correo
               </button>
               <button
-                onClick={() => setStep('phase')}
+                onClick={() => {
+                  setPhaseIndex(0)
+                  setDirection('next')
+                  setStep('phase')
+                }}
                 className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/10"
               >
                 Revisar fases

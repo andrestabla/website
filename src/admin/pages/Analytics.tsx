@@ -127,6 +127,7 @@ type MetricsData = {
     bySector: Array<{ sector: string; count: number }>
     byOrgType: Array<{ orgType: string; count: number }>
     byHeadcount: Array<{ headcount: string; count: number }>
+    byMaturity: Array<{ maturity: string; count: number }>
     leads: Array<{
       name: string | null
       phone: string | null
@@ -134,6 +135,7 @@ type MetricsData = {
       sector: string
       orgType: string
       headcount: string
+      maturity: string | null
       investmentMin: number | null
       investmentMax: number | null
       sentAt: string
@@ -413,6 +415,7 @@ export function Analytics() {
   const simulatorBySector = metrics?.simulator.bySector.slice(0, 10) ?? []
   const simulatorByOrgType = metrics?.simulator.byOrgType.slice(0, 8) ?? []
   const simulatorByHeadcount = metrics?.simulator.byHeadcount ?? []
+  const simulatorByMaturity = metrics?.simulator.byMaturity ?? []
   const simulatorLeads = metrics?.simulator.leads.slice(0, 120) ?? []
   const i18nLangRows = metrics
     ? Object.entries(metrics.i18n.byLang).map(([lang, bucket]) => ({ lang: lang.toUpperCase(), ...bucket }))
@@ -1232,6 +1235,22 @@ export function Analytics() {
           </div>
         </div>
 
+        <div className="bg-white border border-slate-200 p-8">
+          <h3 className="font-black uppercase tracking-widest text-xs text-slate-900 mb-6">Por madurez digital</h3>
+          {simulatorByMaturity.length === 0 ? (
+            <p className="text-sm text-slate-500">Aún no hay datos de madurez.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {simulatorByMaturity.map((row, index) => (
+                <div key={`${row.maturity}-${index}`} className="flex items-center justify-between border border-slate-200 px-4 py-3">
+                  <span className="text-sm font-semibold text-slate-700 capitalize">{row.maturity}</span>
+                  <span className="text-sm font-black text-slate-900">{row.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="bg-white border border-slate-200">
           <div className="p-8 border-b border-slate-100 flex items-center gap-2">
             <Building2 className="w-4 h-4 text-brand-primary" />
@@ -1247,13 +1266,14 @@ export function Analytics() {
                   <th className="text-left px-6 py-4">Sector</th>
                   <th className="text-left px-6 py-4">Organización</th>
                   <th className="text-left px-6 py-4">Tamaño</th>
+                  <th className="text-left px-6 py-4">Madurez</th>
                   <th className="text-left px-6 py-4">Inversión (USD)</th>
                   <th className="text-left px-6 py-4">Fecha</th>
                 </tr>
               </thead>
               <tbody>
                 {simulatorLeads.length === 0 ? (
-                  <tr><td className="px-6 py-8 text-slate-500" colSpan={8}>Aún no hay leads generados desde el simulador.</td></tr>
+                  <tr><td className="px-6 py-8 text-slate-500" colSpan={9}>Aún no hay leads generados desde el simulador.</td></tr>
                 ) : simulatorLeads.map((row, index) => (
                   <tr key={`${row.email}-${index}`} className="border-t border-slate-100">
                     <td className="px-6 py-4 font-medium text-slate-800">{row.name || 'N/D'}</td>
@@ -1262,6 +1282,7 @@ export function Analytics() {
                     <td className="px-6 py-4 text-slate-600">{row.sector}</td>
                     <td className="px-6 py-4 text-slate-600">{row.orgType}</td>
                     <td className="px-6 py-4 text-slate-600">{row.headcount}</td>
+                    <td className="px-6 py-4 text-slate-600 capitalize">{row.maturity || 'N/D'}</td>
                     <td className="px-6 py-4 text-slate-600">
                       {row.investmentMin != null && row.investmentMax != null
                         ? `$${row.investmentMin.toLocaleString('en-US')} – $${row.investmentMax.toLocaleString('en-US')}`

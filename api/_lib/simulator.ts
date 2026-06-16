@@ -1,23 +1,48 @@
 /**
  * AlgoritmoT - Simulador de Transformación Digital
  *
- * Anclas de inversión (USD) por tramo de colaboradores y metadata de las 6 fases.
+ * Modelo de estimación (USD) detallado y metadata de las 6 fases.
  * Las cifras son anclas deterministas calculadas en el servidor; la IA solo
  * contextualiza intervenciones y productos por sector (nunca inventa montos).
+ *
+ * Lógica de costeo:
+ *  - Fase 1 (Diagnóstico): piso de entrada de 5.000 USD.
+ *  - Fase 2 (Mapeo): depende del nº de procesos, estimado a partir del nº de
+ *    colaboradores (más personas → más procesos), con un precio por proceso.
+ *  - Fase 4 (Diseño/Desarrollo): depende del nº de soluciones digitales y su
+ *    alcance técnico, con un precio por solución.
+ *  - Fase 6 (Mejora continua): retainer mensual (recurrente).
+ *  - La madurez digital aplica un factor de esfuerzo sobre las fases de trabajo.
  */
 
 export type HeadcountKey = '1-10' | '11-50' | '51-200' | '201-500' | '500+'
+export type MaturityKey = 'inicial' | 'en-desarrollo' | 'consolidado'
 
 export const SIMULATOR_CURRENCY = 'USD'
 
-// Rango total (USD) de una transformación digital completa por tramo de personas.
-const HEADCOUNT_INVESTMENT: Record<HeadcountKey, [number, number]> = {
-  '1-10': [8000, 20000],
-  '11-50': [20000, 55000],
-  '51-200': [55000, 140000],
-  '201-500': [140000, 320000],
-  '500+': [320000, 750000],
+// Piso mínimo de entrada para un diagnóstico (USD).
+export const DIAGNOSTIC_FLOOR = 5000
+
+type HeadcountProfile = {
+  diagnostic: [number, number]
+  processes: [number, number]
+  solutions: [number, number]
+  monthly: [number, number]
 }
+
+// Perfil por tramo de colaboradores: diagnóstico, nº estimado de procesos,
+// nº estimado de soluciones digitales y retainer mensual (USD).
+const HEADCOUNT_PROFILE: Record<HeadcountKey, HeadcountProfile> = {
+  '1-10': { diagnostic: [5000, 8000], processes: [3, 6], solutions: [1, 2], monthly: [1200, 2500] },
+  '11-50': { diagnostic: [6000, 12000], processes: [6, 12], solutions: [2, 3], monthly: [1800, 4000] },
+  '51-200': { diagnostic: [9000, 18000], processes: [12, 25], solutions: [3, 5], monthly: [3000, 7000] },
+  '201-500': { diagnostic: [14000, 28000], processes: [25, 45], solutions: [4, 7], monthly: [5000, 12000] },
+  '500+': { diagnostic: [20000, 40000], processes: [45, 80], solutions: [6, 10], monthly: [8000, 20000] },
+}
+
+// Precio por proceso mapeado (BPMN as-is/to-be) y por solución digital (según alcance).
+const PER_PROCESS: [number, number] = [600, 1200]
+const PER_SOLUTION: [number, number] = [8000, 30000]
 
 const HEADCOUNT_LABEL: Record<HeadcountKey, string> = {
   '1-10': '1 a 10 colaboradores',
@@ -27,6 +52,33 @@ const HEADCOUNT_LABEL: Record<HeadcountKey, string> = {
   '500+': 'Más de 500 colaboradores',
 }
 
+export const SIMULATOR_MATURITIES: Array<{ value: MaturityKey; label: string; description: string; factor: number }> = [
+  {
+    value: 'inicial',
+    label: 'Inicial',
+    description: 'Procesos manuales o no documentados; poca o nula digitalización.',
+    factor: 1.15,
+  },
+  {
+    value: 'en-desarrollo',
+    label: 'En desarrollo',
+    description: 'Algunos procesos digitales o documentados; herramientas dispersas.',
+    factor: 1.0,
+  },
+  {
+    value: 'consolidado',
+    label: 'Consolidado',
+    description: 'Sistemas integrados; se busca optimización avanzada e IA.',
+    factor: 0.95,
+  },
+]
+
+const MATURITY_FACTOR: Record<MaturityKey, number> = {
+  inicial: 1.15,
+  'en-desarrollo': 1.0,
+  consolidado: 0.95,
+}
+
 export type SimulatorPhaseMeta = {
   id: string
   index: number
@@ -34,11 +86,9 @@ export type SimulatorPhaseMeta = {
   tagline: string
   description: string
   methods: string[]
-  weight: number
 }
 
-// Las 6 fases reales de la línea "Empresas" (Servicios_empresas). El peso reparte
-// el rango total entre fases (suma = 1.0).
+// Las 6 fases reales de la línea "Empresas" (Servicios_empresas).
 export const SIMULATOR_PHASES: SimulatorPhaseMeta[] = [
   {
     id: 'adn',
@@ -48,7 +98,6 @@ export const SIMULATOR_PHASES: SimulatorPhaseMeta[] = [
     description:
       'Diagnóstico 360°: mapeamos el modelo de negocio (Business Model Canvas), la propuesta de valor (Value Proposition Canvas) y la madurez digital (MD-IA) para construir un roadmap priorizado de iniciativas.',
     methods: ['Business Model Canvas', 'Value Proposition Canvas', 'Evaluación MD-IA'],
-    weight: 0.1,
   },
   {
     id: 'bpmn',
@@ -56,9 +105,8 @@ export const SIMULATOR_PHASES: SimulatorPhaseMeta[] = [
     name: 'Mapeo de Procesos',
     tagline: 'Optimización Digital (BPMN)',
     description:
-      'Hacemos visibles los procesos "invisibles" con el estándar BPMN 2.x, identificamos desperdicios con Value Stream Mapping (Lean) y los rediseñamos del estado actual (as-is) al óptimo (to-be).',
+      'Hacemos visibles los procesos con el estándar BPMN 2.x, identificamos desperdicios con Value Stream Mapping (Lean) y los rediseñamos del estado actual (as-is) al óptimo (to-be). El alcance depende del número de procesos a mapear.',
     methods: ['Diagramas BPMN 2.x', 'Value Stream Mapping', 'Matriz de KPIs'],
-    weight: 0.12,
   },
   {
     id: 'sociotecnico',
@@ -68,7 +116,6 @@ export const SIMULATOR_PHASES: SimulatorPhaseMeta[] = [
     description:
       'Decidimos con criterio objetivo qué tareas hace una persona, cuáles se automatizan y cuáles funcionan en colaboración humano-IA, bajo marcos de IA responsable (NIST AI RMF) y diseño centrado en el humano (ISO 9241).',
     methods: ['Matriz Humano/Tecnología', 'Gobernanza de IA (NIST)', 'Plan de mitigación de riesgos'],
-    weight: 0.1,
   },
   {
     id: 'desarrollo',
@@ -76,9 +123,8 @@ export const SIMULATOR_PHASES: SimulatorPhaseMeta[] = [
     name: 'Diseño y Desarrollo',
     tagline: 'Soluciones a Medida (Ágil)',
     description:
-      'Construimos la solución digital a medida en sprints ágiles (Scrum), con versiones funcionales cada 2 semanas: desde prototipos validados hasta plataformas cloud escalables alineadas a tus procesos.',
+      'Construimos las soluciones digitales a medida en sprints ágiles (Scrum), con versiones funcionales cada 2 semanas. El alcance depende del número de soluciones y la complejidad técnica de cada una.',
     methods: ['Blueprint Tecnológico', 'Prototipado Rápido', 'Validación con Usuarios'],
-    weight: 0.33,
   },
   {
     id: 'implementacion',
@@ -88,7 +134,6 @@ export const SIMULATOR_PHASES: SimulatorPhaseMeta[] = [
     description:
       'Plan de 12 semanas en 6 fases (configuración, migración, capacitación, UAT, go-live y estabilización) con gestión del cambio (modelo de 8 pasos de Kotter) para una adopción sin contratiempos.',
     methods: ['Migración de Datos', 'Gestión del Cambio (Kotter)', 'Soporte Post-Lanzamiento'],
-    weight: 0.22,
   },
   {
     id: 'mejora',
@@ -96,39 +141,94 @@ export const SIMULATOR_PHASES: SimulatorPhaseMeta[] = [
     name: 'Mejora Continua',
     tagline: 'Tecnología Resiliente',
     description:
-      'Ciclo PDCA mensual para monitorear KPIs en tiempo real, detectar desviaciones a tiempo y aplicar mejoras iterativas, con un retainer que mantiene la solución en su punto óptimo y la hace evolucionar.',
+      'Ciclo PDCA mensual para monitorear KPIs en tiempo real, detectar desviaciones a tiempo y aplicar mejoras iterativas, con un retainer mensual que mantiene la solución en su punto óptimo y la hace evolucionar.',
     methods: ['Dashboards en Tiempo Real', 'Análisis de SLA/SLO', 'Roadmap de Mejoras (PDCA)'],
-    weight: 0.13,
   },
 ]
 
 export function isHeadcountKey(value: unknown): value is HeadcountKey {
-  return typeof value === 'string' && value in HEADCOUNT_INVESTMENT
+  return typeof value === 'string' && value in HEADCOUNT_PROFILE
+}
+
+export function isMaturityKey(value: unknown): value is MaturityKey {
+  return typeof value === 'string' && value in MATURITY_FACTOR
 }
 
 export function getHeadcountLabel(headcount: string): string {
   return HEADCOUNT_LABEL[headcount as HeadcountKey] || headcount
 }
 
+export function getMaturityLabel(maturity: string): string {
+  return SIMULATOR_MATURITIES.find((m) => m.value === maturity)?.label || maturity || 'No definida'
+}
+
 function roundTo(value: number, step = 100): number {
   return Math.round(value / step) * step
 }
 
-export type PhaseInvestment = { id: string; min: number; max: number }
+export type PhaseEstimate = {
+  id: string
+  min: number
+  max: number
+  recurring?: boolean
+  period?: string
+  basis?: string
+}
 
-/** Calcula el rango de inversión (USD) por fase y el total, según el tramo de personas. */
-export function computeInvestment(headcount: string): {
-  total: { min: number; max: number }
-  phases: PhaseInvestment[]
-} {
+export type SimulatorEstimate = {
+  phases: PhaseEstimate[]
+  processes: { min: number; max: number }
+  solutions: { min: number; max: number }
+  totalProject: { min: number; max: number }
+  monthly: { min: number; max: number }
+}
+
+/** Calcula la estimación detallada (USD) por fase según tamaño y madurez digital. */
+export function computeEstimate(headcount: string, maturity: string): SimulatorEstimate {
   const key: HeadcountKey = isHeadcountKey(headcount) ? headcount : '11-50'
-  const [totalMin, totalMax] = HEADCOUNT_INVESTMENT[key]
-  const phases = SIMULATOR_PHASES.map((phase) => ({
-    id: phase.id,
-    min: roundTo(totalMin * phase.weight),
-    max: roundTo(totalMax * phase.weight),
-  }))
-  return { total: { min: totalMin, max: totalMax }, phases }
+  const profile = HEADCOUNT_PROFILE[key]
+  const f = isMaturityKey(maturity) ? MATURITY_FACTOR[maturity] : 1.0
+
+  const [procMin, procMax] = profile.processes
+  const [solMin, solMax] = profile.solutions
+
+  const adnMin = Math.max(DIAGNOSTIC_FLOOR, profile.diagnostic[0] * f)
+  const adnMax = Math.max(adnMin, profile.diagnostic[1] * f)
+
+  const bpmnMin = procMin * PER_PROCESS[0] * f
+  const bpmnMax = procMax * PER_PROCESS[1] * f
+
+  const socioMin = bpmnMin * 0.35
+  const socioMax = bpmnMax * 0.5
+
+  const devMin = solMin * PER_SOLUTION[0]
+  const devMax = solMax * PER_SOLUTION[1]
+
+  const implMin = devMin * 0.4 * f
+  const implMax = devMax * 0.6 * f
+
+  const phases: PhaseEstimate[] = [
+    { id: 'adn', min: adnMin, max: adnMax },
+    { id: 'bpmn', min: bpmnMin, max: bpmnMax, basis: `${procMin}–${procMax} procesos` },
+    { id: 'sociotecnico', min: socioMin, max: socioMax },
+    { id: 'desarrollo', min: devMin, max: devMax, basis: `${solMin}–${solMax} soluciones digitales` },
+    { id: 'implementacion', min: implMin, max: implMax },
+    { id: 'mejora', min: profile.monthly[0], max: profile.monthly[1], recurring: true, period: 'mensual' },
+  ].map((p) => ({ ...p, min: roundTo(p.min), max: roundTo(p.max) }))
+
+  const oneTime = phases.filter((p) => !p.recurring)
+  const totalProject = {
+    min: oneTime.reduce((sum, p) => sum + p.min, 0),
+    max: oneTime.reduce((sum, p) => sum + p.max, 0),
+  }
+
+  return {
+    phases,
+    processes: { min: procMin, max: procMax },
+    solutions: { min: solMin, max: solMax },
+    totalProject,
+    monthly: { min: roundTo(profile.monthly[0]), max: roundTo(profile.monthly[1]) },
+  }
 }
 
 export function formatUsd(value: number): string {
