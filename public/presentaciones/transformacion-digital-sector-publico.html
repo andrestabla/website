@@ -124,12 +124,38 @@
 
   @media print {
     @page { size: A4 landscape; margin: 0; }
+    html, body { width: 100%; height: auto; overflow: visible; background: #fff; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { overflow: visible; background:#fff; }
-    .deck { position: static; }
-    .slide { position: relative; inset:auto; display: flex !important; page-break-after: always; min-height: 100vh; overflow: visible; }
-    .footer, .topbar, .progress { display: none !important; }
-    .fig { aspect-ratio: 16/9; }
+    .deck { position: static; inset: auto; }
+    .topbar, .footer, .progress { display: none !important; }
+
+    /* Cada slide = exactamente una página, fiel a la diagramación en pantalla */
+    .slide {
+      position: relative; inset: auto;
+      display: flex !important; flex-direction: column;
+      width: 100%; height: 100vh; min-height: 100vh;
+      padding: 9mm 12mm; overflow: hidden;
+      page-break-after: always; break-after: page; page-break-inside: avoid;
+    }
+    .slide:last-child { page-break-after: avoid; break-after: auto; }
+
+    /* Evitar que se partan elementos dentro de una página */
+    .card, .tbl, .svg-wrap, figure, .example, .note, .toc button, tr { page-break-inside: avoid; }
+
+    /* Figuras: alto explícito (los motores de impresión no siempre respetan aspect-ratio) */
+    .fig { aspect-ratio: auto; height: 230px; }
+    .fig.tall { aspect-ratio: auto; height: 320px; }
+    .cover .fig { aspect-ratio: auto; height: 100%; min-height: 300px; }
+    .cover-grid { flex: 1; }
+
+    /* Tipografía compacta y determinista para que todo entre en una página */
+    h1 { font-size: 46px; } h2 { font-size: 34px; } h3 { font-size: 13px; }
+    p { font-size: 14px; } .lead { font-size: 17px; } .phase-num { font-size: 64px; }
+    .toc { gap: 10px; } .toc .tt { font-size: 15px; } .toc .ts { font-size: 11px; }
+    .tbl th { font-size: 11px; padding: 8px 12px; } .tbl td { font-size: 13px; padding: 8px 12px; }
+    ul.clean li, ul.dot li { font-size: 14px; }
+    .example p { font-size: 14px; } .stat .v { font-size: 28px; }
+    .top { margin-bottom: 16px; }
   }
 </style>
 </head>
@@ -149,8 +175,7 @@
       <div>
         <div class="eyebrow" style="margin-bottom:16px;">Guía de transformación digital</div>
         <h1>Transformación Digital en <span style="color:#7fa6f6;">6 fases</span></h1>
-        <p class="lead" style="margin-top:20px;">Explicación detallada de la metodología AlgoritmoT, con esquemas, tablas y ejemplos aplicados al <strong style="color:#fff;">sector público</strong>: alcaldías, secretarías y entidades del Estado.</p>
-        <div class="pill-row" style="margin-top:26px;">
+        <div class="pill-row" style="margin-top:28px;">
           <span class="pill">Diagnóstico MD-IA</span>
           <span class="pill">Procesos &amp; datos</span>
           <span class="pill">IA responsable</span>
