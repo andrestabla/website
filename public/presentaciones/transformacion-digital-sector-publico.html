@@ -129,24 +129,26 @@
     .deck { position: static; inset: auto; }
     .topbar, .footer, .progress { display: none !important; }
 
-    /* Cada slide = exactamente una página, fiel a la diagramación en pantalla */
+    /* Cada slide = una página; sin recortes ni deformación */
     .slide {
       position: relative; inset: auto;
       display: flex !important; flex-direction: column;
-      width: 100%; height: 100vh; min-height: 100vh;
-      padding: 9mm 12mm; overflow: hidden;
-      page-break-after: always; break-after: page; page-break-inside: avoid;
+      width: 100%; min-height: 100vh;
+      padding: 9mm 12mm; overflow: visible;
+      page-break-after: always; break-after: page;
     }
     .slide:last-child { page-break-after: avoid; break-after: auto; }
 
     /* Evitar que se partan elementos dentro de una página */
     .card, .tbl, .svg-wrap, figure, .example, .note, .toc button, tr { page-break-inside: avoid; }
 
-    /* Figuras: alto explícito (los motores de impresión no siempre respetan aspect-ratio) */
-    .fig { aspect-ratio: auto; height: 230px; }
-    .fig.tall { aspect-ratio: auto; height: 320px; }
-    .cover .fig { aspect-ratio: auto; height: 100%; min-height: 300px; }
+    /* Figuras y gráficas: conservar la proporción del recurso en línea */
+    .fig { aspect-ratio: 16 / 10; height: auto; }
+    .fig.tall { aspect-ratio: 4 / 5; height: auto; }
+    .cover .fig { aspect-ratio: auto; height: 100%; min-height: 0; }
     .cover-grid { flex: 1; }
+    /* Los SVG conservan su relación de aspecto (width:100% + height:auto); no fijar alto */
+    .svg-wrap svg { height: auto; }
 
     /* Tipografía compacta y determinista para que todo entre en una página */
     h1 { font-size: 46px; } h2 { font-size: 34px; } h3 { font-size: 13px; }
@@ -178,7 +180,7 @@
         <div class="pill-row" style="margin-top:28px;">
           <span class="pill">Diagnóstico MD-IA</span>
           <span class="pill">Procesos &amp; datos</span>
-          <span class="pill">IA responsable</span>
+          <span class="pill">Uso cuidadoso de IA</span>
           <span class="pill">Servicio al ciudadano</span>
         </div>
         <div class="meta" style="margin-top:30px;">AlgoritmoT · Empresas · algoritmot.com</div>
@@ -195,7 +197,7 @@
     <div class="toc">
       <button onclick="goTo(3)"><span class="n">01</span><span><span class="tt">¿Qué es la transformación digital?</span><br><span class="ts">Enfoque estratégico para lo público</span></span></button>
       <button onclick="goTo(4)"><span class="n">02</span><span><span class="tt">Marco MD-IA y sus 6 dimensiones</span><br><span class="ts">DQ, AIQ y tabla de dimensiones</span></span></button>
-      <button onclick="goTo(5)"><span class="n">03</span><span><span class="tt">Las 6 fases de un vistazo</span><br><span class="ts">Esquema de la ruta</span></span></button>
+      <button onclick="goTo(5)"><span class="n">03</span><span><span class="tt">De la lectura inicial a la mejora continua</span><br><span class="ts">La ruta de transformación</span></span></button>
       <button onclick="goTo(6)"><span class="n">04</span><span><span class="tt">Tabla resumen de las 6 fases</span><br><span class="ts">Qué se hace · entregable · ejemplo</span></span></button>
       <button onclick="goTo(7)"><span class="n">F1</span><span><span class="tt">Captura del ADN Digital</span><br><span class="ts">Diagnóstico + radar de madurez</span></span></button>
       <button onclick="goTo(8)"><span class="n">F2</span><span><span class="tt">Mapeo de Procesos</span><br><span class="ts">BPMN as-is → to-be</span></span></button>
@@ -213,7 +215,7 @@
     <div class="top"><div><div class="eyebrow">Punto de partida</div><h2 style="margin-top:8px;">¿Qué es la transformación digital?</h2></div><div class="phase-num">01</div></div>
     <div class="col-7-5 grow">
       <div class="stack">
-        <p class="lead">La transformación digital es un <strong>proceso estratégico</strong> mediante el cual una organización evalúa su nivel de madurez, identifica brechas en estrategia, talento, procesos, datos, tecnología y liderazgo, y convierte esos hallazgos en una hoja de ruta para mejorar su operación, tomar mejores decisiones y crear más valor para sus clientes. En el enfoque de AlgoritmoT, también implica integrar <strong>inteligencia artificial</strong> cuando aporta eficiencia, control, analítica o nuevas capacidades de servicio.</p>
+        <p class="lead">La transformación digital es una forma ordenada de leer la madurez de una entidad, priorizar sus brechas y activar mejoras en procesos, datos, tecnología, liderazgo y servicio al ciudadano. Su valor está en convertir el <strong>diagnóstico</strong> en una hoja de ruta concreta, medible y útil para la gestión pública.</p>
         <div class="grid2">
           <div class="card"><h3>Por qué importa en lo público</h3><ul class="dot" style="margin-top:12px;">
             <li>Más valor por cada peso público invertido.</li>
@@ -224,8 +226,8 @@
           <div class="card navy"><h3>Cómo trabajamos</h3><ul class="dot" style="margin-top:12px;">
             <li>Escuchamos el contexto y las metas.</li>
             <li>Definimos prioridades de alto impacto.</li>
-            <li>Ejecutamos contigo y tu equipo.</li>
-            <li>Medimos y mejoramos.</li>
+            <li>Acompañamos la puesta en marcha con los equipos responsables.</li>
+            <li>Seguimos los indicadores y ajustamos el proceso.</li>
           </ul></div>
         </div>
       </div>
@@ -260,7 +262,7 @@
 
   <!-- 5 · LAS 6 FASES + PIPELINE -->
   <section class="slide slide-pad">
-    <div class="top"><div><div class="eyebrow">Ruta</div><h2 style="margin-top:8px;">Las 6 fases de un vistazo</h2></div><div class="phase-num">03</div></div>
+    <div class="top"><div><div class="eyebrow">Ruta</div><h2 style="margin-top:8px;">De la lectura inicial a la mejora continua</h2></div><div class="phase-num">03</div></div>
     <div class="svg-wrap" style="margin-bottom:18px;">
       <svg viewBox="0 0 1180 150" role="img" aria-label="Cadena de las 6 fases">
         <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9db8f4"/></marker></defs>
@@ -274,7 +276,7 @@
         <g font-family="Space Grotesk, sans-serif">
           <g><rect x="10" y="30" width="180" height="90" rx="14" fill="#16235c"/><text x="100" y="62" fill="#7fa6f6" font-size="13" font-weight="700" text-anchor="middle">FASE 1</text><text x="100" y="86" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">ADN Digital</text><text x="100" y="104" fill="#c7d4f0" font-size="11" text-anchor="middle">Diagnóstico</text></g>
           <g><rect x="205" y="30" width="180" height="90" rx="14" fill="#fff" stroke="#e2e8f0"/><text x="295" y="62" fill="#2f6fe6" font-size="13" font-weight="700" text-anchor="middle">FASE 2</text><text x="295" y="86" fill="#0f172a" font-size="14" font-weight="700" text-anchor="middle">Mapeo BPMN</text><text x="295" y="104" fill="#64748b" font-size="11" text-anchor="middle">Procesos</text></g>
-          <g><rect x="400" y="30" width="180" height="90" rx="14" fill="#fff" stroke="#e2e8f0"/><text x="490" y="62" fill="#2f6fe6" font-size="13" font-weight="700" text-anchor="middle">FASE 3</text><text x="490" y="86" fill="#0f172a" font-size="14" font-weight="700" text-anchor="middle">Humano vs IA</text><text x="490" y="104" fill="#64748b" font-size="11" text-anchor="middle">IA responsable</text></g>
+          <g><rect x="400" y="30" width="180" height="90" rx="14" fill="#fff" stroke="#e2e8f0"/><text x="490" y="62" fill="#2f6fe6" font-size="13" font-weight="700" text-anchor="middle">FASE 3</text><text x="490" y="86" fill="#0f172a" font-size="14" font-weight="700" text-anchor="middle">Humano vs IA</text><text x="490" y="104" fill="#64748b" font-size="11" text-anchor="middle">Uso cuidadoso de IA</text></g>
           <g><rect x="595" y="30" width="180" height="90" rx="14" fill="#fff" stroke="#e2e8f0"/><text x="685" y="62" fill="#2f6fe6" font-size="13" font-weight="700" text-anchor="middle">FASE 4</text><text x="685" y="86" fill="#0f172a" font-size="14" font-weight="700" text-anchor="middle">Desarrollo</text><text x="685" y="104" fill="#64748b" font-size="11" text-anchor="middle">Soluciones</text></g>
           <g><rect x="790" y="30" width="180" height="90" rx="14" fill="#fff" stroke="#e2e8f0"/><text x="880" y="62" fill="#2f6fe6" font-size="13" font-weight="700" text-anchor="middle">FASE 5</text><text x="880" y="86" fill="#0f172a" font-size="14" font-weight="700" text-anchor="middle">Implementación</text><text x="880" y="104" fill="#64748b" font-size="11" text-anchor="middle">Despliegue</text></g>
           <g><rect x="985" y="30" width="185" height="90" rx="14" fill="#16235c"/><text x="1077" y="62" fill="#7fa6f6" font-size="13" font-weight="700" text-anchor="middle">FASE 6</text><text x="1077" y="86" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">Mejora Continua</text><text x="1077" y="104" fill="#c7d4f0" font-size="11" text-anchor="middle">PDCA</text></g>
@@ -369,7 +371,7 @@
             <rect x="10" y="164" width="200" height="56" rx="10"/><rect x="270" y="164" width="200" height="56" rx="10"/><rect x="530" y="164" width="200" height="56" rx="10"/><rect x="790" y="164" width="220" height="56" rx="10"/>
           </g>
           <g fill="#1e3a8a" text-anchor="middle" font-size="12.5">
-            <text x="110" y="197">Ventanilla única</text><text x="370" y="197">Asignación automática</text><text x="630" y="197">Respuesta guiada</text><text x="900" y="197">Trazabilidad total</text>
+            <text x="110" y="197">Ventanilla única</text><text x="370" y="197">Asignación automática</text><text x="630" y="197">Respuesta guiada</text><text x="900" y="197">Trazabilidad clara</text>
           </g>
           <g stroke="#2f6fe6" stroke-width="2"><line x1="210" y1="192" x2="265" y2="192" marker-end="url(#ar3)"/><line x1="470" y1="192" x2="525" y2="192" marker-end="url(#ar3)"/><line x1="730" y1="192" x2="785" y2="192" marker-end="url(#ar3)"/></g>
           <text x="1075" y="120" fill="#2f6fe6" font-size="13" text-anchor="middle">▼ rediseño</text>
@@ -385,8 +387,8 @@
 
   <!-- 9 · FASE 3 + MATRIZ -->
   <section class="slide slide-pad">
-    <div class="top"><div><div class="chip">Fase 3 · IA responsable</div><h2 style="margin-top:12px;">Humano vs. Tecnología</h2></div><div class="phase-num">F3</div></div>
-    <p class="lead" style="max-width:74ch; margin-bottom:14px;">Con criterio objetivo y marcos de IA responsable (NIST AI RMF, ISO 9241) decidimos qué tarea es humana, automatizada o colaborativa.</p>
+    <div class="top"><div><div class="chip">Fase 3 · Uso cuidadoso de IA</div><h2 style="margin-top:12px;">Humano vs. Tecnología</h2></div><div class="phase-num">F3</div></div>
+    <p class="lead" style="max-width:74ch; margin-bottom:14px;">Con criterio objetivo y marcos de uso responsable de IA (NIST AI RMF, ISO 9241) decidimos qué tarea es humana, cuál se automatiza y cuál se trabaja en colaboración.</p>
     <table class="tbl">
       <thead><tr><th style="width:42%;">Actividad (ejemplo público)</th><th>Decisión</th><th>Riesgo IA</th></tr></thead>
       <tbody>
@@ -398,7 +400,7 @@
         <tr><td>Detección de inconsistencias en pagos</td><td>Colaboración humano-IA</td><td><span class="lvl lv-med">Medio</span></td></tr>
       </tbody>
     </table>
-    <div class="example" style="margin-top:14px;"><span class="tag">▮ Ejemplo · Sector público</span><p>La IA enruta automáticamente las solicitudes de bajo riesgo; los casos que afectan derechos quedan siempre en manos de un funcionario, con criterios documentados y registro auditable para garantizar equidad y debido proceso.</p></div>
+    <div class="example" style="margin-top:14px;"><span class="tag">▮ Ejemplo · Sector público</span><p>La IA enruta automáticamente las solicitudes de bajo riesgo; los casos que afectan derechos quedan en manos de un funcionario, con criterios documentados y registro auditable para fortalecer criterios de equidad y debido proceso.</p></div>
   </section>
 
   <!-- 10 · FASE 4 + ARQUITECTURA -->
@@ -409,11 +411,11 @@
         <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Arquitectura en capas</div>
         <svg viewBox="0 0 520 280" role="img" aria-label="Arquitectura de la solución en capas">
           <g font-family="Space Grotesk, sans-serif">
-            <g><rect x="10" y="10" width="500" height="46" rx="10" fill="#eff6ff" stroke="#bfdbfe"/><text x="26" y="32" font-size="13" font-weight="700" fill="#1e3a8a">Interfaz de usuario</text><text x="26" y="48" font-size="11" fill="#3b82f6">React · Next.js · Tailwind · accesibilidad</text></g>
-            <g><rect x="10" y="64" width="500" height="46" rx="10" fill="#f8fafc" stroke="#e2e8f0"/><text x="26" y="86" font-size="13" font-weight="700" fill="#0f172a">Lógica de negocio</text><text x="26" y="102" font-size="11" fill="#64748b">Node.js · Python · APIs REST</text></g>
-            <g><rect x="10" y="118" width="500" height="46" rx="10" fill="#16235c"/><text x="26" y="140" font-size="13" font-weight="700" fill="#fff">IA &amp; Automatización</text><text x="26" y="156" font-size="11" fill="#9db8f4">Modelos · RPA · clasificación</text></g>
-            <g><rect x="10" y="172" width="500" height="46" rx="10" fill="#f8fafc" stroke="#e2e8f0"/><text x="26" y="194" font-size="13" font-weight="700" fill="#0f172a">Datos &amp; persistencia</text><text x="26" y="210" font-size="11" fill="#64748b">PostgreSQL · Redis · gobierno de datos</text></g>
-            <g><rect x="10" y="226" width="500" height="46" rx="10" fill="#eff6ff" stroke="#bfdbfe"/><text x="26" y="248" font-size="13" font-weight="700" fill="#1e3a8a">Integraciones</text><text x="26" y="264" font-size="11" fill="#3b82f6">Interoperabilidad del Estado · OAuth · Webhooks</text></g>
+            <g><rect x="10" y="10" width="500" height="46" rx="10" fill="#eff6ff" stroke="#bfdbfe"/><text x="26" y="32" font-size="13" font-weight="700" fill="#1e3a8a">Interfaz de usuario</text><text x="26" y="48" font-size="11" fill="#3b82f6">Interfaces claras, accesibles y adaptadas al usuario</text></g>
+            <g><rect x="10" y="64" width="500" height="46" rx="10" fill="#f8fafc" stroke="#e2e8f0"/><text x="26" y="86" font-size="13" font-weight="700" fill="#0f172a">Lógica de negocio</text><text x="26" y="102" font-size="11" fill="#64748b">Servicios conectados con los sistemas existentes</text></g>
+            <g><rect x="10" y="118" width="500" height="46" rx="10" fill="#16235c"/><text x="26" y="140" font-size="13" font-weight="700" fill="#fff">IA &amp; Automatización</text><text x="26" y="156" font-size="11" fill="#9db8f4">Automatización de tareas repetitivas y apoyo a decisiones</text></g>
+            <g><rect x="10" y="172" width="500" height="46" rx="10" fill="#f8fafc" stroke="#e2e8f0"/><text x="26" y="194" font-size="13" font-weight="700" fill="#0f172a">Datos &amp; persistencia</text><text x="26" y="210" font-size="11" fill="#64748b">Datos organizados, seguros y disponibles</text></g>
+            <g><rect x="10" y="226" width="500" height="46" rx="10" fill="#eff6ff" stroke="#bfdbfe"/><text x="26" y="248" font-size="13" font-weight="700" fill="#1e3a8a">Integraciones</text><text x="26" y="264" font-size="11" fill="#3b82f6">Conexión con sistemas y plataformas del Estado</text></g>
           </g>
         </svg>
       </div>
@@ -449,12 +451,12 @@
       <div class="card"><h3>¿Qué se hace y cómo?</h3><p style="margin-top:10px;">Plan por etapas con gestión del cambio (modelo de Kotter) para lograr adopción real entre los funcionarios. Un buen software fracasa si la implementación no se gestiona.</p></div>
       <div class="card"><h3>Productos / entregables</h3><ul class="clean" style="margin-top:10px;"><li>Plan de migración con validación de integridad.</li><li>Capacitación por rol (presencial/virtual).</li><li>Pruebas UAT aprobadas por usuarios clave.</li><li>Soporte intensivo en las primeras semanas.</li></ul></div>
     </div>
-    <div class="example"><span class="tag">▮ Ejemplo · Sector público</span><p><strong>Despliegue de la ventanilla única.</strong> Migración del histórico, capacitación a las secretarías, go-live controlado y puntos de atención asistida para no dejar a ningún ciudadano atrás.</p></div>
+    <div class="example"><span class="tag">▮ Ejemplo · Sector público</span><p><strong>Despliegue de la ventanilla única.</strong> Migración del histórico, capacitación a las secretarías, go-live controlado y puntos de atención asistida para mantener apoyo a ciudadanos con menor acceso digital.</p></div>
   </section>
 
   <!-- 12 · FASE 6 + PDCA -->
   <section class="slide slide-pad">
-    <div class="top"><div><div class="chip">Fase 6 · Tecnología resiliente</div><h2 style="margin-top:12px;">Mejora Continua</h2></div><div class="phase-num">F6</div></div>
+    <div class="top"><div><div class="chip">Fase 6 · Servicios sostenibles y medibles</div><h2 style="margin-top:12px;">Mejora Continua</h2></div><div class="phase-num">F6</div></div>
     <div class="col-7-5">
       <div class="stack">
         <div class="card"><h3>¿Qué se hace y cómo?</h3><p style="margin-top:10px;">Ciclo PDCA mensual para monitorear KPIs en tiempo real, detectar desviaciones a tiempo y aplicar mejoras iterativas, manteniendo la solución en su punto óptimo y haciéndola evolucionar con la entidad.</p></div>
@@ -492,9 +494,9 @@
       </tbody>
     </table>
     <div class="grid3" style="margin-top:18px;">
-      <div class="card navy"><div class="stat"><span class="v">−60 a −90%</span><span class="l">Tiempos de ciclo (referencial)</span></div></div>
-      <div class="card"><div class="stat"><span class="v">24/7</span><span class="l">Trámites en línea</span></div></div>
-      <div class="card"><div class="stat"><span class="v">100%</span><span class="l">Trazabilidad y rendición de cuentas</span></div></div>
+      <div class="card navy"><div class="stat"><span class="v">−60 a −90%</span><span class="l">Tiempo total de respuesta por trámite (referencial)</span></div></div>
+      <div class="card"><div class="stat"><span class="v">24/7</span><span class="l">El ciudadano inicia y consulta trámites en cualquier momento</span></div></div>
+      <div class="card"><div class="stat"><span class="v">Trazable</span><span class="l">Cada solicitud con rastro, responsable y estado visible</span></div></div>
     </div>
   </section>
 
@@ -504,9 +506,9 @@
     <div class="col-7-5 grow">
       <div class="stack">
         <div class="grid3">
-          <div class="card"><div class="chip">F1 → F2</div><p style="margin-top:10px;"><strong>Diagnóstico</strong> revela brechas en datos y gobernanza; se <strong>mapean</strong> PQRS y licencias.</p></div>
-          <div class="card"><div class="chip">F3 → F4</div><p style="margin-top:10px;">Se define qué <strong>automatizar</strong> con criterio y se <strong>desarrolla</strong> la ventanilla única.</p></div>
-          <div class="card"><div class="chip">F5 → F6</div><p style="margin-top:10px;">Se <strong>implementa</strong> con gestión del cambio y se <strong>mejora</strong> cada mes con métricas.</p></div>
+          <div class="card"><div class="chip">F1 → F2</div><p style="margin-top:10px;">El <strong>diagnóstico</strong> revela brechas en datos y gobernanza; se mapean PQRS y licencias.</p></div>
+          <div class="card"><div class="chip">F3 → F4</div><p style="margin-top:10px;">Se define qué automatizar con criterio y se construye la <strong>ventanilla única</strong>.</p></div>
+          <div class="card"><div class="chip">F5 → F6</div><p style="margin-top:10px;">Se implementa con gestión del cambio y se entra en <strong>mejora continua</strong> con métricas mensuales.</p></div>
         </div>
         <div class="note">Las cifras son referenciales; se precisan tras el diagnóstico inicial (entrada desde 5.000 USD).</div>
       </div>
@@ -521,8 +523,8 @@
   <section class="slide cover">
     <div class="logo brand" style="margin-bottom: 24px;">ALGORITMO<span class="t">T</span></div>
     <div style="margin:auto 0;">
-      <h1 style="font-size:clamp(30px,5.2vw,56px);">Empecemos por un diagnóstico</h1>
-      <p class="lead" style="margin-top:20px;">Mide la madurez digital de tu entidad, prioriza brechas y activa una hoja de ruta con impacto real para el ciudadano.</p>
+      <h1 style="font-size:clamp(28px,5vw,52px);">El primer paso: leer la madurez real de la entidad</h1>
+      <p class="lead" style="margin-top:20px;">El punto de partida es conocer la madurez digital de la entidad, priorizar brechas y definir una hoja de ruta viable, con mejoras visibles en gestión, datos, procesos y servicio al ciudadano.</p>
       <div class="pill-row" style="margin-top:26px;"><span class="pill">algoritmot.com/empresas/simulador</span><span class="pill">hola@algoritmot.com</span></div>
       <div class="meta" style="margin-top:34px;">© 2026 AlgoritmoT · Ingeniería Humana · Despliegue IA · Madurez Orgánica</div>
     </div>
