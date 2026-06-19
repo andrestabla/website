@@ -9,501 +9,498 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --navy: #16235c;
-    --navy-2: #1f2f74;
-    --blue: #2f6fe6;
-    --blue-soft: #eaf1fd;
-    --ink: #0f172a;
-    --muted: #64748b;
-    --line: #e2e8f0;
-    --bg: #f5f7fb;
-    --white: #ffffff;
-    --amber-bg: #fffbeb;
-    --amber-bd: #fde68a;
-    --amber-tx: #92400e;
-    --radius: 20px;
+    --navy: #16235c; --navy-2: #1f2f74; --blue: #2f6fe6; --blue-soft: #eaf1fd;
+    --ink: #0f172a; --muted: #64748b; --line: #e2e8f0; --bg: #f5f7fb; --white: #ffffff;
+    --amber-bg: #fffbeb; --amber-bd: #fde68a; --amber-tx: #92400e; --radius: 20px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; }
   body {
     font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
-    background: var(--navy);
-    color: var(--ink);
-    -webkit-font-smoothing: antialiased;
-    overflow: hidden;
+    background: var(--navy); color: var(--ink); -webkit-font-smoothing: antialiased; overflow: hidden;
   }
 
-  /* Deck */
   .deck { position: fixed; inset: 0; }
-  .slide {
-    position: absolute; inset: 0;
-    display: none;
-    flex-direction: column;
-    padding: clamp(28px, 5vw, 72px);
-    background: var(--bg);
-    overflow-y: auto;
-  }
+  .slide { position: absolute; inset: 0; display: none; flex-direction: column; padding: clamp(26px, 4.6vw, 64px) clamp(26px,5vw,72px); background: var(--bg); overflow-y: auto; }
   .slide.active { display: flex; animation: fade .45s ease; }
   @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .slide-pad { padding-bottom: 88px; }
 
-  .eyebrow {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .18em;
-    color: var(--blue);
-  }
-  .chip {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 14px; border-radius: 999px;
-    background: var(--blue-soft); color: var(--blue);
-    font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em;
-  }
-  h1 { font-size: clamp(32px, 6vw, 68px); line-height: 1.04; letter-spacing: -0.02em; color: var(--ink); font-weight: 700; }
-  h2 { font-size: clamp(26px, 4.4vw, 48px); line-height: 1.08; letter-spacing: -0.02em; color: var(--ink); font-weight: 700; }
-  h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 700; }
-  p { color: #334155; line-height: 1.6; font-size: clamp(15px, 1.6vw, 19px); }
-  .lead { font-size: clamp(17px, 2vw, 22px); color: #475569; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .18em; color: var(--blue); }
+  .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; }
+  h1 { font-size: clamp(32px, 6vw, 66px); line-height: 1.04; letter-spacing: -0.02em; color: var(--ink); font-weight: 700; }
+  h2 { font-size: clamp(25px, 4.2vw, 46px); line-height: 1.08; letter-spacing: -0.02em; color: var(--ink); font-weight: 700; }
+  h3 { font-size: 14px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 700; }
+  p { color: #334155; line-height: 1.6; font-size: clamp(14px, 1.5vw, 18px); }
+  .lead { font-size: clamp(16px, 1.9vw, 21px); color: #475569; }
   .muted { color: var(--muted); }
   strong { color: var(--ink); }
+  .brand { font-weight: 700; letter-spacing: -0.02em; } .brand .t { color: var(--blue); }
 
-  .brand { font-weight: 700; letter-spacing: -0.02em; }
-  .brand .t { color: var(--blue); }
-
-  /* Cover */
-  .cover { background: radial-gradient(circle at 12% 18%, rgba(47,111,230,.22), transparent 42%), radial-gradient(circle at 92% 88%, rgba(47,111,230,.14), transparent 40%), linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 100%); color: #fff; justify-content: center; }
-  .cover h1 { color: #fff; max-width: 18ch; }
-  .cover .eyebrow { color: #9db8f4; }
-  .cover .lead { color: #c7d4f0; max-width: 56ch; }
-  .cover .meta { color: #8aa0d6; font-size: 14px; letter-spacing: .04em; }
-  .cover .logo { font-size: 22px; color: #fff; }
-  .cover .pill-row { display: flex; flex-wrap: wrap; gap: 10px; }
-  .cover .pill { border: 1px solid rgba(255,255,255,.18); color: #dbe6fb; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 500; }
-
-  /* Layout helpers */
-  .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(18px, 3vw, 36px); }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 2.4vw, 28px); }
-  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 2vw, 22px); }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: clamp(16px, 2.6vw, 30px); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 2.2vw, 26px); }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 1.8vw, 22px); }
+  .col-7-5 { display: grid; grid-template-columns: 1.4fr 1fr; gap: clamp(16px,2.2vw,28px); }
   .stack { display: flex; flex-direction: column; gap: 14px; }
   .grow { flex: 1; }
-  @media (max-width: 820px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+  @media (max-width: 860px) { .grid2, .grid3, .col-7-5 { grid-template-columns: 1fr; } }
 
-  .card {
-    background: var(--white); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: clamp(18px, 2.4vw, 28px);
-    box-shadow: 0 1px 2px rgba(15,23,42,.04);
-  }
+  .card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(16px, 2.2vw, 26px); box-shadow: 0 1px 2px rgba(15,23,42,.04); }
   .card.navy { background: var(--navy); color: #fff; border: none; }
-  .card.navy h3 { color: #9db8f4; }
-  .card.navy p, .card.navy li { color: #dbe6fb; }
+  .card.navy h3 { color: #9db8f4; } .card.navy p, .card.navy li { color: #dbe6fb; }
 
-  ul.clean { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-  ul.clean li { display: flex; gap: 12px; align-items: flex-start; color: #334155; line-height: 1.5; font-size: clamp(14px,1.5vw,17px); }
-  ul.clean li::before { content: ""; flex: 0 0 auto; width: 18px; height: 18px; margin-top: 3px; border-radius: 6px; background: var(--blue-soft);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232f6fe6' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E"); background-size: 12px; background-repeat: no-repeat; background-position: center; }
-  ul.dot { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-  ul.dot li { position: relative; padding-left: 18px; color: #334155; line-height: 1.5; font-size: clamp(14px,1.5vw,17px); }
-  ul.dot li::before { content: ""; position: absolute; left: 0; top: 9px; width: 7px; height: 7px; border-radius: 999px; background: var(--blue); }
+  ul.clean { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+  ul.clean li { display: flex; gap: 12px; align-items: flex-start; color: #334155; line-height: 1.45; font-size: clamp(13px,1.45vw,16px); }
+  ul.clean li::before { content: ""; flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px; border-radius: 6px; background: var(--blue-soft); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232f6fe6' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E"); background-size: 12px; background-repeat: no-repeat; background-position: center; }
+  ul.dot { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  ul.dot li { position: relative; padding-left: 18px; color: #334155; line-height: 1.45; font-size: clamp(13px,1.45vw,16px); }
+  ul.dot li::before { content: ""; position: absolute; left: 0; top: 8px; width: 7px; height: 7px; border-radius: 999px; background: var(--blue); }
 
-  .phase-num { font-size: clamp(46px, 8vw, 92px); font-weight: 700; line-height: 1; color: var(--blue); opacity: .18; letter-spacing: -.04em; }
+  .phase-num { font-size: clamp(42px, 7vw, 84px); font-weight: 700; line-height: 1; color: var(--blue); opacity: .16; letter-spacing: -.04em; }
 
-  .example {
-    margin-top: auto; border-radius: var(--radius);
-    background: linear-gradient(180deg, #f8fbff, #eef4fe);
-    border: 1px solid #d6e4fb; padding: clamp(16px, 2.2vw, 26px);
-  }
+  .example { margin-top: auto; border-radius: var(--radius); background: linear-gradient(180deg, #f8fbff, #eef4fe); border: 1px solid #d6e4fb; padding: clamp(14px, 2vw, 24px); }
   .example .tag { display:inline-flex; align-items:center; gap:8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; color: var(--blue); margin-bottom: 8px; }
-  .example p { font-size: clamp(14px, 1.6vw, 18px); color: #1e3a8a; }
-
+  .example p { font-size: clamp(13px, 1.5vw, 17px); color: #1e3a8a; }
   .note { background: var(--amber-bg); border: 1px solid var(--amber-bd); color: var(--amber-tx); border-radius: 14px; padding: 12px 16px; font-size: 13px; line-height: 1.5; }
 
-  /* Index */
-  .toc { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  @media (max-width: 820px){ .toc { grid-template-columns: 1fr; } }
-  .toc button {
-    text-align: left; cursor: pointer; font-family: inherit;
-    background: var(--white); border: 1px solid var(--line); border-radius: 16px;
-    padding: 16px 18px; display: flex; align-items: center; gap: 16px; transition: .15s;
-  }
-  .toc button:hover { border-color: var(--blue); background: var(--blue-soft); transform: translateY(-2px); }
-  .toc .n { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-  .toc .tt { font-weight: 700; color: var(--ink); font-size: 17px; }
-  .toc .ts { color: var(--muted); font-size: 13px; }
+  /* Figures / photos */
+  .fig { border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, var(--navy), var(--blue)); border: 1px solid var(--line); aspect-ratio: 16 / 10; }
+  .fig.tall { aspect-ratio: 4 / 5; }
+  .fig img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  figcaption { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  /* Tables */
+  .tbl { width: 100%; border-collapse: collapse; font-size: clamp(12px, 1.35vw, 15px); background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .tbl th { background: var(--navy); color: #fff; text-align: left; padding: 11px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
+  .tbl td { padding: 10px 14px; border-top: 1px solid var(--line); color: #334155; vertical-align: top; line-height: 1.4; }
+  .tbl tbody tr:nth-child(even) td { background: #f8fafc; }
+  .tbl td:first-child { font-weight: 700; color: var(--ink); }
+  .lvl { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .lv-bajo { background:#fee2e2; color:#b91c1c; } .lv-med { background:#fef3c7; color:#b45309; } .lv-alto { background:#dcfce7; color:#15803d; }
+
+  .svg-wrap { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: clamp(14px,2vw,22px); }
+  svg { width: 100%; height: auto; display: block; }
 
   .stat { display:flex; flex-direction:column; gap:2px; }
-  .stat .v { font-size: clamp(24px,3vw,34px); font-weight:700; color: var(--ink); }
-  .stat .l { font-size: 12px; text-transform: uppercase; letter-spacing:.1em; color: var(--muted); font-weight:700; }
-  .card.navy .stat .v { color:#fff; }
-  .card.navy .stat .l { color:#9db8f4; }
+  .stat .v { font-size: clamp(22px,2.8vw,32px); font-weight:700; color: var(--ink); }
+  .stat .l { font-size: 11px; text-transform: uppercase; letter-spacing:.1em; color: var(--muted); font-weight:700; }
+  .card.navy .stat .v { color:#fff; } .card.navy .stat .l { color:#9db8f4; }
+
+  /* Cover */
+  .cover { background: radial-gradient(circle at 12% 18%, rgba(47,111,230,.22), transparent 42%), radial-gradient(circle at 92% 86%, rgba(47,111,230,.14), transparent 40%), linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 100%); color: #fff; }
+  .cover h1 { color: #fff; max-width: 16ch; }
+  .cover .eyebrow { color: #9db8f4; } .cover .lead { color: #c7d4f0; max-width: 52ch; }
+  .cover .meta { color: #8aa0d6; font-size: 14px; letter-spacing: .04em; } .cover .logo { font-size: 22px; color: #fff; }
+  .cover .pill-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .cover .pill { border: 1px solid rgba(255,255,255,.18); color: #dbe6fb; padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 500; }
+  .cover .fig { aspect-ratio: auto; height: 100%; min-height: 220px; border: 1px solid rgba(255,255,255,.14); }
+  .cover-grid { display: grid; grid-template-columns: 1.25fr .9fr; gap: clamp(20px,3vw,44px); align-items: center; flex: 1; }
+  @media (max-width: 860px){ .cover-grid { grid-template-columns: 1fr; } .cover .fig { min-height: 160px; } }
+
+  /* Index */
+  .toc { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 860px){ .toc { grid-template-columns: 1fr; } }
+  .toc button { text-align: left; cursor: pointer; font-family: inherit; background: var(--white); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; transition: .15s; }
+  .toc button:hover { border-color: var(--blue); background: var(--blue-soft); transform: translateY(-2px); }
+  .toc .n { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px; background: var(--navy); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .toc .tt { font-weight: 700; color: var(--ink); font-size: 16px; }
+  .toc .ts { color: var(--muted); font-size: 12px; }
 
   /* Footer / nav */
-  .footer {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 12px clamp(16px, 4vw, 40px);
-    background: rgba(255,255,255,.82); backdrop-filter: blur(10px);
-    border-top: 1px solid var(--line);
-  }
+  .footer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px clamp(16px, 4vw, 40px); background: rgba(255,255,255,.85); backdrop-filter: blur(10px); border-top: 1px solid var(--line); }
   .footer .left { font-size: 12px; color: var(--muted); font-weight: 700; letter-spacing:.08em; text-transform: uppercase; }
   .footer .left b { color: var(--blue); }
   .nav { display: flex; align-items: center; gap: 8px; }
-  .nav button {
-    font-family: inherit; cursor: pointer; border: 1px solid var(--line); background: #fff;
-    color: var(--ink); border-radius: 999px; padding: 9px 16px; font-weight: 700; font-size: 13px;
-    display: inline-flex; align-items: center; gap: 6px; transition: .15s;
-  }
+  .nav button { font-family: inherit; cursor: pointer; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 9px 15px; font-weight: 700; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; transition: .15s; }
   .nav button:hover { border-color: var(--blue); color: var(--blue); }
   .nav button.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
   .nav button.primary:hover { background: var(--blue); border-color: var(--blue); color:#fff; }
   .nav button:disabled { opacity: .35; cursor: not-allowed; }
   .progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--blue); z-index: 30; transition: width .35s ease; }
-
-  .home { position: fixed; top: 14px; right: clamp(16px,4vw,40px); z-index: 25; }
-  .home button { font-family: inherit; cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--muted); border-radius: 999px; padding:7px 14px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
-  .home button:hover { color: var(--blue); border-color: var(--blue); }
-
-  .slide-pad { padding-bottom: 84px; }
+  .topbar { position: fixed; top: 14px; right: clamp(16px,4vw,40px); z-index: 25; display:flex; gap:8px; }
+  .topbar button { font-family: inherit; cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--muted); border-radius: 999px; padding:7px 14px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+  .topbar button:hover { color: var(--blue); border-color: var(--blue); }
+  .topbar button.pdf { background: var(--navy); color:#fff; border-color:var(--navy); } .topbar button.pdf:hover { background: var(--blue); border-color:var(--blue); color:#fff; }
 
   @media print {
+    @page { size: A4 landscape; margin: 0; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body { overflow: visible; background:#fff; }
-    .slide { position: relative; display: flex !important; page-break-after: always; min-height: 100vh; }
-    .footer, .home, .progress { display: none !important; }
+    .deck { position: static; }
+    .slide { position: relative; inset:auto; display: flex !important; page-break-after: always; min-height: 100vh; overflow: visible; }
+    .footer, .topbar, .progress { display: none !important; }
+    .fig { aspect-ratio: 16/9; }
   }
 </style>
 </head>
 <body>
 <div class="progress" id="progress"></div>
-<div class="home"><button onclick="goTo(1)">▦ Índice</button></div>
+<div class="topbar">
+  <button onclick="goTo(1)">▦ Índice</button>
+  <button class="pdf" onclick="downloadPDF()">⬇ PDF</button>
+</div>
 
 <div class="deck" id="deck">
 
   <!-- 1 · PORTADA -->
   <section class="slide cover active">
-    <div class="logo brand" style="margin-bottom: 28px;">ALGORITMO<span class="t">T</span></div>
-    <div class="eyebrow" style="margin-bottom:18px;">Guía de transformación digital</div>
-    <h1>Transformación Digital en <span style="color:#7fa6f6;">6 fases</span></h1>
-    <p class="lead" style="margin-top:22px;">Una explicación detallada de la metodología AlgoritmoT, con ejemplos aplicados al <strong style="color:#fff;">sector público</strong>: alcaldías, secretarías y entidades del Estado.</p>
-    <div class="pill-row" style="margin-top:30px;">
-      <span class="pill">Diagnóstico de madurez (MD-IA)</span>
-      <span class="pill">Procesos &amp; datos</span>
-      <span class="pill">IA responsable</span>
-      <span class="pill">Servicio al ciudadano</span>
+    <div class="logo brand" style="margin-bottom: 22px;">ALGORITMO<span class="t">T</span></div>
+    <div class="cover-grid">
+      <div>
+        <div class="eyebrow" style="margin-bottom:16px;">Guía de transformación digital</div>
+        <h1>Transformación Digital en <span style="color:#7fa6f6;">6 fases</span></h1>
+        <p class="lead" style="margin-top:20px;">Explicación detallada de la metodología AlgoritmoT, con esquemas, tablas y ejemplos aplicados al <strong style="color:#fff;">sector público</strong>: alcaldías, secretarías y entidades del Estado.</p>
+        <div class="pill-row" style="margin-top:26px;">
+          <span class="pill">Diagnóstico MD-IA</span>
+          <span class="pill">Procesos &amp; datos</span>
+          <span class="pill">IA responsable</span>
+          <span class="pill">Servicio al ciudadano</span>
+        </div>
+        <div class="meta" style="margin-top:30px;">AlgoritmoT · Empresas · algoritmot.com</div>
+      </div>
+      <figure class="fig">
+        <img src="https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=1100&q=70&auto=format&fit=crop" alt="Edificio institucional moderno" loading="lazy" onerror="this.remove()" />
+      </figure>
     </div>
-    <div class="meta" style="margin-top:38px;">AlgoritmoT · Empresas · algoritmot.com</div>
   </section>
 
   <!-- 2 · ÍNDICE -->
   <section class="slide slide-pad">
-    <div class="top">
-      <div>
-        <div class="eyebrow">Contenido</div>
-        <h2 style="margin-top:8px;">Índice</h2>
-      </div>
-      <div class="phase-num">01</div>
-    </div>
+    <div class="top"><div><div class="eyebrow">Contenido</div><h2 style="margin-top:8px;">Índice</h2></div><div class="phase-num">01</div></div>
     <div class="toc">
       <button onclick="goTo(3)"><span class="n">01</span><span><span class="tt">¿Qué es la transformación digital?</span><br><span class="ts">Enfoque estratégico para lo público</span></span></button>
-      <button onclick="goTo(4)"><span class="n">02</span><span><span class="tt">Marco metodológico MD-IA</span><br><span class="ts">DQ, AIQ y 6 dimensiones</span></span></button>
-      <button onclick="goTo(5)"><span class="n">03</span><span><span class="tt">Las 6 fases de un vistazo</span><br><span class="ts">Mapa de la ruta</span></span></button>
-      <button onclick="goTo(6)"><span class="n">F1</span><span><span class="tt">Captura del ADN Digital</span><br><span class="ts">Diagnóstico estratégico</span></span></button>
-      <button onclick="goTo(7)"><span class="n">F2</span><span><span class="tt">Mapeo de Procesos</span><br><span class="ts">Optimización con BPMN</span></span></button>
-      <button onclick="goTo(8)"><span class="n">F3</span><span><span class="tt">Humano vs. Tecnología</span><br><span class="ts">IA responsable</span></span></button>
-      <button onclick="goTo(9)"><span class="n">F4</span><span><span class="tt">Diseño y Desarrollo</span><br><span class="ts">Soluciones a medida</span></span></button>
-      <button onclick="goTo(10)"><span class="n">F5</span><span><span class="tt">Implementación</span><br><span class="ts">Transformación real</span></span></button>
-      <button onclick="goTo(11)"><span class="n">F6</span><span><span class="tt">Mejora Continua</span><br><span class="ts">Tecnología resiliente</span></span></button>
-      <button onclick="goTo(12)"><span class="n">04</span><span><span class="tt">Caso integrador</span><br><span class="ts">Una alcaldía, de extremo a extremo</span></span></button>
+      <button onclick="goTo(4)"><span class="n">02</span><span><span class="tt">Marco MD-IA y sus 6 dimensiones</span><br><span class="ts">DQ, AIQ y tabla de dimensiones</span></span></button>
+      <button onclick="goTo(5)"><span class="n">03</span><span><span class="tt">Las 6 fases de un vistazo</span><br><span class="ts">Esquema de la ruta</span></span></button>
+      <button onclick="goTo(6)"><span class="n">04</span><span><span class="tt">Tabla resumen de las 6 fases</span><br><span class="ts">Qué se hace · entregable · ejemplo</span></span></button>
+      <button onclick="goTo(7)"><span class="n">F1</span><span><span class="tt">Captura del ADN Digital</span><br><span class="ts">Diagnóstico + radar de madurez</span></span></button>
+      <button onclick="goTo(8)"><span class="n">F2</span><span><span class="tt">Mapeo de Procesos</span><br><span class="ts">BPMN as-is → to-be</span></span></button>
+      <button onclick="goTo(9)"><span class="n">F3</span><span><span class="tt">Humano vs. Tecnología</span><br><span class="ts">Matriz de decisión</span></span></button>
+      <button onclick="goTo(10)"><span class="n">F4</span><span><span class="tt">Diseño y Desarrollo</span><br><span class="ts">Arquitectura en capas</span></span></button>
+      <button onclick="goTo(11)"><span class="n">F5</span><span><span class="tt">Implementación</span><br><span class="ts">Cronograma de 12 semanas</span></span></button>
+      <button onclick="goTo(12)"><span class="n">F6</span><span><span class="tt">Mejora Continua</span><br><span class="ts">Ciclo PDCA</span></span></button>
+      <button onclick="goTo(13)"><span class="n">05</span><span><span class="tt">Hoja de ruta por horizontes</span><br><span class="ts">H1 · H2 · H3</span></span></button>
+      <button onclick="goTo(14)"><span class="n">06</span><span><span class="tt">Caso integrador</span><br><span class="ts">Una alcaldía, de extremo a extremo</span></span></button>
     </div>
   </section>
 
   <!-- 3 · QUÉ ES -->
   <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="eyebrow">Punto de partida</div><h2 style="margin-top:8px;">¿Qué es la transformación digital?</h2></div>
-      <div class="phase-num">01</div>
-    </div>
-    <p class="lead" style="max-width:70ch; margin-bottom:24px;">No es comprar tecnología. Es un <strong>proceso estratégico</strong> para medir la madurez de una organización, priorizar brechas y activar una hoja de ruta que mejore procesos, datos, tecnología, liderazgo y experiencia del ciudadano.</p>
-    <div class="grid3 grow">
-      <div class="card"><h3>En lo público importa por…</h3><ul class="dot" style="margin-top:14px;">
-        <li>Más valor por cada peso público invertido.</li>
-        <li>Trámites más rápidos y trazables para el ciudadano.</li>
-        <li>Decisiones basadas en datos, no en percepción.</li>
-        <li>Transparencia y rendición de cuentas.</li>
-      </ul></div>
-      <div class="card"><h3>Principios de AlgoritmoT</h3><ul class="dot" style="margin-top:14px;">
-        <li>Hablamos el lenguaje de la entidad.</li>
-        <li>Acompañamos de extremo a extremo.</li>
-        <li>Soluciones a la medida del contexto.</li>
-        <li>Impacto antes que complejidad.</li>
-      </ul></div>
-      <div class="card navy"><h3>Cómo trabajamos</h3><ul class="dot" style="margin-top:14px;">
-        <li>Escuchamos el contexto y las metas.</li>
-        <li>Definimos prioridades de alto impacto.</li>
-        <li>Ejecutamos contigo y tu equipo.</li>
-        <li>Medimos y mejoramos.</li>
-      </ul></div>
-    </div>
-  </section>
-
-  <!-- 4 · MARCO MD-IA -->
-  <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="eyebrow">Marco metodológico</div><h2 style="margin-top:8px;">Madurez Digital &amp; IA (MD-IA)</h2></div>
-      <div class="phase-num">02</div>
-    </div>
-    <p class="lead" style="max-width:72ch; margin-bottom:22px;">Integramos marcos reconocidos —McKinsey (DQ/AIQ), Capgemini/MIT y Deloitte— en un modelo propio que evalúa <strong>seis dimensiones</strong> en una escala de 0 a 100.</p>
-    <div class="grid2 grow">
-      <div class="card">
-        <h3>Las 6 dimensiones</h3>
-        <ul class="clean" style="margin-top:14px;">
-          <li>Estrategia</li>
-          <li>Infraestructura &amp; Datos</li>
-          <li>Talento &amp; Cultura</li>
-          <li>Gobernanza &amp; Liderazgo</li>
-          <li>Procesos &amp; Automatización</li>
-          <li>Experiencia del ciudadano</li>
-        </ul>
-      </div>
+    <div class="top"><div><div class="eyebrow">Punto de partida</div><h2 style="margin-top:8px;">¿Qué es la transformación digital?</h2></div><div class="phase-num">01</div></div>
+    <div class="col-7-5 grow">
       <div class="stack">
-        <div class="card navy">
-          <h3>Dos índices globales</h3>
-          <div class="grid2" style="margin-top:14px;">
-            <div class="stat"><span class="v">DQ</span><span class="l">Digital Quotient — promedio de dimensiones</span></div>
-            <div class="stat"><span class="v">AIQ</span><span class="l">AI Quotient — ponderado por capacidades de IA</span></div>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Niveles de madurez</h3>
-          <div class="grid3" style="margin-top:14px;">
-            <div class="stat"><span class="v" style="color:#dc2626;">0–33</span><span class="l">Bajo</span></div>
-            <div class="stat"><span class="v" style="color:#d97706;">34–66</span><span class="l">Intermedio</span></div>
-            <div class="stat"><span class="v" style="color:#059669;">67–100</span><span class="l">Alto</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="note" style="margin-top:18px;">El diagnóstico se construye con encuestas al equipo, entrevistas y análisis de datos, comparando contra benchmarks del sector. Los valores del simulador en línea son una estimación de referencia, no un diagnóstico real.</div>
-  </section>
-
-  <!-- 5 · LAS 6 FASES -->
-  <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="eyebrow">Ruta</div><h2 style="margin-top:8px;">Las 6 fases de un vistazo</h2></div>
-      <div class="phase-num">03</div>
-    </div>
-    <div class="grid3 grow">
-      <div class="card"><div class="chip">Fase 1</div><h3 style="margin:14px 0 6px; color:var(--ink); text-transform:none; font-size:20px; letter-spacing:-.01em;">Captura del ADN Digital</h3><p class="muted">Diagnóstico 360° de madurez y roadmap priorizado.</p></div>
-      <div class="card"><div class="chip">Fase 2</div><h3 style="margin:14px 0 6px; color:var(--ink); text-transform:none; font-size:20px; letter-spacing:-.01em;">Mapeo de Procesos</h3><p class="muted">BPMN as-is → to-be, eliminando cuellos de botella.</p></div>
-      <div class="card"><div class="chip">Fase 3</div><h3 style="margin:14px 0 6px; color:var(--ink); text-transform:none; font-size:20px; letter-spacing:-.01em;">Humano vs. Tecnología</h3><p class="muted">Qué automatizar y qué dejar en manos del equipo.</p></div>
-      <div class="card"><div class="chip">Fase 4</div><h3 style="margin:14px 0 6px; color:var(--ink); text-transform:none; font-size:20px; letter-spacing:-.01em;">Diseño y Desarrollo</h3><p class="muted">Soluciones digitales a medida en sprints ágiles.</p></div>
-      <div class="card"><div class="chip">Fase 5</div><h3 style="margin:14px 0 6px; color:var(--ink); text-transform:none; font-size:20px; letter-spacing:-.01em;">Implementación</h3><p class="muted">Despliegue, migración y gestión del cambio.</p></div>
-      <div class="card"><div class="chip">Fase 6</div><h3 style="margin:14px 0 6px; color:var(--ink); text-transform:none; font-size:20px; letter-spacing:-.01em;">Mejora Continua</h3><p class="muted">Ciclo PDCA y evolución con métricas reales.</p></div>
-    </div>
-    <p class="muted" style="margin-top:18px;">Cada fase alimenta a la siguiente: el diagnóstico ordena las prioridades, el mapeo y la decisión humano-tecnología definen el alcance, y el desarrollo, la implementación y la mejora continua lo llevan a la operación real.</p>
-  </section>
-
-  <!-- 6 · FASE 1 -->
-  <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="chip">Fase 1 · Diagnóstico estratégico</div><h2 style="margin-top:12px;">Captura del ADN Digital</h2></div>
-      <div class="phase-num">F1</div>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>¿Qué se hace y cómo?</h3>
-        <p style="margin-top:12px;">Un diagnóstico 360° de la entidad: se mapea el modelo de operación (Business Model Canvas), la propuesta de valor pública (Value Proposition Canvas) y se evalúa la madurez digital (MD-IA) con encuestas, entrevistas y revisión de datos. El resultado es un roadmap priorizado de iniciativas.</p>
-        <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;">
-          <span class="chip">Business Model Canvas</span><span class="chip">Value Proposition</span><span class="chip">Evaluación MD-IA</span>
+        <p class="lead">No es comprar tecnología. Es un <strong>proceso estratégico</strong> para medir la madurez de una organización, priorizar brechas y activar una hoja de ruta que mejore procesos, datos, tecnología, liderazgo y experiencia del ciudadano.</p>
+        <div class="grid2">
+          <div class="card"><h3>Por qué importa en lo público</h3><ul class="dot" style="margin-top:12px;">
+            <li>Más valor por cada peso público invertido.</li>
+            <li>Trámites más rápidos y trazables.</li>
+            <li>Decisiones basadas en datos.</li>
+            <li>Transparencia y rendición de cuentas.</li>
+          </ul></div>
+          <div class="card navy"><h3>Cómo trabajamos</h3><ul class="dot" style="margin-top:12px;">
+            <li>Escuchamos el contexto y las metas.</li>
+            <li>Definimos prioridades de alto impacto.</li>
+            <li>Ejecutamos contigo y tu equipo.</li>
+            <li>Medimos y mejoramos.</li>
+          </ul></div>
         </div>
       </div>
-      <div class="card"><h3>Productos / entregables</h3>
-        <ul class="clean" style="margin-top:12px;">
+      <figure>
+        <div class="fig tall"><img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=900&q=70&auto=format&fit=crop" alt="Equipo de trabajo en oficina pública" loading="lazy" onerror="this.remove()" /></div>
+        <figcaption>Modernización de la gestión con foco en las personas.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 4 · MARCO MD-IA + TABLA -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="eyebrow">Marco metodológico</div><h2 style="margin-top:8px;">Madurez Digital &amp; IA (MD-IA)</h2></div><div class="phase-num">02</div></div>
+    <p class="lead" style="max-width:74ch; margin-bottom:18px;">Integramos marcos reconocidos —McKinsey (DQ/AIQ), Capgemini/MIT y Deloitte— en un modelo propio de <strong>seis dimensiones</strong>, escala 0–100.</p>
+    <table class="tbl">
+      <thead><tr><th style="width:22%;">Dimensión</th><th>Qué mide</th><th style="width:30%;">Señal típica en lo público</th></tr></thead>
+      <tbody>
+        <tr><td>Estrategia</td><td>Visión y alineación de lo digital/IA con el plan de gobierno.</td><td>Plan de TI desactualizado o sin hoja de ruta.</td></tr>
+        <tr><td>Infraestructura &amp; Datos</td><td>Nube, ciberseguridad, calidad e integración de datos.</td><td>Datos en silos entre secretarías.</td></tr>
+        <tr><td>Talento &amp; Cultura</td><td>Habilidades digitales y apertura al cambio.</td><td>Dependencia de pocas personas clave.</td></tr>
+        <tr><td>Gobernanza &amp; Liderazgo</td><td>Estructura, comités y decisiones basadas en datos.</td><td>Sin comité digital ni responsable de datos.</td></tr>
+        <tr><td>Procesos &amp; Automatización</td><td>Eficiencia operativa y flujos inteligentes.</td><td>Trámites manuales y en papel.</td></tr>
+        <tr><td>Experiencia del ciudadano</td><td>Canales digitales y atención omnicanal.</td><td>Atención solo presencial, sin trazabilidad.</td></tr>
+      </tbody>
+    </table>
+    <div class="grid3" style="margin-top:16px;">
+      <div class="card navy"><div class="grid2"><div class="stat"><span class="v">DQ</span><span class="l">Digital Quotient · promedio</span></div><div class="stat"><span class="v">AIQ</span><span class="l">AI Quotient · ponderado</span></div></div></div>
+      <div class="card"><div class="stat"><span class="v" style="color:#dc2626;">0–33</span><span class="l">Nivel bajo</span></div></div>
+      <div class="card"><div class="grid2"><div class="stat"><span class="v" style="color:#d97706;">34–66</span><span class="l">Intermedio</span></div><div class="stat"><span class="v" style="color:#059669;">67–100</span><span class="l">Alto</span></div></div></div>
+    </div>
+  </section>
+
+  <!-- 5 · LAS 6 FASES + PIPELINE -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="eyebrow">Ruta</div><h2 style="margin-top:8px;">Las 6 fases de un vistazo</h2></div><div class="phase-num">03</div></div>
+    <div class="svg-wrap" style="margin-bottom:18px;">
+      <svg viewBox="0 0 1180 150" role="img" aria-label="Cadena de las 6 fases">
+        <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9db8f4"/></marker></defs>
+        <!-- connectors -->
+        <line x1="190" y1="75" x2="205" y2="75" stroke="#9db8f4" stroke-width="2.5" marker-end="url(#ar)"/>
+        <line x1="385" y1="75" x2="400" y2="75" stroke="#9db8f4" stroke-width="2.5" marker-end="url(#ar)"/>
+        <line x1="580" y1="75" x2="595" y2="75" stroke="#9db8f4" stroke-width="2.5" marker-end="url(#ar)"/>
+        <line x1="775" y1="75" x2="790" y2="75" stroke="#9db8f4" stroke-width="2.5" marker-end="url(#ar)"/>
+        <line x1="970" y1="75" x2="985" y2="75" stroke="#9db8f4" stroke-width="2.5" marker-end="url(#ar)"/>
+        <!-- nodes -->
+        <g font-family="Space Grotesk, sans-serif">
+          <g><rect x="10" y="30" width="180" height="90" rx="14" fill="#16235c"/><text x="100" y="62" fill="#7fa6f6" font-size="13" font-weight="700" text-anchor="middle">FASE 1</text><text x="100" y="86" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">ADN Digital</text><text x="100" y="104" fill="#c7d4f0" font-size="11" text-anchor="middle">Diagnóstico</text></g>
+          <g><rect x="205" y="30" width="180" height="90" rx="14" fill="#fff" stroke="#e2e8f0"/><text x="295" y="62" fill="#2f6fe6" font-size="13" font-weight="700" text-anchor="middle">FASE 2</text><text x="295" y="86" fill="#0f172a" font-size="14" font-weight="700" text-anchor="middle">Mapeo BPMN</text><text x="295" y="104" fill="#64748b" font-size="11" text-anchor="middle">Procesos</text></g>
+          <g><rect x="400" y="30" width="180" height="90" rx="14" fill="#fff" stroke="#e2e8f0"/><text x="490" y="62" fill="#2f6fe6" font-size="13" font-weight="700" text-anchor="middle">FASE 3</text><text x="490" y="86" fill="#0f172a" font-size="14" font-weight="700" text-anchor="middle">Humano vs IA</text><text x="490" y="104" fill="#64748b" font-size="11" text-anchor="middle">IA responsable</text></g>
+          <g><rect x="595" y="30" width="180" height="90" rx="14" fill="#fff" stroke="#e2e8f0"/><text x="685" y="62" fill="#2f6fe6" font-size="13" font-weight="700" text-anchor="middle">FASE 4</text><text x="685" y="86" fill="#0f172a" font-size="14" font-weight="700" text-anchor="middle">Desarrollo</text><text x="685" y="104" fill="#64748b" font-size="11" text-anchor="middle">Soluciones</text></g>
+          <g><rect x="790" y="30" width="180" height="90" rx="14" fill="#fff" stroke="#e2e8f0"/><text x="880" y="62" fill="#2f6fe6" font-size="13" font-weight="700" text-anchor="middle">FASE 5</text><text x="880" y="86" fill="#0f172a" font-size="14" font-weight="700" text-anchor="middle">Implementación</text><text x="880" y="104" fill="#64748b" font-size="11" text-anchor="middle">Despliegue</text></g>
+          <g><rect x="985" y="30" width="185" height="90" rx="14" fill="#16235c"/><text x="1077" y="62" fill="#7fa6f6" font-size="13" font-weight="700" text-anchor="middle">FASE 6</text><text x="1077" y="86" fill="#fff" font-size="14" font-weight="700" text-anchor="middle">Mejora Continua</text><text x="1077" y="104" fill="#c7d4f0" font-size="11" text-anchor="middle">PDCA</text></g>
+        </g>
+      </svg>
+    </div>
+    <p class="muted">Cada fase alimenta a la siguiente: el diagnóstico ordena prioridades; el mapeo y la decisión humano-tecnología definen el alcance; y el desarrollo, la implementación y la mejora continua lo llevan a la operación real.</p>
+  </section>
+
+  <!-- 6 · TABLA RESUMEN -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="eyebrow">Síntesis</div><h2 style="margin-top:8px;">Tabla resumen de las 6 fases</h2></div><div class="phase-num">04</div></div>
+    <table class="tbl">
+      <thead><tr><th style="width:16%;">Fase</th><th style="width:30%;">Qué se hace</th><th style="width:26%;">Entregable clave</th><th>Ejemplo · sector público</th></tr></thead>
+      <tbody>
+        <tr><td>1 · ADN Digital</td><td>Diagnóstico de madurez (MD-IA) y roadmap.</td><td>Radar DQ/AIQ + roadmap priorizado.</td><td>Diagnóstico de Hacienda y Gobierno municipal.</td></tr>
+        <tr><td>2 · Mapeo</td><td>BPMN as-is → to-be y Lean.</td><td>Diagramas y matriz de KPIs.</td><td>Rediseño de PQRS y licencias de construcción.</td></tr>
+        <tr><td>3 · Humano vs. IA</td><td>Qué automatizar con criterio responsable.</td><td>Matriz humano/tecnología + gobernanza.</td><td>Enrutamiento de solicitudes; casos sensibles a humano.</td></tr>
+        <tr><td>4 · Desarrollo</td><td>Solución a medida en sprints ágiles.</td><td>Plataforma + integraciones.</td><td>Ventanilla única de trámites en línea.</td></tr>
+        <tr><td>5 · Implementación</td><td>Migración, capacitación y go-live.</td><td>Plan de 12 semanas + UAT.</td><td>Despliegue con gestión del cambio en secretarías.</td></tr>
+        <tr><td>6 · Mejora Continua</td><td>Ciclo PDCA y monitoreo de KPIs.</td><td>Dashboard + informe mensual.</td><td>Tablero de servicio al ciudadano con SLAs.</td></tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:16px;">Los montos y puntajes del simulador en línea son estimaciones de referencia; el diagnóstico real se realiza con encuestas, entrevistas y análisis de datos vs. benchmarks del sector.</div>
+  </section>
+
+  <!-- 7 · FASE 1 + RADAR -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="chip">Fase 1 · Diagnóstico estratégico</div><h2 style="margin-top:12px;">Captura del ADN Digital</h2></div><div class="phase-num">F1</div></div>
+    <div class="col-7-5">
+      <div class="stack">
+        <div class="card"><h3>¿Qué se hace y cómo?</h3>
+          <p style="margin-top:10px;">Diagnóstico 360° de la entidad: modelo de operación (Business Model Canvas), propuesta de valor pública (Value Proposition Canvas) y evaluación de madurez (MD-IA) con encuestas, entrevistas y datos. Resultado: roadmap priorizado.</p>
+          <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;"><span class="chip">Business Model Canvas</span><span class="chip">Value Proposition</span><span class="chip">Evaluación MD-IA</span></div>
+        </div>
+        <div class="card"><h3>Productos / entregables</h3><ul class="clean" style="margin-top:10px;">
           <li>Radar de madurez en 6 dimensiones (DQ y AIQ).</li>
           <li>Roadmap priorizado (90 días y 12 meses).</li>
-          <li>Identificación de quick wins con impacto estimado.</li>
-          <li>Diagnóstico de brechas vs. benchmark del sector.</li>
+          <li>Quick wins con impacto estimado.</li>
           <li>Informe ejecutivo para concejo / dirección.</li>
-        </ul>
+        </ul></div>
       </div>
-    </div>
-    <div class="example">
-      <span class="tag">▮ Ejemplo · Sector público</span>
-      <p><strong>Alcaldía municipal.</strong> Se diagnostica la Secretaría de Hacienda y la de Gobierno: el radar revela Estrategia y Gobernanza en nivel bajo y una Infraestructura de datos fragmentada. El quick win priorizado es un tablero de indicadores de recaudo y un inventario de trámites para digitalizar primero los de mayor volumen ciudadano.</p>
-    </div>
-  </section>
-
-  <!-- 7 · FASE 2 -->
-  <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="chip">Fase 2 · Optimización digital</div><h2 style="margin-top:12px;">Mapeo de Procesos (BPMN)</h2></div>
-      <div class="phase-num">F2</div>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>¿Qué se hace y cómo?</h3>
-        <p style="margin-top:12px;">Se hacen visibles los procesos —muchas veces no documentados— con el estándar BPMN 2.x. Se identifican desperdicios con Value Stream Mapping (Lean) y se rediseña del estado actual (as-is) al óptimo (to-be). El alcance depende del número de procesos a mapear.</p>
-        <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;">
-          <span class="chip">Diagramas BPMN 2.x</span><span class="chip">Value Stream Mapping</span><span class="chip">Matriz de KPIs</span>
+      <div class="svg-wrap">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:6px;">Radar de madurez · ejemplo</div>
+        <svg viewBox="0 0 340 300" role="img" aria-label="Radar de madurez de ejemplo">
+          <g stroke="#e2e8f0" fill="none" stroke-width="1">
+            <polygon points="170,40 265.3,95 265.3,205 170,260 74.7,205 74.7,95"/>
+            <polygon points="170,77.4 232.9,113.7 232.9,186.3 170,222.6 107.1,186.3 107.1,113.7"/>
+            <polygon points="170,113.7 201.4,131.85 201.4,168.15 170,186.3 138.6,168.15 138.6,131.85"/>
+          </g>
+          <g stroke="#cbd5e1" stroke-width="1">
+            <line x1="170" y1="150" x2="170" y2="40"/><line x1="170" y1="150" x2="265.3" y2="95"/><line x1="170" y1="150" x2="265.3" y2="205"/>
+            <line x1="170" y1="150" x2="170" y2="260"/><line x1="170" y1="150" x2="74.7" y2="205"/><line x1="170" y1="150" x2="74.7" y2="95"/>
+          </g>
+          <polygon points="170,70.8 241.5,108.75 234.8,187.4 170,227 107.1,186.3 102.4,110.95" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="2"/>
+          <polygon points="170,128 203.3,130.75 189,161 170,178.6 147.1,163.2 139.5,132.4" fill="#2f6fe6" fill-opacity="0.32" stroke="#2f6fe6" stroke-width="2.5"/>
+          <g font-family="Space Grotesk, sans-serif" font-size="11" fill="#475569" font-weight="700">
+            <text x="170" y="30" text-anchor="middle">Estrategia</text>
+            <text x="272" y="92" text-anchor="start">Infraestructura</text>
+            <text x="272" y="212" text-anchor="start">Talento</text>
+            <text x="170" y="278" text-anchor="middle">Gobernanza</text>
+            <text x="68" y="212" text-anchor="end">Procesos</text>
+            <text x="68" y="92" text-anchor="end">Experiencia</text>
+          </g>
+        </svg>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:6px;font-size:11px;font-weight:700;color:#64748b;">
+          <span style="color:#2f6fe6;">■ Tu entidad</span><span style="color:#94a3b8;">■ Benchmark</span>
         </div>
       </div>
-      <div class="card"><h3>Productos / entregables</h3>
-        <ul class="clean" style="margin-top:12px;">
-          <li>Diagramas as-is y to-be de los procesos clave.</li>
-          <li>Mapa de desperdicios y actividades sin valor.</li>
-          <li>Matriz de KPIs por proceso y responsable.</li>
-          <li>Hoja de ruta de automatización priorizada.</li>
-          <li>Documentación lista para estándares de calidad.</li>
-        </ul>
+    </div>
+    <div class="example" style="margin-top:16px;"><span class="tag">▮ Ejemplo · Sector público</span><p><strong>Alcaldía municipal.</strong> El radar revela Estrategia y Gobernanza en nivel bajo y datos fragmentados. El quick win priorizado: un tablero de indicadores de recaudo y un inventario de trámites para digitalizar primero los de mayor volumen ciudadano.</p></div>
+  </section>
+
+  <!-- 8 · FASE 2 + BPMN -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="chip">Fase 2 · Optimización digital</div><h2 style="margin-top:12px;">Mapeo de Procesos (BPMN)</h2></div><div class="phase-num">F2</div></div>
+    <div class="svg-wrap" style="margin-bottom:14px;">
+      <svg viewBox="0 0 1180 230" role="img" aria-label="Rediseño de proceso as-is a to-be">
+        <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#94a3b8"/></marker><marker id="ar3" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f6fe6"/></marker></defs>
+        <g font-family="Space Grotesk, sans-serif" font-size="13" font-weight="700">
+          <text x="10" y="26" fill="#b91c1c" font-size="12" letter-spacing="1">AS-IS · HOY (con desperdicios)</text>
+          <g fill="#fef2f2" stroke="#fecaca">
+            <rect x="10" y="40" width="200" height="56" rx="10"/><rect x="270" y="40" width="200" height="56" rx="10"/><rect x="530" y="40" width="200" height="56" rx="10"/><rect x="790" y="40" width="220" height="56" rx="10"/>
+          </g>
+          <g fill="#7f1d1d" text-anchor="middle" font-size="12.5">
+            <text x="110" y="73">Radicación en papel</text><text x="370" y="73">Asignación manual</text><text x="630" y="73">Respuesta dispersa</text><text x="900" y="73">Sin trazabilidad</text>
+          </g>
+          <g stroke="#94a3b8" stroke-width="2"><line x1="210" y1="68" x2="265" y2="68" marker-end="url(#ar2)"/><line x1="470" y1="68" x2="525" y2="68" marker-end="url(#ar2)"/><line x1="730" y1="68" x2="785" y2="68" marker-end="url(#ar2)"/></g>
+
+          <text x="10" y="150" fill="#15803d" font-size="12" letter-spacing="1">TO-BE · OPTIMIZADO</text>
+          <g fill="#eff6ff" stroke="#bfdbfe">
+            <rect x="10" y="164" width="200" height="56" rx="10"/><rect x="270" y="164" width="200" height="56" rx="10"/><rect x="530" y="164" width="200" height="56" rx="10"/><rect x="790" y="164" width="220" height="56" rx="10"/>
+          </g>
+          <g fill="#1e3a8a" text-anchor="middle" font-size="12.5">
+            <text x="110" y="197">Ventanilla única</text><text x="370" y="197">Asignación automática</text><text x="630" y="197">Respuesta guiada</text><text x="900" y="197">Trazabilidad total</text>
+          </g>
+          <g stroke="#2f6fe6" stroke-width="2"><line x1="210" y1="192" x2="265" y2="192" marker-end="url(#ar3)"/><line x1="470" y1="192" x2="525" y2="192" marker-end="url(#ar3)"/><line x1="730" y1="192" x2="785" y2="192" marker-end="url(#ar3)"/></g>
+          <text x="1075" y="120" fill="#2f6fe6" font-size="13" text-anchor="middle">▼ rediseño</text>
+        </g>
+      </svg>
+    </div>
+    <div class="grid2 grow">
+      <div class="card"><h3>¿Qué se hace y cómo?</h3><p style="margin-top:10px;">Se hacen visibles los procesos con BPMN 2.x, se identifican desperdicios con Value Stream Mapping (Lean) y se rediseñan de as-is a to-be. El alcance depende del número de procesos a mapear.</p></div>
+      <div class="card"><h3>Productos / entregables</h3><ul class="clean" style="margin-top:10px;"><li>Diagramas as-is y to-be de procesos clave.</li><li>Mapa de desperdicios y actividades sin valor.</li><li>Matriz de KPIs por proceso y responsable.</li><li>Hoja de ruta de automatización priorizada.</li></ul></div>
+    </div>
+    <div class="example"><span class="tag">▮ Ejemplo · Sector público</span><p><strong>Atención de PQRS y licencias de construcción.</strong> Del flujo en papel con asignación por correo a una ventanilla única con enrutamiento automático y trazabilidad, cumpliendo los tiempos de ley.</p></div>
+  </section>
+
+  <!-- 9 · FASE 3 + MATRIZ -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="chip">Fase 3 · IA responsable</div><h2 style="margin-top:12px;">Humano vs. Tecnología</h2></div><div class="phase-num">F3</div></div>
+    <p class="lead" style="max-width:74ch; margin-bottom:14px;">Con criterio objetivo y marcos de IA responsable (NIST AI RMF, ISO 9241) decidimos qué tarea es humana, automatizada o colaborativa.</p>
+    <table class="tbl">
+      <thead><tr><th style="width:42%;">Actividad (ejemplo público)</th><th>Decisión</th><th>Riesgo IA</th></tr></thead>
+      <tbody>
+        <tr><td>Clasificación y enrutamiento de PQRS</td><td>Automatizado</td><td><span class="lvl lv-bajo">Bajo</span></td></tr>
+        <tr><td>Casos sensibles (derechos, subsidios)</td><td>Humano</td><td><span class="lvl lv-alto">Alto</span></td></tr>
+        <tr><td>Generación de reportes periódicos</td><td>Automatizado</td><td><span class="lvl lv-bajo">Bajo</span></td></tr>
+        <tr><td>Análisis jurídico de expedientes</td><td>Colaboración humano-IA</td><td><span class="lvl lv-alto">Alto</span></td></tr>
+        <tr><td>Atención presencial en punto de servicio</td><td>Humano</td><td><span class="lvl lv-med">Medio</span></td></tr>
+        <tr><td>Detección de inconsistencias en pagos</td><td>Colaboración humano-IA</td><td><span class="lvl lv-med">Medio</span></td></tr>
+      </tbody>
+    </table>
+    <div class="example" style="margin-top:14px;"><span class="tag">▮ Ejemplo · Sector público</span><p>La IA enruta automáticamente las solicitudes de bajo riesgo; los casos que afectan derechos quedan siempre en manos de un funcionario, con criterios documentados y registro auditable para garantizar equidad y debido proceso.</p></div>
+  </section>
+
+  <!-- 10 · FASE 4 + ARQUITECTURA -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="chip">Fase 4 · Soluciones a medida</div><h2 style="margin-top:12px;">Diseño y Desarrollo</h2></div><div class="phase-num">F4</div></div>
+    <div class="col-7-5">
+      <div class="svg-wrap">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Arquitectura en capas</div>
+        <svg viewBox="0 0 520 280" role="img" aria-label="Arquitectura de la solución en capas">
+          <g font-family="Space Grotesk, sans-serif">
+            <g><rect x="10" y="10" width="500" height="46" rx="10" fill="#eff6ff" stroke="#bfdbfe"/><text x="26" y="32" font-size="13" font-weight="700" fill="#1e3a8a">Interfaz de usuario</text><text x="26" y="48" font-size="11" fill="#3b82f6">React · Next.js · Tailwind · accesibilidad</text></g>
+            <g><rect x="10" y="64" width="500" height="46" rx="10" fill="#f8fafc" stroke="#e2e8f0"/><text x="26" y="86" font-size="13" font-weight="700" fill="#0f172a">Lógica de negocio</text><text x="26" y="102" font-size="11" fill="#64748b">Node.js · Python · APIs REST</text></g>
+            <g><rect x="10" y="118" width="500" height="46" rx="10" fill="#16235c"/><text x="26" y="140" font-size="13" font-weight="700" fill="#fff">IA &amp; Automatización</text><text x="26" y="156" font-size="11" fill="#9db8f4">Modelos · RPA · clasificación</text></g>
+            <g><rect x="10" y="172" width="500" height="46" rx="10" fill="#f8fafc" stroke="#e2e8f0"/><text x="26" y="194" font-size="13" font-weight="700" fill="#0f172a">Datos &amp; persistencia</text><text x="26" y="210" font-size="11" fill="#64748b">PostgreSQL · Redis · gobierno de datos</text></g>
+            <g><rect x="10" y="226" width="500" height="46" rx="10" fill="#eff6ff" stroke="#bfdbfe"/><text x="26" y="248" font-size="13" font-weight="700" fill="#1e3a8a">Integraciones</text><text x="26" y="264" font-size="11" fill="#3b82f6">Interoperabilidad del Estado · OAuth · Webhooks</text></g>
+          </g>
+        </svg>
+      </div>
+      <div class="stack">
+        <div class="card"><h3>¿Qué se hace y cómo?</h3><p style="margin-top:10px;">Construcción a medida en sprints ágiles (Scrum), con versiones funcionales cada 2 semanas: de prototipos validados a plataformas cloud escalables e integradas. El alcance depende del número de soluciones y su complejidad.</p></div>
+        <div class="card"><h3>Productos / entregables</h3><ul class="clean" style="margin-top:10px;"><li>Prototipo validado con ciudadanos reales.</li><li>Integraciones con sistemas vigentes.</li><li>Tablero de seguimiento del proyecto.</li><li>Código documentado, probado y capacitación.</li></ul></div>
       </div>
     </div>
-    <div class="example">
-      <span class="tag">▮ Ejemplo · Sector público</span>
-      <p><strong>Atención de PQRS (peticiones, quejas, reclamos).</strong> Se mapea el flujo actual —radicación en papel, asignación manual por correo, respuestas dispersas— y se rediseña a una ventanilla única con asignación automática y trazabilidad. También se modela el proceso de <em>licencias de construcción</em> para cumplir los tiempos de ley.</p>
+    <div class="example" style="margin-top:16px;"><span class="tag">▮ Ejemplo · Sector público</span><p><strong>Ventanilla única de trámites.</strong> El ciudadano radica, paga y hace seguimiento desde el celular, con notificaciones y firma digital, integrada al recaudo y a la plataforma de interoperabilidad del Estado.</p></div>
+  </section>
+
+  <!-- 11 · FASE 5 + CRONOGRAMA -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="chip">Fase 5 · Transformación real</div><h2 style="margin-top:12px;">Implementación</h2></div><div class="phase-num">F5</div></div>
+    <div class="svg-wrap" style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Cronograma de 12 semanas</div>
+      <svg viewBox="0 0 1180 210" role="img" aria-label="Cronograma de implementación en 12 semanas">
+        <g font-family="Space Grotesk, sans-serif" font-size="12">
+          <g stroke="#e2e8f0"><line x1="150" y1="20" x2="150" y2="190"/><line x1="320" y1="20" x2="320" y2="190"/><line x1="490" y1="20" x2="490" y2="190"/><line x1="660" y1="20" x2="660" y2="190"/><line x1="830" y1="20" x2="830" y2="190"/><line x1="1000" y1="20" x2="1000" y2="190"/></g>
+          <g fill="#94a3b8" font-size="11"><text x="150" y="16">Sem 2</text><text x="320" y="16">Sem 4</text><text x="490" y="16">Sem 6</text><text x="660" y="16">Sem 8</text><text x="830" y="16">Sem 10</text><text x="995" y="16">Sem 12</text></g>
+          <g>
+            <rect x="20" y="28" width="300" height="22" rx="6" fill="#16235c"/><text x="30" y="44" fill="#fff" font-weight="700">Configuración &amp; setup</text>
+            <rect x="190" y="56" width="300" height="22" rx="6" fill="#2f6fe6"/><text x="200" y="72" fill="#fff" font-weight="700">Migración de datos</text>
+            <rect x="360" y="84" width="300" height="22" rx="6" fill="#16235c"/><text x="370" y="100" fill="#fff" font-weight="700">Capacitación por rol</text>
+            <rect x="530" y="112" width="300" height="22" rx="6" fill="#2f6fe6"/><text x="540" y="128" fill="#fff" font-weight="700">Pruebas &amp; UAT</text>
+            <rect x="700" y="140" width="160" height="22" rx="6" fill="#16235c"/><text x="710" y="156" fill="#fff" font-weight="700">Go-live</text>
+            <rect x="860" y="168" width="300" height="22" rx="6" fill="#2f6fe6"/><text x="870" y="184" fill="#fff" font-weight="700">Estabilización</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="grid2 grow">
+      <div class="card"><h3>¿Qué se hace y cómo?</h3><p style="margin-top:10px;">Plan por etapas con gestión del cambio (modelo de Kotter) para lograr adopción real entre los funcionarios. Un buen software fracasa si la implementación no se gestiona.</p></div>
+      <div class="card"><h3>Productos / entregables</h3><ul class="clean" style="margin-top:10px;"><li>Plan de migración con validación de integridad.</li><li>Capacitación por rol (presencial/virtual).</li><li>Pruebas UAT aprobadas por usuarios clave.</li><li>Soporte intensivo en las primeras semanas.</li></ul></div>
+    </div>
+    <div class="example"><span class="tag">▮ Ejemplo · Sector público</span><p><strong>Despliegue de la ventanilla única.</strong> Migración del histórico, capacitación a las secretarías, go-live controlado y puntos de atención asistida para no dejar a ningún ciudadano atrás.</p></div>
+  </section>
+
+  <!-- 12 · FASE 6 + PDCA -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="chip">Fase 6 · Tecnología resiliente</div><h2 style="margin-top:12px;">Mejora Continua</h2></div><div class="phase-num">F6</div></div>
+    <div class="col-7-5">
+      <div class="stack">
+        <div class="card"><h3>¿Qué se hace y cómo?</h3><p style="margin-top:10px;">Ciclo PDCA mensual para monitorear KPIs en tiempo real, detectar desviaciones a tiempo y aplicar mejoras iterativas, manteniendo la solución en su punto óptimo y haciéndola evolucionar con la entidad.</p></div>
+        <div class="card"><h3>Productos / entregables</h3><ul class="clean" style="margin-top:10px;"><li>Dashboard de KPIs de servicio al ciudadano.</li><li>Alertas proactivas y resolución con SLA.</li><li>Informe mensual de rendimiento.</li><li>Backlog priorizado de mejoras.</li></ul></div>
+      </div>
+      <div class="svg-wrap">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#64748b;margin-bottom:6px;">Ciclo PDCA</div>
+        <svg viewBox="0 0 280 280" role="img" aria-label="Ciclo PDCA">
+          <circle cx="140" cy="140" r="92" fill="none" stroke="#e2e8f0" stroke-width="34"/>
+          <circle cx="140" cy="140" r="92" fill="none" stroke="#2f6fe6" stroke-width="34" stroke-dasharray="430 580" stroke-dashoffset="0" transform="rotate(-90 140 140)" stroke-linecap="butt"/>
+          <g font-family="Space Grotesk, sans-serif" font-weight="700" font-size="13" text-anchor="middle">
+            <text x="140" y="58" fill="#fff">PLANIFICAR</text>
+            <text x="222" y="146" fill="#fff">EJECUTAR</text>
+            <text x="140" y="232" fill="#0f172a">VERIFICAR</text>
+            <text x="58" y="146" fill="#0f172a">ACTUAR</text>
+            <text x="140" y="136" fill="#16235c" font-size="14">Mejora</text>
+            <text x="140" y="156" fill="#64748b" font-size="11">mensual</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="example" style="margin-top:16px;"><span class="tag">▮ Ejemplo · Sector público</span><p><strong>Tablero de servicio al ciudadano.</strong> Se monitorean tiempos de respuesta de PQRS, cumplimiento de plazos legales y satisfacción; cada mes se priorizan mejoras y nuevos trámites en línea.</p></div>
+  </section>
+
+  <!-- 13 · ROADMAP HORIZONTES -->
+  <section class="slide slide-pad">
+    <div class="top"><div><div class="eyebrow">Priorización</div><h2 style="margin-top:8px;">Hoja de ruta por horizontes</h2></div><div class="phase-num">05</div></div>
+    <p class="lead" style="max-width:74ch; margin-bottom:16px;">Las brechas se priorizan por impacto y factibilidad y se distribuyen en tres horizontes de tiempo.</p>
+    <table class="tbl">
+      <thead><tr><th style="width:16%;">Horizonte</th><th style="width:16%;">Plazo</th><th style="width:22%;">Foco</th><th>Iniciativas (ejemplo público)</th></tr></thead>
+      <tbody>
+        <tr><td>H1</td><td>0–6 meses</td><td>Quick wins y fundamentos</td><td>Tablero de indicadores; digitalizar el trámite de mayor volumen; comité digital.</td></tr>
+        <tr><td>H2</td><td>6–12 meses</td><td>Escalar capacidades</td><td>Integración de datos entre secretarías; ventanilla única; equipo de analítica.</td></tr>
+        <tr><td>H3</td><td>12+ meses</td><td>Innovar y consolidar</td><td>IA en procesos clave; KPIs ligados a metas de gobierno; modelo data-driven.</td></tr>
+      </tbody>
+    </table>
+    <div class="grid3" style="margin-top:18px;">
+      <div class="card navy"><div class="stat"><span class="v">−60 a −90%</span><span class="l">Tiempos de ciclo (referencial)</span></div></div>
+      <div class="card"><div class="stat"><span class="v">24/7</span><span class="l">Trámites en línea</span></div></div>
+      <div class="card"><div class="stat"><span class="v">100%</span><span class="l">Trazabilidad y rendición de cuentas</span></div></div>
     </div>
   </section>
 
-  <!-- 8 · FASE 3 -->
+  <!-- 14 · CASO INTEGRADOR -->
   <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="chip">Fase 3 · IA responsable</div><h2 style="margin-top:12px;">Humano vs. Tecnología</h2></div>
-      <div class="phase-num">F3</div>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>¿Qué se hace y cómo?</h3>
-        <p style="margin-top:12px;">Se decide con criterio objetivo qué tareas hace una persona, cuáles se automatizan y cuáles funcionan en colaboración humano-IA, bajo marcos de IA responsable (NIST AI RMF) y diseño centrado en el usuario (ISO 9241). El objetivo: eficiencia sin perder control ni equidad.</p>
-        <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;">
-          <span class="chip">Matriz Humano/Tecnología</span><span class="chip">Gobernanza de IA</span><span class="chip">Mitigación de riesgos</span>
+    <div class="top"><div><div class="eyebrow">Caso integrador</div><h2 style="margin-top:8px;">Una alcaldía, de extremo a extremo</h2></div><div class="phase-num">06</div></div>
+    <div class="col-7-5 grow">
+      <div class="stack">
+        <div class="grid3">
+          <div class="card"><div class="chip">F1 → F2</div><p style="margin-top:10px;"><strong>Diagnóstico</strong> revela brechas en datos y gobernanza; se <strong>mapean</strong> PQRS y licencias.</p></div>
+          <div class="card"><div class="chip">F3 → F4</div><p style="margin-top:10px;">Se define qué <strong>automatizar</strong> con criterio y se <strong>desarrolla</strong> la ventanilla única.</p></div>
+          <div class="card"><div class="chip">F5 → F6</div><p style="margin-top:10px;">Se <strong>implementa</strong> con gestión del cambio y se <strong>mejora</strong> cada mes con métricas.</p></div>
         </div>
+        <div class="note">Las cifras son referenciales; se precisan tras el diagnóstico inicial (entrada desde 5.000 USD).</div>
       </div>
-      <div class="card"><h3>Productos / entregables</h3>
-        <ul class="clean" style="margin-top:12px;">
-          <li>Matriz de clasificación de actividades clave.</li>
-          <li>Arquitectura sociotécnica recomendada.</li>
-          <li>Plan de mitigación de riesgos de IA.</li>
-          <li>Lineamientos de uso responsable y transparencia.</li>
-          <li>Programa de gestión del cambio.</li>
-        </ul>
-      </div>
-    </div>
-    <div class="example">
-      <span class="tag">▮ Ejemplo · Sector público</span>
-      <p><strong>Clasificación de solicitudes ciudadanas.</strong> La IA clasifica y enruta automáticamente las PQRS de bajo riesgo; los casos sensibles (afectaciones a derechos, subsidios, decisiones discrecionales) quedan siempre en manos de un funcionario, con criterios documentados y registro auditable para garantizar equidad y debido proceso.</p>
+      <figure>
+        <div class="fig tall"><img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=900&q=70&auto=format&fit=crop" alt="Sede institucional" loading="lazy" onerror="this.remove()" /></div>
+        <figcaption>Servicios públicos digitales, trazables y centrados en el ciudadano.</figcaption>
+      </figure>
     </div>
   </section>
 
-  <!-- 9 · FASE 4 -->
-  <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="chip">Fase 4 · Soluciones a medida</div><h2 style="margin-top:12px;">Diseño y Desarrollo</h2></div>
-      <div class="phase-num">F4</div>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>¿Qué se hace y cómo?</h3>
-        <p style="margin-top:12px;">Se construye la solución digital a medida en sprints ágiles (Scrum), con versiones funcionales cada dos semanas. Desde prototipos validados con usuarios hasta plataformas cloud escalables e integradas con los sistemas existentes. El alcance depende del número de soluciones y su complejidad técnica.</p>
-        <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;">
-          <span class="chip">Blueprint tecnológico</span><span class="chip">Prototipado rápido</span><span class="chip">Validación con usuarios</span>
-        </div>
-      </div>
-      <div class="card"><h3>Productos / entregables</h3>
-        <ul class="clean" style="margin-top:12px;">
-          <li>Prototipo funcional validado con ciudadanos reales.</li>
-          <li>Arquitectura en capas documentada.</li>
-          <li>Integraciones con sistemas vigentes.</li>
-          <li>Tablero de seguimiento del proyecto.</li>
-          <li>Código documentado y probado, con capacitación.</li>
-        </ul>
-      </div>
-    </div>
-    <div class="example">
-      <span class="tag">▮ Ejemplo · Sector público</span>
-      <p><strong>Ventanilla única de trámites en línea.</strong> Un portal donde el ciudadano radica, paga y hace seguimiento de sus trámites desde el celular, con notificaciones automáticas y firma digital. Se integra con el sistema de recaudo y con la plataforma de interoperabilidad del Estado.</p>
-    </div>
-  </section>
-
-  <!-- 10 · FASE 5 -->
-  <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="chip">Fase 5 · Transformación real</div><h2 style="margin-top:12px;">Implementación</h2></div>
-      <div class="phase-num">F5</div>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>¿Qué se hace y cómo?</h3>
-        <p style="margin-top:12px;">Un plan por etapas —configuración, migración de datos, capacitación, pruebas de aceptación (UAT), go-live y estabilización— con gestión del cambio (modelo de Kotter) para lograr adopción real entre los funcionarios. Un buen software fracasa si la implementación no se gestiona.</p>
-        <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;">
-          <span class="chip">Migración de datos</span><span class="chip">Gestión del cambio</span><span class="chip">Soporte post-lanzamiento</span>
-        </div>
-      </div>
-      <div class="card"><h3>Productos / entregables</h3>
-        <ul class="clean" style="margin-top:12px;">
-          <li>Cronograma con hitos medibles.</li>
-          <li>Plan de migración con validación de integridad.</li>
-          <li>Capacitación por rol (presencial / virtual).</li>
-          <li>Pruebas UAT aprobadas por usuarios clave.</li>
-          <li>Soporte intensivo en las primeras semanas.</li>
-        </ul>
-      </div>
-    </div>
-    <div class="example">
-      <span class="tag">▮ Ejemplo · Sector público</span>
-      <p><strong>Despliegue de la ventanilla única.</strong> Se migra el histórico de trámites, se capacita a las secretarías por rol y se hace el go-live en una ventana controlada. Un plan de comunicación a la ciudadanía y puntos de atención asistida acompañan la adopción para no dejar a nadie atrás.</p>
-    </div>
-  </section>
-
-  <!-- 11 · FASE 6 -->
-  <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="chip">Fase 6 · Tecnología resiliente</div><h2 style="margin-top:12px;">Mejora Continua</h2></div>
-      <div class="phase-num">F6</div>
-    </div>
-    <div class="grid2">
-      <div class="card"><h3>¿Qué se hace y cómo?</h3>
-        <p style="margin-top:12px;">El lanzamiento es el comienzo. Se implementa un ciclo PDCA mensual para monitorear KPIs en tiempo real, detectar desviaciones a tiempo y aplicar mejoras iterativas, con un acompañamiento que mantiene la solución en su punto óptimo y la hace evolucionar con la entidad.</p>
-        <div style="margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;">
-          <span class="chip">Dashboards en tiempo real</span><span class="chip">Análisis de SLA/SLO</span><span class="chip">Roadmap de mejoras</span>
-        </div>
-      </div>
-      <div class="card"><h3>Productos / entregables</h3>
-        <ul class="clean" style="margin-top:12px;">
-          <li>Dashboard de KPIs de servicio al ciudadano.</li>
-          <li>Ciclo PDCA mensual documentado.</li>
-          <li>Alertas proactivas y resolución con SLA.</li>
-          <li>Informe mensual de rendimiento y tendencias.</li>
-          <li>Backlog priorizado de mejoras evolutivas.</li>
-        </ul>
-      </div>
-    </div>
-    <div class="example">
-      <span class="tag">▮ Ejemplo · Sector público</span>
-      <p><strong>Tablero de servicio al ciudadano.</strong> La alcaldía monitorea tiempos de respuesta de PQRS, cumplimiento de plazos legales y satisfacción ciudadana. Cada mes se revisan desviaciones y se priorizan mejoras: nuevos trámites en línea, ajustes de flujos y reducción de tiempos de atención.</p>
-    </div>
-  </section>
-
-  <!-- 12 · CASO INTEGRADOR -->
-  <section class="slide slide-pad">
-    <div class="top">
-      <div><div class="eyebrow">Caso integrador</div><h2 style="margin-top:8px;">Una alcaldía, de extremo a extremo</h2></div>
-      <div class="phase-num">04</div>
-    </div>
-    <p class="lead" style="max-width:72ch; margin-bottom:20px;">Cómo se encadenan las 6 fases en una entidad pública que quiere mejorar la atención al ciudadano.</p>
-    <div class="grid3 grow">
-      <div class="card"><div class="chip">F1 → F2</div><p style="margin-top:12px;"><strong>Diagnóstico</strong> revela brechas en datos y gobernanza. Se <strong>mapean</strong> PQRS y licencias como procesos prioritarios.</p></div>
-      <div class="card"><div class="chip">F3 → F4</div><p style="margin-top:12px;">Se define qué <strong>automatizar</strong> con criterio responsable y se <strong>desarrolla</strong> la ventanilla única de trámites.</p></div>
-      <div class="card"><div class="chip">F5 → F6</div><p style="margin-top:12px;">Se <strong>implementa</strong> con gestión del cambio y se <strong>mejora</strong> cada mes con métricas de servicio.</p></div>
-    </div>
-    <div class="card navy" style="margin-top:18px;">
-      <div class="grid3">
-        <div class="stat"><span class="v">−60 a −90%</span><span class="l">Tiempos de ciclo en procesos rediseñados (referencial)</span></div>
-        <div class="stat"><span class="v">24/7</span><span class="l">Trámites disponibles en línea</span></div>
-        <div class="stat"><span class="v">100%</span><span class="l">Trazabilidad y rendición de cuentas</span></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 13 · CIERRE -->
+  <!-- 15 · CIERRE -->
   <section class="slide cover">
     <div class="logo brand" style="margin-bottom: 24px;">ALGORITMO<span class="t">T</span></div>
-    <h1 style="font-size:clamp(30px,5.2vw,58px);">Empecemos por un diagnóstico</h1>
-    <p class="lead" style="margin-top:20px;">Mide la madurez digital de tu entidad, prioriza brechas y activa una hoja de ruta con impacto real para el ciudadano.</p>
-    <div class="pill-row" style="margin-top:28px;">
-      <span class="pill">algoritmot.com/empresas/simulador</span>
-      <span class="pill">hola@algoritmot.com</span>
+    <div style="margin:auto 0;">
+      <h1 style="font-size:clamp(30px,5.2vw,56px);">Empecemos por un diagnóstico</h1>
+      <p class="lead" style="margin-top:20px;">Mide la madurez digital de tu entidad, prioriza brechas y activa una hoja de ruta con impacto real para el ciudadano.</p>
+      <div class="pill-row" style="margin-top:26px;"><span class="pill">algoritmot.com/empresas/simulador</span><span class="pill">hola@algoritmot.com</span></div>
+      <div class="meta" style="margin-top:34px;">© 2026 AlgoritmoT · Ingeniería Humana · Despliegue IA · Madurez Orgánica</div>
     </div>
-    <div class="meta" style="margin-top:36px;">© 2026 AlgoritmoT · Ingeniería Humana · Despliegue IA · Madurez Orgánica</div>
   </section>
 
 </div>
@@ -512,7 +509,7 @@
   <div class="left">Transformación Digital · <b>Sector Público</b></div>
   <div class="nav">
     <button id="prev" onclick="prev()">‹ Anterior</button>
-    <span id="counter" style="font-size:13px; color:var(--muted); font-weight:700; min-width:54px; text-align:center;">1 / 13</span>
+    <span id="counter" style="font-size:13px; color:var(--muted); font-weight:700; min-width:54px; text-align:center;">1 / 15</span>
     <button id="next" class="primary" onclick="next()">Siguiente ›</button>
   </div>
 </div>
@@ -525,17 +522,19 @@
     document.getElementById('counter').textContent = (i + 1) + ' / ' + slides.length;
     document.getElementById('prev').disabled = i === 0;
     document.getElementById('next').disabled = i === slides.length - 1;
-    document.getElementById('progress').style.width = ((i) / (slides.length - 1) * 100) + '%';
+    document.getElementById('progress').style.width = (i / (slides.length - 1) * 100) + '%';
     document.querySelector('.slide.active')?.scrollTo(0, 0);
   }
   function goTo(n) { i = Math.max(0, Math.min(slides.length - 1, n)); render(); }
   function next() { goTo(i + 1); }
   function prev() { goTo(i - 1); }
+  function downloadPDF() { window.print(); }
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight' || e.key === 'PageDown') next();
     if (e.key === 'ArrowLeft' || e.key === 'PageUp') prev();
     if (e.key === 'Home') goTo(0);
     if (e.key === 'End') goTo(slides.length - 1);
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); downloadPDF(); }
   });
   render();
 </script>
