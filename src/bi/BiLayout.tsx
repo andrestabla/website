@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { biLogout, type BiUser } from './lib/session'
 import { BI_HOME, biPath } from './lib/base'
-import { AssistantProvider } from './assistant/AssistantContext'
+import { AssistantProvider, useAssistant } from './assistant/AssistantContext'
 import { AssistantBubble } from './assistant/AssistantBubble'
 
 const MODULES = [
@@ -29,7 +29,36 @@ export function BiLayout({ children, user }: { children: ReactNode; user: BiUser
 
   return (
     <AssistantProvider>
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <BiShell initials={initials} user={user} onLogout={handleLogout}>
+        {children}
+      </BiShell>
+      <AssistantBubble />
+    </AssistantProvider>
+  )
+}
+
+/** Contenido del BI. Cuando el panel del asistente está abierto, el contenido se
+ *  desplaza para que el panel no tape ni se superponga a las gráficas (md+). */
+function BiShell({
+  children,
+  initials,
+  user,
+  onLogout,
+}: {
+  children: ReactNode
+  initials: string
+  user: BiUser
+  onLogout: () => void
+}) {
+  const asst = useAssistant()
+  const shifted = Boolean(asst?.open)
+
+  return (
+    <div
+      className={`min-h-screen bg-slate-50 text-slate-900 transition-[margin] duration-300 ease-out ${
+        shifted ? 'md:mr-[420px]' : ''
+      }`}
+    >
       <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-slate-200 bg-white px-5 print:hidden">
         <NavLink to={BI_HOME} className="flex items-center gap-2.5">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-900 text-sm font-black text-white">◧</div>
@@ -60,7 +89,7 @@ export function BiLayout({ children, user }: { children: ReactNode; user: BiUser
           <div className="grid h-7 w-7 place-items-center rounded-full bg-indigo-600 text-xs font-bold text-white">{initials}</div>
           <span className="hidden text-[13px] font-semibold sm:block">{user?.displayName || user?.username}</span>
           <button
-            onClick={handleLogout}
+            onClick={onLogout}
             title="Cerrar sesión"
             className="grid h-7 w-7 place-items-center rounded-full text-slate-400 hover:text-rose-600"
           >
@@ -69,8 +98,6 @@ export function BiLayout({ children, user }: { children: ReactNode; user: BiUser
         </div>
       </header>
       <main>{children}</main>
-      <AssistantBubble />
     </div>
-    </AssistantProvider>
   )
 }
