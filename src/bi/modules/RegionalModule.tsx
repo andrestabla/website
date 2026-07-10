@@ -3,6 +3,7 @@ import { fetchDataset } from '../lib/api'
 import { barH, barHColored, lineChart, choropleth, choroplethDiverging, quadrantScatter, fmt, f1, PALETTE, COLORS } from '../lib/charts'
 import { ensureMaps, toGeoName } from '../lib/geo'
 import { EChart } from '../components/EChart'
+import { Block as Card } from '../assistant/Block'
 
 type Rec = Record<string, unknown>
 type LabelVal = { label: string; value: number }
@@ -24,15 +25,6 @@ const TABS = [
   { id: 'disciplinas', label: 'Disciplinas ↔ competencias' },
 ]
 
-function Card({ title, hint, right, children }: { title?: string; hint?: string; right?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      {(title || right) && <div className="flex items-center justify-between"><h3 className="text-sm font-bold tracking-tight text-slate-800">{title}</h3>{right}</div>}
-      {hint && <p className="mb-1 text-[11.5px] text-slate-400">{hint}</p>}
-      {children}
-    </div>
-  )
-}
 function Kpis({ items }: { items: { c: string; v: string; l: string }[] }) {
   return (
     <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

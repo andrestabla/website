@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import * as echarts from 'echarts'
 import type { CSSProperties } from 'react'
+import { useBlockDigestSink } from '../assistant/blockScope'
+import { digestOption } from '../assistant/digest'
 
 /** Wrapper mínimo de ECharts para React (init, setOption, resize, dispose). */
 export function EChart({
@@ -16,6 +18,15 @@ export function EChart({
 }) {
   const elRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<echarts.ECharts | null>(null)
+  const sink = useBlockDigestSink()
+  const chartId = useId()
+
+  // Publica el resumen de datos de esta gráfica al bloque contenedor (para el asistente IA).
+  useEffect(() => {
+    if (!sink) return
+    sink.add(chartId, digestOption(option))
+    return () => sink.remove(chartId)
+  }, [sink, chartId, option])
 
   useEffect(() => {
     if (!elRef.current) return

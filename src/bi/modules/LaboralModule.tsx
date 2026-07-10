@@ -4,6 +4,7 @@ import { meanBy, sortDesc, type Factorized, type Count } from '../lib/factorized
 import { barH, barHColored, lineChart, donut, choropleth, fmt, f1, PALETTE, COLORS } from '../lib/charts'
 import { ensureMaps, toGeoName } from '../lib/geo'
 import { EChart } from '../components/EChart'
+import { Block as Card } from '../assistant/Block'
 
 type Rec = Record<string, unknown>
 type Prosp = { meta: Rec; panel: Factorized; colombia: Factorized }
@@ -22,15 +23,6 @@ const TABS = [
 ]
 const num = (v: unknown) => Number(v ?? 0)
 
-function Card({ title, hint, children }: { title?: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      {title && <h3 className="text-sm font-bold tracking-tight text-slate-800">{title}</h3>}
-      {hint && <p className="mb-1 text-[11.5px] text-slate-400">{hint}</p>}
-      {children}
-    </div>
-  )
-}
 function Kpis({ items }: { items: { c: string; v: string; l: string }[] }) {
   return (
     <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -240,16 +232,17 @@ function Reskilling({ oit, mapsReady, ind, setInd }: { oit: Oit; mapsReady: bool
         <Card title="Competencias emergentes" hint="Prioridad OIT 2024–2026"><EChart height={400} option={barHColored(emergentes, true)} /></Card>
         <Card title="Prioridad de aprendizaje permanente por sector (Colombia)"><EChart height={400} option={barH(sectores, '#B07AA1', 13, true)} /></Card>
       </div>
-      <Card>
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-bold tracking-tight text-slate-800">Indicadores laborales DANE por departamento</h3>
+      <Card
+        title="Indicadores laborales DANE por departamento"
+        hint={`${IND_LABEL[ind]} · año ${yearOfDane}`}
+        right={
           <div className="inline-flex overflow-hidden rounded-lg border border-slate-300">
             {(['desocupacion', 'informalidad', 'ocupacion'] as const).map((m) => (
               <button key={m} onClick={() => setInd(m)} className={`px-3 py-1.5 text-[12px] font-semibold ${ind === m ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500'}`}>{m === 'desocupacion' ? 'Desocupación' : m === 'informalidad' ? 'Informalidad' : 'Ocupación'}</button>
             ))}
           </div>
-        </div>
-        <p className="mb-1 text-[11.5px] text-slate-400">{IND_LABEL[ind]} · año {yearOfDane}</p>
+        }
+      >
         {mapsReady ? <EChart height={520} option={{ ...choropleth(mapData, 'CO', 'NOMBRE_DPT', false), tooltip: { trigger: 'item', backgroundColor: '#fff', borderColor: '#e4e7ec', textStyle: { color: '#1a1f29' }, formatter: (p: { name: string; value?: number }) => `${p.name}<br><b>${p.value != null ? f1(p.value) : 's/d'}%</b>` } }} /> : <div className="grid h-[520px] place-items-center text-sm text-slate-400">Cargando mapa…</div>}
       </Card>
     </div>

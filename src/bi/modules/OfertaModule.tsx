@@ -7,6 +7,7 @@ import {
 import { barH, choropleth, donut, roseConcentration, fmt, PALETTE, COLORS } from '../lib/charts'
 import { ensureMaps, toGeoName } from '../lib/geo'
 import { EChart } from '../components/EChart'
+import { Block as Card } from '../assistant/Block'
 
 type Meta = Record<string, unknown>
 type Payload = { meta: Meta; dataset: Factorized }
@@ -28,16 +29,6 @@ const TABS = [
   { id: 'instituciones', label: 'Instituciones y calidad' },
   { id: 'reporte', label: 'Reporte técnico' },
 ]
-
-function Card({ title, hint, children }: { title?: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      {title && <h3 className="text-sm font-bold tracking-tight text-slate-800">{title}</h3>}
-      {hint && <p className="mb-1 text-[11.5px] text-slate-400">{hint}</p>}
-      {children}
-    </div>
-  )
-}
 
 export function OfertaModule() {
   const [payload, setPayload] = useState<Payload | null>(null)
@@ -260,15 +251,16 @@ export function OfertaModule() {
 
       {tab === 'geografia' && (
         <div className="space-y-4">
-          <Card>
-            <div className="mb-1 flex items-center justify-between">
-              <h3 className="text-sm font-bold tracking-tight text-slate-800">{mapMode === 'reg' ? 'Mapa de oferta por región' : 'Mapa de oferta por departamento'}</h3>
+          <Card
+            title={mapMode === 'reg' ? 'Mapa de oferta por región' : 'Mapa de oferta por departamento'}
+            right={
               <div className="inline-flex overflow-hidden rounded-lg border border-slate-300">
                 {(['dep', 'reg'] as const).map((m) => (
                   <button key={m} onClick={() => setMapMode(m)} className={`px-3 py-1.5 text-[12px] font-semibold ${mapMode === m ? 'bg-indigo-600 text-white' : 'bg-slate-50 text-slate-500'}`}>{m === 'dep' ? 'Departamento' : 'Región'}</button>
                 ))}
               </div>
-            </div>
+            }
+          >
             {mapsReady ? (
               <EChart
                 height={560}

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { biLogout, type BiUser } from './lib/session'
 import { BI_HOME, biPath } from './lib/base'
+import { AssistantProvider } from './assistant/AssistantContext'
+import { AssistantBubble } from './assistant/AssistantBubble'
 
 const MODULES = [
   { to: biPath('/oferta'), label: 'Oferta educativa' },
@@ -26,6 +28,7 @@ export function BiLayout({ children, user }: { children: ReactNode; user: BiUser
   }
 
   return (
+    <AssistantProvider>
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-slate-200 bg-white px-5 print:hidden">
         <NavLink to={BI_HOME} className="flex items-center gap-2.5">
@@ -66,6 +69,8 @@ export function BiLayout({ children, user }: { children: ReactNode; user: BiUser
         </div>
       </header>
       <main>{children}</main>
+      <AssistantBubble />
     </div>
+    </AssistantProvider>
   )
 }
