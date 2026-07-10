@@ -9,6 +9,7 @@ import { SiteSEO } from './components/seo/SiteSEO'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { canAccessModule, getAdminModuleForPath, type AdminModuleKey } from './admin/lib/permissions'
+import { BI_HOST_MODE } from './bi/lib/base'
 
 const Home = lazy(() => import('./pages/Home').then((module) => ({ default: module.Home })))
 const ServicePage = lazy(() => import('./pages/ServicePage').then((module) => ({ default: module.ServicePage })))
@@ -29,6 +30,7 @@ const SimuladorEmpresas = lazy(() => import('./pages/SimuladorEmpresas').then((m
 
 const NavigationSelector = lazy(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
 // const HomeEducacion = lazy(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
+const BiApp = lazy(() => import('./bi/BiApp'))
 
 const LoginPage = lazy(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const Dashboard = lazy(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
@@ -264,6 +266,17 @@ function ManagedPublishedRoute({
 }
 
 function App() {
+  // Subdominio del módulo BI (bi.algoritmot.com): montar el BI en la raíz, sin el chrome de marketing.
+  if (BI_HOST_MODE) {
+    return (
+      <Suspense fallback={<RouteLoader />}>
+        <Routes>
+          <Route path="/*" element={<BiApp />} />
+        </Routes>
+      </Suspense>
+    )
+  }
+
   return (
     <CMSProvider>
       <LanguageProvider>
@@ -299,6 +312,9 @@ function App() {
               <Route path="/hazlo-tu-mismo" element={<HazloTuMismo />} />
               <Route path="/empresas/simulador" element={<SimuladorEmpresas />} />
 
+
+              {/* Algoritmo BI (módulo público con login) */}
+              <Route path="/bi/*" element={<BiApp />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

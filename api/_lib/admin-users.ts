@@ -20,6 +20,7 @@ export const ADMIN_MODULES = [
   'USERS',
   'BOOKINGS',
   'DOCUMENTS',
+  'BI',
 ] as const
 
 export type AdminModuleKey = (typeof ADMIN_MODULES)[number]
