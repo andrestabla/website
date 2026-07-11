@@ -1,3 +1,5 @@
+import { emitBiUnauthorized } from './auth-events'
+
 export type WsMessage = { role: 'user' | 'assistant'; content: string }
 export type WsAttachment = { name: string; text?: string; url?: string; type?: string }
 
@@ -16,7 +18,10 @@ export async function workspaceChat(input: {
     }),
   })
   const payload = await res.json().catch(() => null)
-  if (!res.ok || !payload?.ok) throw new Error(payload?.error || 'No se pudo generar la respuesta.')
+  if (!res.ok || !payload?.ok) {
+    if (res.status === 401) emitBiUnauthorized()
+    throw new Error(payload?.error || 'No se pudo generar la respuesta.')
+  }
   return { reply: String(payload.reply || ''), providerUsed: payload.providerUsed }
 }
 
@@ -28,7 +33,10 @@ export async function uploadWorkspaceFile(file: File): Promise<{ key: string; pu
     body: JSON.stringify({ filename: file.name, contentType: file.type || 'application/octet-stream', size: file.size }),
   })
   const presign = await presignRes.json().catch(() => null)
-  if (!presignRes.ok || !presign?.ok) throw new Error(presign?.error || 'No se pudo preparar la carga.')
+  if (!presignRes.ok || !presign?.ok) {
+    if (presignRes.status === 401) emitBiUnauthorized()
+    throw new Error(presign?.error || 'No se pudo preparar la carga.')
+  }
   const { presignedUrl, key, publicUrl } = presign.data
   const put = await fetch(presignedUrl, {
     method: 'PUT',

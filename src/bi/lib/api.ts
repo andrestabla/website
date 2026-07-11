@@ -1,3 +1,5 @@
+import { emitBiUnauthorized } from './auth-events'
+
 export type BiDatasetKey =
   | 'insights'
   | 'prospectiva'
@@ -27,6 +29,7 @@ export function fetchDataset(key: BiDatasetKey): Promise<BiDatasetResponse> {
     const res = await fetch(`/api/bi/dataset?key=${encodeURIComponent(key)}`)
     if (!res.ok) {
       cache.delete(key)
+      if (res.status === 401) emitBiUnauthorized()
       throw new Error(`No se pudo cargar el dataset "${key}" (${res.status})`)
     }
     return (await res.json()) as BiDatasetResponse

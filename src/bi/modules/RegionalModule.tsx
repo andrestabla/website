@@ -73,7 +73,7 @@ export function RegionalModule() {
     return () => { cancelled = true }
   }, [])
 
-  useAssistantViewContext(`Pestaña: ${TABS.find((t) => t.id === tab)?.label || tab}`)
+  const tabLabel = TABS.find((t) => t.id === tab)?.label || tab
 
   if (err) return <div className="mx-auto max-w-3xl p-8 text-rose-600">Error al cargar datos: {err}</div>
   if (!pert || !puente || !reco || !coh) return <div className="grid min-h-[60vh] place-items-center text-sm text-slate-400">Cargando análisis regional…</div>
@@ -89,17 +89,18 @@ export function RegionalModule() {
           <button key={t.id} onClick={() => setTab(t.id)} className={`border-b-2 px-3.5 py-2.5 text-[13px] font-semibold transition ${tab === t.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}>{t.label}</button>
         ))}
       </div>
-      {tab === 'pertinencia' && <Pertinencia pert={pert} mapsReady={mapsReady} />}
-      {tab === 'cohortes' && <Cohortes coh={coh} mapsReady={mapsReady} />}
-      {tab === 'recomendacion' && <Recomendacion reco={reco} />}
-      {tab === 'disciplinas' && <Disciplinas puente={puente} />}
+      {tab === 'pertinencia' && <Pertinencia pert={pert} mapsReady={mapsReady} ctxLabel={tabLabel} />}
+      {tab === 'cohortes' && <Cohortes coh={coh} mapsReady={mapsReady} ctxLabel={tabLabel} />}
+      {tab === 'recomendacion' && <Recomendacion reco={reco} ctxLabel={tabLabel} />}
+      {tab === 'disciplinas' && <Disciplinas puente={puente} ctxLabel={tabLabel} />}
     </div>
   )
 }
 
-function Pertinencia({ pert, mapsReady }: { pert: Pert; mapsReady: boolean }) {
+function Pertinencia({ pert, mapsReady, ctxLabel }: { pert: Pert; mapsReady: boolean; ctxLabel: string }) {
   const [mode, setMode] = useState<'dep' | 'reg'>('dep')
   const [sel, setSel] = useState('')
+  useAssistantViewContext(`Pestaña: ${ctxLabel} · Vista: ${mode === 'reg' ? 'Región' : 'Departamento'}${sel ? ` · Detalle: ${sel}` : ''}`)
   const D = pert.departamentos
   const kpis = useMemo(() => {
     const q: Record<string, number> = {}
@@ -163,10 +164,11 @@ function Bar({ label, value, max, color, fmtv }: { label: string; value: number;
   )
 }
 
-function Cohortes({ coh, mapsReady }: { coh: Coh; mapsReady: boolean }) {
+function Cohortes({ coh, mapsReady, ctxLabel }: { coh: Coh; mapsReady: boolean; ctxLabel: string }) {
   const years = [...new Set(coh.serie_nacional.map((s) => num(s.anio)))].sort()
   const [year, setYear] = useState(2025)
   const [dep, setDep] = useState('Todos')
+  useAssistantViewContext(`Pestaña: ${ctxLabel} · Año: ${year} · ${dep === 'Todos' ? 'Nacional' : dep}`)
   const deps = [...new Set(coh.resumen_dept.map((d) => String(d.departamento)))].sort()
   const isNac = dep === 'Todos'
   const sn = coh.serie_nacional.find((s) => num(s.anio) === year) || {}
@@ -223,11 +225,12 @@ function Cohortes({ coh, mapsReady }: { coh: Coh; mapsReady: boolean }) {
   )
 }
 
-function Recomendacion({ reco }: { reco: Reco }) {
+function Recomendacion({ reco, ctxLabel }: { reco: Reco; ctxLabel: string }) {
   const [scope, setScope] = useState<'region' | 'dep'>('region')
   const [sel, setSel] = useState('')
   const items = scope === 'region' ? reco.regiones.map((r) => r.region) : reco.departamentos.map((d) => d.departamento).slice().sort()
   const cur = sel || items[0]
+  useAssistantViewContext(`Pestaña: ${ctxLabel} · ${scope === 'region' ? 'Región' : 'Departamento'}: ${cur || '—'}`)
   const sectores: RecoSector[] = scope === 'region' ? (reco.regiones.find((r) => r.region === cur)?.sectores || []) : (reco.departamentos.find((d) => d.departamento === cur)?.recomendaciones || [])
   const bar = sectores.slice().sort((a, b) => a.score - b.score).map((s) => ({ label: s.sector, value: s.score, color: NIVEL_COLOR[s.nivel] || PALETTE[0] }))
   return (
@@ -260,7 +263,8 @@ function Recomendacion({ reco }: { reco: Reco }) {
   )
 }
 
-function Disciplinas({ puente }: { puente: Puente }) {
+function Disciplinas({ puente, ctxLabel }: { puente: Puente; ctxLabel: string }) {
+  useAssistantViewContext(`Pestaña: ${ctxLabel}`)
   const A = puente.areas
   const scatter = [{ name: 'Disciplinas', color: COLORS.brand, points: A.map((a) => ({ name: a.area, x: a.supply_rank, y: a.demand_rank, tip: `<b>${a.area}</b><br>Oferta: ${f1(a.supply_rank)} · Demanda: ${f1(a.demand_rank)}<br>Programas: ${fmt(a.programas_vigentes)} · Brecha: ${a.gap > 0 ? '+' : ''}${f1(a.gap)}` })) }]
   const gapBar = A.slice().sort((a, b) => a.gap - b.gap).map((a) => ({ label: a.area, value: a.gap, color: a.gap >= 0 ? '#E15759' : '#4E79A7' }))

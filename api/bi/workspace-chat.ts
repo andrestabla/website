@@ -61,7 +61,7 @@ CÓMO RESPONDER:
 - No inventes datos que la herramienta no devolvió; si algo no está, dilo y sugiere qué otra consulta lo resolvería.
 - Responde en español, en Markdown editorial (## títulos, listas, **negritas**, tablas).
 
-GRÁFICAS: cuando el usuario pida graficar/visualizar, o cuando una gráfica ayude a entender, INCLUYE una gráfica emitiendo un bloque cercado \`\`\`chart con un JSON (además del texto/tabla). Usa SIEMPRE datos reales de las herramientas. Formatos:
+GRÁFICAS: cuando el usuario pida graficar/visualizar, o cuando una gráfica ayude a entender, INCLUYE una o VARIAS gráficas emitiendo bloques cercados \`\`\`chart con un JSON (además del texto/tabla). En informes largos, intercala varias gráficas junto a las secciones donde aporten (una por hallazgo clave). Usa SIEMPRE datos reales de las herramientas. Formatos:
 - Barras/ranking/composición: \`\`\`chart
 {"type":"barh","title":"Instituciones con más programas","data":[{"label":"Universidad X","value":20},{"label":"Universidad Y","value":15}]}
 \`\`\`  (type: "barh" horizontal —ideal para rankings largos—, "bar" vertical, "donut" o "pie" para participación).

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { onBiUnauthorized } from './auth-events'
 
 export type BiUser = {
   id: string
@@ -58,6 +59,14 @@ export function useBiSession() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // Si una llamada al API devuelve 401 (sesión vencida), volver al login.
+  useEffect(() => {
+    return onBiUnauthorized(() => {
+      setUser(null)
+      setStatus('unauthenticated')
+    })
   }, [])
 
   return { status, user, refresh, setStatus, setUser }
