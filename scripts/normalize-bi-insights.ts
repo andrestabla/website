@@ -108,10 +108,49 @@ function strip(s: string): string {
 const hasAccent = (w: string) => /[áéíóúüñÁÉÍÓÚÜÑ]/.test(w)
 const stripKeep = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '')
 
-// Umbral mínimo de veces que una forma acentuada debe estar atestiguada para
-// confiar en ella. Filtra typos de una sola vez (p. ej. "Ingeníero", "Profesiónal",
-// "Terapéuta") sin los que se acentuarían palabras que en realidad no llevan tilde.
-const ACCENT_MIN = 3
+// Se confía en TODA forma acentuada atestiguada en el corpus salvo esta lista de
+// typos verificados a mano (la fuente MEN escribió mal la tilde alguna vez y la
+// palabra correcta en realidad NO lleva tilde, o es un error de escritura/fragmento).
+const ACCENT_DENY = new Set([
+  'profesional', // Profesiónal
+  'ingeniero', // Ingeníero
+  'terapeuta', // Terapéuta
+  'fisioterapeuta', // Fisioterapéuta
+  'informativos', // Informátivos
+  'zootecnista', // Zootecnísta
+  'guianza', // Guíanza (término sin tilde)
+  'adminstracion', // "Adminstración" (falta la i, es un error de escritura)
+  'enfais', // "Énfais" (mal escrito de énfasis)
+  'tecnicoprofesional', // compuesto mal formado
+  'tecnolog', // fragmento
+  'tecnolo', // fragmento
+])
+
+// Fragmentos que SIEMPRE llevan tilde (por si no están bien atestiguados o para
+// sanar daños). 'Terapéutic' cubre Terapéutico/a/os/as (esdrújula, distinto del
+// sustantivo "terapeuta", que NO lleva tilde).
+const MANUAL_ACCENT: Record<string, string> = {
+  Terapeutic: 'Terapéutic',
+}
+// Tildes ESPURIAS de la fuente: palabras que NO llevan tilde pero alguien la puso.
+// Fragmentos precisos que no golpean palabras válidas más largas (p. ej.
+// 'Terapéuta' NO coincide con 'Terapéutico').
+const WRONG_ACCENT: Record<string, string> = {
+  'Ingeníer': 'Ingenier', // Ingeniero/Ingeniera (no afecta a "Ingeniería")
+  'Profesiónal': 'Profesional',
+  'Terapéuta': 'Terapeuta', // Terapeuta/Terapeutas/Fisioterapeuta
+  'Informátivo': 'Informativo',
+  'Zootecníst': 'Zootecnist',
+  'Guíanza': 'Guianza',
+}
+const MANUAL_KEYS = Object.keys(MANUAL_ACCENT).sort((a, b) => b.length - a.length)
+const WRONG_KEYS = Object.keys(WRONG_ACCENT).sort((a, b) => b.length - a.length)
+function fixWrongAccents(s: string): string {
+  let out = s
+  for (const k of MANUAL_KEYS) if (out.indexOf(k) !== -1) out = out.split(k).join(MANUAL_ACCENT[k])
+  for (const k of WRONG_KEYS) if (out.indexOf(k) !== -1) out = out.split(k).join(WRONG_ACCENT[k])
+  return out
+}
 
 function buildAccentMap(texts: string[]): Map<string, string> {
   const acc = new Map<string, Map<string, number>>()
@@ -127,8 +166,9 @@ function buildAccentMap(texts: string[]): Map<string, string> {
   }
   const map = new Map<string, string>()
   for (const [k, forms] of acc) {
-    const [top, topCount] = [...forms.entries()].sort((a, b) => b[1] - a[1])[0]
-    if (topCount >= ACCENT_MIN) map.set(k, top) // solo formas acentuadas bien atestiguadas
+    if (ACCENT_DENY.has(k)) continue
+    const top = [...forms.entries()].sort((a, b) => b[1] - a[1])[0][0]
+    map.set(k, top) // la forma acentuada más frecuente atestiguada
   }
   return map
 }
@@ -197,12 +237,12 @@ async function main() {
   let progAccent = 0
   const accentSamples: string[] = []
   ds.dicts.programa = ds.dicts.programa.map((l) => {
-    const f = accentize(l, accentMap)
+    const f = fixWrongAccents(accentize(l, accentMap))
     if (f !== l) { progAccent++; if (accentSamples.length < 12) accentSamples.push(`${l}  →  ${f}`) }
     return f
   })
   let nbcAccent = 0
-  if (ds.dicts.nbc) ds.dicts.nbc = ds.dicts.nbc.map((l) => { const f = accentize(l, accentMap); if (f !== l) nbcAccent++; return f })
+  if (ds.dicts.nbc) ds.dicts.nbc = ds.dicts.nbc.map((l) => { const f = fixWrongAccents(accentize(l, accentMap)); if (f !== l) nbcAccent++; return f })
 
   // 3) Reubicación de «Sin clasificar».
   const areas = ds.dicts.area_conocimiento
