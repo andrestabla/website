@@ -115,11 +115,18 @@ async function main() {
   await q(`CREATE INDEX IF NOT EXISTS "PcBoardShare_userId_idx" ON "PcBoardShare"("userId")`)
   console.log('· Tablas PcBoard / PcBoardShare aseguradas')
 
-  // 3) Dueño = admin primario (o primer SUPERADMIN)
-  const adminUsername = (process.env.ADMIN_USERNAME || 'admin').toLowerCase()
+  // 3) Dueño: PC_SEED_OWNER (username o correo) → primer SUPERADMIN → cuenta admin.
+  //    Se prefiere un SUPERADMIN real antes que la cuenta bootstrap 'admin' para que
+  //    el tablero aparezca en el listado de una persona que realmente inicia sesión.
+  //    Nota: el upsert de abajo NO reescribe ownerId en conflicto, así que reasignar
+  //    la propiedad manualmente es permanente aunque se vuelva a correr el seed.
+  const seedOwner = (process.env.PC_SEED_OWNER || '').trim().toLowerCase()
   const owner =
-    (await q(`SELECT id FROM "AdminUser" WHERE lower(username) = $1 LIMIT 1`, [adminUsername])).rows[0] ||
-    (await q(`SELECT id FROM "AdminUser" WHERE role = 'SUPERADMIN' ORDER BY "createdAt" ASC LIMIT 1`)).rows[0]
+    (seedOwner
+      ? (await q(`SELECT id FROM "AdminUser" WHERE lower(username) = $1 OR lower(email) = $1 LIMIT 1`, [seedOwner])).rows[0]
+      : undefined) ||
+    (await q(`SELECT id FROM "AdminUser" WHERE role = 'SUPERADMIN' ORDER BY "createdAt" ASC LIMIT 1`)).rows[0] ||
+    (await q(`SELECT id FROM "AdminUser" WHERE lower(username) = $1 LIMIT 1`, [(process.env.ADMIN_USERNAME || 'admin').toLowerCase()])).rows[0]
   if (!owner) throw new Error('No se encontró un usuario administrador para asignar como dueño')
   const ownerId = owner.id
   console.log('· Dueño del tablero:', ownerId)
