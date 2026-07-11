@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Plus, X, Database, Tag } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Plus, X, Database, Tag, Upload, Loader2 } from 'lucide-react'
 import type { PcColumn, PcOption, PcOptionField } from '../lib/types'
 import { PC_OPTION_COLORS, newOptionField } from '../lib/types'
+import { importDatosEntradaFromFile } from '../lib/excel'
 import { optionColor } from './DataGrid'
 
 /**
@@ -14,18 +15,42 @@ export function DatosEntrada({
   columns,
   editable,
   onColumnChange,
+  onColumnsChange,
   onAddCategory,
 }: {
   columns: PcColumn[]
   editable: boolean
   onColumnChange: (col: PcColumn) => void
+  onColumnsChange: (cols: PcColumn[]) => void
   onAddCategory: () => void
 }) {
   const categories = columns.filter((c) => c.type === 'select')
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [importing, setImporting] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  const onImport = async (file: File) => {
+    setImporting(true)
+    setMsg('')
+    try {
+      const { columns: updated, summary } = await importDatosEntradaFromFile(file, columns)
+      onColumnsChange(updated)
+      const parts = [
+        summary.categories ? `${summary.categories} categoría(s) nueva(s)` : '',
+        summary.options ? `${summary.options} entrada(s)` : '',
+        summary.fields ? `${summary.fields} campo(s) de metadatos` : '',
+      ].filter(Boolean)
+      setMsg(parts.length ? `Importado: ${parts.join(' · ')}.` : 'No se encontraron entradas nuevas para importar.')
+    } catch (e: any) {
+      setMsg(e?.message || 'No se pudo importar el archivo.')
+    } finally {
+      setImporting(false)
+    }
+  }
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <Database size={16} />
           <span>
@@ -34,14 +59,34 @@ export function DatosEntrada({
           </span>
         </div>
         {editable && (
-          <button
-            onClick={onAddCategory}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600"
-          >
-            <Plus size={15} /> Añadir categoría
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv,.tsv"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f); e.target.value = '' }}
+            />
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={importing}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-60"
+            >
+              {importing ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />} Importar Excel
+            </button>
+            <button
+              onClick={onAddCategory}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600"
+            >
+              <Plus size={15} /> Añadir categoría
+            </button>
+          </div>
         )}
       </div>
+
+      {msg && (
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[13px] text-indigo-700">{msg}</div>
+      )}
 
       {categories.length === 0 ? (
         <div className="grid min-h-[30vh] place-items-center rounded-2xl border border-dashed border-slate-300 text-center">

@@ -107,6 +107,20 @@ export function BoardEditor() {
     update({ columns: [...board.columns, col], rows })
     setTab('datos')
   }
+  // Reemplazo masivo de columnas (import de Datos de entrada): garantiza que cada
+  // fila tenga celda para las columnas nuevas.
+  const onColumnsChange = (columns: PcColumn[]) => {
+    const known = new Set(board.columns.map((c) => c.id))
+    const added = columns.filter((c) => !known.has(c.id))
+    const rows = added.length
+      ? board.rows.map((r) => {
+          const cells = { ...r.cells }
+          for (const c of added) if (!(c.id in cells)) cells[c.id] = null
+          return { ...r, cells }
+        })
+      : board.rows
+    update({ columns, rows })
+  }
   const onAddRow = () => update({ rows: [...board.rows, newRow(board.columns)] })
   const onDeleteRow = (rowId: string) => update({ rows: board.rows.filter((r) => r.id !== rowId) })
   const onCellChange = (rowId: string, colId: string, value: PcCellValue) =>
@@ -221,7 +235,13 @@ export function BoardEditor() {
       )}
 
       {tab === 'datos' && (
-        <DatosEntrada columns={board.columns} editable={!!editable} onColumnChange={onColumnChange} onAddCategory={onAddCategory} />
+        <DatosEntrada
+          columns={board.columns}
+          editable={!!editable}
+          onColumnChange={onColumnChange}
+          onColumnsChange={onColumnsChange}
+          onAddCategory={onAddCategory}
+        />
       )}
 
       {tab === 'analitica' && <Analitica columns={board.columns} rows={board.rows} />}

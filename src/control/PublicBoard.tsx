@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { LayoutGrid, Loader2 } from 'lucide-react'
+import { LayoutGrid, Loader2, Table2, BarChart3 } from 'lucide-react'
 import { getPublicBoard, type PublicBoardData } from './lib/control-api'
 import { DataGrid } from './grid/DataGrid'
+import { Analitica } from './grid/Analitica'
 
 export default function PublicBoard() {
   const { token = '' } = useParams()
   const [data, setData] = useState<PublicBoardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [tab, setTab] = useState<'grid' | 'analitica'>('grid')
 
   useEffect(() => {
     let cancelled = false
@@ -39,10 +41,27 @@ export default function PublicBoard() {
         ) : (
           <>
             <h1 className="text-xl font-black tracking-tight text-slate-900">{data.title}</h1>
-            {data.description && <p className="mb-4 mt-0.5 text-[13px] text-slate-500">{data.description}</p>}
-            <div className="mt-4">
-              <DataGrid columns={data.columns} rows={data.rows} editable={false} />
+            {data.description && <p className="mt-0.5 text-[13px] text-slate-500">{data.description}</p>}
+
+            <div className="mb-4 mt-4 flex items-center gap-1 border-b border-slate-200">
+              {([['grid', 'Tablero', Table2], ['analitica', 'Analítica', BarChart3]] as const).map(([key, label, Icon]) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 text-[13px] font-semibold transition ${
+                    tab === key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Icon size={15} /> {label}
+                </button>
+              ))}
             </div>
+
+            {tab === 'grid' ? (
+              <DataGrid columns={data.columns} rows={data.rows} editable={false} />
+            ) : (
+              <Analitica columns={data.columns} rows={data.rows} />
+            )}
           </>
         )}
       </div>
