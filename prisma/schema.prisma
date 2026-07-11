@@ -207,6 +207,7 @@ enum AdminModule {
   USERS
   BOOKINGS
   DOCUMENTS
+  BI
 }
 
 // ─── Gestor Documental ───────────────────────────────────────────────────────
