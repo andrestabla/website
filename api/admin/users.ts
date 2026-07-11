@@ -58,6 +58,11 @@ function grantedModulesFrom(map: AdminPermissionMap): AdminModuleKey[] {
   return ADMIN_MODULES.filter((m) => map[m])
 }
 
+/** Un usuario "solo BI" (rol acotado con acceso únicamente al módulo BI). */
+function isBiOnly(role: AdminRoleKey, modules: AdminModuleKey[]) {
+  return role !== 'SUPERADMIN' && role !== 'ADMIN' && modules.length === 1 && modules[0] === 'BI'
+}
+
 function parseBody(req: VercelRequest) {
   if (!req.body) return {}
   return typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body
@@ -155,6 +160,7 @@ async function sendSetupEmail(input: {
   expiresAt: Date
   role: AdminRoleKey
   modules: AdminModuleKey[]
+  biOnly: boolean
 }) {
   const smtp = await getSmtpConfig()
   if (!smtp) return { sent: false, reason: 'SMTP_NOT_CONFIGURED' as const }
@@ -172,7 +178,9 @@ async function sendSetupEmail(input: {
   })
 
   const fromName = smtp.fromName || 'Algoritmo T'
-  const setupUrl = `${getPublicOrigin(input.req)}/admin/setup?token=${encodeURIComponent(input.token)}`
+  const setupUrl = input.biOnly
+    ? `https://bi.algoritmot.com/setup?token=${encodeURIComponent(input.token)}`
+    : `${getPublicOrigin(input.req)}/admin/setup?token=${encodeURIComponent(input.token)}`
   const html = generateStyledEmail({
     title: 'Acceso seguro al panel de administración',
     preheader: 'Configura tus credenciales de acceso en un enlace seguro de un solo uso.',
@@ -287,6 +295,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let delivery: { sent: boolean; reason: string | null } = { sent: false, reason: null }
       try {
+        const createdModules = grantedModulesFrom(permissionMap)
         delivery = await sendSetupEmail({
           req,
           email,
@@ -295,7 +304,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           token: rawToken,
           expiresAt,
           role,
-          modules: grantedModulesFrom(permissionMap),
+          modules: createdModules,
+          biOnly: isBiOnly(role, createdModules),
         })
       } catch (mailError) {
         console.error('admin users setup email send error', mailError)
@@ -390,6 +400,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           currentUser.role as AdminRoleKey,
           currentUser.permissions || []
         )
+        const currentModules = grantedModulesFrom(currentMap)
         await sendSetupEmail({
           req,
           email: currentUser.email,
@@ -398,7 +409,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           token: rawToken,
           expiresAt,
           role: currentUser.role as AdminRoleKey,
-          modules: grantedModulesFrom(currentMap),
+          modules: currentModules,
+          biOnly: isBiOnly(currentUser.role as AdminRoleKey, currentModules),
         })
       } else if (action === 'delete') {
         if (userId === session.userId) {

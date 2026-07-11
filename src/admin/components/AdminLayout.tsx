@@ -29,7 +29,8 @@ import {
     Loader2,
     Mail,
     Calendar,
-    FolderOpen
+    FolderOpen,
+    Gauge
 } from 'lucide-react'
 import { useCMS } from '../context/CMSContext'
 import { canAccessModule, type AdminModuleKey } from '../lib/permissions'
@@ -52,7 +53,8 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
     const { persistence, rollbackSection, refreshHistory } = useCMS()
     const [isCmsStatusOpen, setIsCmsStatusOpen] = useState(false)
 
-    const navigation: Array<{ name: string; href: string; icon: any; group: string; module: AdminModuleKey }> = [
+    const navigation: Array<{ name: string; href: string; icon: any; group: string; module: AdminModuleKey; external?: boolean }> = [
+        { name: 'Algoritmo BI', href: 'https://bi.algoritmot.com/', icon: Gauge, group: 'bi', module: 'BI', external: true },
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms', module: 'DASHBOARD' },
         { name: 'Site Builder', href: '/admin/site-builder', icon: Home, group: 'cms', module: 'SITE_BUILDER' },
         { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms', module: 'SERVICES' },
@@ -244,6 +246,7 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
 
     const activeHelp = pageHelp[location.pathname]
     const groups = [
+        { id: 'bi', label: 'Inteligencia de Negocio' },
         { id: 'cms', label: 'Gestión de Contenido' },
         { id: 'growth', label: 'Crecimiento y SEO' },
         { id: 'infra', label: 'Infraestructura' }
@@ -306,20 +309,13 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                                 )}
                                 <div className="space-y-1">
                                     {items.map(item => {
-                                        const isActive = location.pathname === item.href
-                                        return (
-                                            <Link
-                                                key={item.name}
-                                                to={item.href}
-                                                onClick={(e) => {
-                                                    if (location.pathname === item.href) return
-                                                    if (!confirmLeaveIfPending()) e.preventDefault()
-                                                }}
-                                                className={`group flex items-center h-12 rounded-xl transition-all duration-200 relative ${isActive
-                                                    ? 'bg-brand-primary text-white shadow-xl shadow-brand-primary/10'
-                                                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                                                    } ${!isSidebarOpen && 'justify-center mx-2'}`}
-                                            >
+                                        const isActive = !item.external && location.pathname === item.href
+                                        const itemClass = `group flex items-center h-12 rounded-xl transition-all duration-200 relative ${isActive
+                                            ? 'bg-brand-primary text-white shadow-xl shadow-brand-primary/10'
+                                            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                                            } ${!isSidebarOpen && 'justify-center mx-2'}`
+                                        const inner = (
+                                            <>
                                                 <div className={`shrink-0 flex items-center justify-center ${isSidebarOpen ? 'w-12 mx-1' : 'w-12'}`}>
                                                     <item.icon className={`w-5 h-5 transition-transform duration-200 ${!isActive && 'group-hover:scale-110'}`} />
                                                 </div>
@@ -328,9 +324,32 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                                                         {item.name}
                                                     </span>
                                                 )}
+                                                {item.external && isSidebarOpen && (
+                                                    <ExternalLink className="w-4 h-4 mr-4 opacity-40 shrink-0" />
+                                                )}
                                                 {isActive && isSidebarOpen && (
                                                     <ChevronRight className="w-4 h-4 mr-4 opacity-50 shrink-0" />
                                                 )}
+                                            </>
+                                        )
+                                        if (item.external) {
+                                            return (
+                                                <a key={item.name} href={item.href} target="_blank" rel="noreferrer" className={itemClass}>
+                                                    {inner}
+                                                </a>
+                                            )
+                                        }
+                                        return (
+                                            <Link
+                                                key={item.name}
+                                                to={item.href}
+                                                onClick={(e) => {
+                                                    if (location.pathname === item.href) return
+                                                    if (!confirmLeaveIfPending()) e.preventDefault()
+                                                }}
+                                                className={itemClass}
+                                            >
+                                                {inner}
                                             </Link>
                                         )
                                     })}

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useBiSession } from './lib/session'
 import { BI_HOME } from './lib/base'
+import { SetupPasswordPage } from '../admin/pages/SetupPasswordPage'
 import { BiLogin } from './BiLogin'
 import { BiLayout } from './BiLayout'
 import { BiHub } from './BiHub'
@@ -19,7 +20,13 @@ function Centered({ children }: { children: ReactNode }) {
 }
 
 export default function BiApp() {
+  const { pathname } = useLocation()
   const { status, user, refresh } = useBiSession()
+
+  // Activación de credenciales (usuarios solo-BI): ruta pública, sin sesión.
+  if (/\/setup\/?$/.test(pathname)) {
+    return <SetupPasswordPage />
+  }
 
   if (status === 'checking') {
     return (

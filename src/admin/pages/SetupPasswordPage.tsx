@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, KeyRound, Loader2, ShieldCheck } from 'lucide-react'
+import { BI_HOST_MODE, BI_HOME } from '../../bi/lib/base'
+
+// En el subdominio BI la activación y el login viven en la raíz; en el panel, en /admin/login.
+const LOGIN_PATH = BI_HOST_MODE ? BI_HOME : '/admin/login'
 
 type SetupUser = {
   displayName: string
@@ -74,7 +78,7 @@ export function SetupPasswordPage() {
         throw new Error(data?.error || 'No fue posible configurar tus credenciales.')
       }
       setSuccess(true)
-      setTimeout(() => navigate('/admin/login'), 1600)
+      setTimeout(() => navigate(LOGIN_PATH), 1600)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al configurar credenciales.')
     } finally {
@@ -103,7 +107,7 @@ export function SetupPasswordPage() {
         ) : error ? (
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 text-red-700 p-4 text-sm font-medium">{error}</div>
-            <Link to="/admin/login" className="inline-flex items-center text-sm font-bold uppercase tracking-wider text-slate-700 hover:text-brand-primary">
+            <Link to={LOGIN_PATH} className="inline-flex items-center text-sm font-bold uppercase tracking-wider text-slate-700 hover:text-brand-primary">
               Ir al login
             </Link>
           </div>
