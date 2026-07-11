@@ -18,8 +18,15 @@ const SECTION_CONTEXT: Record<string, string> = {
   workspace: 'Workspace analítico de Algoritmo BI.',
 }
 
-function buildSystem(sectionKey: string, block?: { title?: string; hint?: string; digest?: string }): string {
+function buildSystem(sectionKey: string, block?: { title?: string; hint?: string; digest?: string }, viewContext?: string): string {
   const sectionInfo = SECTION_CONTEXT[sectionKey] || 'Plataforma de inteligencia de negocio de Algoritmo BI sobre educación superior en Colombia.'
+  const hasFilters = !!(viewContext && viewContext.trim())
+  const filterBlock = hasFilters
+    ? `\n\n=== CONTEXTO ACTUAL DE LA VISTA (filtros y selección activos) ===
+${viewContext}
+IMPORTANTE: los datos del bloque están CALCULADOS CON ESTOS FILTROS APLICADOS. Interpreta SIEMPRE dentro de ese recorte y menciónalo explícitamente (p. ej. "entre los programas del SENA…", "para el año 2025…", "en la región Caribe…"). NO presentes cifras filtradas como si fueran el total nacional; si el filtro cambia la lectura, dilo.
+=== FIN DEL CONTEXTO ===`
+    : ''
   const blockBlock =
     block && (block.title || block.digest)
       ? `\n\n=== BLOQUE SEÑALADO POR EL USUARIO ===
@@ -34,13 +41,13 @@ Título: ${block.title || '(sin título)'}${block.hint ? `\nDescripción: ${bloc
 SECCIÓN ACTUAL: ${sectionInfo}
 
 Reglas:
-- Responde en español, de forma clara, profesional y directa.
-- Sé conciso: 3 a 6 frases o viñetas breves. Prioriza el insight sobre la descripción literal.
-- Al interpretar un bloque, explica (1) qué muestra, (2) el patrón o hallazgo relevante (concentración, brecha, tendencia, líderes/rezagados) y (3) una lectura útil o advertencia para decidir.
-- Usa ÚNICAMENTE los datos del bloque señalado y el contexto de la sección; puedes aportar conocimiento general del dominio, pero NO inventes cifras que no estén en los datos.
-- Cuando cites números, tómalos de los datos provistos. Señala cuando un indicador sea modelado, estimado o prospectivo.
-- Escribe en español natural; evita clichés y muletillas de IA (nada de "en la era digital", "desbloquear el potencial", "sin fisuras", "robusto", ni rayas decorativas).
-- Si te preguntan algo fuera de los datos disponibles, dilo con honestidad y sugiere qué otro bloque o filtro podría responderlo.${blockBlock}`
+- Responde en español, claro y profesional, en 2–4 párrafos cortos o viñetas (no telegráfico, pero sin relleno). Prioriza el insight.
+- Contextualiza SIEMPRE con los filtros/selección activos de la vista: encuadra la lectura en ese recorte y sé explícito al respecto.
+- Al interpretar un bloque, cubre: (1) qué muestra en este recorte, (2) el patrón o hallazgo relevante con cifras concretas (líderes, rezagados, concentración, brecha, tendencia, participación %), y (3) una lectura accionable o advertencia para decidir.
+- Usa ÚNICAMENTE los datos del bloque y el contexto de la vista; aporta conocimiento del dominio pero NO inventes cifras que no estén en los datos.
+- Cuando cites números, tómalos de los datos provistos. Señala si un indicador es modelado, estimado o prospectivo.
+- Español natural; evita clichés y muletillas de IA (nada de "en la era digital", "desbloquear el potencial", "sin fisuras", "robusto", ni rayas decorativas).
+- Si algo no está en los datos, dilo y sugiere qué otro bloque o filtro lo respondería.${filterBlock}${blockBlock}`
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -65,6 +72,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         : undefined
 
+    const viewContext = typeof body.context === 'string' ? body.context.slice(0, 1500) : ''
+
     const rawMessages: ChatMessage[] = Array.isArray(body.messages) ? body.messages : []
     const messages = rawMessages
       .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
@@ -75,13 +84,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ ok: false, error: 'Falta el mensaje del usuario' })
     }
 
-    const system = buildSystem(sectionKey, block)
+    const system = buildSystem(sectionKey, block, viewContext)
     const { text, providerUsed } = await generateChatWithAI({
       system,
       messages,
       provider: 'auto',
       temperature: 0.4,
-      maxTokens: 700,
+      maxTokens: 1100,
     })
 
     return res.status(200).json({ ok: true, reply: text, providerUsed })

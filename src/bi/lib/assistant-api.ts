@@ -7,6 +7,7 @@ export async function askAssistant(input: {
   section: string
   block?: AssistantBlock
   messages: AssistantMessage[]
+  context?: string
 }): Promise<{ reply: string; providerUsed?: string }> {
   const res = await fetch('/api/bi/assistant', {
     method: 'POST',

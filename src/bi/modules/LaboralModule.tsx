@@ -5,6 +5,7 @@ import { barH, barHColored, lineChart, donut, choropleth, fmt, f1, PALETTE, COLO
 import { ensureMaps, toGeoName } from '../lib/geo'
 import { EChart } from '../components/EChart'
 import { Block as Card } from '../assistant/Block'
+import { useAssistantViewContext } from '../assistant/AssistantContext'
 
 type Rec = Record<string, unknown>
 type Prosp = { meta: Rec; panel: Factorized; colombia: Factorized }
@@ -65,6 +66,14 @@ export function LaboralModule() {
     void load()
     return () => { cancelled = true }
   }, [])
+
+  const laboralCtx = useMemo(() => {
+    const parts: string[] = [`Pestaña: ${TABS.find((t) => t.id === tab)?.label || tab}`]
+    if (tab === 'empleabilidad') parts.push(`Año: ${oleYear || String(ole?.meta?.anio_ultimo ?? '')}`)
+    if (tab === 'reskilling') parts.push(`Indicador DANE: ${oitInd}`)
+    return parts.join(' · ')
+  }, [tab, oleYear, oitInd, ole])
+  useAssistantViewContext(laboralCtx)
 
   if (err) return <div className="mx-auto max-w-3xl p-8 text-rose-600">Error al cargar datos: {err}</div>
   if (!prosp || !ole || !oit) return <div className="grid min-h-[60vh] place-items-center text-sm text-slate-400">Cargando observatorio laboral…</div>

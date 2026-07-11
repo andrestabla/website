@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { askAssistant, type AssistantBlock, type AssistantMessage } from '../lib/assistant-api'
 
 export type RegisteredBlock = { id: string; title: string; getDigest: () => string }
@@ -20,6 +20,7 @@ type AssistantState = {
   unregisterBlock: (id: string) => void
   explainBlock: (b: AssistantBlock) => void
   sendMessage: (text: string) => void
+  setViewContext: (ctx: string) => void
 }
 
 const Ctx = createContext<AssistantState | null>(null)
@@ -38,6 +39,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [blocks, setBlocks] = useState<RegisteredBlock[]>([])
   const sectionRef = useRef(section)
   sectionRef.current = section
+  // Contexto de la vista (filtros activos, año, selección) que publica cada módulo.
+  const viewContextRef = useRef('')
+  const setViewContext = useCallback((ctx: string) => { viewContextRef.current = ctx || '' }, [])
 
   const registerBlock = useCallback((b: RegisteredBlock) => {
     setBlocks((prev) => (prev.some((x) => x.id === b.id) ? prev.map((x) => (x.id === b.id ? b : x)) : [...prev, b]))
@@ -54,6 +58,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         section: sectionRef.current,
         block: block || undefined,
         messages: nextMessages,
+        context: viewContextRef.current || undefined,
       })
       setMessages([...nextMessages, { role: 'assistant', content: reply }])
     } catch (e) {
@@ -109,7 +114,18 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     unregisterBlock,
     explainBlock,
     sendMessage,
-  }), [open, busy, messages, error, activeBlock, blocks, section, clear, registerBlock, unregisterBlock, explainBlock, sendMessage])
+    setViewContext,
+  }), [open, busy, messages, error, activeBlock, blocks, section, clear, registerBlock, unregisterBlock, explainBlock, sendMessage, setViewContext])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
+}
+
+/** Hook para que un módulo publique su contexto de vista (filtros activos) al asistente. */
+export function useAssistantViewContext(context: string) {
+  const asst = useAssistant()
+  const setViewContext = asst?.setViewContext
+  useEffect(() => {
+    setViewContext?.(context)
+    return () => setViewContext?.('')
+  }, [setViewContext, context])
 }

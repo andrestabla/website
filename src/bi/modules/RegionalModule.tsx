@@ -4,6 +4,7 @@ import { barH, barHColored, lineChart, choropleth, choroplethDiverging, quadrant
 import { ensureMaps, toGeoName } from '../lib/geo'
 import { EChart } from '../components/EChart'
 import { Block as Card } from '../assistant/Block'
+import { useAssistantViewContext } from '../assistant/AssistantContext'
 
 type Rec = Record<string, unknown>
 type LabelVal = { label: string; value: number }
@@ -71,6 +72,8 @@ export function RegionalModule() {
     void load()
     return () => { cancelled = true }
   }, [])
+
+  useAssistantViewContext(`Pestaña: ${TABS.find((t) => t.id === tab)?.label || tab}`)
 
   if (err) return <div className="mx-auto max-w-3xl p-8 text-rose-600">Error al cargar datos: {err}</div>
   if (!pert || !puente || !reco || !coh) return <div className="grid min-h-[60vh] place-items-center text-sm text-slate-400">Cargando análisis regional…</div>

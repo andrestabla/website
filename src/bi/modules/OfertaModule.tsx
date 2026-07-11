@@ -8,6 +8,7 @@ import { barH, choropleth, donut, roseConcentration, fmt, PALETTE, COLORS } from
 import { ensureMaps, toGeoName } from '../lib/geo'
 import { EChart } from '../components/EChart'
 import { Block as Card } from '../assistant/Block'
+import { useAssistantViewContext } from '../assistant/AssistantContext'
 
 type Meta = Record<string, unknown>
 type Payload = { meta: Meta; dataset: Factorized }
@@ -101,6 +102,20 @@ export function OfertaModule() {
 
   const instSelectedLabel =
     ds && filters.institucion >= 0 ? ds.dicts.institucion[filters.institucion] : ''
+
+  // Contexto de filtros activos para el asistente IA.
+  const viewCtx = useMemo(() => {
+    if (!ds) return ''
+    const parts: string[] = [`Pestaña: ${TABS.find((t) => t.id === tab)?.label || tab}`]
+    if (filters.institucion >= 0) parts.push(`Institución: ${ds.dicts.institucion[filters.institucion]}`)
+    for (const f of SELECT_FILTERS) {
+      const idx = filters[f.col]
+      if (idx >= 0 && ds.dicts[f.col]) parts.push(`${f.label}: ${ds.dicts[f.col][idx]}`)
+    }
+    parts.push(`Mostrando ${fmt(totalMask(mask))} de ${fmt(ds.n)} registros`)
+    return parts.join(' · ')
+  }, [ds, filters, tab, mask])
+  useAssistantViewContext(viewCtx)
 
   if (err) return <div className="mx-auto max-w-3xl p-8 text-rose-600">Error al cargar datos: {err}</div>
   if (!ds || !meta) return <div className="grid min-h-[60vh] place-items-center text-sm text-slate-400">Cargando oferta educativa…</div>
