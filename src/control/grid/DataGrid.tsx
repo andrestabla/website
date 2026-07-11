@@ -367,7 +367,9 @@ function SelectCell({
   const current = value == null ? '' : String(value)
   const options = col.options || []
   const currentOpt = options.find((o) => o.value === current)
-  const hasMeta = !!(col.optionFields?.length && currentOpt?.meta && Object.values(currentOpt.meta).some((v) => v))
+  // Muestra el acceso a metadatos si la categoría los define y hay un valor con
+  // entrada correspondiente (aunque sus campos estén vacíos: se ven como "—").
+  const hasMeta = !!(col.optionFields?.length && currentOpt)
 
   return (
     <div ref={ref} className="relative flex items-center gap-1 px-2 py-1.5">
