@@ -17,12 +17,14 @@ export function DatosEntrada({
   onColumnChange,
   onColumnsChange,
   onAddCategory,
+  onConfirmDelete,
 }: {
   columns: PcColumn[]
   editable: boolean
   onColumnChange: (col: PcColumn) => void
   onColumnsChange: (cols: PcColumn[]) => void
   onAddCategory: () => void
+  onConfirmDelete: (label: string, run: () => void) => void
 }) {
   const categories = columns.filter((c) => c.type === 'select')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -100,7 +102,7 @@ export function DatosEntrada({
         </div>
       ) : (
         categories.map((col) => (
-          <CategoryCard key={col.id} col={col} editable={editable} onChange={onColumnChange} />
+          <CategoryCard key={col.id} col={col} editable={editable} onChange={onColumnChange} onConfirmDelete={onConfirmDelete} />
         ))
       )}
     </div>
@@ -111,10 +113,12 @@ function CategoryCard({
   col,
   editable,
   onChange,
+  onConfirmDelete,
 }: {
   col: PcColumn
   editable: boolean
   onChange: (col: PcColumn) => void
+  onConfirmDelete: (label: string, run: () => void) => void
 }) {
   const fields = col.optionFields || []
   const options = col.options || []
@@ -126,13 +130,16 @@ function CategoryCard({
   const addField = () => setFields([...fields, newOptionField(`Dato ${fields.length + 1}`)])
   const renameField = (id: string, label: string) => setFields(fields.map((f) => (f.id === id ? { ...f, label } : f)))
   const removeField = (id: string) => {
-    setFields(fields.filter((f) => f.id !== id))
-    setOptions(options.map((o) => {
-      if (!o.meta) return o
-      const meta = { ...o.meta }
-      delete meta[id]
-      return { ...o, meta }
-    }))
+    const label = fields.find((f) => f.id === id)?.label || 'campo'
+    onConfirmDelete(`el metadato "${label}"`, () => {
+      setFields(fields.filter((f) => f.id !== id))
+      setOptions(options.map((o) => {
+        if (!o.meta) return o
+        const meta = { ...o.meta }
+        delete meta[id]
+        return { ...o, meta }
+      }))
+    })
   }
 
   const addOption = () => {
@@ -145,7 +152,8 @@ function CategoryCard({
   const setOptionColor = (i: number, color: string) => setOptions(options.map((o, k) => (k === i ? { ...o, color } : o)))
   const setOptionMeta = (i: number, fieldId: string, value: string) =>
     setOptions(options.map((o, k) => (k === i ? { ...o, meta: { ...(o.meta || {}), [fieldId]: value } } : o)))
-  const removeOption = (i: number) => setOptions(options.filter((_, k) => k !== i))
+  const removeOption = (i: number) =>
+    onConfirmDelete(`la entrada "${options[i]?.value || ''}"`, () => setOptions(options.filter((_, k) => k !== i)))
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">

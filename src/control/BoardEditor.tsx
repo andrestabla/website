@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Share2, Check, Loader2, AlertCircle, Copy, Download, Table2, Database, BarChart3, Sparkles } from 'lucide-react'
+import { ArrowLeft, Share2, Check, Loader2, Copy, Download, Table2, Database, BarChart3, Sparkles, Save } from 'lucide-react'
 import { computeCell, duplicateBoard, getBoard, saveBoard } from './lib/control-api'
 import { controlPath } from './lib/base'
 import { newColumn, newRow, type PcBoard, type PcCellValue, type PcColumn } from './lib/types'
@@ -13,8 +13,8 @@ import { Analitica } from './grid/Analitica'
 import { ShareDialog } from './grid/ShareDialog'
 import { BehaviorDialog } from './grid/BehaviorDialog'
 import { BoardChat } from './grid/BoardChat'
+import { ConfirmModal } from './grid/ConfirmModal'
 
-type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 type Tab = 'grid' | 'datos' | 'analitica'
 
 export function BoardEditor() {
@@ -23,7 +23,6 @@ export function BoardEditor() {
   const [board, setBoard] = useState<PcBoard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [saveState, setSaveState] = useState<SaveState>('idle')
   const [shareOpen, setShareOpen] = useState(false)
   const [tab, setTab] = useState<Tab>('grid')
   const [view, setView] = useState<PcView>(emptyView)
@@ -32,48 +31,56 @@ export function BoardEditor() {
   const [computing, setComputing] = useState<Set<string>>(new Set())
   const [computeMsg, setComputeMsg] = useState('')
 
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const pending = useRef<Partial<Pick<PcBoard, 'title' | 'description' | 'columns' | 'rows'>>>({})
+  // Guardado explícito
+  const [dirty, setDirty] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveErr, setSaveErr] = useState('')
+  const [savedFlash, setSavedFlash] = useState(false)
+  const [modal, setModal] = useState<null | 'save' | 'leave' | { kind: 'delete'; label: string; run: () => void }>(null)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     getBoard(id)
-      .then((b) => { if (!cancelled) { setBoard(b); setLoading(false) } })
+      .then((b) => { if (!cancelled) { setBoard(b); setDirty(false); setLoading(false) } })
       .catch((e) => { if (!cancelled) { setError(e?.message || 'No se pudo cargar'); setLoading(false) } })
     return () => { cancelled = true }
   }, [id])
 
   const editable = board?.access === 'owner' || board?.access === 'EDIT'
 
-  const scheduleSave = useCallback((patch: Partial<Pick<PcBoard, 'title' | 'description' | 'columns' | 'rows'>>) => {
-    pending.current = { ...pending.current, ...patch }
-    setSaveState('saving')
-    if (saveTimer.current) clearTimeout(saveTimer.current)
-    saveTimer.current = setTimeout(async () => {
-      const toSave = pending.current
-      pending.current = {}
-      try {
-        await saveBoard(id, toSave)
-        setSaveState('saved')
-        setTimeout(() => setSaveState((s) => (s === 'saved' ? 'idle' : s)), 1500)
-      } catch {
-        setSaveState('error')
-      }
-    }, 700)
-  }, [id])
-
-  const update = useCallback((patch: Partial<PcBoard>, save = true) => {
+  // Cada cambio marca el tablero como "sin guardar" (no persiste hasta pulsar Guardar).
+  const update = useCallback((patch: Partial<PcBoard>, markDirty = true) => {
     setBoard((prev) => (prev ? { ...prev, ...patch } : prev))
-    if (save) {
-      const savable: any = {}
-      if ('title' in patch) savable.title = patch.title
-      if ('description' in patch) savable.description = patch.description
-      if ('columns' in patch) savable.columns = patch.columns
-      if ('rows' in patch) savable.rows = patch.rows
-      scheduleSave(savable)
+    if (markDirty) { setDirty(true); setSaveErr('') }
+  }, [])
+
+  const saveNow = async () => {
+    if (!board) return
+    setSaving(true)
+    setSaveErr('')
+    try {
+      await saveBoard(board.id, { title: board.title, description: board.description, columns: board.columns, rows: board.rows })
+      setDirty(false)
+      setModal(null)
+      setSavedFlash(true)
+      setTimeout(() => setSavedFlash(false), 2200)
+    } catch (e: any) {
+      setSaveErr(e?.message || 'No se pudo guardar')
+    } finally {
+      setSaving(false)
     }
-  }, [scheduleSave])
+  }
+
+  // Aviso del navegador al cerrar/recargar con cambios sin guardar.
+  useEffect(() => {
+    if (!dirty) return
+    const h = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', h)
+    return () => window.removeEventListener('beforeunload', h)
+  }, [dirty])
+
+  const goBack = () => { if (dirty) setModal('leave'); else navigate(controlPath()) }
 
   const filteredRows = useMemo(() => (board ? applyView(board.rows, board.columns, view) : []), [board, view])
 
@@ -91,14 +98,18 @@ export function BoardEditor() {
     ;[cols[i], cols[j]] = [cols[j], cols[i]]
     setColumns(cols)
   }
+  const requestDelete = (label: string, run: () => void) => setModal({ kind: 'delete', label, run })
   const onColumnDelete = (colId: string) => {
-    const columns = board.columns.filter((c) => c.id !== colId)
-    const rows = board.rows.map((r) => {
-      const cells = { ...r.cells }
-      delete cells[colId]
-      return { ...r, cells }
+    const name = board.columns.find((c) => c.id === colId)?.name || 'columna'
+    requestDelete(`la columna "${name}" y todos sus datos`, () => {
+      const columns = board.columns.filter((c) => c.id !== colId)
+      const rows = board.rows.map((r) => {
+        const cells = { ...r.cells }
+        delete cells[colId]
+        return { ...r, cells }
+      })
+      update({ columns, rows })
     })
-    update({ columns, rows })
   }
   const onAddColumn = () => {
     const col = newColumn('text', `Columna ${board.columns.length + 1}`)
@@ -127,7 +138,8 @@ export function BoardEditor() {
     update({ columns, rows })
   }
   const onAddRow = () => update({ rows: [...board.rows, newRow(board.columns)] })
-  const onDeleteRow = (rowId: string) => update({ rows: board.rows.filter((r) => r.id !== rowId) })
+  const onDeleteRow = (rowId: string) =>
+    requestDelete('esta fila', () => update({ rows: board.rows.filter((r) => r.id !== rowId) }))
   const onCellChange = (rowId: string, colId: string, value: PcCellValue) =>
     update({ rows: board.rows.map((r) => (r.id === rowId ? { ...r, cells: { ...r.cells, [colId]: value } } : r)) })
 
@@ -188,7 +200,7 @@ export function BoardEditor() {
   return (
     <div className="mx-auto max-w-[1400px] px-5 py-6">
       <div className="mb-3 flex items-center gap-3">
-        <button onClick={() => navigate(controlPath())} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
+        <button onClick={goBack} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
           <ArrowLeft size={17} />
         </button>
         <div className="min-w-0 flex-1">
@@ -212,7 +224,30 @@ export function BoardEditor() {
             <p className="truncate text-[13px] text-slate-500">{board.description}</p>
           ) : null}
         </div>
-        <SaveBadge state={saveState} readOnly={!editable} />
+        {editable ? (
+          <div className="flex items-center gap-2">
+            {savedFlash && !dirty && (
+              <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600"><Check size={14} /> Guardado</span>
+            )}
+            {!savedFlash && !dirty && (
+              <span className="text-[12px] text-slate-400">Sin cambios</span>
+            )}
+            <button
+              onClick={() => dirty && setModal('save')}
+              disabled={!dirty || saving}
+              title={dirty ? 'Guardar cambios' : 'No hay cambios por guardar'}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-bold transition ${
+                dirty ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm' : 'cursor-default border border-slate-200 bg-white text-slate-400'
+              }`}
+            >
+              {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+              {dirty ? 'Guardar cambios' : 'Guardado'}
+              {dirty && <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-white/90" />}
+            </button>
+          </div>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">Solo lectura</span>
+        )}
         <button
           onClick={() => exportBoardToExcel(board)}
           title="Exportar a Excel"
@@ -294,6 +329,7 @@ export function BoardEditor() {
           onColumnChange={onColumnChange}
           onColumnsChange={onColumnsChange}
           onAddCategory={onAddCategory}
+          onConfirmDelete={requestDelete}
         />
       )}
 
@@ -322,16 +358,40 @@ export function BoardEditor() {
           onPublicChange={(enabled, token) => update({ shareEnabled: enabled, shareToken: token }, false)}
         />
       )}
+
+      {modal === 'save' && (
+        <ConfirmModal
+          title="Guardar cambios"
+          message="Se aplicarán los cambios del tablero (columnas, filas y datos de entrada). Esta acción actualiza el tablero para todos."
+          confirmLabel="Guardar"
+          loading={saving}
+          error={saveErr}
+          onConfirm={saveNow}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === 'leave' && (
+        <ConfirmModal
+          title="Salir sin guardar"
+          message="Tienes cambios sin guardar. Si sales ahora, se perderán."
+          variant="danger"
+          confirmLabel="Salir sin guardar"
+          onConfirm={() => navigate(controlPath())}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal && typeof modal === 'object' && modal.kind === 'delete' && (
+        <ConfirmModal
+          title={`¿Eliminar ${modal.label}?`}
+          message="El cambio quedará pendiente; se aplicará definitivamente al pulsar «Guardar cambios»."
+          variant="danger"
+          confirmLabel="Eliminar"
+          onConfirm={() => { modal.run(); setModal(null) }}
+          onClose={() => setModal(null)}
+        />
+      )}
     </div>
   )
-}
-
-function SaveBadge({ state, readOnly }: { state: SaveState; readOnly: boolean }) {
-  if (readOnly) return <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">Solo lectura</span>
-  if (state === 'saving') return <span className="inline-flex items-center gap-1 text-[12px] text-slate-400"><Loader2 size={13} className="animate-spin" /> Guardando…</span>
-  if (state === 'saved') return <span className="inline-flex items-center gap-1 text-[12px] text-emerald-600"><Check size={13} /> Guardado</span>
-  if (state === 'error') return <span className="inline-flex items-center gap-1 text-[12px] text-rose-600"><AlertCircle size={13} /> Error al guardar</span>
-  return null
 }
 
 function Centered({ children }: { children: React.ReactNode }) {
