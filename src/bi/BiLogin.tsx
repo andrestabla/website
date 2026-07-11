@@ -36,7 +36,7 @@ export function BiLogin({ onSuccess }: { onSuccess: () => void }) {
             <p className="mt-4 max-w-[48ch] text-[15px] leading-relaxed text-indigo-100">
               Inteligencia de mercado sobre la oferta y demanda de educación superior en Colombia —{' '}
               <span className="font-semibold text-white">14.644 programas vigentes</span> de 27.005 registrados, con
-              empleabilidad, análisis regional, prospectiva laboral y un asistente de IA que interpreta cada gráfica.
+              empleabilidad, análisis regional y prospectiva laboral.
             </p>
             <div className="mt-8 grid max-w-md grid-cols-3 gap-x-8 gap-y-5">
               {(
@@ -46,7 +46,6 @@ export function BiLogin({ onSuccess }: { onSuccess: () => void }) {
                   ['33', 'Departamentos'],
                   ['82', 'Competencias'],
                   ['18', 'Países (LATAM)'],
-                  ['9', 'Fuentes de datos'],
                 ] as const
               ).map(([v, l]) => (
                 <div key={l}>
