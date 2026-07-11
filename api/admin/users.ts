@@ -52,6 +52,11 @@ const ADMIN_MODULE_INFO: Record<AdminModuleKey, { label: string; description: st
     description: 'Observatorios de educación superior (oferta educativa, laboral y análisis regional) con asistente de IA.',
     url: 'https://bi.algoritmot.com',
   },
+  PROJECT_CONTROL: {
+    label: 'Project Control',
+    description: 'Tableros de seguimiento tipo hoja de cálculo, customizables, con opción de compartir por enlace o con usuarios.',
+    url: '/control',
+  },
 }
 
 function grantedModulesFrom(map: AdminPermissionMap): AdminModuleKey[] {
