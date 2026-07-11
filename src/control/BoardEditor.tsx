@@ -12,6 +12,7 @@ import { DatosEntrada } from './grid/DatosEntrada'
 import { Analitica } from './grid/Analitica'
 import { ShareDialog } from './grid/ShareDialog'
 import { BehaviorDialog } from './grid/BehaviorDialog'
+import { BoardChat } from './grid/BoardChat'
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 type Tab = 'grid' | 'datos' | 'analitica'
@@ -297,6 +298,8 @@ export function BoardEditor() {
       )}
 
       {tab === 'analitica' && <Analitica columns={board.columns} rows={board.rows} />}
+
+      <BoardChat boardId={board.id} title={board.title} />
 
       {behaviorColId && (() => {
         const col = board.columns.find((c) => c.id === behaviorColId)

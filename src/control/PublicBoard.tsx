@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { LayoutGrid, Loader2, Table2, BarChart3 } from 'lucide-react'
 import { getPublicBoard, type PublicBoardData } from './lib/control-api'
 import { DataGrid } from './grid/DataGrid'
+import { GridToolbar } from './grid/GridToolbar'
 import { Analitica } from './grid/Analitica'
+import { BoardChat } from './grid/BoardChat'
+import { applyView, emptyView, type PcView } from './lib/view'
 
 export default function PublicBoard() {
   const { token = '' } = useParams()
@@ -11,6 +14,8 @@ export default function PublicBoard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'grid' | 'analitica'>('grid')
+  const [view, setView] = useState<PcView>(emptyView)
+  const filteredRows = useMemo(() => (data ? applyView(data.rows, data.columns, view) : []), [data, view])
 
   useEffect(() => {
     let cancelled = false
@@ -58,13 +63,22 @@ export default function PublicBoard() {
             </div>
 
             {tab === 'grid' ? (
-              <DataGrid columns={data.columns} rows={data.rows} editable={false} />
+              <>
+                <GridToolbar
+                  columns={data.columns}
+                  view={view}
+                  onChange={setView}
+                  rightSlot={<span className="text-[12px] text-slate-400">{filteredRows.length} de {data.rows.length} filas</span>}
+                />
+                <DataGrid columns={data.columns} rows={filteredRows} editable={false} />
+              </>
             ) : (
               <Analitica columns={data.columns} rows={data.rows} />
             )}
           </>
         )}
       </div>
+      {data && <BoardChat token={token} title={data.title} />}
     </div>
   )
 }

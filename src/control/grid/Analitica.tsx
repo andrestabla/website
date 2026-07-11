@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend } from 'recharts'
 import { BarChart3 } from 'lucide-react'
 import type { PcColumn, PcRow } from '../lib/types'
 import { applyView, emptyView, type PcView } from '../lib/view'
@@ -8,42 +8,74 @@ import { optionColor } from './DataGrid'
 
 type Metric = 'count' | 'sum' | 'avg'
 
+const NONE = '__none__'
+
+function cellKey(v: unknown): string {
+  return v === null || v === undefined || v === '' ? '(vacío)' : String(v)
+}
+
+function metricOf(rows: PcRow[], metric: Metric, valueColId: string): number {
+  if (metric === 'count') return rows.length
+  let sum = 0
+  let n = 0
+  for (const r of rows) {
+    const v = Number(r.cells[valueColId])
+    if (Number.isFinite(v)) { sum += v; n++ }
+  }
+  if (metric === 'sum') return sum
+  return n ? +(sum / n).toFixed(2) : 0
+}
+
 export function Analitica({ columns, rows }: { columns: PcColumn[]; rows: PcRow[] }) {
   const groupable = columns.filter((c) => ['select', 'text', 'date', 'checkbox'].includes(c.type))
   const numberCols = columns.filter((c) => c.type === 'number')
 
   const [view, setView] = useState<PcView>(emptyView)
   const [groupId, setGroupId] = useState<string>(groupable[0]?.id || '')
+  const [secondaryId, setSecondaryId] = useState<string>(NONE)
   const [metric, setMetric] = useState<Metric>('count')
   const [valueColId, setValueColId] = useState<string>(numberCols[0]?.id || '')
 
   const groupCol = columns.find((c) => c.id === groupId)
+  const secondaryCol = secondaryId !== NONE ? columns.find((c) => c.id === secondaryId) : undefined
   const filtered = useMemo(() => applyView(rows, columns, view), [rows, columns, view])
+  const metricLabel = metric === 'count' ? 'Conteo' : metric === 'sum' ? 'Suma' : 'Promedio'
 
-  const data = useMemo(() => {
-    if (!groupCol) return []
-    const buckets = new Map<string, { sum: number; n: number }>()
+  // ── Datos ──
+  const single = useMemo(() => {
+    if (!groupCol || secondaryCol) return []
+    const buckets = new Map<string, PcRow[]>()
     for (const r of filtered) {
-      const raw = r.cells[groupId]
-      const key = raw === null || raw === undefined || raw === '' ? '(vacío)' : String(raw)
-      const b = buckets.get(key) || { sum: 0, n: 0 }
-      b.n += 1
-      if (metric !== 'count') {
-        const v = Number(r.cells[valueColId])
-        if (Number.isFinite(v)) b.sum += v
-      }
-      buckets.set(key, b)
+      const k = cellKey(r.cells[groupId])
+      if (!buckets.has(k)) buckets.set(k, [])
+      buckets.get(k)!.push(r)
     }
-    const rowsOut = Array.from(buckets.entries()).map(([name, b]) => ({
-      name,
-      value: metric === 'count' ? b.n : metric === 'sum' ? b.sum : b.n ? +(b.sum / b.n).toFixed(2) : 0,
-    }))
-    rowsOut.sort((a, b) => b.value - a.value)
-    return rowsOut
-  }, [filtered, groupCol, groupId, metric, valueColId])
+    return Array.from(buckets.entries())
+      .map(([name, rs]) => ({ name, value: metricOf(rs, metric, valueColId) }))
+      .sort((a, b) => b.value - a.value)
+  }, [filtered, groupCol, secondaryCol, groupId, metric, valueColId])
+
+  const cross = useMemo(() => {
+    if (!groupCol || !secondaryCol) return { secVals: [] as string[], data: [] as any[] }
+    const secSet = new Set<string>()
+    const primSet = new Set<string>()
+    for (const r of filtered) { secSet.add(cellKey(r.cells[secondaryId])); primSet.add(cellKey(r.cells[groupId])) }
+    const secVals = Array.from(secSet).sort()
+    const data = Array.from(primSet).map((p) => {
+      const obj: any = { name: p, __total: 0 }
+      for (const s of secVals) {
+        const rs = filtered.filter((r) => cellKey(r.cells[groupId]) === p && cellKey(r.cells[secondaryId]) === s)
+        obj[s] = metricOf(rs, metric, valueColId)
+        obj.__total += obj[s]
+      }
+      return obj
+    })
+    data.sort((a, b) => b.__total - a.__total)
+    return { secVals, data }
+  }, [filtered, groupCol, secondaryCol, groupId, secondaryId, metric, valueColId])
 
   const total = filtered.length
-  const metricLabel = metric === 'count' ? 'Conteo' : metric === 'sum' ? 'Suma' : 'Promedio'
+  const empty = !groupCol || (secondaryCol ? cross.data.length === 0 : single.length === 0)
 
   return (
     <div className="space-y-4">
@@ -53,6 +85,12 @@ export function Analitica({ columns, rows }: { columns: PcColumn[]; rows: PcRow[
         <Field label="Agrupar por">
           <select value={groupId} onChange={(e) => setGroupId(e.target.value)} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px]">
             {groupable.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </Field>
+        <Field label="Desglosar por (cruce)">
+          <select value={secondaryId} onChange={(e) => setSecondaryId(e.target.value)} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px]">
+            <option value={NONE}>— (ninguno)</option>
+            {groupable.filter((c) => c.id !== groupId).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </Field>
         <Field label="Métrica">
@@ -70,11 +108,11 @@ export function Analitica({ columns, rows }: { columns: PcColumn[]; rows: PcRow[
           </Field>
         )}
         <div className="ml-auto text-[12px] text-slate-500">
-          <span className="font-bold text-slate-700">{total}</span> filas · <span className="font-bold text-slate-700">{data.length}</span> grupos
+          <span className="font-bold text-slate-700">{total}</span> filas
         </div>
       </div>
 
-      {!groupCol || data.length === 0 ? (
+      {empty ? (
         <div className="grid min-h-[30vh] place-items-center rounded-2xl border border-dashed border-slate-300 text-center">
           <div>
             <BarChart3 className="mx-auto mb-3 text-slate-300" size={36} />
@@ -82,50 +120,116 @@ export function Analitica({ columns, rows }: { columns: PcColumn[]; rows: PcRow[
             <div className="mt-1 text-[13px] text-slate-400">Ajusta el agrupamiento o los filtros.</div>
           </div>
         </div>
+      ) : secondaryCol ? (
+        <CrossView groupCol={groupCol!} secondaryCol={secondaryCol} secVals={cross.secVals} data={cross.data} metricLabel={metricLabel} />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="mb-2 text-[13px] font-bold text-slate-700">{metricLabel} por {groupCol.name}</div>
-            <ResponsiveContainer width="100%" height={Math.max(240, data.length * 34)}>
-              <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
-                <CartesianGrid horizontal={false} stroke="#eef2f7" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} />
-                <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11, fill: '#334155' }} />
-                <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                  {data.map((d) => (
-                    <Cell key={d.name} fill={groupCol.type === 'select' ? optionColor(groupCol, d.name) : '#6366f1'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                  <th className="px-3 py-2">{groupCol.name}</th>
-                  <th className="px-3 py-2 text-right">{metricLabel}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((d) => (
-                  <tr key={d.name} className="border-t border-slate-100">
-                    <td className="px-3 py-1.5">
-                      <span className="inline-flex items-center gap-2">
-                        {groupCol.type === 'select' && <span className="h-3 w-3 rounded-full" style={{ backgroundColor: optionColor(groupCol, d.name) }} />}
-                        {d.name}
-                      </span>
-                    </td>
-                    <td className="px-3 py-1.5 text-right font-semibold tabular-nums text-slate-700">{d.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <SingleView groupCol={groupCol!} data={single} metricLabel={metricLabel} />
       )}
+    </div>
+  )
+}
+
+function SingleView({ groupCol, data, metricLabel }: { groupCol: PcColumn; data: any[]; metricLabel: string }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="mb-2 text-[13px] font-bold text-slate-700">{metricLabel} por {groupCol.name}</div>
+        <ResponsiveContainer width="100%" height={Math.max(240, data.length * 34)}>
+          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
+            <CartesianGrid horizontal={false} stroke="#eef2f7" />
+            <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} />
+            <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11, fill: '#334155' }} />
+            <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+              {data.map((d) => (
+                <Cell key={d.name} fill={groupCol.type === 'select' ? optionColor(groupCol, d.name) : '#6366f1'} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              <th className="px-3 py-2">{groupCol.name}</th>
+              <th className="px-3 py-2 text-right">{metricLabel}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.name} className="border-t border-slate-100">
+                <td className="px-3 py-1.5">
+                  <span className="inline-flex items-center gap-2">
+                    {groupCol.type === 'select' && <span className="h-3 w-3 rounded-full" style={{ backgroundColor: optionColor(groupCol, d.name) }} />}
+                    {d.name}
+                  </span>
+                </td>
+                <td className="px-3 py-1.5 text-right font-semibold tabular-nums text-slate-700">{d.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function CrossView({
+  groupCol,
+  secondaryCol,
+  secVals,
+  data,
+  metricLabel,
+}: {
+  groupCol: PcColumn
+  secondaryCol: PcColumn
+  secVals: string[]
+  data: any[]
+  metricLabel: string
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="mb-2 text-[13px] font-bold text-slate-700">
+          {metricLabel}: {groupCol.name} <span className="text-slate-400">×</span> {secondaryCol.name}
+        </div>
+        <ResponsiveContainer width="100%" height={Math.max(280, data.length * 40)}>
+          <BarChart data={data} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
+            <CartesianGrid horizontal={false} stroke="#eef2f7" />
+            <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} />
+            <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11, fill: '#334155' }} />
+            <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            {secVals.map((s) => (
+              <Bar key={s} dataKey={s} stackId="a" fill={optionColor(secondaryCol, s)} radius={[0, 2, 2, 0]} />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              <th className="border-r border-slate-200 px-3 py-2">{groupCol.name} \ {secondaryCol.name}</th>
+              {secVals.map((s) => <th key={s} className="border-r border-slate-200 px-3 py-2 text-right">{s}</th>)}
+              <th className="px-3 py-2 text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((d) => (
+              <tr key={d.name} className="border-t border-slate-100">
+                <td className="border-r border-slate-200 px-3 py-1.5 font-medium text-slate-700">{d.name}</td>
+                {secVals.map((s) => (
+                  <td key={s} className="border-r border-slate-100 px-3 py-1.5 text-right tabular-nums text-slate-600">{d[s] || ''}</td>
+                ))}
+                <td className="px-3 py-1.5 text-right font-semibold tabular-nums text-slate-800">{d.__total}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

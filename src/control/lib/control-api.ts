@@ -118,6 +118,18 @@ export async function computeCell(boardId: string, columnId: string, rowId: stri
   return { value: p.value ?? null, note: p.note, providerUsed: p.providerUsed, source: p.source }
 }
 
+// ── Chatbot del tablero ──────────────────────────────────────────────────────
+export type ChatMsg = { role: 'user' | 'assistant'; content: string }
+
+export async function chatBoard(input: { boardId?: string; token?: string; question: string; history: ChatMsg[] }): Promise<string> {
+  const p = await req<{ reply: string }>('/api/pc/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  return p.reply || ''
+}
+
 // ── Vista pública ────────────────────────────────────────────────────────────
 export type PublicBoardData = { title: string; description: string; columns: PcColumn[]; rows: PcRow[]; updatedAt: string }
 
