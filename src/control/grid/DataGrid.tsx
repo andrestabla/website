@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Trash2, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Info } from 'lucide-react'
 import type { PcCellValue, PcColumn, PcRow } from '../lib/types'
 import { PC_OPTION_COLORS } from '../lib/types'
 import { ColumnHeaderMenu } from './ColumnHeaderMenu'
+import { ValueMetaModal } from './ValueMetaModal'
 
 export function optionColor(col: PcColumn, value: string): string {
   const opt = col.options?.find((o) => o.value === value)
@@ -354,6 +355,7 @@ function SelectCell({
   onChange: (v: PcCellValue) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [showMeta, setShowMeta] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
@@ -364,17 +366,30 @@ function SelectCell({
 
   const current = value == null ? '' : String(value)
   const options = col.options || []
+  const currentOpt = options.find((o) => o.value === current)
+  const hasMeta = !!(col.optionFields?.length && currentOpt?.meta && Object.values(currentOpt.meta).some((v) => v))
 
   return (
-    <div ref={ref} className="relative px-2 py-1.5">
+    <div ref={ref} className="relative flex items-center gap-1 px-2 py-1.5">
       <button
-        disabled={!editable}
-        onClick={() => setOpen((o) => !o)}
-        className={`inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium ${current ? '' : 'text-slate-300'} ${editable ? 'hover:ring-1 hover:ring-slate-300' : ''}`}
+        disabled={!editable && !hasMeta}
+        onClick={() => { if (editable) setOpen((o) => !o); else if (hasMeta) setShowMeta(true) }}
+        title={!editable && hasMeta ? 'Ver detalles' : undefined}
+        className={`inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-0.5 text-[12px] font-medium ${current ? '' : 'text-slate-300'} ${editable || hasMeta ? 'hover:ring-1 hover:ring-slate-300' : ''}`}
         style={current ? { backgroundColor: optionColor(col, current) } : {}}
       >
         <span className="truncate">{current || (editable ? 'seleccionar…' : '')}</span>
       </button>
+      {hasMeta && (
+        <button
+          onClick={() => setShowMeta(true)}
+          title="Ver metadatos"
+          className="shrink-0 text-slate-300 hover:text-indigo-600"
+        >
+          <Info size={13} />
+        </button>
+      )}
+      {showMeta && currentOpt && <ValueMetaModal col={col} option={currentOpt} onClose={() => setShowMeta(false)} />}
       {open && editable && (
         <div className="absolute left-2 top-full z-30 mt-1 max-h-64 w-52 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
           {current && (
