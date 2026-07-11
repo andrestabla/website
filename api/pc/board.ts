@@ -1,6 +1,6 @@
 import { pcSessionState } from '../_lib/pc-auth.js'
 import { prisma } from '../_lib/prisma.js'
-import { sanitizeColumns, sanitizeRows } from '../_lib/pc-board.js'
+import { sanitizeColumns, sanitizeRows, sanitizePublicView } from '../_lib/pc-board.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -42,6 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           rows: board.rows || [],
           shareEnabled: !!board.shareEnabled,
           shareToken: access === 'owner' ? board.shareToken || null : null,
+          publicView: board.publicView || null,
           access,
           isOwner: access === 'owner',
           collaborators:
@@ -63,6 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const cols = data.columns ?? board.columns ?? []
         data.rows = sanitizeRows(body.rows, cols)
       }
+      if (body.publicView !== undefined) data.publicView = sanitizePublicView(body.publicView)
       await db().update({ where: { id }, data })
       return res.status(200).json({ ok: true })
     }

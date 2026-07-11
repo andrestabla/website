@@ -71,6 +71,45 @@ function coerceCell(value: unknown, type: PcColType): string | number | boolean 
   return String(value).slice(0, MAX_CELL_LEN)
 }
 
+/** Sanitiza la vista pública fijada por el propietario. Devuelve null si no aplica. */
+export function sanitizePublicView(input: unknown): any {
+  if (!input || typeof input !== 'object') return null
+  const v = input as any
+  const tab = v.tab === 'analitica' ? 'analitica' : 'grid'
+  const out: any = { tab }
+
+  if (v.gridView && typeof v.gridView === 'object') {
+    const gv = v.gridView
+    const filters = Array.isArray(gv.filters)
+      ? gv.filters
+          .filter((f: any) => f && typeof f.colId === 'string' && ['in', 'contains', 'range'].includes(f.kind))
+          .slice(0, 40)
+          .map((f: any) => {
+            const base: any = { colId: String(f.colId).slice(0, 40), kind: f.kind }
+            if (f.kind === 'in') base.values = (Array.isArray(f.values) ? f.values : []).slice(0, 200).map((x: any) => String(x).slice(0, 200))
+            else if (f.kind === 'contains') base.value = String(f.value ?? '').slice(0, 200)
+            else { if (Number.isFinite(Number(f.min))) base.min = Number(f.min); if (Number.isFinite(Number(f.max))) base.max = Number(f.max) }
+            return base
+          })
+      : []
+    const sort = gv.sort && typeof gv.sort === 'object' && typeof gv.sort.colId === 'string'
+      ? { colId: String(gv.sort.colId).slice(0, 40), dir: gv.sort.dir === 'desc' ? 'desc' : 'asc' }
+      : null
+    out.gridView = { search: String(gv.search ?? '').slice(0, 200), filters, sort }
+  }
+
+  if (v.analytics && typeof v.analytics === 'object') {
+    const a = v.analytics
+    out.analytics = {
+      groupId: String(a.groupId ?? '').slice(0, 40),
+      secondaryId: String(a.secondaryId ?? '').slice(0, 40),
+      metric: ['count', 'sum', 'avg'].includes(a.metric) ? a.metric : 'count',
+      valueColId: String(a.valueColId ?? '').slice(0, 40),
+    }
+  }
+  return out
+}
+
 export function sanitizeRows(input: unknown, columns: any[]): any[] {
   if (!Array.isArray(input)) return []
   const typeByCol = new Map<string, PcColType>(columns.map((c) => [c.id, c.type]))

@@ -581,6 +581,7 @@ model PcBoard {
   rows         Json           @default("[]") // PcRow[]:    { id, cells: { colId: value } }
   shareToken   String?        @unique // link público de solo lectura
   shareEnabled Boolean        @default(false)
+  publicView   Json? // vista pública por defecto fijada por el propietario
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   shares       PcBoardShare[]

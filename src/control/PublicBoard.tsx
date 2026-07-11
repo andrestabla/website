@@ -20,7 +20,14 @@ export default function PublicBoard() {
   useEffect(() => {
     let cancelled = false
     getPublicBoard(token)
-      .then((d) => { if (!cancelled) { setData(d); setLoading(false) } })
+      .then((d) => {
+        if (cancelled) return
+        setData(d)
+        // Aplica la vista pública fijada por el propietario (pestaña + filtros).
+        if (d.publicView?.tab) setTab(d.publicView.tab)
+        if (d.publicView?.gridView) setView(d.publicView.gridView)
+        setLoading(false)
+      })
       .catch((e) => { if (!cancelled) { setError(e?.message || 'Tablero no disponible'); setLoading(false) } })
     return () => { cancelled = true }
   }, [token])
@@ -73,7 +80,7 @@ export default function PublicBoard() {
                 <DataGrid columns={data.columns} rows={filteredRows} editable={false} />
               </>
             ) : (
-              <Analitica columns={data.columns} rows={data.rows} />
+              <Analitica columns={data.columns} rows={data.rows} initialConfig={data.publicView?.analytics} />
             )}
           </>
         )}

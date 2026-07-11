@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend } from 'recharts'
 import { BarChart3 } from 'lucide-react'
-import type { PcColumn, PcRow } from '../lib/types'
+import type { PcAnalyticsConfig, PcColumn, PcRow } from '../lib/types'
 import { applyView, emptyView, type PcView } from '../lib/view'
 import { GridToolbar } from './GridToolbar'
 import { optionColor } from './DataGrid'
@@ -26,15 +26,31 @@ function metricOf(rows: PcRow[], metric: Metric, valueColId: string): number {
   return n ? +(sum / n).toFixed(2) : 0
 }
 
-export function Analitica({ columns, rows }: { columns: PcColumn[]; rows: PcRow[] }) {
+export function Analitica({
+  columns,
+  rows,
+  initialConfig,
+  onConfigChange,
+}: {
+  columns: PcColumn[]
+  rows: PcRow[]
+  initialConfig?: PcAnalyticsConfig | null
+  onConfigChange?: (c: PcAnalyticsConfig) => void
+}) {
   const groupable = columns.filter((c) => ['select', 'text', 'date', 'checkbox'].includes(c.type))
   const numberCols = columns.filter((c) => c.type === 'number')
+  const has = (id: string | undefined, list: PcColumn[]) => !!id && list.some((c) => c.id === id)
 
   const [view, setView] = useState<PcView>(emptyView)
-  const [groupId, setGroupId] = useState<string>(groupable[0]?.id || '')
-  const [secondaryId, setSecondaryId] = useState<string>(NONE)
-  const [metric, setMetric] = useState<Metric>('count')
-  const [valueColId, setValueColId] = useState<string>(numberCols[0]?.id || '')
+  const [groupId, setGroupId] = useState<string>(() => (has(initialConfig?.groupId, groupable) ? initialConfig!.groupId : groupable[0]?.id || ''))
+  const [secondaryId, setSecondaryId] = useState<string>(() => (has(initialConfig?.secondaryId, columns) ? initialConfig!.secondaryId : NONE))
+  const [metric, setMetric] = useState<Metric>(initialConfig?.metric || 'count')
+  const [valueColId, setValueColId] = useState<string>(() => (has(initialConfig?.valueColId, numberCols) ? initialConfig!.valueColId : numberCols[0]?.id || ''))
+
+  useEffect(() => {
+    onConfigChange?.({ groupId, secondaryId, metric, valueColId })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId, secondaryId, metric, valueColId])
 
   const groupCol = columns.find((c) => c.id === groupId)
   const secondaryCol = secondaryId !== NONE ? columns.find((c) => c.id === secondaryId) : undefined

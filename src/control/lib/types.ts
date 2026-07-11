@@ -38,6 +38,18 @@ export type PcRow = {
   cells: Record<string, PcCellValue>
 }
 
+// ── Filtros / orden (vista) ──────────────────────────────────────────────────
+export type PcFilter =
+  | { colId: string; kind: 'in'; values: string[] } // columnas select
+  | { colId: string; kind: 'contains'; value: string } // texto/url
+  | { colId: string; kind: 'range'; min?: number; max?: number } // número
+export type PcSort = { colId: string; dir: 'asc' | 'desc' } | null
+export type PcView = { search: string; filters: PcFilter[]; sort: PcSort }
+
+// ── Vista pública fijada por el propietario ──────────────────────────────────
+export type PcAnalyticsConfig = { groupId: string; secondaryId: string; metric: 'count' | 'sum' | 'avg'; valueColId: string }
+export type PcPublicView = { tab: 'grid' | 'analitica'; gridView?: PcView; analytics?: PcAnalyticsConfig }
+
 export type PcBoard = {
   id: string
   title: string
@@ -46,6 +58,7 @@ export type PcBoard = {
   rows: PcRow[]
   shareEnabled: boolean
   shareToken: string | null
+  publicView?: PcPublicView | null
   access: 'owner' | 'EDIT' | 'VIEW'
   isOwner: boolean
   collaborators: { userId: string; role: 'VIEW' | 'EDIT' }[]

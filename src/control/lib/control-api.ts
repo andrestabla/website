@@ -1,5 +1,5 @@
 import { emitPcUnauthorized } from './session'
-import type { PcBoard, PcBoardSummary, PcColumn, PcRow } from './types'
+import type { PcBoard, PcBoardSummary, PcColumn, PcPublicView, PcRow } from './types'
 
 async function req<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init)
@@ -41,7 +41,7 @@ export async function getBoard(id: string): Promise<PcBoard> {
 
 export async function saveBoard(
   id: string,
-  patch: Partial<Pick<PcBoard, 'title' | 'description' | 'columns' | 'rows'>>
+  patch: Partial<Pick<PcBoard, 'title' | 'description' | 'columns' | 'rows' | 'publicView'>>
 ): Promise<void> {
   await req(`/api/pc/board?id=${encodeURIComponent(id)}`, {
     method: 'PUT',
@@ -131,7 +131,7 @@ export async function chatBoard(input: { boardId?: string; token?: string; quest
 }
 
 // ── Vista pública ────────────────────────────────────────────────────────────
-export type PublicBoardData = { title: string; description: string; columns: PcColumn[]; rows: PcRow[]; updatedAt: string }
+export type PublicBoardData = { title: string; description: string; columns: PcColumn[]; rows: PcRow[]; publicView?: PcPublicView | null; updatedAt: string }
 
 export async function getPublicBoard(token: string): Promise<PublicBoardData> {
   const p = await req<{ board: PublicBoardData }>(`/api/pc/public?token=${encodeURIComponent(token)}`)

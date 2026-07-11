@@ -1,13 +1,6 @@
-import type { PcColumn, PcRow } from './types'
+import type { PcColumn, PcRow, PcFilter, PcView } from './types'
 
-export type PcFilter =
-  | { colId: string; kind: 'in'; values: string[] } // columnas select
-  | { colId: string; kind: 'contains'; value: string } // texto/url
-  | { colId: string; kind: 'range'; min?: number; max?: number } // número
-
-export type PcSort = { colId: string; dir: 'asc' | 'desc' } | null
-
-export type PcView = { search: string; filters: PcFilter[]; sort: PcSort }
+export type { PcFilter, PcSort, PcView } from './types'
 
 export const emptyView: PcView = { search: '', filters: [], sort: null }
 

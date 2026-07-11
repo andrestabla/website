@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Share2, Check, Loader2, Copy, Download, Table2, Database, BarChart3, Sparkles, Save } from 'lucide-react'
+import { ArrowLeft, Share2, Check, Loader2, Copy, Download, Table2, Database, BarChart3, Sparkles, Save, Pin } from 'lucide-react'
 import { computeCell, duplicateBoard, getBoard, saveBoard } from './lib/control-api'
 import { controlPath } from './lib/base'
-import { newColumn, newRow, type PcBoard, type PcCellValue, type PcColumn } from './lib/types'
+import { newColumn, newRow, type PcAnalyticsConfig, type PcBoard, type PcCellValue, type PcColumn } from './lib/types'
 import { exportBoardToExcel } from './lib/export'
 import { applyView, emptyView, type PcView } from './lib/view'
 import { DataGrid } from './grid/DataGrid'
@@ -30,6 +30,8 @@ export function BoardEditor() {
   const [behaviorColId, setBehaviorColId] = useState<string | null>(null)
   const [computing, setComputing] = useState<Set<string>>(new Set())
   const [computeMsg, setComputeMsg] = useState('')
+  const [analyticsConfig, setAnalyticsConfig] = useState<PcAnalyticsConfig | null>(null)
+  const [pinFlash, setPinFlash] = useState(false)
 
   // Guardado explícito
   const [dirty, setDirty] = useState(false)
@@ -83,6 +85,21 @@ export function BoardEditor() {
   const goBack = () => { if (dirty) setModal('leave'); else navigate(controlPath()) }
 
   const filteredRows = useMemo(() => (board ? applyView(board.rows, board.columns, view) : []), [board, view])
+
+  // Fija la vista pública por defecto a partir de lo que el propietario ve ahora.
+  const pinPublicView = () => {
+    if (!board) return
+    const pvTab: 'grid' | 'analitica' = tab === 'analitica' ? 'analitica' : 'grid'
+    update({
+      publicView: {
+        tab: pvTab,
+        gridView: pvTab === 'grid' ? view : board.publicView?.gridView,
+        analytics: analyticsConfig || board.publicView?.analytics,
+      },
+    })
+    setPinFlash(true)
+    setTimeout(() => setPinFlash(false), 2600)
+  }
 
   if (loading) return <Centered><Loader2 className="animate-spin text-slate-400" /></Centered>
   if (error || !board) return <Centered><div className="text-sm text-rose-600">{error || 'Tablero no encontrado'}</div></Centered>
@@ -286,6 +303,22 @@ export function BoardEditor() {
             <t.icon size={15} /> {t.label}
           </button>
         ))}
+        {board.isOwner && tab !== 'datos' && (
+          <div className="ml-auto flex items-center gap-2 pb-1.5">
+            {pinFlash && <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-600"><Check size={13} /> Vista pública fijada — recuerda Guardar</span>}
+            <button
+              onClick={pinPublicView}
+              title="Fijar esta vista como la que verán por defecto en el enlace público"
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition ${
+                board.publicView?.tab === (tab === 'analitica' ? 'analitica' : 'grid')
+                  ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                  : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-400 hover:text-indigo-600'
+              }`}
+            >
+              <Pin size={14} /> Fijar vista pública
+            </button>
+          </div>
+        )}
       </div>
 
       {tab === 'grid' && (
@@ -333,7 +366,14 @@ export function BoardEditor() {
         />
       )}
 
-      {tab === 'analitica' && <Analitica columns={board.columns} rows={board.rows} />}
+      {tab === 'analitica' && (
+        <Analitica
+          columns={board.columns}
+          rows={board.rows}
+          initialConfig={board.publicView?.analytics}
+          onConfigChange={setAnalyticsConfig}
+        />
+      )}
 
       <BoardChat boardId={board.id} title={board.title} />
 

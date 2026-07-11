@@ -25,6 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         description: board.description || '',
         columns: board.columns || [],
         rows: board.rows || [],
+        publicView: board.publicView || null,
         updatedAt: board.updatedAt,
       },
     })
