@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Share2, Check, Loader2, AlertCircle, Copy, Download, Table2, Database, BarChart3 } from 'lucide-react'
-import { duplicateBoard, getBoard, saveBoard } from './lib/control-api'
+import { ArrowLeft, Share2, Check, Loader2, AlertCircle, Copy, Download, Table2, Database, BarChart3, Sparkles } from 'lucide-react'
+import { computeCell, duplicateBoard, getBoard, saveBoard } from './lib/control-api'
 import { controlPath } from './lib/base'
 import { newColumn, newRow, type PcBoard, type PcCellValue, type PcColumn } from './lib/types'
 import { exportBoardToExcel } from './lib/export'
@@ -11,6 +11,7 @@ import { GridToolbar } from './grid/GridToolbar'
 import { DatosEntrada } from './grid/DatosEntrada'
 import { Analitica } from './grid/Analitica'
 import { ShareDialog } from './grid/ShareDialog'
+import { BehaviorDialog } from './grid/BehaviorDialog'
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 type Tab = 'grid' | 'datos' | 'analitica'
@@ -26,6 +27,9 @@ export function BoardEditor() {
   const [tab, setTab] = useState<Tab>('grid')
   const [view, setView] = useState<PcView>(emptyView)
   const [duplicating, setDuplicating] = useState(false)
+  const [behaviorColId, setBehaviorColId] = useState<string | null>(null)
+  const [computing, setComputing] = useState<Set<string>>(new Set())
+  const [computeMsg, setComputeMsg] = useState('')
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pending = useRef<Partial<Pick<PcBoard, 'title' | 'description' | 'columns' | 'rows'>>>({})
@@ -126,6 +130,43 @@ export function BoardEditor() {
   const onCellChange = (rowId: string, colId: string, value: PcCellValue) =>
     update({ rows: board.rows.map((r) => (r.id === rowId ? { ...r, cells: { ...r.cells, [colId]: value } } : r)) })
 
+  // ── Columnas fórmula (IA) ──
+  const setComputingKey = (key: string, on: boolean) =>
+    setComputing((prev) => { const n = new Set(prev); if (on) n.add(key); else n.delete(key); return n })
+
+  const recalcCell = async (rowId: string, colId: string) => {
+    const key = `${rowId}:${colId}`
+    setComputingKey(key, true)
+    setComputeMsg('')
+    try {
+      const r = await computeCell(board.id, colId, rowId)
+      onCellChange(rowId, colId, r.value)
+      if (r.note) setComputeMsg(r.source ? `${r.source.name || 'Fuente'}: ${r.note}` : r.note)
+    } catch (e: any) {
+      setComputeMsg(e?.message || 'No se pudo calcular con IA')
+    } finally {
+      setComputingKey(key, false)
+    }
+  }
+
+  const recalcColumn = async (colId: string) => {
+    setComputeMsg('')
+    const results: Record<string, PcCellValue> = {}
+    for (const r of board.rows) {
+      const key = `${r.id}:${colId}`
+      setComputingKey(key, true)
+      try {
+        const res = await computeCell(board.id, colId, r.id)
+        results[r.id] = res.value
+      } catch (e: any) {
+        setComputeMsg(e?.message || 'Error al recalcular la columna')
+      } finally {
+        setComputingKey(key, false)
+      }
+    }
+    update({ rows: board.rows.map((r) => (r.id in results ? { ...r, cells: { ...r.cells, [colId]: results[r.id] } } : r)) })
+  }
+
   const onDuplicate = async () => {
     setDuplicating(true)
     try {
@@ -219,6 +260,13 @@ export function BoardEditor() {
             onChange={setView}
             rightSlot={<span className="text-[12px] text-slate-400">{filteredRows.length} de {board.rows.length} filas</span>}
           />
+          {computeMsg && (
+            <div className="mb-3 flex items-start gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[12.5px] text-indigo-700">
+              <Sparkles size={14} className="mt-0.5 shrink-0" />
+              <span className="flex-1">{computeMsg}</span>
+              <button onClick={() => setComputeMsg('')} className="text-indigo-300 hover:text-indigo-600">×</button>
+            </div>
+          )}
           <DataGrid
             columns={board.columns}
             rows={filteredRows}
@@ -227,9 +275,13 @@ export function BoardEditor() {
             onColumnChange={onColumnChange}
             onColumnMove={onColumnMove}
             onColumnDelete={onColumnDelete}
+            onConfigureBehavior={(colId) => setBehaviorColId(colId)}
+            onRecalcColumn={recalcColumn}
             onAddColumn={onAddColumn}
             onAddRow={onAddRow}
             onDeleteRow={onDeleteRow}
+            onRecalcCell={recalcCell}
+            computing={computing}
           />
         </>
       )}
@@ -245,6 +297,18 @@ export function BoardEditor() {
       )}
 
       {tab === 'analitica' && <Analitica columns={board.columns} rows={board.rows} />}
+
+      {behaviorColId && (() => {
+        const col = board.columns.find((c) => c.id === behaviorColId)
+        return col ? (
+          <BehaviorDialog
+            col={col}
+            columns={board.columns}
+            onSave={onColumnChange}
+            onClose={() => setBehaviorColId(null)}
+          />
+        ) : null
+      })()}
 
       {shareOpen && (
         <ShareDialog

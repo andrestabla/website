@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, RefreshCw } from 'lucide-react'
 import type { PcCellValue, PcColumn, PcRow } from '../lib/types'
 import { PC_OPTION_COLORS } from '../lib/types'
 import { ColumnHeaderMenu } from './ColumnHeaderMenu'
@@ -21,9 +21,13 @@ type Props = {
   onColumnChange?: (col: PcColumn) => void
   onColumnMove?: (colId: string, dir: -1 | 1) => void
   onColumnDelete?: (colId: string) => void
+  onConfigureBehavior?: (colId: string) => void
+  onRecalcColumn?: (colId: string) => void
   onAddColumn?: () => void
   onAddRow?: () => void
   onDeleteRow?: (rowId: string) => void
+  onRecalcCell?: (rowId: string, colId: string) => void
+  computing?: Set<string> // claves `${rowId}:${colId}`
 }
 
 export function DataGrid({
@@ -34,9 +38,13 @@ export function DataGrid({
   onColumnChange,
   onColumnMove,
   onColumnDelete,
+  onConfigureBehavior,
+  onRecalcColumn,
   onAddColumn,
   onAddRow,
   onDeleteRow,
+  onRecalcCell,
+  computing,
 }: Props) {
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -60,6 +68,8 @@ export function DataGrid({
                   onChange={onColumnChange}
                   onMove={onColumnMove}
                   onDelete={onColumnDelete}
+                  onConfigureBehavior={onConfigureBehavior}
+                  onRecalcColumn={onRecalcColumn}
                 />
               </th>
             ))}
@@ -101,12 +111,22 @@ export function DataGrid({
                   className="border-b border-r border-slate-200 p-0 align-top"
                   style={{ minWidth: col.width || 160 }}
                 >
-                  <Cell
-                    col={col}
-                    value={row.cells[col.id] ?? null}
-                    editable={editable}
-                    onChange={(v) => onCellChange?.(row.id, col.id, v)}
-                  />
+                  {col.behavior?.mode === 'formula' ? (
+                    <FormulaCell
+                      col={col}
+                      value={row.cells[col.id] ?? null}
+                      editable={editable}
+                      computing={!!computing?.has(`${row.id}:${col.id}`)}
+                      onRecalc={() => onRecalcCell?.(row.id, col.id)}
+                    />
+                  ) : (
+                    <Cell
+                      col={col}
+                      value={row.cells[col.id] ?? null}
+                      editable={editable}
+                      onChange={(v) => onCellChange?.(row.id, col.id, v)}
+                    />
+                  )}
                 </td>
               ))}
               {editable && <td className="border-b border-slate-200" />}
@@ -214,6 +234,58 @@ function Cell({
       onClick={() => editable && setEditing(true)}
     >
       {display || <span className="text-slate-300">{editable ? '—' : ''}</span>}
+    </div>
+  )
+}
+
+// ── Celda de columna fórmula (IA): solo lectura + recalcular ─────────────────
+function FormulaCell({
+  col,
+  value,
+  editable,
+  computing,
+  onRecalc,
+}: {
+  col: PcColumn
+  value: PcCellValue
+  editable: boolean
+  computing: boolean
+  onRecalc: () => void
+}) {
+  const render = col.behavior?.render || 'text'
+  const hasValue = value !== null && value !== undefined && value !== ''
+
+  return (
+    <div className="group/f flex min-h-[32px] items-center gap-2 px-2.5 py-1.5">
+      <div className="min-w-0 flex-1">
+        {render === 'progress' ? (
+          <div className="flex items-center gap-2">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-[width]"
+                style={{ width: `${hasValue ? Math.max(0, Math.min(100, Number(value))) : 0}%` }}
+              />
+            </div>
+            <span className="w-9 shrink-0 text-right text-[12px] font-semibold tabular-nums text-slate-600">
+              {hasValue ? `${Math.round(Number(value))}%` : '—'}
+            </span>
+          </div>
+        ) : (
+          <span className={`text-[13px] ${render === 'number' ? 'tabular-nums' : ''} ${hasValue ? 'text-slate-700' : 'text-slate-300'}`}>
+            {hasValue ? String(value) : '—'}
+          </span>
+        )}
+      </div>
+      {editable && (
+        <button
+          onClick={onRecalc}
+          disabled={computing}
+          title="Recalcular con IA"
+          className="shrink-0 text-slate-300 opacity-0 transition group-hover/f:opacity-100 hover:text-indigo-600 disabled:opacity-100"
+        >
+          <RefreshCw size={13} className={computing ? 'animate-spin text-indigo-500' : ''} />
+        </button>
+      )}
     </div>
   )
 }

@@ -101,6 +101,23 @@ export async function removeCollaborator(boardId: string, userId: string): Promi
   return p.collaborators || []
 }
 
+// ── Columnas fórmula (IA) ────────────────────────────────────────────────────
+export type ComputeResult = {
+  value: number | string | null
+  note?: string
+  providerUsed?: string
+  source?: { provider: string; name: string; totalTasks: number; avgProgress: number; doneProgress: number }
+}
+
+export async function computeCell(boardId: string, columnId: string, rowId: string): Promise<ComputeResult> {
+  const p = await req<{ value: any; note?: string; providerUsed?: string; source?: any }>('/api/pc/compute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ boardId, columnId, rowId }),
+  })
+  return { value: p.value ?? null, note: p.note, providerUsed: p.providerUsed, source: p.source }
+}
+
 // ── Vista pública ────────────────────────────────────────────────────────────
 export type PublicBoardData = { title: string; description: string; columns: PcColumn[]; rows: PcRow[]; updatedAt: string }
 

@@ -47,6 +47,14 @@ export function sanitizeColumns(input: unknown): any[] {
         })
         .filter((o: any) => o.value !== '')
     }
+    // Comportamiento (columna calculada por IA)
+    if (raw?.behavior && raw.behavior.mode === 'formula') {
+      const render = ['progress', 'number', 'text'].includes(raw.behavior.render) ? raw.behavior.render : 'text'
+      const b: any = { mode: 'formula', prompt: String(raw.behavior.prompt ?? '').slice(0, 4000), render }
+      if (raw.behavior.sourceColumnId) b.sourceColumnId = String(raw.behavior.sourceColumnId).slice(0, 40)
+      col.behavior = b
+    }
+
     const width = Number(raw?.width)
     if (Number.isFinite(width) && width > 0) col.width = Math.min(Math.round(width), 800)
     return col

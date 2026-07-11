@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, ArrowLeft, ArrowRight, Trash2, Plus, X } from 'lucide-react'
+import { ChevronDown, ArrowLeft, ArrowRight, Trash2, Plus, X, Sparkles, RefreshCw } from 'lucide-react'
 import type { PcColType, PcColumn } from '../lib/types'
 import { PC_COL_TYPE_LABELS, PC_OPTION_COLORS } from '../lib/types'
 
@@ -21,6 +21,8 @@ export function ColumnHeaderMenu({
   onChange,
   onMove,
   onDelete,
+  onConfigureBehavior,
+  onRecalcColumn,
 }: {
   col: PcColumn
   editable: boolean
@@ -29,6 +31,8 @@ export function ColumnHeaderMenu({
   onChange?: (col: PcColumn) => void
   onMove?: (colId: string, dir: -1 | 1) => void
   onDelete?: (colId: string) => void
+  onConfigureBehavior?: (colId: string) => void
+  onRecalcColumn?: (colId: string) => void
 }) {
   const [open, setOpen] = useState(false)
   const [editingName, setEditingName] = useState(false)
@@ -51,7 +55,11 @@ export function ColumnHeaderMenu({
 
   return (
     <div ref={ref} className="relative flex items-center gap-1 px-2.5 py-2">
-      <span className="text-[11px] text-slate-300" title={PC_COL_TYPE_LABELS[col.type]}>{TYPE_ICON[col.type]}</span>
+      {col.behavior?.mode === 'formula' ? (
+        <Sparkles size={12} className="text-indigo-400" aria-label="Columna fórmula (IA)" />
+      ) : (
+        <span className="text-[11px] text-slate-300" title={PC_COL_TYPE_LABELS[col.type]}>{TYPE_ICON[col.type]}</span>
+      )}
       {editingName && editable ? (
         <input
           value={name}
@@ -78,6 +86,21 @@ export function ColumnHeaderMenu({
 
       {open && editable && (
         <div className="absolute left-0 top-full z-40 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-1 shadow-xl">
+          <button
+            onClick={() => { setOpen(false); onConfigureBehavior?.(col.id) }}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] font-semibold text-indigo-700 hover:bg-indigo-50"
+          >
+            <Sparkles size={13} /> Configurar comportamiento
+          </button>
+          {col.behavior?.mode === 'formula' && (
+            <button
+              onClick={() => { setOpen(false); onRecalcColumn?.(col.id) }}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] font-semibold text-slate-600 hover:bg-slate-100"
+            >
+              <RefreshCw size={13} /> Recalcular columna (IA)
+            </button>
+          )}
+          <div className="my-1 border-t border-slate-100" />
           <div className="px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">Tipo de dato</div>
           <div className="grid grid-cols-2 gap-1 px-1 pb-2">
             {(Object.keys(PC_COL_TYPE_LABELS) as PcColType[]).map((t) => (

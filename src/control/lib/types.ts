@@ -8,6 +8,17 @@ export type PcOptionField = { id: string; label: string }
 /** Una entrada de "datos de entrada": el valor visible + color + metadatos. */
 export type PcOption = { value: string; color?: string; meta?: Record<string, string> }
 
+/** Cómo se rinde/computa el valor de una columna tipo fórmula. */
+export type PcBehaviorRender = 'progress' | 'number' | 'text'
+export type PcBehavior = {
+  mode: 'formula'
+  /** Descripción en prosa de cómo calcular el valor; la IA la opera. */
+  prompt: string
+  render?: PcBehaviorRender
+  /** Columna cuyo valor (un enlace) la IA debe leer para calcular. */
+  sourceColumnId?: string
+}
+
 export type PcColumn = {
   id: string
   name: string
@@ -15,6 +26,8 @@ export type PcColumn = {
   options?: PcOption[]
   /** Esquema de metadatos de la categoría (solo aplica a columnas select). */
   optionFields?: PcOptionField[]
+  /** Comportamiento avanzado (columna calculada por IA). */
+  behavior?: PcBehavior
   width?: number
 }
 
