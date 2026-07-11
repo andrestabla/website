@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, FileSpreadsheet, Trash2, Loader2, LayoutGrid, Users, Globe } from 'lucide-react'
-import { createBoard, deleteBoard, listBoards } from './lib/control-api'
+import { Plus, FileSpreadsheet, Trash2, Loader2, LayoutGrid, Users, Globe, Copy } from 'lucide-react'
+import { createBoard, deleteBoard, duplicateBoard, listBoards } from './lib/control-api'
 import { parseSpreadsheet } from './lib/excel'
 import { newColumn, newRow, type PcBoardSummary } from './lib/types'
 import { controlPath } from './lib/base'
@@ -71,6 +71,16 @@ export function BoardsList() {
     }
   }
 
+  const duplicate = async (b: PcBoardSummary) => {
+    setError('')
+    try {
+      const newId = await duplicateBoard(b.id)
+      navigate(controlPath(`/${newId}`))
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo duplicar')
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="mb-6 flex items-end justify-between">
@@ -127,15 +137,24 @@ export function BoardsList() {
                 <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
                   <LayoutGrid size={18} />
                 </div>
-                {b.role === 'owner' && (
+                <div className="flex items-center gap-1.5 opacity-0 transition group-hover:opacity-100">
                   <button
-                    onClick={(e) => { e.stopPropagation(); remove(b) }}
-                    className="text-slate-300 opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
-                    title="Eliminar"
+                    onClick={(e) => { e.stopPropagation(); duplicate(b) }}
+                    className="text-slate-300 transition hover:text-indigo-600"
+                    title="Duplicar"
                   >
-                    <Trash2 size={16} />
+                    <Copy size={16} />
                   </button>
-                )}
+                  {b.role === 'owner' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); remove(b) }}
+                      className="text-slate-300 transition hover:text-rose-500"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
               <h3 className="mt-3 truncate text-[15px] font-bold tracking-tight text-slate-900">{b.title}</h3>
               {b.description && <p className="mt-0.5 truncate text-[12.5px] text-slate-500">{b.description}</p>}

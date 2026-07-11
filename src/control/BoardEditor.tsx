@@ -1,13 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Share2, Check, Loader2, AlertCircle } from 'lucide-react'
-import { getBoard, saveBoard } from './lib/control-api'
+import { ArrowLeft, Share2, Check, Loader2, AlertCircle, Copy, Download, Table2, Database, BarChart3 } from 'lucide-react'
+import { duplicateBoard, getBoard, saveBoard } from './lib/control-api'
 import { controlPath } from './lib/base'
 import { newColumn, newRow, type PcBoard, type PcCellValue, type PcColumn } from './lib/types'
+import { exportBoardToExcel } from './lib/export'
+import { applyView, emptyView, type PcView } from './lib/view'
 import { DataGrid } from './grid/DataGrid'
+import { GridToolbar } from './grid/GridToolbar'
+import { DatosEntrada } from './grid/DatosEntrada'
+import { Analitica } from './grid/Analitica'
 import { ShareDialog } from './grid/ShareDialog'
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
+type Tab = 'grid' | 'datos' | 'analitica'
 
 export function BoardEditor() {
   const { id = '' } = useParams()
@@ -17,6 +23,9 @@ export function BoardEditor() {
   const [error, setError] = useState('')
   const [saveState, setSaveState] = useState<SaveState>('idle')
   const [shareOpen, setShareOpen] = useState(false)
+  const [tab, setTab] = useState<Tab>('grid')
+  const [view, setView] = useState<PcView>(emptyView)
+  const [duplicating, setDuplicating] = useState(false)
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pending = useRef<Partial<Pick<PcBoard, 'title' | 'description' | 'columns' | 'rows'>>>({})
@@ -32,7 +41,6 @@ export function BoardEditor() {
 
   const editable = board?.access === 'owner' || board?.access === 'EDIT'
 
-  // Autosave con debounce.
   const scheduleSave = useCallback((patch: Partial<Pick<PcBoard, 'title' | 'description' | 'columns' | 'rows'>>) => {
     pending.current = { ...pending.current, ...patch }
     setSaveState('saving')
@@ -62,6 +70,8 @@ export function BoardEditor() {
     }
   }, [scheduleSave])
 
+  const filteredRows = useMemo(() => (board ? applyView(board.rows, board.columns, view) : []), [board, view])
+
   if (loading) return <Centered><Loader2 className="animate-spin text-slate-400" /></Centered>
   if (error || !board) return <Centered><div className="text-sm text-rose-600">{error || 'Tablero no encontrado'}</div></Centered>
 
@@ -90,14 +100,38 @@ export function BoardEditor() {
     const rows = board.rows.map((r) => ({ ...r, cells: { ...r.cells, [col.id]: null } }))
     update({ columns: [...board.columns, col], rows })
   }
+  const onAddCategory = () => {
+    const n = board.columns.filter((c) => c.type === 'select').length + 1
+    const col = newColumn('select', `Categoría ${n}`)
+    const rows = board.rows.map((r) => ({ ...r, cells: { ...r.cells, [col.id]: null } }))
+    update({ columns: [...board.columns, col], rows })
+    setTab('datos')
+  }
   const onAddRow = () => update({ rows: [...board.rows, newRow(board.columns)] })
   const onDeleteRow = (rowId: string) => update({ rows: board.rows.filter((r) => r.id !== rowId) })
   const onCellChange = (rowId: string, colId: string, value: PcCellValue) =>
     update({ rows: board.rows.map((r) => (r.id === rowId ? { ...r, cells: { ...r.cells, [colId]: value } } : r)) })
 
+  const onDuplicate = async () => {
+    setDuplicating(true)
+    try {
+      const newId = await duplicateBoard(board.id)
+      navigate(controlPath(`/${newId}`))
+    } catch (e: any) {
+      setError(e?.message || 'No se pudo duplicar')
+      setDuplicating(false)
+    }
+  }
+
+  const tabs: { key: Tab; label: string; icon: any }[] = [
+    { key: 'grid', label: 'Tablero', icon: Table2 },
+    { key: 'datos', label: 'Datos de entrada', icon: Database },
+    { key: 'analitica', label: 'Analítica', icon: BarChart3 },
+  ]
+
   return (
     <div className="mx-auto max-w-[1400px] px-5 py-6">
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-3 flex items-center gap-3">
         <button onClick={() => navigate(controlPath())} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
           <ArrowLeft size={17} />
         </button>
@@ -123,6 +157,21 @@ export function BoardEditor() {
           ) : null}
         </div>
         <SaveBadge state={saveState} readOnly={!editable} />
+        <button
+          onClick={() => exportBoardToExcel(board)}
+          title="Exportar a Excel"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600"
+        >
+          <Download size={15} /> Excel
+        </button>
+        <button
+          onClick={onDuplicate}
+          disabled={duplicating}
+          title="Duplicar tablero"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-60"
+        >
+          {duplicating ? <Loader2 size={15} className="animate-spin" /> : <Copy size={15} />} Duplicar
+        </button>
         {board.isOwner && (
           <button
             onClick={() => setShareOpen(true)}
@@ -133,18 +182,49 @@ export function BoardEditor() {
         )}
       </div>
 
-      <DataGrid
-        columns={board.columns}
-        rows={board.rows}
-        editable={!!editable}
-        onCellChange={onCellChange}
-        onColumnChange={onColumnChange}
-        onColumnMove={onColumnMove}
-        onColumnDelete={onColumnDelete}
-        onAddColumn={onAddColumn}
-        onAddRow={onAddRow}
-        onDeleteRow={onDeleteRow}
-      />
+      {/* Pestañas */}
+      <div className="mb-4 flex items-center gap-1 border-b border-slate-200">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 text-[13px] font-semibold transition ${
+              tab === t.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <t.icon size={15} /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'grid' && (
+        <>
+          <GridToolbar
+            columns={board.columns}
+            view={view}
+            onChange={setView}
+            rightSlot={<span className="text-[12px] text-slate-400">{filteredRows.length} de {board.rows.length} filas</span>}
+          />
+          <DataGrid
+            columns={board.columns}
+            rows={filteredRows}
+            editable={!!editable}
+            onCellChange={onCellChange}
+            onColumnChange={onColumnChange}
+            onColumnMove={onColumnMove}
+            onColumnDelete={onColumnDelete}
+            onAddColumn={onAddColumn}
+            onAddRow={onAddRow}
+            onDeleteRow={onDeleteRow}
+          />
+        </>
+      )}
+
+      {tab === 'datos' && (
+        <DatosEntrada columns={board.columns} editable={!!editable} onColumnChange={onColumnChange} onAddCategory={onAddCategory} />
+      )}
+
+      {tab === 'analitica' && <Analitica columns={board.columns} rows={board.rows} />}
 
       {shareOpen && (
         <ShareDialog

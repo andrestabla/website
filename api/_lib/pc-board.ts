@@ -22,14 +22,29 @@ export function sanitizeColumns(input: unknown): any[] {
       type,
     }
     if (type === 'select') {
+      // Esquema de metadatos de la categoría.
+      const fields = Array.isArray(raw?.optionFields) ? raw.optionFields : []
+      col.optionFields = fields
+        .slice(0, 40)
+        .map((f: any) => ({ id: String(f?.id || rid('f')).slice(0, 40), label: String(f?.label ?? 'Dato').slice(0, 120) }))
+      const fieldIds = new Set<string>(col.optionFields.map((f: any) => f.id))
+
       const opts = Array.isArray(raw?.options) ? raw.options : []
       col.options = opts
         .slice(0, MAX_OPTIONS)
-        .map((o: any) =>
-          typeof o === 'string'
-            ? { value: o.slice(0, 200) }
-            : { value: String(o?.value ?? '').slice(0, 200), ...(o?.color ? { color: String(o.color).slice(0, 20) } : {}) }
-        )
+        .map((o: any) => {
+          if (typeof o === 'string') return { value: o.slice(0, 200) }
+          const out: any = { value: String(o?.value ?? '').slice(0, 200) }
+          if (o?.color) out.color = String(o.color).slice(0, 20)
+          if (o?.meta && typeof o.meta === 'object') {
+            const meta: Record<string, string> = {}
+            for (const [k, v] of Object.entries(o.meta)) {
+              if (fieldIds.has(k) && v != null && v !== '') meta[k] = String(v).slice(0, 2000)
+            }
+            if (Object.keys(meta).length) out.meta = meta
+          }
+          return out
+        })
         .filter((o: any) => o.value !== '')
     }
     const width = Number(raw?.width)

@@ -17,6 +17,7 @@ import * as XLSX from 'xlsx'
 
 const XLSX_PATH = process.env.PC_SEED_XLSX || 'Tablero seguimiento Unicafam.xlsx'
 const BOARD_ID = 'seed_unicafam'
+const SHARE_TOKEN = 'unicafam-seguimiento' // token público estable (board deliberadamente público)
 
 function readDatabaseUrl(): string {
   let url = (process.env.DATABASE_URL || process.env.POSTGRES_URL || '').trim()
@@ -168,13 +169,15 @@ async function main() {
 
   // 5) Upsert del tablero
   await q(
-    `INSERT INTO "PcBoard" ("id","ownerId","title","description","columns","rows","updatedAt")
-     VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb, CURRENT_TIMESTAMP)
+    `INSERT INTO "PcBoard" ("id","ownerId","title","description","columns","rows","shareToken","shareEnabled","updatedAt")
+     VALUES ($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7,true, CURRENT_TIMESTAMP)
      ON CONFLICT ("id") DO UPDATE SET
        "title" = EXCLUDED."title",
        "description" = EXCLUDED."description",
        "columns" = EXCLUDED."columns",
        "rows" = EXCLUDED."rows",
+       "shareToken" = COALESCE("PcBoard"."shareToken", EXCLUDED."shareToken"),
+       "shareEnabled" = true,
        "updatedAt" = CURRENT_TIMESTAMP`,
     [
       BOARD_ID,
@@ -183,9 +186,12 @@ async function main() {
       'Seguimiento de virtualización de programas — Unicafam.',
       JSON.stringify(columns),
       JSON.stringify(rows),
+      SHARE_TOKEN,
     ]
   )
+  const finalTok = (await q(`SELECT "shareToken" FROM "PcBoard" WHERE id=$1`, [BOARD_ID])).rows[0]?.shareToken
   console.log(`· Tablero "${BOARD_ID}" sembrado: ${columns.length} columnas, ${rows.length} filas`)
+  console.log(`· Publicado (solo lectura): /board/${finalTok}`)
 
   await pool.end()
   console.log('✔ Listo')

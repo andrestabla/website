@@ -2,13 +2,19 @@
 
 export type PcColType = 'text' | 'longtext' | 'number' | 'date' | 'select' | 'url' | 'checkbox'
 
-export type PcOption = { value: string; color?: string }
+/** Definición de un campo de metadatos para una categoría (columna select). */
+export type PcOptionField = { id: string; label: string }
+
+/** Una entrada de "datos de entrada": el valor visible + color + metadatos. */
+export type PcOption = { value: string; color?: string; meta?: Record<string, string> }
 
 export type PcColumn = {
   id: string
   name: string
   type: PcColType
   options?: PcOption[]
+  /** Esquema de metadatos de la categoría (solo aplica a columnas select). */
+  optionFields?: PcOptionField[]
   width?: number
 }
 
@@ -73,8 +79,12 @@ function uid(prefix: string) {
 
 export function newColumn(type: PcColType = 'text', name = 'Nueva columna'): PcColumn {
   const col: PcColumn = { id: uid('c'), name, type }
-  if (type === 'select') col.options = []
+  if (type === 'select') { col.options = []; col.optionFields = [] }
   return col
+}
+
+export function newOptionField(label = 'Nuevo dato'): PcOptionField {
+  return { id: uid('f'), label }
 }
 
 export function newRow(columns: PcColumn[]): PcRow {

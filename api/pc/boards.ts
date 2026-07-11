@@ -41,6 +41,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
+
+      // Duplicar un tablero existente (accesible por el usuario: propio o compartido)
+      if (body.duplicateOf) {
+        const srcId = String(body.duplicateOf).slice(0, 40)
+        const src = await db().findUnique({ where: { id: srcId } })
+        let allowedSrc = !!src && src.ownerId === userId
+        if (src && !allowedSrc) {
+          const sh = await shareDb().findUnique({ where: { boardId_userId: { boardId: srcId, userId } } })
+          allowedSrc = !!sh
+        }
+        if (!src || !allowedSrc) return res.status(404).json({ ok: false, error: 'Tablero a duplicar no encontrado' })
+        const created = await db().create({
+          data: {
+            ownerId: userId,
+            title: `${String(src.title).slice(0, 190)} (copia)`,
+            description: src.description || null,
+            columns: sanitizeColumns(src.columns),
+            rows: sanitizeRows(src.rows, sanitizeColumns(src.columns)),
+          },
+        })
+        return res.status(200).json({ ok: true, id: created.id })
+      }
+
       const title = String(body.title || 'Tablero sin título').slice(0, 200)
       const description = body.description ? String(body.description).slice(0, 2000) : null
       const columns = sanitizeColumns(body.columns)

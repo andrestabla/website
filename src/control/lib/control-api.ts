@@ -25,6 +25,15 @@ export async function createBoard(input: { title: string; description?: string; 
   return p.id
 }
 
+export async function duplicateBoard(id: string): Promise<string> {
+  const p = await req<{ id: string }>('/api/pc/boards', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ duplicateOf: id }),
+  })
+  return p.id
+}
+
 export async function getBoard(id: string): Promise<PcBoard> {
   const p = await req<{ board: PcBoard }>(`/api/pc/board?id=${encodeURIComponent(id)}`)
   return p.board
