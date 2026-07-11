@@ -1,4 +1,34 @@
 import type { ReactNode } from 'react'
+import { EChart } from '../../components/EChart'
+import { barH, barV, donut, lineChart, PALETTE } from '../../lib/charts'
+
+/** Construye una opción ECharts a partir de una especificación simple del asistente. */
+function chartOption(spec: any) {
+  const type = String(spec?.type || 'bar').toLowerCase()
+  if (Array.isArray(spec?.x) && Array.isArray(spec?.series)) {
+    const series = spec.series.map((s: any, i: number) => ({ name: String(s.name || `Serie ${i + 1}`), data: (s.data || []).map((v: any) => (v == null ? null : Number(v))) }))
+    return lineChart(spec.x.map((v: any) => String(v)), series, { min: spec.min, max: spec.max })
+  }
+  const data = (spec?.data || []).map((d: any) => ({ label: String(d.label ?? d.name ?? ''), value: Number(d.value ?? d.y ?? 0) })).filter((d: any) => d.label)
+  if (type === 'donut' || type === 'pie') return donut(data)
+  if (type === 'barh' || type === 'bar_horizontal' || type === 'horizontal') return barH(data, PALETTE[0], Math.min(data.length, 30), true)
+  return barV(data, PALETTE[0], Math.min(data.length, 30))
+}
+
+function ChartBlock({ raw }: { raw: string }) {
+  let spec: any = null
+  try { spec = JSON.parse(raw) } catch { /* inválido */ }
+  if (!spec) {
+    return <pre className="my-3 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-500">{raw}</pre>
+  }
+  const height = Math.max(260, Math.min(520, ((spec.data?.length || spec.x?.length || 6) * (String(spec.type).toLowerCase().startsWith('bar') ? 26 : 20)) + 120))
+  return (
+    <figure className="my-4 rounded-xl border border-slate-200 bg-white p-3">
+      {spec.title && <figcaption className="mb-1 px-1 text-[13px] font-bold text-slate-800">{spec.title}</figcaption>}
+      <EChart option={chartOption(spec)} height={String(spec.type).toLowerCase().startsWith('barh') || String(spec.type).toLowerCase() === 'horizontal' ? height : 320} />
+    </figure>
+  )
+}
 
 /** Render inline: **negrita**, *itálica*, `código`, [texto](url). */
 function inline(text: string, keyPrefix: string): ReactNode[] {
@@ -33,6 +63,22 @@ export function Markdown({ text }: { text: string }) {
   while (i < lines.length) {
     const line = lines[i]
     if (!line.trim()) { i++; continue }
+
+    // Bloque cercado ``` — gráficas (```chart) o código.
+    if (/^```/.test(line)) {
+      const lang = line.replace(/^```+/, '').trim().toLowerCase()
+      const buf: string[] = []
+      i++
+      while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++ }
+      i++ // cierre ```
+      const content = buf.join('\n')
+      if (lang === 'chart' || lang === 'bichart' || lang === 'grafica') {
+        blocks.push(<ChartBlock key={key++} raw={content} />)
+      } else {
+        blocks.push(<pre key={key++} className="my-3 overflow-x-auto rounded-lg border border-slate-200 bg-slate-50 p-3 text-[12px] text-slate-700"><code>{content}</code></pre>)
+      }
+      continue
+    }
 
     // Título
     const h = /^(#{1,4})\s+(.*)$/.exec(line)

@@ -59,7 +59,16 @@ CÓMO RESPONDER:
 - Ejemplo: "¿qué universidades ofertan Administración de Empresas?" → consultar_oferta_educativa({ programa: "Administración de Empresas", agrupar_por: "institucion", limite: 60 }) y LISTA las instituciones con sus conteos y totales.
 - Sé muy detallado y accionable: cifras concretas, rankings, listas y TABLAS en Markdown; añade contexto (totales, participación %, comparativas) y conclusiones.
 - No inventes datos que la herramienta no devolvió; si algo no está, dilo y sugiere qué otra consulta lo resolvería.
-- Responde en español, en Markdown editorial (## títulos, listas, **negritas**, tablas).${attachBlock}`
+- Responde en español, en Markdown editorial (## títulos, listas, **negritas**, tablas).
+
+GRÁFICAS: cuando el usuario pida graficar/visualizar, o cuando una gráfica ayude a entender, INCLUYE una gráfica emitiendo un bloque cercado \`\`\`chart con un JSON (además del texto/tabla). Usa SIEMPRE datos reales de las herramientas. Formatos:
+- Barras/ranking/composición: \`\`\`chart
+{"type":"barh","title":"Instituciones con más programas","data":[{"label":"Universidad X","value":20},{"label":"Universidad Y","value":15}]}
+\`\`\`  (type: "barh" horizontal —ideal para rankings largos—, "bar" vertical, "donut" o "pie" para participación).
+- Series temporales: \`\`\`chart
+{"type":"line","title":"Evolución","x":["2021","2022","2023"],"series":[{"name":"Vinculación %","data":[70,73,75]}]}
+\`\`\`
+Limita a ~20 categorías (agrupa el resto si hace falta) y pon títulos claros.${attachBlock}`
 
     const { reply, toolsUsed } = await runBiAgent({ system, messages, webAccess })
     return res.status(200).json({ ok: true, reply, toolsUsed })

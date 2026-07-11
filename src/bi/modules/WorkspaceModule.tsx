@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchDataset } from '../lib/api'
-import { fmt, f1 } from '../lib/charts'
+import { fmt, f1, barH, barHColored, PALETTE } from '../lib/charts'
+import { EChart } from '../components/EChart'
 import { AiBuilder } from './workspace/AiBuilder'
 
 const TABS = [
@@ -147,6 +148,14 @@ function H2({ children }: { children: React.ReactNode }) { return <h2 className=
 function Kpi({ v, l }: { v: string; l: string }) { return <div className="rounded-lg border border-slate-200 bg-slate-50 p-3"><div className="text-[20px] font-extrabold text-[#12203a]">{v}</div><div className="mt-0.5 text-[10.5px] text-slate-500">{l}</div></div> }
 function Chip({ children }: { children: React.ReactNode }) { return <span className="mr-1.5 mb-1.5 inline-block rounded-md border border-[#dbe3ef] bg-[#eef2f8] px-2.5 py-1 text-[11.5px] font-semibold text-[#1b3a86]">{children}</span> }
 function Nivel({ n }: { n: string }) { return <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white" style={{ background: NIVEL_COLOR[n] }}>{n}</span> }
+function DocChart({ title, option, height = 300 }: { title: string; option: any; height?: number }) {
+  return (
+    <figure className="my-3 rounded-lg border border-slate-200 p-2">
+      <figcaption className="mb-1 px-1 text-[12.5px] font-bold text-slate-700">{title}</figcaption>
+      <EChart option={option} height={height} />
+    </figure>
+  )
+}
 
 function RecoBlock({ list }: { list: RecoSector[] }) {
   return (
@@ -171,8 +180,10 @@ function NacionalDoc({ D, reco, on, fecha }: { D: PertDep[]; reco: Reco; on: (id
       <Meta>Alcance: <b>Colombia ({D.length} departamentos)</b> · Generado {fecha} · Plataforma Algoritmo BI</Meta>
       {on('resumen') && <><H2>Resumen ejecutivo</H2>
         <div className="my-3 grid grid-cols-4 gap-2.5"><Kpi v={fmt(totalVig)} l="Programas vigentes" /><Kpi v={fmt(D.length)} l="Departamentos" /><Kpi v={f1(demMedia)} l="Índice de demanda medio" /><Kpi v={fmt(reco.regiones.length)} l="Regiones" /></div>
-        <p className="text-[13px] leading-relaxed text-slate-700">La oferta de educación superior se concentra en pocos polos (Bogotá, Antioquia, Valle) mientras la demanda de competencias es más distribuida; el análisis regional identifica las brechas prioritarias.</p></>}
+        <p className="text-[13px] leading-relaxed text-slate-700">La oferta de educación superior se concentra en pocos polos (Bogotá, Antioquia, Valle) mientras la demanda de competencias es más distribuida; el análisis regional identifica las brechas prioritarias.</p>
+        <DocChart title="Programas vigentes por departamento (Top 12)" height={360} option={barH(D.map((d) => ({ label: d.dep, value: d.supply_vigentes })), PALETTE[0], 12)} /></>}
       {on('recomendacion') && <><H2>Prioridades por región</H2>
+        <DocChart title="Sector con mayor oportunidad por región (score)" height={340} option={barHColored(reco.regiones.map((r) => ({ label: `${r.region} · ${r.sectores[0].sector}`, value: r.sectores[0].score, color: NIVEL_COLOR[r.sectores[0].nivel] || PALETTE[0] })), true)} />
         <table className="w-full text-[12px]"><thead><tr className="text-left text-[10px] uppercase tracking-wide text-slate-500"><th className="py-1.5">Región</th><th className="py-1.5">Sector con mayor oportunidad</th><th className="py-1.5 text-right">Score</th><th className="py-1.5">Programas sugeridos</th></tr></thead>
           <tbody>{reco.regiones.map((r) => { const s = r.sectores[0]; return <tr key={r.region} className="border-t border-slate-100"><td className="py-1.5 font-semibold">{r.region}</td><td className="py-1.5">{s.sector}</td><td className="py-1.5 text-right"><Nivel n={s.nivel} /> {f1(s.score)}</td><td className="py-1.5">{s.programas_sugeridos.slice(0, 2).join(', ')}</td></tr> })}</tbody></table></>}
     </>
@@ -191,7 +202,9 @@ function RegionDoc({ region, D, reco, on, fecha }: { region: string; D: PertDep[
       {on('resumen') && <><H2>Resumen ejecutivo</H2>
         <div className="my-3 grid grid-cols-4 gap-2.5"><Kpi v={fmt(r.n_departamentos)} l="Departamentos" /><Kpi v={fmt(totalVig)} l="Programas vigentes" /><Kpi v={f1(r.sectores[0].score)} l="Score top sector" /><Kpi v={String(r.sectores.filter((s) => s.nivel === 'Muy alta' || s.nivel === 'Alta').length)} l="Sectores prioritarios" /></div>
         <p className="text-[13px] text-slate-700">Departamentos: {r.departamentos.join(', ')}.</p></>}
-      {on('recomendacion') && <><H2>Recomendación de programas a ofertar</H2><RecoBlock list={r.sectores} /></>}
+      {on('recomendacion') && <><H2>Recomendación de programas a ofertar</H2>
+        <DocChart title="Sectores por oportunidad (score 0–100)" height={Math.max(220, r.sectores.length * 30)} option={barHColored(r.sectores.map((s) => ({ label: s.sector, value: s.score, color: NIVEL_COLOR[s.nivel] || PALETTE[0] })), true)} />
+        <RecoBlock list={r.sectores} /></>}
     </>
   )
 }
@@ -207,9 +220,11 @@ function DeptoDoc({ dep, D, reco, on, fecha }: { dep: string; D: PertDep[]; reco
         <div className="my-3 grid grid-cols-4 gap-2.5"><Kpi v={fmt(p.supply_vigentes)} l="Programas vigentes" /><Kpi v={f1(p.demand_index)} l="Índice de demanda" /><Kpi v={(p.gap > 0 ? '+' : '') + f1(p.gap)} l="Brecha (dem−ofe)" /><Kpi v={fmt(rc?.total_vigentes ?? p.supply_vigentes)} l="Oferta total" /></div>
         <p className="text-[13px] text-slate-700">Diagnóstico de pertinencia: cuadrante <b>{p.quadrant}</b>. {p.gap > 10 ? 'La demanda relativa supera la oferta: oportunidad de expansión pertinente.' : p.gap < -10 ? 'La oferta relativa supera la demanda: enfocar en actualización y calidad.' : 'Oferta y demanda relativamente alineadas.'}</p></>}
       {on('oferta') && p && <><H2>Oferta educativa</H2>
+        <DocChart title="Áreas de conocimiento con más oferta (programas vigentes)" height={Math.max(220, Math.min(p.top_areas.length, 10) * 30)} option={barH(p.top_areas.map((a) => ({ label: a.label, value: a.value })), PALETTE[3], 10)} />
         <table className="w-full text-[12px]"><thead><tr className="text-left text-[10px] uppercase tracking-wide text-slate-500"><th className="py-1.5">Área de conocimiento</th><th className="py-1.5 text-right">Programas</th></tr></thead><tbody>{p.top_areas.map((a) => <tr key={a.label} className="border-t border-slate-100"><td className="py-1.5">{a.label}</td><td className="py-1.5 text-right tabular-nums">{fmt(a.value)}</td></tr>)}</tbody></table></>}
       {on('pertinencia') && p && <><H2>Pertinencia (oferta ↔ demanda)</H2>
         <p className="text-[13px] text-slate-700">Posición relativa entre departamentos — oferta: percentil <b>{f1(p.supply_rank)}</b>; demanda: percentil <b>{f1(p.demand_rank)}</b>; brecha <b>{p.gap > 0 ? '+' : ''}{f1(p.gap)}</b>.</p>
+        <DocChart title="Competencias más demandadas" height={Math.max(220, Math.min(p.top_competencias.length, 10) * 30)} option={barHColored(p.top_competencias.slice(0, 10).map((c) => ({ label: c.label, value: c.value, color: '#E15759' })), true)} />
         <div className="mt-2">{p.top_competencias.slice(0, 8).map((c) => <Chip key={c.label}>{c.label} · {f1(c.value)}</Chip>)}</div></>}
       {on('recomendacion') && rc && <><H2>Recomendación de programas a ofertar</H2><RecoBlock list={rc.recomendaciones} /></>}
     </>
