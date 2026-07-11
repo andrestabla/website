@@ -1,6 +1,38 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchDataset } from '../lib/api'
 import { fmt, f1 } from '../lib/charts'
+import { AiBuilder } from './workspace/AiBuilder'
+
+const TABS = [
+  { id: 'sistema', label: 'Constructor del sistema' },
+  { id: 'ia', label: 'Constructor a la medida (IA)' },
+]
+
+export function WorkspaceModule() {
+  const [tab, setTab] = useState('sistema')
+  return (
+    <div>
+      <div className="mx-auto max-w-[1500px] px-6 pt-5">
+        <div className="mb-1 flex items-baseline gap-3">
+          <h1 className="text-lg font-black tracking-tight">Workspace · generador de productos académicos</h1>
+          <span className="text-[12.5px] text-slate-400 print:hidden">Informes y análisis a partir de la base de conocimiento BI</span>
+        </div>
+        <div className="flex flex-wrap gap-1 border-b border-slate-200 print:hidden">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`border-b-2 px-3.5 py-2.5 text-[13px] font-semibold transition ${tab === t.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {tab === 'sistema' ? <SystemReportBuilder /> : <AiBuilder />}
+    </div>
+  )
+}
 
 type Rec = Record<string, unknown>
 type LabelVal = { label: string; value: number }
@@ -17,7 +49,7 @@ const SECTIONS = [
   { id: 'recomendacion', label: 'Recomendación de programas' },
 ]
 
-export function WorkspaceModule() {
+function SystemReportBuilder() {
   const [pert, setPert] = useState<Pert | null>(null)
   const [reco, setReco] = useState<Reco | null>(null)
   const [err, setErr] = useState('')

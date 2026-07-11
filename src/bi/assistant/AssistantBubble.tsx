@@ -56,6 +56,8 @@ export function AssistantBubble() {
   }, [asst?.messages, asst?.busy])
 
   if (!asst) return null
+  // El Workspace tiene su propio asistente a dos paneles: aquí no va la burbuja.
+  if (sectionKey === 'workspace') return null
   const { open, busy, messages, error, blocks, openPanel, closePanel, clear, sendMessage, explainBlock } = asst
 
   const submit = () => {
