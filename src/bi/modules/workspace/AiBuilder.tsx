@@ -2,32 +2,23 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   workspaceChat,
   uploadWorkspaceFile,
-  isTextFile,
-  readFileText,
+  uploadAndExtract,
+  listConversations,
+  saveConversation,
+  removeConversation,
   type WsMessage,
   type WsAttachment,
+  type WsThread as Thread,
 } from '../../lib/workspace-api'
 import { Markdown } from './md'
 
-type Thread = { id: string; title: string; messages: WsMessage[] }
-const LS_KEY = 'bi_ws_threads_v1'
-
-function loadThreads(): Thread[] {
-  try {
-    const raw = localStorage.getItem(LS_KEY)
-    const arr = raw ? JSON.parse(raw) : []
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
-  }
-}
 function uid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
 export function AiBuilder() {
-  const [threads, setThreads] = useState<Thread[]>(() => loadThreads())
-  const [activeId, setActiveId] = useState<string>(() => loadThreads()[0]?.id || '')
+  const [threads, setThreads] = useState<Thread[]>([])
+  const [activeId, setActiveId] = useState<string>('')
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -40,13 +31,16 @@ export function AiBuilder() {
 
   const active = useMemo(() => threads.find((t) => t.id === activeId) || null, [threads, activeId])
 
+  // Carga las conversaciones del usuario desde la BD al montar.
   useEffect(() => {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify(threads.slice(0, 40)))
-    } catch {
-      /* ignore quota */
-    }
-  }, [threads])
+    let cancelled = false
+    listConversations().then((ts) => {
+      if (cancelled) return
+      setThreads(ts)
+      if (ts[0]) setActiveId(ts[0].id)
+    })
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -68,6 +62,13 @@ export function AiBuilder() {
 
   const patchThread = (id: string, fn: (t: Thread) => Thread) => {
     setThreads((prev) => prev.map((t) => (t.id === id ? fn(t) : t)))
+  }
+
+  const deleteThread = (id: string) => {
+    void removeConversation(id)
+    setThreads((prev) => prev.filter((x) => x.id !== id))
+    if (activeId === id) { setActiveId(''); setAttachments([]) }
+    setHistoryOpen(false)
   }
 
   const newThread = () => {
@@ -92,7 +93,9 @@ export function AiBuilder() {
     setError('')
     try {
       const { reply } = await workspaceChat({ messages: nextMessages, attachments, webAccess })
-      patchThread(t.id, (x) => ({ ...x, messages: [...nextMessages, { role: 'assistant', content: reply }] }))
+      const finalMessages = [...nextMessages, { role: 'assistant' as const, content: reply }]
+      patchThread(t.id, (x) => ({ ...x, messages: finalMessages }))
+      void saveConversation({ id: t.id, title, messages: finalMessages })
     } catch (e) {
       setError((e as Error).message)
       patchThread(t.id, (x) => ({ ...x, messages: nextMessages }))
@@ -108,15 +111,19 @@ export function AiBuilder() {
     try {
       for (const file of Array.from(files)) {
         const att: WsAttachment = { name: file.name, type: file.type }
-        if (isTextFile(file)) {
-          try { att.text = await readFileText(file) } catch { /* ignore */ }
-        }
         try {
-          const { publicUrl } = await uploadWorkspaceFile(file)
-          att.url = publicUrl
+          if (file.size <= 4 * 1024 * 1024) {
+            const { text, url } = await uploadAndExtract(file)
+            if (text) att.text = text
+            if (url) att.url = url
+            if (!text) setError(`No se pudo extraer texto de "${file.name}" (se adjuntó igual).`)
+          } else {
+            const { publicUrl } = await uploadWorkspaceFile(file)
+            att.url = publicUrl
+            setError(`"${file.name}" (>4 MB): guardado, pero su texto no se procesó.`)
+          }
         } catch (e) {
-          // El archivo sirve igual como contexto si es de texto; avisa si no se pudo guardar.
-          if (!att.text) setError(`No se pudo subir "${file.name}": ${(e as Error).message}`)
+          setError(`"${file.name}": ${(e as Error).message}`)
         }
         setAttachments((prev) => [...prev, att])
       }
@@ -145,9 +152,12 @@ export function AiBuilder() {
               <div className="absolute right-0 top-[calc(100%+4px)] z-20 max-h-72 w-64 overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                 {threads.length === 0 && <div className="px-3 py-2 text-[12px] text-slate-400">Sin conversaciones</div>}
                 {threads.map((t) => (
-                  <button key={t.id} onClick={() => { setActiveId(t.id); setHistoryOpen(false); setAttachments([]) }} className={`block w-full truncate border-b border-slate-100 px-3 py-2 text-left text-[12.5px] last:border-0 hover:bg-slate-50 ${t.id === activeId ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
-                    {t.title || 'Sin título'}
-                  </button>
+                  <div key={t.id} className="flex items-center border-b border-slate-100 last:border-0">
+                    <button onClick={() => { setActiveId(t.id); setHistoryOpen(false); setAttachments([]) }} className={`min-w-0 flex-1 truncate px-3 py-2 text-left text-[12.5px] hover:bg-slate-50 ${t.id === activeId ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
+                      {t.title || 'Sin título'}
+                    </button>
+                    <button onClick={() => deleteThread(t.id)} title="Eliminar conversación" className="px-2 py-2 text-slate-300 hover:text-rose-600">×</button>
+                  </div>
                 ))}
               </div>
             )}

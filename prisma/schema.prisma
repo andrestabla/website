@@ -542,6 +542,17 @@ model AppointmentSlot {
 // ============================================================
 // Módulo BI (Algoritmo BI) — datasets analíticos gobernados en DB
 // ============================================================
+model BiConversation {
+  id        String   @id
+  userId    String
+  title     String   @default("")
+  messages  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
 model BiDataset {
   id          String   @id @default(cuid())
   key         String   @unique // p.ej. "insights", "prospectiva", "recomendaciones"
