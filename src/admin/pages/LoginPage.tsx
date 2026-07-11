@@ -7,12 +7,17 @@ export function LoginPage() {
     const [identifier, setIdentifier] = useState('admin')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
+    const [info, setInfo] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [step, setStep] = useState<'credentials' | 'code'>('credentials')
+    const [code, setCode] = useState('')
+    const [maskedEmail, setMaskedEmail] = useState('')
     const navigate = useNavigate()
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault()
+    const handleLogin = async (e?: React.FormEvent) => {
+        e?.preventDefault()
         setError('')
+        setInfo('')
         setIsSubmitting(true)
         try {
             const response = await fetch('/api/admin/login', {
@@ -20,20 +25,67 @@ export function LoginPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ identifier, password }),
             })
-            if (response.ok) {
+            const payload = await response.json().catch(() => null)
+            if (response.ok && payload?.twoFactor) {
+                setMaskedEmail(payload.email || '')
+                setCode('')
+                setStep('code')
+                setInfo(`Enviamos un código de verificación a ${payload.email || 'tu correo'}.`)
+                return
+            }
+            if (response.ok && payload?.user) {
                 localStorage.setItem('admin_token', 'server_session')
                 navigate('/admin/dashboard')
                 return
             }
-            const payload = await response.json().catch(() => null)
             if (payload?.error === 'Invalid credentials') {
                 setError('Protocolo de acceso denegado. Credencial inválida.')
             } else if (payload?.error === 'User suspended') {
                 setError('Tu usuario está suspendido. Contacta a un SUPERADMIN.')
             } else if (payload?.error === 'Password setup required') {
                 setError('Debes activar credenciales desde el enlace seguro enviado a tu correo.')
+            } else if (payload?.noEmail) {
+                setError('Tu usuario no tiene correo configurado y la verificación en dos pasos lo requiere. Pide a un administrador que añada tu correo.')
+            } else if (payload?.error === 'Could not send verification code') {
+                setError('No se pudo enviar el código de verificación. Revisa la configuración de correo.')
             } else {
                 setError('No se pudo iniciar sesión en el servidor.')
+            }
+        } catch {
+            setError('No se pudo conectar con el servidor de autenticación.')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleVerify = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setError('')
+        setInfo('')
+        setIsSubmitting(true)
+        try {
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code.trim() }),
+            })
+            const payload = await response.json().catch(() => null)
+            if (response.ok && payload?.user) {
+                localStorage.setItem('admin_token', 'server_session')
+                navigate('/admin/dashboard')
+                return
+            }
+            if (payload?.twoFactorExpired) {
+                setStep('credentials')
+                setError('El código venció o hubo demasiados intentos. Vuelve a iniciar sesión.')
+            } else if (payload?.error === 'Invalid code') {
+                setError(
+                    typeof payload?.remaining === 'number'
+                        ? `Código incorrecto. Te quedan ${payload.remaining} intento(s).`
+                        : 'Código incorrecto.'
+                )
+            } else {
+                setError('No se pudo verificar el código.')
             }
         } catch {
             setError('No se pudo conectar con el servidor de autenticación.')
@@ -66,51 +118,101 @@ export function LoginPage() {
                         </div>
                     </div>
 
-                    <form onSubmit={handleLogin} className="space-y-8">
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">
-                                User (Username or Email)
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={identifier}
-                                onChange={(e) => setIdentifier(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 py-4 px-6 text-white placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"
-                                placeholder="admin"
-                                autoComplete="username"
-                            />
-                            <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1 pt-2 block">
-                                Security Key (Password)
-                            </label>
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-white/20 group-focus-within:text-brand-primary transition-colors">
-                                    <Lock className="w-5 h-5" />
-                                </div>
+                    {step === 'credentials' ? (
+                        <form onSubmit={handleLogin} className="space-y-8">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">
+                                    User (Username or Email)
+                                </label>
                                 <input
-                                    type="password"
+                                    type="text"
                                     required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-white/5 border border-white/10 py-6 pl-16 pr-6 text-white placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"
-                                    placeholder="••••••••••••"
-                                    autoComplete="current-password"
+                                    value={identifier}
+                                    onChange={(e) => setIdentifier(e.target.value)}
+                                    className="w-full bg-white/5 border border-white/10 py-4 px-6 text-white placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"
+                                    placeholder="admin"
+                                    autoComplete="username"
+                                />
+                                <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1 pt-2 block">
+                                    Security Key (Password)
+                                </label>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none text-white/20 group-focus-within:text-brand-primary transition-colors">
+                                        <Lock className="w-5 h-5" />
+                                    </div>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full bg-white/5 border border-white/10 py-6 pl-16 pr-6 text-white placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"
+                                        placeholder="••••••••••••"
+                                        autoComplete="current-password"
+                                    />
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div className="flex items-center gap-3 p-4 bg-red-900/30 text-red-400 text-xs font-bold border-l-4 border-red-500">
+                                    <Terminal className="w-4 h-4 shrink-0" />
+                                    {error}
+                                </div>
+                            )}
+
+                            <Button type="submit" className="w-full py-8" disabled={isSubmitting}>
+                                Iniciar Protocolo
+                                <ArrowRight className="ml-3 w-5 h-5" />
+                            </Button>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleVerify} className="space-y-8">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">
+                                    Verification Code
+                                </label>
+                                <p className="text-white/40 text-xs font-medium ml-1">
+                                    Enviamos un código de 6 dígitos a <span className="text-white/70">{maskedEmail || 'tu correo'}</span>.
+                                </p>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoFocus
+                                    required
+                                    value={code}
+                                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    className="w-full bg-white/5 border border-white/10 py-6 px-6 text-white text-center text-2xl tracking-[0.5em] placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-black"
+                                    placeholder="______"
+                                    autoComplete="one-time-code"
                                 />
                             </div>
-                        </div>
 
-                        {error && (
-                            <div className="flex items-center gap-3 p-4 bg-red-900/30 text-red-400 text-xs font-bold border-l-4 border-red-500">
-                                <Terminal className="w-4 h-4 shrink-0" />
-                                {error}
+                            {info && (
+                                <div className="p-4 bg-brand-primary/10 text-white/70 text-xs font-bold border-l-4 border-brand-primary">
+                                    {info}
+                                </div>
+                            )}
+                            {error && (
+                                <div className="flex items-center gap-3 p-4 bg-red-900/30 text-red-400 text-xs font-bold border-l-4 border-red-500">
+                                    <Terminal className="w-4 h-4 shrink-0" />
+                                    {error}
+                                </div>
+                            )}
+
+                            <Button type="submit" className="w-full py-8" disabled={isSubmitting || code.length < 6}>
+                                Verificar y entrar
+                                <ArrowRight className="ml-3 w-5 h-5" />
+                            </Button>
+
+                            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                <button type="button" onClick={() => { setStep('credentials'); setError(''); setInfo('') }} className="text-white/30 hover:text-white/60 transition-colors">
+                                    ← Volver
+                                </button>
+                                <button type="button" onClick={() => handleLogin()} disabled={isSubmitting} className="text-brand-primary/70 hover:text-brand-primary transition-colors disabled:opacity-40">
+                                    Reenviar código
+                                </button>
                             </div>
-                        )}
-
-                        <Button type="submit" className="w-full py-8" disabled={isSubmitting}>
-                            Iniciar Protocolo
-                            <ArrowRight className="ml-3 w-5 h-5" />
-                        </Button>
-                    </form>
+                        </form>
+                    )}
 
                     <div className="mt-12 text-center">
                         <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.4em]">

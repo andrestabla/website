@@ -5,7 +5,9 @@ type VercelRequest = any
 type VercelResponse = any
 
 const COOKIE_NAME = 'admin_session'
+const TWO_FACTOR_COOKIE = 'admin_2fa'
 const SESSION_TTL_SECONDS = 60 * 60 * 12
+const TWO_FACTOR_TTL_SECONDS = 60 * 10
 const SESSION_PERMISSIONS_VERSION = 2
 
 function isDeployedEnvironment() {
@@ -153,9 +155,9 @@ export function verifyAdminSessionToken(token: string | undefined | null): Sessi
   }
 }
 
-function buildCookie(value: string, maxAgeSeconds: number) {
+function buildCookie(name: string, value: string, maxAgeSeconds: number) {
   const parts = [
-    `${COOKIE_NAME}=${encodeURIComponent(value)}`,
+    `${name}=${encodeURIComponent(value)}`,
     'Path=/',
     'HttpOnly',
     'SameSite=Lax',
@@ -168,11 +170,53 @@ function buildCookie(value: string, maxAgeSeconds: number) {
 }
 
 export function setAdminSessionCookie(res: VercelResponse, token: string) {
-  res.setHeader('Set-Cookie', buildCookie(token, SESSION_TTL_SECONDS))
+  res.setHeader('Set-Cookie', buildCookie(COOKIE_NAME, token, SESSION_TTL_SECONDS))
 }
 
 export function clearAdminSessionCookie(res: VercelResponse) {
-  res.setHeader('Set-Cookie', buildCookie('', 0))
+  res.setHeader('Set-Cookie', buildCookie(COOKIE_NAME, '', 0))
+}
+
+// ── Verificación en dos pasos (2FA) ─────────────────────────────────────────
+// Cookie corta y firmada que identifica al usuario entre el paso de contraseña
+// y el paso del código. No contiene el código (ese vive en la BD).
+export function createTwoFactorChallengeToken(userId: string) {
+  const now = Math.floor(Date.now() / 1000)
+  const payload = { sub: '2fa', userId, iat: now, exp: now + TWO_FACTOR_TTL_SECONDS }
+  const encoded = base64UrlEncode(JSON.stringify(payload))
+  return `${encoded}.${sign(encoded)}`
+}
+
+export function verifyTwoFactorChallengeToken(token: string | undefined | null): { userId: string } | null {
+  if (!token || typeof token !== 'string') return null
+  const [encoded, signature] = token.split('.')
+  if (!encoded || !signature) return null
+  if (sign(encoded) !== signature) return null
+  try {
+    const payload = JSON.parse(base64UrlDecode(encoded)) as { sub?: string; userId?: string; exp?: number }
+    if (payload.sub !== '2fa' || !payload.userId) return null
+    if (typeof payload.exp !== 'number' || payload.exp <= Math.floor(Date.now() / 1000)) return null
+    return { userId: payload.userId }
+  } catch {
+    return null
+  }
+}
+
+export function setTwoFactorCookie(res: VercelResponse, token: string) {
+  res.setHeader('Set-Cookie', buildCookie(TWO_FACTOR_COOKIE, token, TWO_FACTOR_TTL_SECONDS))
+}
+
+export function getTwoFactorChallenge(req: VercelRequest) {
+  const cookies = parseCookies(req)
+  return verifyTwoFactorChallengeToken(cookies[TWO_FACTOR_COOKIE])
+}
+
+/** Al superar el 2FA: fija la sesión y borra la cookie de desafío en una sola respuesta. */
+export function finalizeLogin(res: VercelResponse, sessionToken: string) {
+  res.setHeader('Set-Cookie', [
+    buildCookie(COOKIE_NAME, sessionToken, SESSION_TTL_SECONDS),
+    buildCookie(TWO_FACTOR_COOKIE, '', 0),
+  ])
 }
 
 export function getAdminSession(req: VercelRequest) {
