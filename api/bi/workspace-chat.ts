@@ -1,10 +1,45 @@
 import { biSessionState } from '../_lib/bi-auth.js'
 import { generateChatWithAI } from '../_lib/ai.js'
+import { prisma } from '../_lib/prisma.js'
+import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, sanitizeIntegrations } from '../_lib/integrations.js'
 
 type VercelRequest = any
 type VercelResponse = any
 
 export const maxDuration = 60
+
+type WebResult = { title: string; url: string; content: string }
+
+/** Búsqueda web con Tavily (si está configurada en Integraciones). */
+async function tavilySearch(query: string): Promise<{ answer: string; results: WebResult[] } | null> {
+  try {
+    const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
+    const integrations = applyServerEnv(sanitizeIntegrations(snapshot?.data))
+    const tavily = integrations.tavily
+    if (!tavily.enabled || !tavily.config.apiKey) return null
+    const res = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: tavily.config.apiKey,
+        query: query.slice(0, 380),
+        search_depth: tavily.config.searchDepth || 'advanced',
+        max_results: tavily.config.maxResults || 5,
+        include_answer: true,
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json().catch(() => null)
+    if (!data) return null
+    const results: WebResult[] = Array.isArray(data.results)
+      ? data.results.slice(0, 8).map((r: any) => ({ title: String(r.title || ''), url: String(r.url || ''), content: String(r.content || '').slice(0, 1200) }))
+      : []
+    return { answer: String(data.answer || ''), results }
+  } catch (error) {
+    console.error('tavily search error', error)
+    return null
+  }
+}
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string }
 
@@ -50,9 +85,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         '\n=== FIN DE ARCHIVOS ==='
       : ''
 
-    const webNote = body.webAccess
-      ? '\n\nEl usuario activó "acceso a Internet", pero la búsqueda web aún no está habilitada; indícalo si te piden datos externos y trabaja con la base de conocimiento y los archivos.'
-      : ''
+    let webNote = ''
+    let webSources: WebResult[] = []
+    if (body.webAccess) {
+      const web = await tavilySearch(messages[messages.length - 1].content)
+      if (web) {
+        webSources = web.results
+        webNote =
+          '\n\n=== RESULTADOS DE BÚSQUEDA WEB (Tavily) ===\n' +
+          (web.answer ? `Resumen: ${web.answer}\n\n` : '') +
+          web.results.map((r, i) => `[${i + 1}] ${r.title} — ${r.url}\n${r.content}`).join('\n\n') +
+          '\n=== FIN RESULTADOS WEB ===\nUsa estas fuentes para complementar; cita [n] y sus URLs cuando te apoyes en ellas.'
+      } else {
+        webNote =
+          '\n\nEl usuario activó el acceso a Internet, pero no hay un proveedor de búsqueda configurado (Tavily). Indícalo si te piden datos externos y trabaja con la base de conocimiento y los archivos.'
+      }
+    }
 
     const system = `Eres el copiloto de investigación y análisis de Algoritmo BI. Ayudas a directivos y analistas a producir informes y productos académicos de calidad (diagnósticos, hojas de ruta, propuestas de programas, análisis de pertinencia) sobre la educación superior y el mercado laboral en Colombia.
 
@@ -73,7 +121,7 @@ ${KNOWLEDGE_BASE}
       temperature: 0.5,
       maxTokens: 2000,
     })
-    return res.status(200).json({ ok: true, reply: text, providerUsed })
+    return res.status(200).json({ ok: true, reply: text, providerUsed, webSources })
   } catch (error: any) {
     console.error('api/bi/workspace-chat error', error)
     return res.status(500).json({ ok: false, error: error?.message || 'Internal server error' })

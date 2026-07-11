@@ -34,11 +34,18 @@ type R2Config = {
   region: string
 }
 
+type TavilyConfig = {
+  apiKey: string
+  searchDepth: 'basic' | 'advanced'
+  maxResults: number
+}
+
 export type IntegrationsState = {
   gemini: { enabled: boolean; status: IntegrationStatus; config: GeminiConfig }
   openai: { enabled: boolean; status: IntegrationStatus; config: OpenAIConfig }
   smtp: { enabled: boolean; status: IntegrationStatus; config: SMTPConfig }
   r2: { enabled: boolean; status: IntegrationStatus; config: R2Config }
+  tavily: { enabled: boolean; status: IntegrationStatus; config: TavilyConfig }
   google_calendar: { enabled: boolean; status: IntegrationStatus; config: { clientId: string; clientSecret: string; refreshToken: string; calendarId: string; mandatoryGuests?: string } }
 }
 
@@ -69,6 +76,11 @@ export const defaultIntegrations: IntegrationsState = {
     status: 'unconfigured',
     config: { accountId: '', accessKeyId: '', secretAccessKey: '', bucketName: '', publicUrl: '', region: 'auto' },
   },
+  tavily: {
+    enabled: false,
+    status: 'unconfigured',
+    config: { apiKey: '', searchDepth: 'advanced', maxResults: 5 },
+  },
   google_calendar: {
     enabled: false,
     status: 'unconfigured',
@@ -83,6 +95,7 @@ export function isConfigured(state: IntegrationsState, key: keyof IntegrationsSt
     openai: ['apiKey'],
     smtp: ['host', 'user', 'password', 'fromEmail'],
     r2: ['accountId', 'accessKeyId', 'secretAccessKey', 'bucketName'],
+    tavily: ['apiKey'],
     google_calendar: ['clientId', 'clientSecret', 'refreshToken'],
   }
   return required[key].every((f) => String(cfg[f] || '').trim() !== '')
@@ -99,10 +112,11 @@ export function sanitizeIntegrations(input: unknown): IntegrationsState {
     openai: { ...base.openai, ...(raw.openai || {}), config: { ...base.openai.config, ...(raw.openai?.config || {}) } },
     smtp: { ...base.smtp, ...(raw.smtp || {}), config: { ...base.smtp.config, ...(raw.smtp?.config || {}) } },
     r2: { ...base.r2, ...(raw.r2 || {}), config: { ...base.r2.config, ...(raw.r2?.config || {}) } },
+    tavily: { ...base.tavily, ...(raw.tavily || {}), config: { ...base.tavily.config, ...(raw.tavily?.config || {}) } },
     google_calendar: { ...base.google_calendar, ...(raw.google_calendar || {}), config: { ...base.google_calendar.config, ...(raw.google_calendar?.config || {}) } },
   } as IntegrationsState
 
-  for (const key of ['gemini', 'openai', 'smtp', 'r2', 'google_calendar'] as const) {
+  for (const key of ['gemini', 'openai', 'smtp', 'r2', 'tavily', 'google_calendar'] as const) {
     merged[key].status = isConfigured(merged, key) ? 'configured' : 'unconfigured'
     if (!isConfigured(merged, key)) merged[key].enabled = false
   }
@@ -128,6 +142,13 @@ export function applyServerEnv(state: IntegrationsState): IntegrationsState {
     if (openaiModel) next.openai.config.model = openaiModel
     next.openai.enabled = true
     next.openai.status = 'configured'
+  }
+
+  const tavilyApiKey = process.env.TAVILY_API_KEY || ''
+  if (tavilyApiKey) {
+    next.tavily.config.apiKey = tavilyApiKey
+    next.tavily.enabled = true
+    next.tavily.status = 'configured'
   }
 
   const smtpHost = process.env.SMTP_HOST || ''
@@ -182,6 +203,7 @@ export function maskSecrets(state: IntegrationsState): IntegrationsState {
   }
   next.gemini.config.apiKey = mask(next.gemini.config.apiKey)
   next.openai.config.apiKey = mask(next.openai.config.apiKey)
+  next.tavily.config.apiKey = mask(next.tavily.config.apiKey)
   next.smtp.config.password = next.smtp.config.password ? '••••••••' : ''
   next.r2.config.secretAccessKey = next.r2.config.secretAccessKey ? '••••••••' : ''
   if (next.r2.config.accessKeyId) next.r2.config.accessKeyId = mask(next.r2.config.accessKeyId)

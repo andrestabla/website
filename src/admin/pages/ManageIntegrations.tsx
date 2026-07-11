@@ -3,10 +3,10 @@
  * Each provider has a step-by-step wizard in a slide-over panel.
  */
 import { useState, useEffect } from 'react'
-import { Zap, ChevronRight, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff, X, ArrowRight, ArrowLeft, Save, RefreshCw, Cloud, Mail, Bot, Cpu } from 'lucide-react'
+import { Zap, ChevronRight, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff, X, ArrowRight, ArrowLeft, Save, RefreshCw, Cloud, Mail, Bot, Cpu, Globe } from 'lucide-react'
 import {
     defaultIntegrations, fetchIntegrations, persistIntegrations, isConfigured,
-    type IntegrationsState, type GeminiConfig, type OpenAIConfig, type SMTPConfig, type R2Config,
+    type IntegrationsState, type GeminiConfig, type OpenAIConfig, type SMTPConfig, type R2Config, type TavilyConfig,
 } from '../lib/integrationsStore'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
@@ -138,6 +138,15 @@ const integrationDefs = [
         tagline: 'Object storage sin egress cost — imágenes, archivos y assets',
         docs: 'https://developers.cloudflare.com/r2/',
         steps: ['Cuenta', 'Credenciales', 'Bucket', 'Confirmar'],
+    },
+    {
+        key: 'tavily' as IntegrationKey,
+        label: 'Tavily (búsqueda web)',
+        icon: Globe,
+        color: 'bg-indigo-600',
+        tagline: 'Búsqueda web para IA — investigación profunda del Workspace BI',
+        docs: 'https://docs.tavily.com/',
+        steps: ['Credenciales', 'Confirmar'],
     },
 ]
 
@@ -402,6 +411,43 @@ function R2Wizard({ step, config, onChange }: { step: number; config: R2Config; 
     )
 }
 
+function TavilyWizard({ step, config, onChange }: { step: number; config: TavilyConfig; onChange: (c: Partial<TavilyConfig>) => void }) {
+    if (step === 0) return (
+        <div className="space-y-6">
+            <div className="bg-indigo-50 border border-indigo-200 p-4 text-sm text-indigo-800">
+                <strong>¿Cómo obtener la API Key?</strong><br />
+                En <a href="https://app.tavily.com" target="_blank" rel="noreferrer" className="underline font-bold">app.tavily.com</a> → API Keys. La clave empieza con <code>tvly-</code>.
+            </div>
+            <FormField label="API Key" hint="Empieza con 'tvly-'. Se usa en el constructor a la medida del Workspace para buscar en la web.">
+                <SecretInput value={config.apiKey} onChange={v => onChange({ apiKey: v })} placeholder="tvly-..." />
+            </FormField>
+            <FormField label="Profundidad de búsqueda" hint="'advanced' entrega mejores resultados para investigación (cuesta un poco más).">
+                <SelectInput value={config.searchDepth} onChange={v => onChange({ searchDepth: v as 'basic' | 'advanced' })} options={[
+                    { value: 'advanced', label: 'Advanced (recomendado)' },
+                    { value: 'basic', label: 'Basic (más económico)' },
+                ]} />
+            </FormField>
+            <FormField label="Resultados por búsqueda" hint="Cuántas fuentes recuperar por consulta.">
+                <SelectInput value={String(config.maxResults)} onChange={v => onChange({ maxResults: parseInt(v) })} options={[
+                    { value: '3', label: '3 resultados' },
+                    { value: '5', label: '5 resultados (recomendado)' },
+                    { value: '8', label: '8 resultados' },
+                    { value: '10', label: '10 resultados' },
+                ]} />
+            </FormField>
+        </div>
+    )
+    return (
+        <div className="space-y-4">
+            <div className="bg-slate-50 border border-slate-200 p-6 space-y-3 font-mono text-sm">
+                <ConfirmRow label="API Key" value={config.apiKey ? `${'•'.repeat(12)}${config.apiKey.slice(-4)}` : '—'} />
+                <ConfirmRow label="Profundidad" value={config.searchDepth} />
+                <ConfirmRow label="Resultados" value={String(config.maxResults)} />
+            </div>
+        </div>
+    )
+}
+
 function ConfirmRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 last:border-b-0">
@@ -545,6 +591,8 @@ export function ManageIntegrations() {
                 return <SMTPWizard step={step} config={draftConfig as unknown as SMTPConfig} onChange={handleChange as (c: Partial<SMTPConfig>) => void} />
             case 'r2':
                 return <R2Wizard step={step} config={draftConfig as unknown as R2Config} onChange={handleChange as (c: Partial<R2Config>) => void} />
+            case 'tavily':
+                return <TavilyWizard step={step} config={draftConfig as unknown as TavilyConfig} onChange={handleChange as (c: Partial<TavilyConfig>) => void} />
         }
     }
 

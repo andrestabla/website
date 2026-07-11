@@ -39,11 +39,18 @@ export type R2Config = {
   region: string
 }
 
+export type TavilyConfig = {
+  apiKey: string
+  searchDepth: 'basic' | 'advanced'
+  maxResults: number
+}
+
 export type IntegrationsState = {
   gemini: { enabled: boolean; status: IntegrationStatus; config: GeminiConfig }
   openai: { enabled: boolean; status: IntegrationStatus; config: OpenAIConfig }
   smtp: { enabled: boolean; status: IntegrationStatus; config: SMTPConfig }
   r2: { enabled: boolean; status: IntegrationStatus; config: R2Config }
+  tavily: { enabled: boolean; status: IntegrationStatus; config: TavilyConfig }
   google_calendar: { enabled: boolean; status: IntegrationStatus; config: { clientId: string; clientSecret: string; refreshToken: string; calendarId: string; mandatoryGuests?: string } }
 }
 
@@ -68,6 +75,11 @@ export const defaultIntegrations: IntegrationsState = {
     status: 'unconfigured',
     config: { accountId: '', accessKeyId: '', secretAccessKey: '', bucketName: '', publicUrl: '', region: 'auto' },
   },
+  tavily: {
+    enabled: false,
+    status: 'unconfigured',
+    config: { apiKey: '', searchDepth: 'advanced', maxResults: 5 },
+  },
   google_calendar: {
     enabled: false,
     status: 'unconfigured',
@@ -86,6 +98,7 @@ export function isConfigured(state: IntegrationsState, key: keyof IntegrationsSt
     openai: ['apiKey'],
     smtp: ['host', 'user', 'password', 'fromEmail'],
     r2: ['accountId', 'accessKeyId', 'secretAccessKey', 'bucketName'],
+    tavily: ['apiKey'],
     google_calendar: ['clientId', 'clientSecret', 'refreshToken'],
   }
   return required[key].every((f) => String(cfg[f] || '').trim() !== '')

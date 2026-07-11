@@ -200,11 +200,10 @@ export function AiBuilder() {
             <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
             <button
               onClick={() => setWebAccess((v) => !v)}
-              disabled
-              title="Búsqueda web (Tavily) — próximamente"
-              className={`inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold ${webAccess ? 'border-indigo-500 text-indigo-600' : 'border-slate-300 text-slate-400'}`}
+              title="Buscar en la web (Tavily) para complementar la respuesta"
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-semibold transition ${webAccess ? 'border-indigo-500 bg-indigo-50 text-indigo-600' : 'border-slate-300 text-slate-500 hover:border-indigo-400'}`}
             >
-              🌐 Internet <span className="rounded bg-slate-100 px-1 text-[9px] font-bold uppercase text-slate-400">pronto</span>
+              🌐 Internet {webAccess && <span className="rounded bg-indigo-600 px-1 text-[9px] font-bold uppercase text-white">on</span>}
             </button>
           </div>
           <div className="flex items-end gap-2">
