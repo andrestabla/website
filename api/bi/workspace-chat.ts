@@ -1,54 +1,12 @@
 import { biSessionState } from '../_lib/bi-auth.js'
-import { generateChatWithAI } from '../_lib/ai.js'
-import { prisma } from '../_lib/prisma.js'
-import { INTEGRATIONS_SNAPSHOT_ID, applyServerEnv, sanitizeIntegrations } from '../_lib/integrations.js'
+import { runBiAgent } from '../_lib/bi-agent.js'
 
 type VercelRequest = any
 type VercelResponse = any
 
 export const maxDuration = 60
 
-type WebResult = { title: string; url: string; content: string }
-
-/** Búsqueda web con Tavily (si está configurada en Integraciones). */
-async function tavilySearch(query: string): Promise<{ answer: string; results: WebResult[] } | null> {
-  try {
-    const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
-    const integrations = applyServerEnv(sanitizeIntegrations(snapshot?.data))
-    const tavily = integrations.tavily
-    if (!tavily.enabled || !tavily.config.apiKey) return null
-    const res = await fetch('https://api.tavily.com/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        api_key: tavily.config.apiKey,
-        query: query.slice(0, 380),
-        search_depth: tavily.config.searchDepth || 'advanced',
-        max_results: tavily.config.maxResults || 5,
-        include_answer: true,
-      }),
-    })
-    if (!res.ok) return null
-    const data = await res.json().catch(() => null)
-    if (!data) return null
-    const results: WebResult[] = Array.isArray(data.results)
-      ? data.results.slice(0, 8).map((r: any) => ({ title: String(r.title || ''), url: String(r.url || ''), content: String(r.content || '').slice(0, 1200) }))
-      : []
-    return { answer: String(data.answer || ''), results }
-  } catch (error) {
-    console.error('tavily search error', error)
-    return null
-  }
-}
-
 type ChatMessage = { role: 'user' | 'assistant'; content: string }
-
-const KNOWLEDGE_BASE = `Base de conocimiento de Algoritmo BI (educación superior de Colombia). Datos disponibles en la plataforma:
-- Oferta educativa (MEN/SNIES): 27.005 programas registrados (14.644 vigentes), 361 IES, 33 departamentos, 8 áreas de conocimiento; distribución por sector, nivel académico/formación, modalidad, municipio.
-- Empleabilidad (OLE/MEN · SNIES · DANE-GEIH): vinculación formal, empleabilidad, ingreso mediano y atractivo laboral por área de conocimiento y departamento (2021–2025).
-- Competencias y prospectiva (BID · OIT · CEPAL): 82 competencias, 18 países LATAM, competencias emergentes, reskilling, vacío formativo.
-- Mercado laboral (DANE): desocupación, informalidad y ocupación por departamento.
-- Análisis regional: pertinencia territorial (oferta↔demanda por departamento y disciplina), demanda potencial por cohortes (2021–2026) y recomendación de programas por región/departamento.`
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -72,56 +30,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const attachments: Array<{ name?: string; text?: string }> = Array.isArray(body.attachments) ? body.attachments : []
     const attachBlock = attachments.length
-      ? '\n\n=== ARCHIVOS ADJUNTOS DEL USUARIO ===\n' +
+      ? '\n\n=== ARCHIVOS ADJUNTOS DEL USUARIO (prioridad 2, después de la base de datos) ===\n' +
         attachments
           .map((a) => {
             const name = String(a?.name || 'archivo')
             const text = typeof a?.text === 'string' ? a.text.slice(0, 12000) : ''
-            return text
-              ? `--- ${name} ---\n${text}`
-              : `--- ${name} --- (adjuntado; sin texto extraíble en esta versión)`
+            return text ? `--- ${name} ---\n${text}` : `--- ${name} --- (adjuntado; sin texto extraíble en esta versión)`
           })
           .join('\n\n') +
         '\n=== FIN DE ARCHIVOS ==='
       : ''
 
-    let webNote = ''
-    let webSources: WebResult[] = []
-    if (body.webAccess) {
-      const web = await tavilySearch(messages[messages.length - 1].content)
-      if (web) {
-        webSources = web.results
-        webNote =
-          '\n\n=== RESULTADOS DE BÚSQUEDA WEB (Tavily) ===\n' +
-          (web.answer ? `Resumen: ${web.answer}\n\n` : '') +
-          web.results.map((r, i) => `[${i + 1}] ${r.title} — ${r.url}\n${r.content}`).join('\n\n') +
-          '\n=== FIN RESULTADOS WEB ===\nUsa estas fuentes para complementar; cita [n] y sus URLs cuando te apoyes en ellas.'
-      } else {
-        webNote =
-          '\n\nEl usuario activó el acceso a Internet, pero no hay un proveedor de búsqueda configurado (Tavily). Indícalo si te piden datos externos y trabaja con la base de conocimiento y los archivos.'
-      }
-    }
+    const webAccess = !!body.webAccess
 
-    const system = `Eres el copiloto de investigación y análisis de Algoritmo BI. Ayudas a directivos y analistas a producir informes y productos académicos de calidad (diagnósticos, hojas de ruta, propuestas de programas, análisis de pertinencia) sobre la educación superior y el mercado laboral en Colombia.
+    const system = `Eres el copiloto de investigación y análisis de Algoritmo BI. Tienes ACCESO EN VIVO a la base de datos real de la plataforma sobre educación superior y mercado laboral en Colombia, mediante herramientas. NUNCA digas que "no tienes acceso a bases de datos" ni des una guía genérica de cómo buscar: SÍ tienes los datos, consúltalos con las herramientas.
 
-Reglas:
-- Responde en español, con rigor y estructura. Cuando produzcas un documento, usa Markdown (títulos ##, listas, tablas, negritas) para que se vea como un informe editorial.
-- Apóyate en la base de conocimiento de la plataforma y en los archivos adjuntos del usuario. No inventes cifras: si un dato no está disponible, dilo y explica cómo obtenerlo.
-- Sé accionable: entrega conclusiones, prioridades y recomendaciones, no solo descripciones.
-- Evita muletillas de IA y relleno.
+ORDEN DE PRIORIDAD DE FUENTES (obligatorio):
+1) BASE DE DATOS de la plataforma — usa SIEMPRE las herramientas antes que el conocimiento general:
+   • consultar_oferta_educativa — SNIES/MEN: programas, instituciones, áreas, departamentos, sector, nivel, modalidad (27.005 programas, 361 IES).
+   • consultar_empleabilidad — OLE: vinculación formal, empleabilidad, ingreso, atractivo por área/departamento.
+   • consultar_recomendaciones — programas a ofertar por región/departamento.
+   • consultar_pertinencia — brechas oferta↔demanda por departamento.
+2) ARCHIVOS adjuntos por el usuario.
+3) BÚSQUEDA WEB (buscar_web)${webAccess ? ' — habilitada' : ' — NO habilitada en este mensaje'}: solo si el dato no está en la plataforma ni en los archivos.
 
-=== BASE DE CONOCIMIENTO ===
-${KNOWLEDGE_BASE}
-=== FIN BASE DE CONOCIMIENTO ===${attachBlock}${webNote}`
+CÓMO RESPONDER:
+- Antes de responder cualquier pregunta sobre oferta, empleabilidad, pertinencia o recomendaciones, LLAMA a la herramienta correspondiente y usa sus cifras reales.
+- Ejemplo: "¿qué universidades ofertan Administración de Empresas?" → consultar_oferta_educativa({ programa: "Administración de Empresas", agrupar_por: "institucion", limite: 60 }) y LISTA las instituciones con sus conteos y totales.
+- Sé muy detallado y accionable: cifras concretas, rankings, listas y TABLAS en Markdown; añade contexto (totales, participación %, comparativas) y conclusiones.
+- No inventes datos que la herramienta no devolvió; si algo no está, dilo y sugiere qué otra consulta lo resolvería.
+- Responde en español, en Markdown editorial (## títulos, listas, **negritas**, tablas).${attachBlock}`
 
-    const { text, providerUsed } = await generateChatWithAI({
-      system,
-      messages,
-      provider: 'auto',
-      temperature: 0.5,
-      maxTokens: 2000,
-    })
-    return res.status(200).json({ ok: true, reply: text, providerUsed, webSources })
+    const { reply, toolsUsed } = await runBiAgent({ system, messages, webAccess })
+    return res.status(200).json({ ok: true, reply, toolsUsed })
   } catch (error: any) {
     console.error('api/bi/workspace-chat error', error)
     return res.status(500).json({ ok: false, error: error?.message || 'Internal server error' })
