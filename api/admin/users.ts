@@ -7,8 +7,10 @@ import {
   getDefaultPermissionMapForRole,
   issueCredentialSetupToken,
   listAdminUsers,
+  mergePermissionMapWithRows,
   sanitizePermissionInput,
   upsertAdminUserPermissions,
+  type AdminModuleKey,
   type AdminPermissionMap,
   type AdminRoleKey,
   hashPassword,
@@ -21,6 +23,40 @@ type VercelRequest = any
 type VercelResponse = any
 
 const ALLOWED_ROLES: AdminRoleKey[] = ['SUPERADMIN', 'ADMIN', 'EDITOR', 'ANALYST']
+
+const ROLE_LABELS: Record<AdminRoleKey, string> = {
+  SUPERADMIN: 'Superadministrador',
+  ADMIN: 'Administrador',
+  EDITOR: 'Editor',
+  ANALYST: 'Analista',
+}
+
+// Etiqueta y descripción de "qué puede hacer" en cada módulo (para el correo).
+const ADMIN_MODULE_INFO: Record<AdminModuleKey, { label: string; description: string; url?: string }> = {
+  DASHBOARD: { label: 'Panel principal', description: 'Resumen general y métricas de la plataforma.' },
+  SITE_BUILDER: { label: 'Constructor del sitio', description: 'Crear y editar las páginas del sitio y su contenido.' },
+  SERVICES: { label: 'Servicios', description: 'Gestionar el catálogo de servicios.' },
+  PRODUCTS: { label: 'Productos', description: 'Gestionar el catálogo de productos.' },
+  LEADS: { label: 'Leads y contactos', description: 'Ver y atender los contactos y solicitudes recibidas.' },
+  DESIGN: { label: 'Diseño', description: 'Configurar la identidad visual y el tema del sitio.' },
+  SEO: { label: 'SEO', description: 'Administrar metadatos, títulos y posicionamiento.' },
+  MARKETING: { label: 'Marketing', description: 'Campañas, popups y comunicaciones de marketing.' },
+  ANALYTICS: { label: 'Analítica', description: 'Consultar estadísticas de tráfico y comportamiento.' },
+  INTEGRATIONS: { label: 'Integraciones', description: 'Configurar servicios externos (correo, IA, etc.).' },
+  SETTINGS: { label: 'Configuración', description: 'Ajustes generales de la plataforma.' },
+  USERS: { label: 'Usuarios', description: 'Crear y administrar usuarios y sus permisos.' },
+  BOOKINGS: { label: 'Reservas y agenda', description: 'Gestionar reservas, citas y disponibilidad.' },
+  DOCUMENTS: { label: 'Documentos', description: 'Gestor documental: subir, organizar y compartir archivos.' },
+  BI: {
+    label: 'Algoritmo BI',
+    description: 'Observatorios de educación superior (oferta educativa, laboral y análisis regional) con asistente de IA.',
+    url: 'https://bi.algoritmot.com',
+  },
+}
+
+function grantedModulesFrom(map: AdminPermissionMap): AdminModuleKey[] {
+  return ADMIN_MODULES.filter((m) => map[m])
+}
 
 function parseBody(req: VercelRequest) {
   if (!req.body) return {}
@@ -86,6 +122,30 @@ function getPublicOrigin(req: VercelRequest) {
   return `${proto}://${host}`
 }
 
+function buildAccessBlock(role: AdminRoleKey, modules: AdminModuleKey[]) {
+  const roleLabel = ROLE_LABELS[role] || role
+  if (!modules.length) {
+    return `
+      <p style="margin-top:24px;"><strong>Tu rol:</strong> ${roleLabel}.</p>
+      <p style="color:#64748b;font-size:13px;">Todavía no tienes módulos habilitados; un administrador te asignará accesos.</p>
+    `
+  }
+  const rows = modules
+    .map((m) => {
+      const info = ADMIN_MODULE_INFO[m]
+      const name = info.url
+        ? `<a href="${info.url}" style="color:#4f46e5;text-decoration:none;font-weight:600;">${info.label}</a>`
+        : `<strong>${info.label}</strong>`
+      return `<tr><td class="label" style="white-space:nowrap;vertical-align:top;">${name}</td><td>${info.description}</td></tr>`
+    })
+    .join('')
+  return `
+    <p style="margin-top:24px;"><strong>Tu rol:</strong> ${roleLabel}. Tienes acceso a los siguientes módulos y esto es lo que puedes hacer en cada uno:</p>
+    <table class="data-table">${rows}</table>
+    <p style="margin-top:12px;color:#64748b;font-size:13px;">El panel administrativo está en <a href="https://www.algoritmot.com/admin" style="color:#4f46e5;">www.algoritmot.com/admin</a>.</p>
+  `
+}
+
 async function sendSetupEmail(input: {
   req: VercelRequest
   email: string
@@ -93,6 +153,8 @@ async function sendSetupEmail(input: {
   username: string
   token: string
   expiresAt: Date
+  role: AdminRoleKey
+  modules: AdminModuleKey[]
 }) {
   const smtp = await getSmtpConfig()
   if (!smtp) return { sent: false, reason: 'SMTP_NOT_CONFIGURED' as const }
@@ -122,6 +184,7 @@ async function sendSetupEmail(input: {
         <tr><td class="label">Email</td><td>${input.email}</td></tr>
         <tr><td class="label">Expira</td><td>${new Date(input.expiresAt).toLocaleString('es-CO')}</td></tr>
       </table>
+      ${buildAccessBlock(input.role, input.modules)}
       <p>Para activar tu acceso, define tu contraseña desde el siguiente enlace seguro:</p>
       <p><a href="${setupUrl}" class="button">Configurar credenciales</a></p>
       <p style="margin-top:24px;color:#64748b;font-size:13px;">Este enlace se invalida automáticamente después de su uso o cuando vence.</p>
@@ -231,6 +294,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           username: created.username,
           token: rawToken,
           expiresAt,
+          role,
+          modules: grantedModulesFrom(permissionMap),
         })
       } catch (mailError) {
         console.error('admin users setup email send error', mailError)
@@ -273,6 +338,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const currentUser = await prisma.adminUser.findUnique({
         where: { id: userId },
+        include: { permissions: true },
       } as any)
       if (!currentUser) {
         return res.status(404).json({ ok: false, error: 'Usuario no encontrado.' })
@@ -320,6 +386,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           createdByName: session.username,
           purpose: 'RESET_PASSWORD',
         })
+        const currentMap = mergePermissionMapWithRows(
+          currentUser.role as AdminRoleKey,
+          currentUser.permissions || []
+        )
         await sendSetupEmail({
           req,
           email: currentUser.email,
@@ -327,6 +397,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           username: currentUser.username,
           token: rawToken,
           expiresAt,
+          role: currentUser.role as AdminRoleKey,
+          modules: grantedModulesFrom(currentMap),
         })
       } else if (action === 'delete') {
         if (userId === session.userId) {
