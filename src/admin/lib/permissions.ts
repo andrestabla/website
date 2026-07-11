@@ -14,6 +14,7 @@ export const ADMIN_MODULES = [
   'BOOKINGS',
   'DOCUMENTS',
   'BI',
+  'PROJECT_CONTROL',
 ] as const
 
 export type AdminModuleKey = (typeof ADMIN_MODULES)[number]
@@ -36,6 +37,7 @@ export const ADMIN_MODULE_LABELS: Record<AdminModuleKey, string> = {
   BOOKINGS: 'Citas',
   DOCUMENTS: 'Gestor Documental',
   BI: 'Algoritmo BI',
+  PROJECT_CONTROL: 'Project Control',
 }
 
 function emptyPermissionMap() {

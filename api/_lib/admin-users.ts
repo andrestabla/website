@@ -2,7 +2,6 @@ import crypto from 'node:crypto'
 import { prisma } from './prisma.js'
 
 const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 }
-const DEFAULT_BOOTSTRAP_ADMIN_PASSWORD = 'admin123'
 const CREDENTIAL_TOKEN_TTL_HOURS = 24
 
 export const ADMIN_MODULES = [
@@ -21,19 +20,12 @@ export const ADMIN_MODULES = [
   'BOOKINGS',
   'DOCUMENTS',
   'BI',
+  'PROJECT_CONTROL',
 ] as const
 
 export type AdminModuleKey = (typeof ADMIN_MODULES)[number]
 export type AdminRoleKey = 'SUPERADMIN' | 'ADMIN' | 'EDITOR' | 'ANALYST'
 export type AdminPermissionMap = Record<AdminModuleKey, boolean>
-
-function isDeployedEnvironment() {
-  return (
-    process.env.NODE_ENV === 'production' ||
-    process.env.VERCEL_ENV === 'production' ||
-    process.env.VERCEL_ENV === 'preview'
-  )
-}
 
 function normalizeIdentifier(value: string) {
   return value.trim().toLowerCase()
@@ -216,10 +208,10 @@ export async function ensureBootstrapAdminUser() {
   const email = process.env.ADMIN_EMAIL || null
   const displayName = process.env.ADMIN_DISPLAY_NAME || 'Admin AlgoritmoT'
   const configuredPassword = process.env.ADMIN_PASSWORD
-  if (isDeployedEnvironment() && (!configuredPassword || configuredPassword === DEFAULT_BOOTSTRAP_ADMIN_PASSWORD)) {
-    throw new Error('ADMIN_PASSWORD must be set to a non-default value before bootstrap login in deployed environments')
+  if (!configuredPassword) {
+    throw new Error('ADMIN_PASSWORD must be set before bootstrap admin user creation')
   }
-  const password = configuredPassword || DEFAULT_BOOTSTRAP_ADMIN_PASSWORD
+  const password = configuredPassword
 
   await prisma.adminUser.create({
     data: {

@@ -31,6 +31,8 @@ const SimuladorEmpresas = lazy(() => import('./pages/SimuladorEmpresas').then((m
 const NavigationSelector = lazy(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
 // const HomeEducacion = lazy(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
 const BiApp = lazy(() => import('./bi/BiApp'))
+const ControlApp = lazy(() => import('./control/ControlApp'))
+const PublicBoard = lazy(() => import('./control/PublicBoard'))
 
 const LoginPage = lazy(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const Dashboard = lazy(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
@@ -271,6 +273,8 @@ function App() {
     return (
       <Suspense fallback={<RouteLoader />}>
         <Routes>
+          <Route path="/board/:token" element={<PublicBoard />} />
+          <Route path="/control/*" element={<ControlApp />} />
           <Route path="/*" element={<BiApp />} />
         </Routes>
       </Suspense>
@@ -315,6 +319,10 @@ function App() {
 
               {/* Algoritmo BI (módulo público con login) */}
               <Route path="/bi/*" element={<BiApp />} />
+
+              {/* Project Control (tableros customizables) */}
+              <Route path="/control/*" element={<ControlApp />} />
+              <Route path="/board/:token" element={<PublicBoard />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

@@ -1,0 +1,93 @@
+// ── Tipos del módulo Project Control ────────────────────────────────────────
+
+export type PcColType = 'text' | 'longtext' | 'number' | 'date' | 'select' | 'url' | 'checkbox'
+
+export type PcOption = { value: string; color?: string }
+
+export type PcColumn = {
+  id: string
+  name: string
+  type: PcColType
+  options?: PcOption[]
+  width?: number
+}
+
+export type PcCellValue = string | number | boolean | null
+
+export type PcRow = {
+  id: string
+  cells: Record<string, PcCellValue>
+}
+
+export type PcBoard = {
+  id: string
+  title: string
+  description: string
+  columns: PcColumn[]
+  rows: PcRow[]
+  shareEnabled: boolean
+  shareToken: string | null
+  access: 'owner' | 'EDIT' | 'VIEW'
+  isOwner: boolean
+  collaborators: { userId: string; role: 'VIEW' | 'EDIT' }[]
+}
+
+export type PcBoardSummary = {
+  id: string
+  title: string
+  description: string
+  columnsCount: number
+  rowsCount: number
+  shareEnabled: boolean
+  updatedAt: string
+  role: 'owner' | 'VIEW' | 'EDIT'
+}
+
+export const PC_COL_TYPE_LABELS: Record<PcColType, string> = {
+  text: 'Texto',
+  longtext: 'Texto largo',
+  number: 'Número',
+  date: 'Fecha',
+  select: 'Lista (dropdown)',
+  url: 'Enlace',
+  checkbox: 'Casilla',
+}
+
+// Paleta para opciones de columnas tipo lista (badges).
+export const PC_OPTION_COLORS = [
+  '#e0e7ff', // indigo
+  '#dcfce7', // green
+  '#fef9c3', // yellow
+  '#fee2e2', // red
+  '#ffedd5', // orange
+  '#e0f2fe', // sky
+  '#f3e8ff', // purple
+  '#f1f5f9', // slate
+] as const
+
+let counter = 0
+function uid(prefix: string) {
+  counter += 1
+  return `${prefix}_${Math.random().toString(36).slice(2, 8)}${counter.toString(36)}`
+}
+
+export function newColumn(type: PcColType = 'text', name = 'Nueva columna'): PcColumn {
+  const col: PcColumn = { id: uid('c'), name, type }
+  if (type === 'select') col.options = []
+  return col
+}
+
+export function newRow(columns: PcColumn[]): PcRow {
+  const cells: Record<string, PcCellValue> = {}
+  for (const c of columns) cells[c.id] = c.type === 'checkbox' ? false : null
+  return { id: uid('r'), cells }
+}
+
+/** Convierte un número de serie de Excel (base 1899-12-30) a ISO (yyyy-mm-dd). */
+export function excelSerialToISO(serial: number): string | null {
+  if (!Number.isFinite(serial) || serial <= 0) return null
+  const ms = Math.round((serial - 25569) * 86400 * 1000)
+  const d = new Date(ms)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toISOString().slice(0, 10)
+}

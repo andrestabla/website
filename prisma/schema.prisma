@@ -208,6 +208,7 @@ enum AdminModule {
   BOOKINGS
   DOCUMENTS
   BI
+  PROJECT_CONTROL
 }
 
 // ─── Gestor Documental ───────────────────────────────────────────────────────
@@ -567,4 +568,34 @@ model BiDataset {
   createdAt   DateTime @default(now())
 
   @@index([category])
+}
+
+// ─── Project Control (tableros customizables tipo hoja de cálculo) ───────────
+
+model PcBoard {
+  id           String         @id @default(cuid())
+  ownerId      String
+  title        String
+  description  String?
+  columns      Json           @default("[]") // PcColumn[]: { id, name, type, options?, width? }
+  rows         Json           @default("[]") // PcRow[]:    { id, cells: { colId: value } }
+  shareToken   String?        @unique // link público de solo lectura
+  shareEnabled Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  shares       PcBoardShare[]
+
+  @@index([ownerId, updatedAt(sort: Desc)])
+}
+
+model PcBoardShare {
+  id        String   @id @default(cuid())
+  boardId   String
+  userId    String
+  role      String   @default("VIEW") // VIEW | EDIT
+  createdAt DateTime @default(now())
+  board     PcBoard  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+  @@index([userId])
 }

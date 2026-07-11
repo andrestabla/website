@@ -30,7 +30,8 @@ import {
     Mail,
     Calendar,
     FolderOpen,
-    Gauge
+    Gauge,
+    LayoutGrid
 } from 'lucide-react'
 import { useCMS } from '../context/CMSContext'
 import { canAccessModule, type AdminModuleKey } from '../lib/permissions'
@@ -55,6 +56,7 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
 
     const navigation: Array<{ name: string; href: string; icon: any; group: string; module: AdminModuleKey; external?: boolean }> = [
         { name: 'Algoritmo BI', href: 'https://bi.algoritmot.com/', icon: Gauge, group: 'bi', module: 'BI', external: true },
+        { name: 'Project Control', href: '/control', icon: LayoutGrid, group: 'bi', module: 'PROJECT_CONTROL', external: true },
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, group: 'cms', module: 'DASHBOARD' },
         { name: 'Site Builder', href: '/admin/site-builder', icon: Home, group: 'cms', module: 'SITE_BUILDER' },
         { name: 'Servicios', href: '/admin/services', icon: Briefcase, group: 'cms', module: 'SERVICES' },
