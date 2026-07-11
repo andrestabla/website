@@ -99,6 +99,68 @@ const AREA_RULES: { area: string; kw: string[] }[] = [
 function strip(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 }
+
+// ── Restauración de tildes en texto ASCII plano ─────────────────────────────
+// Muchos nombres MEN están escritos sin tildes ("Administracion", "Gestion").
+// La forma acentuada correcta suele estar ATESTIGUADA en el propio corpus
+// (otras filas la escriben bien), así que construimos el mapa desde los datos
+// y no adivinamos.
+const hasAccent = (w: string) => /[áéíóúüñÁÉÍÓÚÜÑ]/.test(w)
+const stripKeep = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '')
+
+// Umbral mínimo de veces que una forma acentuada debe estar atestiguada para
+// confiar en ella. Filtra typos de una sola vez (p. ej. "Ingeníero", "Profesiónal",
+// "Terapéuta") sin los que se acentuarían palabras que en realidad no llevan tilde.
+const ACCENT_MIN = 3
+
+function buildAccentMap(texts: string[]): Map<string, string> {
+  const acc = new Map<string, Map<string, number>>()
+  for (const label of texts) {
+    for (const raw of String(label).split(/[\s/().,;:\-]+/)) {
+      const w = raw.replace(/[^\p{L}]/gu, '')
+      if (w.length < 4 || !hasAccent(w)) continue
+      const k = stripKeep(w).toLowerCase()
+      const m = acc.get(k) || new Map<string, number>()
+      m.set(w, (m.get(w) || 0) + 1)
+      acc.set(k, m)
+    }
+  }
+  const map = new Map<string, string>()
+  for (const [k, forms] of acc) {
+    const [top, topCount] = [...forms.entries()].sort((a, b) => b[1] - a[1])[0]
+    if (topCount >= ACCENT_MIN) map.set(k, top) // solo formas acentuadas bien atestiguadas
+  }
+  return map
+}
+
+// Transfiere las tildes de `ref` a `plain` respetando la caja de `plain`.
+function transferAccents(plain: string, ref: string): string {
+  if (plain.length !== ref.length) return plain
+  let out = ''
+  for (let i = 0; i < plain.length; i++) {
+    const p = plain[i]
+    const r = ref[i]
+    const rBase = stripKeep(r)
+    if (stripKeep(p).toLowerCase() !== rBase.toLowerCase()) return plain // desajuste → no tocar
+    if (r !== rBase) {
+      const upper = p === p.toUpperCase() && p !== p.toLowerCase()
+      out += upper ? r.toUpperCase() : r.toLowerCase()
+    } else {
+      out += p
+    }
+  }
+  return out
+}
+
+function accentize(label: string, map: Map<string, string>): string {
+  if (!label) return label
+  return label.replace(/\p{L}+/gu, (w) => {
+    if (hasAccent(w) || w.length < 4) return w
+    const ref = map.get(stripKeep(w).toLowerCase())
+    return ref ? transferAccents(w, ref) : w
+  })
+}
+
 function inferArea(name: string): string | null {
   const n = strip(name)
   for (const r of AREA_RULES) if (r.kw.some((k) => n.includes(k))) return r.area
@@ -124,7 +186,25 @@ async function main() {
   if (ds.dicts.nbc) ds.dicts.nbc = ds.dicts.nbc.map((l) => { const f = restoreAccents(l); if (f !== l) nbcFixed++; return f })
   const remaining = ds.dicts.programa.filter((l) => l.indexOf('¿') !== -1)
 
-  // 2) Reubicación de «Sin clasificar».
+  // 2) Restaurar tildes en texto ASCII plano (mapa construido desde el corpus).
+  const accentMap = buildAccentMap([
+    ...ds.dicts.programa,
+    ...(ds.dicts.nbc || []),
+    ...(ds.dicts.area_conocimiento || []),
+    ...(ds.dicts.institucion || []),
+    ...(ds.dicts.municipio || []),
+  ])
+  let progAccent = 0
+  const accentSamples: string[] = []
+  ds.dicts.programa = ds.dicts.programa.map((l) => {
+    const f = accentize(l, accentMap)
+    if (f !== l) { progAccent++; if (accentSamples.length < 12) accentSamples.push(`${l}  →  ${f}`) }
+    return f
+  })
+  let nbcAccent = 0
+  if (ds.dicts.nbc) ds.dicts.nbc = ds.dicts.nbc.map((l) => { const f = accentize(l, accentMap); if (f !== l) nbcAccent++; return f })
+
+  // 3) Reubicación de «Sin clasificar».
   const areas = ds.dicts.area_conocimiento
   const sinIdx = areas.indexOf('Sin clasificar')
   const areaIndex = new Map<string, number>()
@@ -152,8 +232,10 @@ async function main() {
   }
 
   console.log('— Normalización dataset insights —')
-  console.log(`Tildes restauradas: ${progFixed} programas, ${nbcFixed} NBC. Restan con «¿»: ${remaining.length}`)
+  console.log(`«¿» → tildes: ${progFixed} programas, ${nbcFixed} NBC. Restan con «¿»: ${remaining.length}`)
   if (remaining.length) console.log('  Ejemplos sin resolver:', remaining.slice(0, 8))
+  console.log(`Acentuación ASCII (desde corpus): ${progAccent} programas, ${nbcAccent} NBC. Mapa: ${accentMap.size} palabras.`)
+  if (accentSamples.length) console.log('  Muestra:', accentSamples)
   console.log(`«Sin clasificar»: ${reassigned} reubicados, ${unresolved} sin resolver.`)
   console.log('  Reubicaciones por área:', byTarget)
   if (unresolvedSamples.length) console.log('  Sin resolver (muestra):', unresolvedSamples.slice(0, 40))
