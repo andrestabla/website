@@ -32,6 +32,7 @@ export function BoardEditor() {
   const [computeMsg, setComputeMsg] = useState('')
   const [analyticsConfig, setAnalyticsConfig] = useState<PcAnalyticsConfig | null>(null)
   const [pinFlash, setPinFlash] = useState(false)
+  const [pinning, setPinning] = useState(false)
 
   // Guardado explícito
   const [dirty, setDirty] = useState(false)
@@ -62,7 +63,7 @@ export function BoardEditor() {
     setSaving(true)
     setSaveErr('')
     try {
-      await saveBoard(board.id, { title: board.title, description: board.description, columns: board.columns, rows: board.rows })
+      await saveBoard(board.id, { title: board.title, description: board.description, columns: board.columns, rows: board.rows, publicView: board.publicView })
       setDirty(false)
       setModal(null)
       setSavedFlash(true)
@@ -86,19 +87,28 @@ export function BoardEditor() {
 
   const filteredRows = useMemo(() => (board ? applyView(board.rows, board.columns, view) : []), [board, view])
 
-  // Fija la vista pública por defecto a partir de lo que el propietario ve ahora.
-  const pinPublicView = () => {
+  // Fija la vista pública por defecto y la persiste de inmediato (independiente
+  // del guardado de contenido, igual que el toggle de compartir).
+  const pinPublicView = async () => {
     if (!board) return
     const pvTab: 'grid' | 'analitica' = tab === 'analitica' ? 'analitica' : 'grid'
-    update({
-      publicView: {
-        tab: pvTab,
-        gridView: pvTab === 'grid' ? view : board.publicView?.gridView,
-        analytics: analyticsConfig || board.publicView?.analytics,
-      },
-    })
-    setPinFlash(true)
-    setTimeout(() => setPinFlash(false), 2600)
+    const pv = {
+      tab: pvTab,
+      gridView: pvTab === 'grid' ? view : board.publicView?.gridView,
+      analytics: analyticsConfig || board.publicView?.analytics,
+    }
+    setPinning(true)
+    setSaveErr('')
+    try {
+      await saveBoard(board.id, { publicView: pv })
+      update({ publicView: pv }, false) // refleja localmente sin marcar "sin guardar"
+      setPinFlash(true)
+      setTimeout(() => setPinFlash(false), 2600)
+    } catch (e: any) {
+      setSaveErr(e?.message || 'No se pudo fijar la vista pública')
+    } finally {
+      setPinning(false)
+    }
   }
 
   if (loading) return <Centered><Loader2 className="animate-spin text-slate-400" /></Centered>
@@ -305,17 +315,18 @@ export function BoardEditor() {
         ))}
         {board.isOwner && tab !== 'datos' && (
           <div className="ml-auto flex items-center gap-2 pb-1.5">
-            {pinFlash && <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-600"><Check size={13} /> Vista pública fijada — recuerda Guardar</span>}
+            {pinFlash && <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600"><Check size={13} /> Vista pública fijada</span>}
             <button
               onClick={pinPublicView}
-              title="Fijar esta vista como la que verán por defecto en el enlace público"
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition ${
+              disabled={pinning}
+              title="Fijar esta vista como la que verán por defecto en el enlace público (se aplica al instante)"
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition disabled:opacity-60 ${
                 board.publicView?.tab === (tab === 'analitica' ? 'analitica' : 'grid')
                   ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                   : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-400 hover:text-indigo-600'
               }`}
             >
-              <Pin size={14} /> Fijar vista pública
+              {pinning ? <Loader2 size={14} className="animate-spin" /> : <Pin size={14} />} Fijar vista pública
             </button>
           </div>
         )}
