@@ -4,6 +4,7 @@ import type { PcCellValue, PcColumn, PcRow } from '../lib/types'
 import { PC_OPTION_COLORS } from '../lib/types'
 import { ColumnHeaderMenu } from './ColumnHeaderMenu'
 import { ValueMetaModal } from './ValueMetaModal'
+import { CommentsCell } from './CommentsCell'
 
 export function optionColor(col: PcColumn, value: string): string {
   const opt = col.options?.find((o) => o.value === value)
@@ -164,6 +165,9 @@ export function BoardCell({
 }) {
   if (col.behavior?.mode === 'formula') {
     return <FormulaCell col={col} value={value} editable={editable} computing={!!computing} onRecalc={() => onRecalc?.()} />
+  }
+  if (col.type === 'comments') {
+    return <CommentsCell value={value as any} editable={editable} colName={col.name} onChange={(v) => onChange?.(v)} />
   }
   return <Cell col={col} value={value} editable={editable} onChange={(v) => onChange?.(v)} />
 }

@@ -4,6 +4,7 @@ import { LayoutGrid, Loader2, Table2, BarChart3 } from 'lucide-react'
 import { getPublicBoard, type PublicBoardData } from './lib/control-api'
 import { DataGrid } from './grid/DataGrid'
 import { CardsView } from './grid/CardsView'
+import { RecordPanel } from './grid/RecordPanel'
 import { GridToolbar } from './grid/GridToolbar'
 import { Analitica } from './grid/Analitica'
 import { BoardChat } from './grid/BoardChat'
@@ -17,6 +18,7 @@ export default function PublicBoard() {
   const [tab, setTab] = useState<'grid' | 'analitica'>('grid')
   const [view, setView] = useState<PcView>(emptyView)
   const [gridMode, setGridMode] = useState<'table' | 'cards'>('table')
+  const [openRecordId, setOpenRecordId] = useState<string | null>(null)
   const filteredRows = useMemo(() => (data ? applyView(data.rows, data.columns, view) : []), [data, view])
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export default function PublicBoard() {
                   rightSlot={<span className="hidden text-[12px] text-slate-400 sm:inline">{filteredRows.length} de {data.rows.length} filas</span>}
                 />
                 {gridMode === 'cards' ? (
-                  <CardsView columns={data.columns} rows={filteredRows} editable={false} />
+                  <CardsView columns={data.columns} rows={filteredRows} editable={false} onOpenRecord={setOpenRecordId} />
                 ) : (
                   <DataGrid columns={data.columns} rows={filteredRows} editable={false} />
                 )}
@@ -94,6 +96,13 @@ export default function PublicBoard() {
           </>
         )}
       </div>
+      {data && openRecordId && (() => {
+        const idx = data.rows.findIndex((r) => r.id === openRecordId)
+        return idx >= 0 ? (
+          <RecordPanel columns={data.columns} row={data.rows[idx]} index={idx} editable={false} onClose={() => setOpenRecordId(null)} />
+        ) : null
+      })()}
+
       {data && <BoardChat token={token} title={data.title} />}
     </div>
   )

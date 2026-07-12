@@ -1,12 +1,13 @@
 import crypto from 'node:crypto'
 
-export const PC_COL_TYPES = ['text', 'longtext', 'number', 'date', 'select', 'url', 'checkbox'] as const
+export const PC_COL_TYPES = ['text', 'longtext', 'number', 'date', 'select', 'url', 'checkbox', 'comments'] as const
 export type PcColType = (typeof PC_COL_TYPES)[number]
 
 const MAX_COLUMNS = 60
 const MAX_ROWS = 5000
 const MAX_OPTIONS = 200
 const MAX_CELL_LEN = 20000
+const MAX_COMMENTS = 500
 
 function rid(prefix: string) {
   return `${prefix}_${crypto.randomBytes(6).toString('hex')}`
@@ -55,13 +56,32 @@ export function sanitizeColumns(input: unknown): any[] {
       col.behavior = b
     }
 
+    if (raw?.card === true || raw?.card === false) col.card = raw.card
+
     const width = Number(raw?.width)
     if (Number.isFinite(width) && width > 0) col.width = Math.min(Math.round(width), 800)
     return col
   })
 }
 
-function coerceCell(value: unknown, type: PcColType): string | number | boolean | null {
+function coerceComments(value: unknown): any[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .slice(0, MAX_COMMENTS)
+    .map((c: any) => {
+      if (!c || typeof c !== 'object') return null
+      const text = String(c.text ?? '').slice(0, MAX_CELL_LEN)
+      if (!text) return null
+      const at = typeof c.at === 'string' ? c.at.slice(0, 40) : new Date().toISOString()
+      const out: any = { id: String(c.id || `cm_${crypto.randomBytes(5).toString('hex')}`).slice(0, 40), text, at }
+      if (c.author) out.author = String(c.author).slice(0, 120)
+      return out
+    })
+    .filter(Boolean)
+}
+
+function coerceCell(value: unknown, type: PcColType): any {
+  if (type === 'comments') return coerceComments(value)
   if (value === null || value === undefined || value === '') return type === 'checkbox' ? false : null
   if (type === 'checkbox') return value === true || value === 'true' || value === 1 || value === '1'
   if (type === 'number') {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, ArrowLeft, ArrowRight, Trash2, Plus, X, Sparkles, RefreshCw } from 'lucide-react'
+import { ChevronDown, ArrowLeft, ArrowRight, Trash2, Plus, X, Sparkles, RefreshCw, LayoutGrid } from 'lucide-react'
 import type { PcColType, PcColumn } from '../lib/types'
 import { PC_COL_TYPE_LABELS, PC_OPTION_COLORS } from '../lib/types'
 
@@ -11,6 +11,7 @@ const TYPE_ICON: Record<PcColType, string> = {
   select: '▾',
   url: '🔗',
   checkbox: '☑',
+  comments: '💬',
 }
 
 export function ColumnHeaderMenu({
@@ -115,6 +116,17 @@ export function ColumnHeaderMenu({
           </div>
 
           {col.type === 'select' && <OptionsEditor col={col} onChange={onChange} />}
+
+          <div className="my-1 border-t border-slate-100" />
+          <button
+            onClick={() => onChange?.({ ...col, card: !(col.card === true) })}
+            className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-slate-600 hover:bg-slate-100"
+          >
+            <span className="inline-flex items-center gap-2"><LayoutGrid size={13} /> Mostrar en tarjeta</span>
+            <span className={`relative h-4 w-7 rounded-full transition ${col.card === true ? 'bg-indigo-600' : 'bg-slate-300'}`}>
+              <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition ${col.card === true ? 'left-[14px]' : 'left-0.5'}`} />
+            </span>
+          </button>
 
           <div className="my-1 border-t border-slate-100" />
           <button

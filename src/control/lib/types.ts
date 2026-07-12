@@ -1,12 +1,15 @@
 // ── Tipos del módulo Project Control ────────────────────────────────────────
 
-export type PcColType = 'text' | 'longtext' | 'number' | 'date' | 'select' | 'url' | 'checkbox'
+export type PcColType = 'text' | 'longtext' | 'number' | 'date' | 'select' | 'url' | 'checkbox' | 'comments'
 
 /** Definición de un campo de metadatos para una categoría (columna select). */
 export type PcOptionField = { id: string; label: string }
 
 /** Una entrada de "datos de entrada": el valor visible + color + metadatos. */
 export type PcOption = { value: string; color?: string; meta?: Record<string, string> }
+
+/** Una entrada de una columna tipo "comentarios": texto + fecha de publicación. */
+export type PcComment = { id: string; text: string; at: string; author?: string }
 
 /** Cómo se rinde/computa el valor de una columna tipo fórmula. */
 export type PcBehaviorRender = 'progress' | 'number' | 'text'
@@ -28,10 +31,12 @@ export type PcColumn = {
   optionFields?: PcOptionField[]
   /** Comportamiento avanzado (columna calculada por IA). */
   behavior?: PcBehavior
+  /** Si se muestra en el resumen de la vista tarjetas (lo decide el admin). */
+  card?: boolean
   width?: number
 }
 
-export type PcCellValue = string | number | boolean | null
+export type PcCellValue = string | number | boolean | null | PcComment[]
 
 export type PcRow = {
   id: string
@@ -83,6 +88,7 @@ export const PC_COL_TYPE_LABELS: Record<PcColType, string> = {
   select: 'Lista (dropdown)',
   url: 'Enlace',
   checkbox: 'Casilla',
+  comments: 'Comentarios',
 }
 
 // Paleta para opciones de columnas tipo lista (badges).
@@ -113,9 +119,13 @@ export function newOptionField(label = 'Nuevo dato'): PcOptionField {
   return { id: uid('f'), label }
 }
 
+export function newComment(text: string, author?: string): PcComment {
+  return { id: uid('cm'), text, at: new Date().toISOString(), ...(author ? { author } : {}) }
+}
+
 export function newRow(columns: PcColumn[]): PcRow {
   const cells: Record<string, PcCellValue> = {}
-  for (const c of columns) cells[c.id] = c.type === 'checkbox' ? false : null
+  for (const c of columns) cells[c.id] = c.type === 'checkbox' ? false : c.type === 'comments' ? [] : null
   return { id: uid('r'), cells }
 }
 

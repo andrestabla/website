@@ -3,6 +3,9 @@ import type { PcCellValue, PcColumn, PcRow } from './types'
 
 function cellToExcel(v: PcCellValue, col: PcColumn): string | number | boolean {
   if (v === null || v === undefined) return ''
+  if (col.type === 'comments') {
+    return Array.isArray(v) ? v.map((c: any) => `[${String(c.at || '').slice(0, 10)}] ${c.text || ''}`).join('\n') : ''
+  }
   if (col.type === 'checkbox') return v === true
   if (col.type === 'number') return typeof v === 'number' ? v : Number(v) || ''
   return String(v)

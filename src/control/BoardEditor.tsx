@@ -8,6 +8,7 @@ import { exportBoardToExcel } from './lib/export'
 import { applyView, emptyView, type PcView } from './lib/view'
 import { DataGrid } from './grid/DataGrid'
 import { CardsView } from './grid/CardsView'
+import { RecordPanel } from './grid/RecordPanel'
 import { GridToolbar } from './grid/GridToolbar'
 import { DatosEntrada } from './grid/DatosEntrada'
 import { Analitica } from './grid/Analitica'
@@ -28,6 +29,7 @@ export function BoardEditor() {
   const [tab, setTab] = useState<Tab>('grid')
   const [view, setView] = useState<PcView>(emptyView)
   const [gridMode, setGridMode] = useState<'table' | 'cards'>('table')
+  const [openRecordId, setOpenRecordId] = useState<string | null>(null)
   const [duplicating, setDuplicating] = useState(false)
   const [behaviorColId, setBehaviorColId] = useState<string | null>(null)
   const [computing, setComputing] = useState<Set<string>>(new Set())
@@ -367,6 +369,7 @@ export function BoardEditor() {
               onAddRow={onAddRow}
               onDeleteRow={onDeleteRow}
               onRecalcCell={recalcCell}
+              onOpenRecord={setOpenRecordId}
               computing={computing}
             />
           ) : (
@@ -409,6 +412,22 @@ export function BoardEditor() {
           onConfigChange={setAnalyticsConfig}
         />
       )}
+
+      {openRecordId && (() => {
+        const idx = board.rows.findIndex((r) => r.id === openRecordId)
+        return idx >= 0 ? (
+          <RecordPanel
+            columns={board.columns}
+            row={board.rows[idx]}
+            index={idx}
+            editable={!!editable}
+            onCellChange={onCellChange}
+            onRecalcCell={recalcCell}
+            computing={computing}
+            onClose={() => setOpenRecordId(null)}
+          />
+        ) : null
+      })()}
 
       <BoardChat boardId={board.id} title={board.title} />
 

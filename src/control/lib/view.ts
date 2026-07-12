@@ -7,6 +7,7 @@ export const emptyView: PcView = { search: '', filters: [], sort: null }
 function cellText(v: unknown): string {
   if (v === null || v === undefined) return ''
   if (typeof v === 'boolean') return v ? 'sí' : 'no'
+  if (Array.isArray(v)) return v.map((c: any) => (c && typeof c === 'object' ? c.text || '' : String(c))).join(' ')
   return String(v)
 }
 
