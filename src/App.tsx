@@ -1,4 +1,6 @@
-import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useState, type ReactNode } from 'react'
+import { lazyWithRetry } from './lib/lazyWithRetry'
+import { ErrorBoundary } from './components/system/ErrorBoundary'
 import { CMSProvider, useCMS } from './admin/context/CMSContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { DataConsentModal } from './components/privacy/DataConsentModal'
@@ -11,48 +13,48 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { canAccessModule, getAdminModuleForPath, hasAdminBridge, ADMIN_ONLY_MODULES, type AdminModuleKey } from './admin/lib/permissions'
 import { BI_HOST_MODE } from './bi/lib/base'
 
-const Home = lazy(() => import('./pages/Home').then((module) => ({ default: module.Home })))
-const ServicePage = lazy(() => import('./pages/ServicePage').then((module) => ({ default: module.ServicePage })))
-const ProductPage = lazy(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })))
-const IngenieriaHumana = lazy(() => import('./pages/IngenieriaHumana').then((module) => ({ default: module.IngenieriaHumana })))
-const DespliegueIA = lazy(() => import('./pages/DespliegueIA').then((module) => ({ default: module.DespliegueIA })))
-const MadurezOrganica = lazy(() => import('./pages/MadurezOrganica').then((module) => ({ default: module.MadurezOrganica })))
-const DataPolicy = lazy(() => import('./pages/DataPolicy').then((module) => ({ default: module.DataPolicy })))
-const CampaignLandingPage = lazy(() => import('./pages/CampaignLandingPage').then((module) => ({ default: module.CampaignLandingPage })))
-const ServiciosLandingSimple = lazy(() => import('./pages/ServiciosLandingSimple').then((module) => ({ default: module.ServiciosLandingSimple })))
-const ManagedCustomPage = lazy(() => import('./pages/ManagedCustomPage').then((module) => ({ default: module.ManagedCustomPage })))
-const NotFound = lazy(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })))
-const GeneradorCasosAI = lazy(() => import('./pages/GeneradorCasosAI').then((module) => ({ default: module.GeneradorCasosAI })))
-const PlanificoMiProyecto = lazy(() => import('./pages/PlanificoMiProyecto'))
-const HazloTuMismo = lazy(() => import('./pages/HazloTuMismo'))
-const EscalarNegocioLanding = lazy(() => import('./pages/EscalarNegocioLanding').then((module) => ({ default: module.EscalarNegocioLanding })))
-const SimuladorEmpresas = lazy(() => import('./pages/SimuladorEmpresas').then((module) => ({ default: module.SimuladorEmpresas })))
+const Home = lazyWithRetry(() => import('./pages/Home').then((module) => ({ default: module.Home })))
+const ServicePage = lazyWithRetry(() => import('./pages/ServicePage').then((module) => ({ default: module.ServicePage })))
+const ProductPage = lazyWithRetry(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })))
+const IngenieriaHumana = lazyWithRetry(() => import('./pages/IngenieriaHumana').then((module) => ({ default: module.IngenieriaHumana })))
+const DespliegueIA = lazyWithRetry(() => import('./pages/DespliegueIA').then((module) => ({ default: module.DespliegueIA })))
+const MadurezOrganica = lazyWithRetry(() => import('./pages/MadurezOrganica').then((module) => ({ default: module.MadurezOrganica })))
+const DataPolicy = lazyWithRetry(() => import('./pages/DataPolicy').then((module) => ({ default: module.DataPolicy })))
+const CampaignLandingPage = lazyWithRetry(() => import('./pages/CampaignLandingPage').then((module) => ({ default: module.CampaignLandingPage })))
+const ServiciosLandingSimple = lazyWithRetry(() => import('./pages/ServiciosLandingSimple').then((module) => ({ default: module.ServiciosLandingSimple })))
+const ManagedCustomPage = lazyWithRetry(() => import('./pages/ManagedCustomPage').then((module) => ({ default: module.ManagedCustomPage })))
+const NotFound = lazyWithRetry(() => import('./pages/NotFound').then((module) => ({ default: module.NotFound })))
+const GeneradorCasosAI = lazyWithRetry(() => import('./pages/GeneradorCasosAI').then((module) => ({ default: module.GeneradorCasosAI })))
+const PlanificoMiProyecto = lazyWithRetry(() => import('./pages/PlanificoMiProyecto'))
+const HazloTuMismo = lazyWithRetry(() => import('./pages/HazloTuMismo'))
+const EscalarNegocioLanding = lazyWithRetry(() => import('./pages/EscalarNegocioLanding').then((module) => ({ default: module.EscalarNegocioLanding })))
+const SimuladorEmpresas = lazyWithRetry(() => import('./pages/SimuladorEmpresas').then((module) => ({ default: module.SimuladorEmpresas })))
 
-const NavigationSelector = lazy(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
-// const HomeEducacion = lazy(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
-const BiApp = lazy(() => import('./bi/BiApp'))
-const ControlApp = lazy(() => import('./control/ControlApp'))
-const PublicBoard = lazy(() => import('./control/PublicBoard'))
-const EcosistemaApp = lazy(() => import('./ecosistema/EcosistemaApp'))
+const NavigationSelector = lazyWithRetry(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
+// const HomeEducacion = lazyWithRetry(() => import('./pages/HomeEducacion').then((module) => ({ default: module.HomeEducacion })))
+const BiApp = lazyWithRetry(() => import('./bi/BiApp'))
+const ControlApp = lazyWithRetry(() => import('./control/ControlApp'))
+const PublicBoard = lazyWithRetry(() => import('./control/PublicBoard'))
+const EcosistemaApp = lazyWithRetry(() => import('./ecosistema/EcosistemaApp'))
 
-const LoginPage = lazy(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
-const Dashboard = lazy(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
-const ManageContentBuilder = lazy(() => import('./admin/pages/ManageContentBuilder').then((module) => ({ default: module.ManageContentBuilder })))
-const ManageSitePageEditor = lazy(() => import('./admin/pages/ManageSitePageEditor').then((module) => ({ default: module.ManageSitePageEditor })))
-const ManageDesign = lazy(() => import('./admin/pages/ManageDesign').then((module) => ({ default: module.ManageDesign })))
-const ManageIntegrations = lazy(() => import('./admin/pages/ManageIntegrations').then((module) => ({ default: module.ManageIntegrations })))
-const ManageServices = lazy(() => import('./admin/pages/ManageServices').then((module) => ({ default: module.ManageServices })))
-const ManageProducts = lazy(() => import('./admin/pages/ManageProducts').then((module) => ({ default: module.ManageProducts })))
-const ManageSite = lazy(() => import('./admin/pages/ManageSite').then((module) => ({ default: module.ManageSite })))
-const ManageSEO = lazy(() => import('./admin/pages/ManageSEO').then((module) => ({ default: module.ManageSEO })))
-const ManageMarketing = lazy(() => import('./admin/pages/ManageMarketing').then((module) => ({ default: module.ManageMarketing })))
-const ManageLeads = lazy(() => import('./admin/pages/ManageLeads').then((module) => ({ default: module.ManageLeads })))
-const Analytics = lazy(() => import('./admin/pages/Analytics').then((module) => ({ default: module.Analytics })))
-const ManageUsers = lazy(() => import('./admin/pages/ManageUsers').then((module) => ({ default: module.ManageUsers })))
-const ManageBookings = lazy(() => import('./admin/pages/ManageBookings').then((module) => ({ default: module.ManageBookings })))
-const ManageDocuments = lazy(() => import('./admin/pages/ManageDocuments').then((module) => ({ default: module.ManageDocuments })))
-const SetupPasswordPage = lazy(() => import('./admin/pages/SetupPasswordPage').then((module) => ({ default: module.SetupPasswordPage })))
-const AdminLayout = lazy(() => import('./admin/components/AdminLayout').then((module) => ({ default: module.AdminLayout })))
+const LoginPage = lazyWithRetry(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
+const Dashboard = lazyWithRetry(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
+const ManageContentBuilder = lazyWithRetry(() => import('./admin/pages/ManageContentBuilder').then((module) => ({ default: module.ManageContentBuilder })))
+const ManageSitePageEditor = lazyWithRetry(() => import('./admin/pages/ManageSitePageEditor').then((module) => ({ default: module.ManageSitePageEditor })))
+const ManageDesign = lazyWithRetry(() => import('./admin/pages/ManageDesign').then((module) => ({ default: module.ManageDesign })))
+const ManageIntegrations = lazyWithRetry(() => import('./admin/pages/ManageIntegrations').then((module) => ({ default: module.ManageIntegrations })))
+const ManageServices = lazyWithRetry(() => import('./admin/pages/ManageServices').then((module) => ({ default: module.ManageServices })))
+const ManageProducts = lazyWithRetry(() => import('./admin/pages/ManageProducts').then((module) => ({ default: module.ManageProducts })))
+const ManageSite = lazyWithRetry(() => import('./admin/pages/ManageSite').then((module) => ({ default: module.ManageSite })))
+const ManageSEO = lazyWithRetry(() => import('./admin/pages/ManageSEO').then((module) => ({ default: module.ManageSEO })))
+const ManageMarketing = lazyWithRetry(() => import('./admin/pages/ManageMarketing').then((module) => ({ default: module.ManageMarketing })))
+const ManageLeads = lazyWithRetry(() => import('./admin/pages/ManageLeads').then((module) => ({ default: module.ManageLeads })))
+const Analytics = lazyWithRetry(() => import('./admin/pages/Analytics').then((module) => ({ default: module.Analytics })))
+const ManageUsers = lazyWithRetry(() => import('./admin/pages/ManageUsers').then((module) => ({ default: module.ManageUsers })))
+const ManageBookings = lazyWithRetry(() => import('./admin/pages/ManageBookings').then((module) => ({ default: module.ManageBookings })))
+const ManageDocuments = lazyWithRetry(() => import('./admin/pages/ManageDocuments').then((module) => ({ default: module.ManageDocuments })))
+const SetupPasswordPage = lazyWithRetry(() => import('./admin/pages/SetupPasswordPage').then((module) => ({ default: module.SetupPasswordPage })))
+const AdminLayout = lazyWithRetry(() => import('./admin/components/AdminLayout').then((module) => ({ default: module.AdminLayout })))
 
 function ScrollToTopOnRouteChange() {
   const { pathname, hash } = useLocation()
@@ -277,14 +279,16 @@ function App() {
   // Subdominio del módulo BI (bi.algoritmot.com): montar el BI en la raíz, sin el chrome de marketing.
   if (BI_HOST_MODE) {
     return (
-      <Suspense fallback={<RouteLoader />}>
-        <Routes>
-          <Route path="/board/:token" element={<PublicBoard />} />
-          <Route path="/control/*" element={<ControlApp />} />
-          <Route path="/ecosistema/*" element={<EcosistemaApp />} />
-          <Route path="/*" element={<BiApp />} />
-        </Routes>
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={<RouteLoader />}>
+          <Routes>
+            <Route path="/board/:token" element={<PublicBoard />} />
+            <Route path="/control/*" element={<ControlApp />} />
+            <Route path="/ecosistema/*" element={<EcosistemaApp />} />
+            <Route path="/*" element={<BiApp />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     )
   }
 
@@ -300,6 +304,7 @@ function App() {
           <AdminTelemetry />
           <SmartPopup />
           <DataConsentModal />
+          <ErrorBoundary>
           <Suspense fallback={<RouteLoader />}>
             <Routes>
               <Route path="/" element={<ManagedPublishedRoute routePath="/" fallback={<NavigationSelector />} />} />
@@ -358,6 +363,7 @@ function App() {
               <Route path="*" element={<SiteArchitectureFallbackRoute />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
         </AnimatePresence>
       </LanguageProvider>
     </CMSProvider>
