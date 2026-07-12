@@ -153,6 +153,11 @@ export function SiteSEO() {
       description = 'Tableros de seguimiento tipo hoja de cálculo, 100% customizables.'
       isKnownRoute = true
       shouldNoIndex = true
+    } else if (normalizedPath === '/ecosistema' || normalizedPath.startsWith('/ecosistema/')) {
+      title = `Ecosistema | ${siteName}`
+      description = 'Ecosistema digital Algoritmo T: acceso unificado a tus módulos y herramientas.'
+      isKnownRoute = true
+      shouldNoIndex = true
     } else if (normalizedPath.startsWith('/board/')) {
       title = `Tablero · Project Control | ${siteName}`
       description = 'Vista pública de un tablero de seguimiento.'
