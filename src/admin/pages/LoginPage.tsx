@@ -35,7 +35,8 @@ export function LoginPage() {
             }
             if (response.ok && payload?.user) {
                 localStorage.setItem('admin_token', 'server_session')
-                navigate('/admin/dashboard')
+                const role = String(payload.user.role || '')
+                navigate(role === 'SUPERADMIN' || role === 'ADMIN' ? '/admin/dashboard' : '/ecosistema')
                 return
             }
             if (payload?.error === 'Invalid credentials') {
@@ -72,7 +73,8 @@ export function LoginPage() {
             const payload = await response.json().catch(() => null)
             if (response.ok && payload?.user) {
                 localStorage.setItem('admin_token', 'server_session')
-                navigate('/admin/dashboard')
+                const role = String(payload.user.role || '')
+                navigate(role === 'SUPERADMIN' || role === 'ADMIN' ? '/admin/dashboard' : '/ecosistema')
                 return
             }
             if (payload?.twoFactorExpired) {

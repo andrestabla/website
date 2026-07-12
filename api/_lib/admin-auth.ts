@@ -110,8 +110,15 @@ function isPrimaryAdminUser(session: SessionPayload) {
   return String(session.username || '').trim().toLowerCase() === String(configuredUsername).trim().toLowerCase()
 }
 
+// Módulos de gestión del panel: solo SUPERADMIN/ADMIN. El resto (LEADS, BOOKINGS,
+// DOCUMENTS, ANALYTICS, BI, PROJECT_CONTROL) se rige por permiso.
+const ADMIN_ONLY_MODULES: AdminModuleKey[] = [
+  'DASHBOARD', 'SITE_BUILDER', 'SERVICES', 'PRODUCTS', 'DESIGN', 'SEO', 'MARKETING', 'INTEGRATIONS', 'SETTINGS', 'USERS',
+]
+
 export function canAccessAdminModule(session: SessionPayload, module: AdminModuleKey) {
   if (session.role === 'SUPERADMIN') return true
+  if (ADMIN_ONLY_MODULES.includes(module) && session.role !== 'ADMIN') return false
   if (module === 'USERS' && isPrimaryAdminUser(session)) return true
   const tokenPermissions = session.permissions || undefined
   if (tokenPermissions && Object.prototype.hasOwnProperty.call(tokenPermissions, module)) {

@@ -8,7 +8,7 @@ import { SmartPopup } from './components/marketing/SmartPopup'
 import { SiteSEO } from './components/seo/SiteSEO'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { canAccessModule, getAdminModuleForPath, type AdminModuleKey } from './admin/lib/permissions'
+import { canAccessModule, getAdminModuleForPath, isAdminRole, ADMIN_ONLY_MODULES, type AdminModuleKey } from './admin/lib/permissions'
 import { BI_HOST_MODE } from './bi/lib/base'
 
 const Home = lazy(() => import('./pages/Home').then((module) => ({ default: module.Home })))
@@ -33,6 +33,7 @@ const NavigationSelector = lazy(() => import('./pages/NavigationSelector').then(
 const BiApp = lazy(() => import('./bi/BiApp'))
 const ControlApp = lazy(() => import('./control/ControlApp'))
 const PublicBoard = lazy(() => import('./control/PublicBoard'))
+const EcosistemaApp = lazy(() => import('./ecosistema/EcosistemaApp'))
 
 const LoginPage = lazy(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const Dashboard = lazy(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
@@ -151,6 +152,11 @@ const ProtectedRoute = ({
   if (status === 'checking') return <ProtectedRouteFrame status={status} />
   if (status === 'unauthenticated') return <Navigate to="/admin/login" replace />
   const module = requiredModule || getAdminModuleForPath(pathname)
+  // Regla de negocio: el panel de administración es solo para SUPERADMIN/ADMIN.
+  // Los usuarios no-admin que intenten un módulo de gestión van al Ecosistema.
+  if (!isAdminRole(sessionUser?.role) && (pathname === '/admin/dashboard' || (module && ADMIN_ONLY_MODULES.includes(module)))) {
+    return <Navigate to="/ecosistema" replace />
+  }
   if (module && !canAccessModule(sessionUser, module)) {
     return <AdminLayout sessionUser={sessionUser}><NoAccessState module={module} /></AdminLayout>
   }
@@ -275,6 +281,7 @@ function App() {
         <Routes>
           <Route path="/board/:token" element={<PublicBoard />} />
           <Route path="/control/*" element={<ControlApp />} />
+          <Route path="/ecosistema/*" element={<EcosistemaApp />} />
           <Route path="/*" element={<BiApp />} />
         </Routes>
       </Suspense>
@@ -323,6 +330,9 @@ function App() {
               {/* Project Control (tableros customizables) */}
               <Route path="/control/*" element={<ControlApp />} />
               <Route path="/board/:token" element={<PublicBoard />} />
+
+              {/* Ecosistema digital Algoritmo T (portal de módulos por permiso) */}
+              <Route path="/ecosistema/*" element={<EcosistemaApp />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />

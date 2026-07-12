@@ -116,6 +116,22 @@ export function getAdminModuleForPath(pathname: string): AdminModuleKey | null {
   return null
 }
 
+/** Roles con acceso al panel de administración completo. */
+export const ADMIN_ROLES: AdminRoleKey[] = ['SUPERADMIN', 'ADMIN']
+
+/**
+ * Módulos de gestión del panel: solo SUPERADMIN/ADMIN. Los demás módulos
+ * (LEADS, BOOKINGS, DOCUMENTS, ANALYTICS, BI, PROJECT_CONTROL) se gobiernan por
+ * permiso y son accesibles a usuarios no-admin desde el Ecosistema.
+ */
+export const ADMIN_ONLY_MODULES: AdminModuleKey[] = [
+  'DASHBOARD', 'SITE_BUILDER', 'SERVICES', 'PRODUCTS', 'DESIGN', 'SEO', 'MARKETING', 'INTEGRATIONS', 'SETTINGS', 'USERS',
+]
+
+export function isAdminRole(role: string | null | undefined): boolean {
+  return role === 'SUPERADMIN' || role === 'ADMIN'
+}
+
 export function canAccessModule(
   user: { role: string; username?: string; permissions?: unknown } | null | undefined,
   module: AdminModuleKey
@@ -123,6 +139,8 @@ export function canAccessModule(
   if (!user) return false
   const role = String(user.role || '') as AdminRoleKey
   if (role === 'SUPERADMIN') return true
+  // Los módulos de gestión del panel requieren rol admin (SUPERADMIN/ADMIN).
+  if (ADMIN_ONLY_MODULES.includes(module) && role !== 'ADMIN') return false
   const primaryAdminUsername = (import.meta.env.VITE_ADMIN_PRIMARY_USERNAME || 'admin').trim().toLowerCase()
   const normalizedUsername = String(user.username || '').trim().toLowerCase()
   if (module === 'USERS' && normalizedUsername && normalizedUsername === primaryAdminUsername) return true

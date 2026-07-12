@@ -364,6 +364,18 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                 {/* Footer Section */}
                 <div className="p-4 border-t border-white/5 space-y-2">
                     <Link
+                        to="/ecosistema"
+                        onClick={(e) => {
+                            if (!confirmLeaveIfPending()) e.preventDefault()
+                        }}
+                        className="flex items-center h-12 px-4 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-all group"
+                    >
+                        <LayoutGrid className="w-5 h-5 shrink-0" />
+                        {isSidebarOpen && (
+                            <span className="ml-4 text-sm font-bold">Ecosistema</span>
+                        )}
+                    </Link>
+                    <Link
                         to="/"
                         target="_blank"
                         onClick={(e) => {
