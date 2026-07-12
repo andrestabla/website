@@ -82,8 +82,8 @@ export function BoardsList() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <div className="mb-6 flex items-end justify-between">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900">Tableros</h1>
           <p className="mt-1 text-sm text-slate-500">Crea y administra tableros de seguimiento 100 % customizables.</p>
@@ -99,14 +99,14 @@ export function BoardsList() {
           <button
             onClick={() => fileRef.current?.click()}
             disabled={creating}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-60"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-60 sm:flex-none"
           >
             <FileSpreadsheet size={16} /> Importar Excel
           </button>
           <button
             onClick={createBlank}
             disabled={creating}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-indigo-700 disabled:opacity-60 sm:flex-none"
           >
             {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Nuevo tablero
           </button>

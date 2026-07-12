@@ -21,7 +21,7 @@ export function ControlLayout({ children, user }: { children: ReactNode; user: P
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-slate-200 bg-white px-5 print:hidden">
+      <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-slate-200 bg-white px-4 sm:px-5 print:hidden">
         <NavLink to={CONTROL_HOME} className="flex items-center gap-2.5">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
             <LayoutGrid size={16} />

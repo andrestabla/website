@@ -225,108 +225,114 @@ export function BoardEditor() {
   ]
 
   return (
-    <div className="mx-auto max-w-[1400px] px-5 py-6">
-      <div className="mb-3 flex items-center gap-3">
-        <button onClick={goBack} className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
-          <ArrowLeft size={17} />
-        </button>
-        <div className="min-w-0 flex-1">
-          {editable ? (
-            <input
-              value={board.title}
-              onChange={(e) => update({ title: e.target.value })}
-              className="w-full truncate border-0 bg-transparent text-xl font-black tracking-tight text-slate-900 outline-none focus:bg-slate-50 focus:px-1"
-            />
-          ) : (
-            <h1 className="truncate text-xl font-black tracking-tight text-slate-900">{board.title}</h1>
-          )}
-          {editable ? (
-            <input
-              value={board.description}
-              placeholder="Añade una descripción…"
-              onChange={(e) => update({ description: e.target.value })}
-              className="w-full truncate border-0 bg-transparent text-[13px] text-slate-500 outline-none focus:bg-slate-50 focus:px-1"
-            />
-          ) : board.description ? (
-            <p className="truncate text-[13px] text-slate-500">{board.description}</p>
-          ) : null}
-        </div>
-        {editable ? (
-          <div className="flex items-center gap-2">
-            {savedFlash && !dirty && (
-              <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600"><Check size={14} /> Guardado</span>
-            )}
-            {!savedFlash && !dirty && (
-              <span className="text-[12px] text-slate-400">Sin cambios</span>
-            )}
-            <button
-              onClick={() => dirty && setModal('save')}
-              disabled={!dirty || saving}
-              title={dirty ? 'Guardar cambios' : 'No hay cambios por guardar'}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-[13px] font-bold transition ${
-                dirty ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm' : 'cursor-default border border-slate-200 bg-white text-slate-400'
-              }`}
-            >
-              {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-              {dirty ? 'Guardar cambios' : 'Guardado'}
-              {dirty && <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-white/90" />}
-            </button>
-          </div>
-        ) : (
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">Solo lectura</span>
-        )}
-        <button
-          onClick={() => exportBoardToExcel(board)}
-          title="Exportar a Excel"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600"
-        >
-          <Download size={15} /> Excel
-        </button>
-        <button
-          onClick={onDuplicate}
-          disabled={duplicating}
-          title="Duplicar tablero"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-60"
-        >
-          {duplicating ? <Loader2 size={15} className="animate-spin" /> : <Copy size={15} />} Duplicar
-        </button>
-        {board.isOwner && (
-          <button
-            onClick={() => setShareOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-2 text-[13px] font-semibold text-white hover:bg-indigo-700"
-          >
-            <Share2 size={15} /> Compartir
+    <div className="mx-auto max-w-[1400px] px-3 py-4 sm:px-5 sm:py-6">
+      <div className="mb-3 flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          <button onClick={goBack} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">
+            <ArrowLeft size={17} />
           </button>
-        )}
+          <div className="min-w-0 flex-1">
+            {editable ? (
+              <input
+                value={board.title}
+                onChange={(e) => update({ title: e.target.value })}
+                className="w-full truncate border-0 bg-transparent text-lg font-black tracking-tight text-slate-900 outline-none focus:bg-slate-50 focus:px-1 sm:text-xl"
+              />
+            ) : (
+              <h1 className="truncate text-lg font-black tracking-tight text-slate-900 sm:text-xl">{board.title}</h1>
+            )}
+            {editable ? (
+              <input
+                value={board.description}
+                placeholder="Añade una descripción…"
+                onChange={(e) => update({ description: e.target.value })}
+                className="hidden w-full truncate border-0 bg-transparent text-[13px] text-slate-500 outline-none focus:bg-slate-50 focus:px-1 sm:block"
+              />
+            ) : board.description ? (
+              <p className="hidden truncate text-[13px] text-slate-500 sm:block">{board.description}</p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap">
+          {editable ? (
+            <>
+              {!dirty && (
+                <span className={`hidden text-[12px] sm:inline-flex sm:items-center sm:gap-1 ${savedFlash ? 'font-semibold text-emerald-600' : 'text-slate-400'}`}>
+                  {savedFlash ? <><Check size={14} /> Guardado</> : 'Sin cambios'}
+                </span>
+              )}
+              <button
+                onClick={() => dirty && setModal('save')}
+                disabled={!dirty || saving}
+                title={dirty ? 'Guardar cambios' : 'No hay cambios por guardar'}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-bold transition sm:px-3.5 ${
+                  dirty ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm' : 'cursor-default border border-slate-200 bg-white text-slate-400'
+                }`}
+              >
+                {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                <span>{dirty ? 'Guardar' : 'Guardado'}</span>
+                {dirty && <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-white/90" />}
+              </button>
+            </>
+          ) : (
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">Solo lectura</span>
+          )}
+          <button
+            onClick={() => exportBoardToExcel(board)}
+            title="Exportar a Excel"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600"
+          >
+            <Download size={15} /> <span className="hidden sm:inline">Excel</span>
+          </button>
+          <button
+            onClick={onDuplicate}
+            disabled={duplicating}
+            title="Duplicar tablero"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-[13px] font-semibold text-slate-700 hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-60"
+          >
+            {duplicating ? <Loader2 size={15} className="animate-spin" /> : <Copy size={15} />} <span className="hidden sm:inline">Duplicar</span>
+          </button>
+          {board.isOwner && (
+            <button
+              onClick={() => setShareOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-[13px] font-semibold text-white hover:bg-indigo-700 sm:px-3.5"
+            >
+              <Share2 size={15} /> <span className="hidden sm:inline">Compartir</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Pestañas */}
-      <div className="mb-4 flex items-center gap-1 border-b border-slate-200">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3.5 py-2.5 text-[13px] font-semibold transition ${
-              tab === t.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <t.icon size={15} /> {t.label}
-          </button>
-        ))}
+      <div className="mb-4 flex items-end justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto border-b border-slate-200">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`-mb-px inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-[13px] font-semibold transition sm:px-3.5 ${
+                tab === t.key ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <t.icon size={15} /> {t.label}
+            </button>
+          ))}
+        </div>
         {board.isOwner && tab !== 'datos' && (
-          <div className="ml-auto flex items-center gap-2 pb-1.5">
-            {pinFlash && <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-emerald-600"><Check size={13} /> Vista pública fijada</span>}
+          <div className="flex shrink-0 items-center gap-2 pb-1.5">
+            {pinFlash && <span className="hidden items-center gap-1 text-[12px] font-semibold text-emerald-600 sm:inline-flex"><Check size={13} /> Vista pública fijada</span>}
             <button
               onClick={pinPublicView}
               disabled={pinning}
               title="Fijar esta vista como la que verán por defecto en el enlace público (se aplica al instante)"
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12.5px] font-semibold transition disabled:opacity-60 ${
+              className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[12.5px] font-semibold transition disabled:opacity-60 sm:px-3 ${
                 board.publicView?.tab === (tab === 'analitica' ? 'analitica' : 'grid')
                   ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                   : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-400 hover:text-indigo-600'
               }`}
             >
-              {pinning ? <Loader2 size={14} className="animate-spin" /> : <Pin size={14} />} Fijar vista pública
+              {pinning ? <Loader2 size={14} className="animate-spin" /> : <Pin size={14} />} <span className="hidden sm:inline">Fijar vista pública</span><span className="sm:hidden">Fijar</span>
             </button>
           </div>
         )}

@@ -20,13 +20,13 @@ export function GridToolbar({
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
-      <div className="relative">
+      <div className="relative w-full sm:w-auto">
         <Search size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           value={view.search}
           onChange={(e) => onChange({ ...view, search: e.target.value })}
           placeholder="Buscar…"
-          className="w-56 rounded-lg border border-slate-300 bg-white py-1.5 pl-8 pr-3 text-[13px] outline-none focus:border-indigo-400"
+          className="w-full rounded-lg border border-slate-300 bg-white py-1.5 pl-8 pr-3 text-[13px] outline-none focus:border-indigo-400 sm:w-56"
         />
       </div>
 
