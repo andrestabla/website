@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, LayoutGrid } from 'lucide-react'
 import { LanguageSelector } from './LanguageSelector'
 import { useLanguage } from '../../context/LanguageContext'
 import { useCMS } from '../../admin/context/CMSContext'
@@ -120,6 +120,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                         <div>
                             <div className="text-xs font-black text-white/30 uppercase tracking-[0.4em] mb-8">{uiText.footer.connection}</div>
                             <ul className="space-y-4 text-white/60 font-medium text-sm">
+                                <li><Link to="/ecosistema" className="inline-flex items-center gap-2 font-bold text-white hover:text-brand-primary transition-colors"><LayoutGrid className="w-4 h-4" /> Acceso a ecosistema</Link></li>
                                 <li><a href={site.linkedin} target="_blank" rel="noreferrer">LinkedIn</a></li>
                                 <li><a href={`mailto:${site.contactEmail}`}>Email</a></li>
                                 <li><Link to="/politica-tratamiento-datos" className="hover:text-white transition-colors">{site.dataPolicyTitle || 'Política de tratamiento de datos'}</Link></li>
@@ -152,6 +153,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                     <Link to={workflowHref} className="hover:text-white transition-colors">{uiText.nav.workflow}</Link>
                     <Link to={faqHref} className="hover:text-white transition-colors">{uiText.nav.faq}</Link>
                     <Link to={contactHref} className="hover:text-white transition-colors">{uiText.nav.contact}</Link>
+                    <Link to="/ecosistema" className="inline-flex items-center gap-1.5 text-white hover:text-brand-primary transition-colors"><LayoutGrid className="w-3.5 h-3.5" /> Ecosistema</Link>
                     <Link to="/politica-tratamiento-datos" className="hover:text-white transition-colors">{site.dataPolicyTitle || 'Política de datos'}</Link>
                 </div>
             </div>
@@ -234,6 +236,12 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
 
 
                     <div className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-3' : 'gap-4'} ${headerVariant === 'split' ? 'justify-end' : ''}`}>
+                        <Link
+                            to="/ecosistema"
+                            className="h-10 px-4 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-[0.22em] inline-flex items-center gap-2 hover:border-brand-primary hover:text-brand-primary transition-colors"
+                        >
+                            <LayoutGrid className="w-3.5 h-3.5" /> Ecosistema
+                        </Link>
                         {headerCtaEnabled && (
                             isExternalHeaderCta ? (
                                 <a
@@ -290,6 +298,9 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                         </Link>
                         <Link to={contactHref} onClick={closeMobileMenu} target={isFocusedFlow ? "_blank" : undefined} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-500 hover:text-brand-primary hover:bg-slate-50">
                             {contactNavLabel}
+                        </Link>
+                        <Link to="/ecosistema" onClick={closeMobileMenu} className="px-3 py-3 text-xs font-black uppercase tracking-[0.25em] text-slate-700 hover:text-brand-primary hover:bg-slate-50 inline-flex items-center gap-2">
+                            <LayoutGrid className="w-4 h-4" /> Acceso a ecosistema
                         </Link>
 
                         {headerCtaEnabled && (
