@@ -58,7 +58,7 @@ export default function PublicBoard() {
             <h1 className="text-lg font-black tracking-tight text-slate-900 sm:text-xl">{data.title}</h1>
             {data.description && <p className="mt-0.5 text-[13px] text-slate-500">{data.description}</p>}
 
-            <div className="mb-4 mt-4 flex items-center gap-1 overflow-x-auto border-b border-slate-200">
+            <div className="mb-4 mt-4 flex items-center gap-1 overflow-x-auto border-b border-slate-200 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {([['grid', 'Tablero', Table2], ['analitica', 'Analítica', BarChart3]] as const).map(([key, label, Icon]) => (
                 <button
                   key={key}

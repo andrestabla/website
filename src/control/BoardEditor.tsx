@@ -309,7 +309,7 @@ export function BoardEditor() {
 
       {/* Pestañas */}
       <div className="mb-4 flex items-end justify-between gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto border-b border-slate-200">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto border-b border-slate-200 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map((t) => (
             <button
               key={t.key}
