@@ -17,6 +17,7 @@ export function SetupPasswordPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const token = useMemo(() => params.get('token') || '', [params])
+  const isReset = params.get('mode') === 'reset'
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -94,8 +95,8 @@ export function SetupPasswordPage() {
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">Activación segura</h1>
-            <p className="text-sm text-slate-500">Configura tus credenciales de acceso</p>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">{isReset ? 'Restablecer contraseña' : 'Activación segura'}</h1>
+            <p className="text-sm text-slate-500">{isReset ? 'Define una nueva contraseña para tu cuenta' : 'Configura tus credenciales de acceso'}</p>
           </div>
         </div>
 
@@ -164,7 +165,7 @@ export function SetupPasswordPage() {
                 </>
               ) : (
                 <>
-                  Activar acceso <ArrowRight className="w-4 h-4 ml-2" />
+                  {isReset ? 'Restablecer contraseña' : 'Activar acceso'} <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
             </button>
