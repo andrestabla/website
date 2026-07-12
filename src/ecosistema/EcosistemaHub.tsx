@@ -27,8 +27,15 @@ export function EcosistemaHub({ user, onLogout }: { user: EcoUser; onLogout: () 
   const logout = async () => { await ecoLogout(); onLogout(); navigate('/ecosistema', { replace: true }); window.location.reload() }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
+    <div
+      className="relative min-h-screen text-slate-900"
+      style={{ backgroundImage: 'url(/back-ecosistema.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}
+    >
+      {/* Velo para legibilidad sobre la imagen de fondo */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/75 via-white/50 to-white/40" aria-hidden />
+
+      <div className="relative">
+      <header className="flex h-14 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur sm:px-6">
         <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white"><LayoutGrid size={16} /></div>
         <div className="leading-tight">
           <div className="text-sm font-black tracking-tight">Ecosistema digital <span className="text-indigo-600">Algoritmo T</span></div>
@@ -43,7 +50,7 @@ export function EcosistemaHub({ user, onLogout }: { user: EcoUser; onLogout: () 
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <h1 className="text-2xl font-black tracking-tight">Hola, {(user?.displayName || 'usuario').split(' ')[0]}</h1>
-        <p className="mb-8 mt-1 text-sm text-slate-500">Estos son los módulos habilitados para tu cuenta. Entra con un clic — sin volver a iniciar sesión.</p>
+        <p className="mb-8 mt-1 text-sm text-slate-500">Estos son los módulos habilitados para tu cuenta. Entra con un clic.</p>
 
         {modules.length === 0 && !admin ? (
           <div className="grid min-h-[40vh] place-items-center rounded-2xl border border-dashed border-slate-300 text-center">
@@ -91,6 +98,7 @@ export function EcosistemaHub({ user, onLogout }: { user: EcoUser; onLogout: () 
           </div>
         )}
       </main>
+      </div>
     </div>
   )
 }

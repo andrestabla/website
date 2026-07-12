@@ -43,8 +43,7 @@ export function EcosistemaLogin({ onSuccess }: { onSuccess: () => void }) {
             Ecosistema digital <span className="text-indigo-200">Algoritmo T</span>
           </h1>
           <p className="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-indigo-100">
-            Un solo acceso a todas tus herramientas. Inicia sesión y entra a los módulos habilitados para tu cuenta —
-            sin volver a autenticarte.
+            Un solo acceso a todas tus herramientas. Inicia sesión y entra a los módulos habilitados para tu cuenta.
           </p>
         </div>
         <div className="text-xs leading-relaxed text-indigo-200">Inteligencia de negocio · Tableros · Contactos · Citas · Documentos</div>
