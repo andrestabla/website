@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { LayoutGrid } from 'lucide-react'
-import { pcStartLogin, pcVerifyLoginCode } from './lib/session'
+import { pcStartLogin, pcVerifyLoginCode, pcRequestPasswordReset } from './lib/session'
 
 export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
   const [identifier, setIdentifier] = useState('')
@@ -8,9 +8,10 @@ export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState<'credentials' | 'code'>('credentials')
+  const [step, setStep] = useState<'credentials' | 'code' | 'forgot'>('credentials')
   const [code, setCode] = useState('')
   const [maskedEmail, setMaskedEmail] = useState('')
+  const [resetDone, setResetDone] = useState(false)
 
   const submit = async (e?: FormEvent) => {
     e?.preventDefault()
@@ -32,6 +33,18 @@ export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
     if (r.status === 'ok') onSuccess()
     else { if (r.expired) setStep('credentials'); setError(r.error) }
   }
+
+  const requestReset = async (e: FormEvent) => {
+    e.preventDefault()
+    setError(''); setInfo(''); setLoading(true)
+    const r = await pcRequestPasswordReset(identifier)
+    setLoading(false)
+    if (r.status === 'ok') { setResetDone(true); setInfo(r.message) }
+    else setError(r.error)
+  }
+
+  const goForgot = () => { setError(''); setInfo(''); setResetDone(false); setStep('forgot') }
+  const backToLogin = () => { setError(''); setInfo(''); setResetDone(false); setStep('credentials') }
 
   return (
     <div className="grid min-h-screen bg-white md:grid-cols-[1.1fr_0.9fr]">
@@ -60,10 +73,14 @@ export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
             <div className="text-sm font-black tracking-tight">PROJECT<span className="text-indigo-600">CONTROL</span></div>
           </div>
           <h2 className="text-[22px] font-black tracking-tight text-slate-900">
-            {step === 'credentials' ? 'Iniciar sesión' : 'Verificación en dos pasos'}
+            {step === 'credentials' ? 'Iniciar sesión' : step === 'forgot' ? 'Recuperar contraseña' : 'Verificación en dos pasos'}
           </h2>
           <p className="mb-6 mt-1 text-sm text-slate-500">
-            {step === 'credentials' ? 'Accede con tu cuenta autorizada.' : `Ingresa el código de 6 dígitos que enviamos a ${maskedEmail || 'tu correo'}.`}
+            {step === 'credentials'
+              ? 'Accede con tu cuenta autorizada.'
+              : step === 'forgot'
+                ? 'Ingresa tu correo o usuario y te enviaremos un enlace para restablecer tu contraseña.'
+                : `Ingresa el código de 6 dígitos que enviamos a ${maskedEmail || 'tu correo'}.`}
           </p>
           {info && <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm text-indigo-700">{info}</div>}
           {error && <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">{error}</div>}
@@ -82,7 +99,37 @@ export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
               <button type="submit" disabled={loading} className="w-full rounded-lg bg-indigo-600 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-60">
                 {loading ? 'Enviando código…' : 'Continuar →'}
               </button>
+              <div className="text-center">
+                <button type="button" onClick={goForgot} className="text-[12.5px] font-semibold text-slate-400 hover:text-indigo-600">
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
             </form>
+          ) : step === 'forgot' ? (
+            resetDone ? (
+              <div className="space-y-4">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-700">
+                  Revisa tu correo y sigue el enlace para crear una nueva contraseña. Si no llega en unos minutos, revisa la carpeta de spam.
+                </div>
+                <button type="button" onClick={backToLogin} className="w-full rounded-lg border border-slate-300 py-3 text-sm font-bold text-slate-700 transition hover:border-indigo-400 hover:text-indigo-600">
+                  ← Volver a iniciar sesión
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={requestReset} className="space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-slate-600">Usuario o correo</label>
+                  <input value={identifier} onChange={(e) => setIdentifier(e.target.value)} autoFocus
+                    className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" placeholder="tu-correo@dominio.com" />
+                </div>
+                <button type="submit" disabled={loading || !identifier.trim()} className="w-full rounded-lg bg-indigo-600 py-3 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-60">
+                  {loading ? 'Enviando…' : 'Enviar enlace de recuperación →'}
+                </button>
+                <div className="text-center">
+                  <button type="button" onClick={backToLogin} className="text-[12.5px] font-semibold text-slate-400 hover:text-slate-700">← Volver a iniciar sesión</button>
+                </div>
+              </form>
+            )
           ) : (
             <form onSubmit={verify} className="space-y-4">
               <div>

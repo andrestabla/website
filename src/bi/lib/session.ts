@@ -145,3 +145,21 @@ export async function biLogout() {
     // ignore
   }
 }
+
+// ── Recuperación de contraseña ("olvidé mi contraseña") ──
+export type BiResetResult = { status: 'ok'; message: string } | { status: 'error'; error: string }
+
+export async function biRequestPasswordReset(identifier: string): Promise<BiResetResult> {
+  try {
+    const res = await fetch('/api/admin/password-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: identifier.trim() }),
+    })
+    const payload = await res.json().catch(() => null)
+    if (res.ok && payload?.ok) return { status: 'ok', message: payload.message || 'Si el correo existe, te enviamos un enlace para restablecer tu contraseña.' }
+    return { status: 'error', error: payload?.error || 'No se pudo procesar la solicitud.' }
+  } catch {
+    return { status: 'error', error: 'Error de conexión.' }
+  }
+}

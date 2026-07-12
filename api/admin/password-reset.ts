@@ -17,16 +17,18 @@ function parseBody(req: VercelRequest) {
   return typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body
 }
 
-function getPublicOrigin(req: VercelRequest) {
+// El enlace de restablecimiento apunta SIEMPRE al sitio canónico: /admin/setup solo
+// existe en el host principal (en bi.algoritmot.com las rutas /admin/* no se montan),
+// y el setup solo escribe en la base de datos, así que funciona sin importar desde
+// qué login se solicitó (Ecosistema, BI o Project Control).
+function getCanonicalOrigin() {
   const configured =
     process.env.SITE_URL ||
     process.env.PUBLIC_SITE_URL ||
     process.env.APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL
   if (configured && configured.trim()) return configured.trim().replace(/\/$/, '')
-  const host = String(req.headers?.['x-forwarded-host'] || req.headers?.host || 'www.algoritmot.com')
-  const proto = String(req.headers?.['x-forwarded-proto'] || 'https')
-  return `${proto}://${host}`
+  return 'https://www.algoritmot.com'
 }
 
 async function getSmtpConfig() {
@@ -95,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         purpose: TOKEN_PURPOSE,
         metadata: { via: 'ecosistema-forgot-password' },
       })
-      const resetUrl = `${getPublicOrigin(req)}/admin/setup?token=${encodeURIComponent(rawToken)}&mode=reset`
+      const resetUrl = `${getCanonicalOrigin()}/admin/setup?token=${encodeURIComponent(rawToken)}&mode=reset`
       try {
         await sendResetEmail(user.email, user.displayName, resetUrl, expiresAt)
       } catch (mailError) {
