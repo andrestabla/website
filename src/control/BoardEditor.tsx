@@ -7,6 +7,7 @@ import { newColumn, newRow, type PcAnalyticsConfig, type PcBoard, type PcCellVal
 import { exportBoardToExcel } from './lib/export'
 import { applyView, emptyView, type PcView } from './lib/view'
 import { DataGrid } from './grid/DataGrid'
+import { CardsView } from './grid/CardsView'
 import { GridToolbar } from './grid/GridToolbar'
 import { DatosEntrada } from './grid/DatosEntrada'
 import { Analitica } from './grid/Analitica'
@@ -26,6 +27,7 @@ export function BoardEditor() {
   const [shareOpen, setShareOpen] = useState(false)
   const [tab, setTab] = useState<Tab>('grid')
   const [view, setView] = useState<PcView>(emptyView)
+  const [gridMode, setGridMode] = useState<'table' | 'cards'>('table')
   const [duplicating, setDuplicating] = useState(false)
   const [behaviorColId, setBehaviorColId] = useState<string | null>(null)
   const [computing, setComputing] = useState<Set<string>>(new Set())
@@ -95,6 +97,7 @@ export function BoardEditor() {
     const pv = {
       tab: pvTab,
       gridView: pvTab === 'grid' ? view : board.publicView?.gridView,
+      gridMode: pvTab === 'grid' ? gridMode : board.publicView?.gridMode,
       analytics: analyticsConfig || board.publicView?.analytics,
     }
     setPinning(true)
@@ -344,7 +347,9 @@ export function BoardEditor() {
             columns={board.columns}
             view={view}
             onChange={setView}
-            rightSlot={<span className="text-[12px] text-slate-400">{filteredRows.length} de {board.rows.length} filas</span>}
+            viewMode={gridMode}
+            onViewModeChange={setGridMode}
+            rightSlot={<span className="hidden text-[12px] text-slate-400 sm:inline">{filteredRows.length} de {board.rows.length} filas</span>}
           />
           {computeMsg && (
             <div className="mb-3 flex items-start gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[12.5px] text-indigo-700">
@@ -353,22 +358,35 @@ export function BoardEditor() {
               <button onClick={() => setComputeMsg('')} className="text-indigo-300 hover:text-indigo-600">×</button>
             </div>
           )}
-          <DataGrid
-            columns={board.columns}
-            rows={filteredRows}
-            editable={!!editable}
-            onCellChange={onCellChange}
-            onColumnChange={onColumnChange}
-            onColumnMove={onColumnMove}
-            onColumnDelete={onColumnDelete}
-            onConfigureBehavior={(colId) => setBehaviorColId(colId)}
-            onRecalcColumn={recalcColumn}
-            onAddColumn={onAddColumn}
-            onAddRow={onAddRow}
-            onDeleteRow={onDeleteRow}
-            onRecalcCell={recalcCell}
-            computing={computing}
-          />
+          {gridMode === 'cards' ? (
+            <CardsView
+              columns={board.columns}
+              rows={filteredRows}
+              editable={!!editable}
+              onCellChange={onCellChange}
+              onAddRow={onAddRow}
+              onDeleteRow={onDeleteRow}
+              onRecalcCell={recalcCell}
+              computing={computing}
+            />
+          ) : (
+            <DataGrid
+              columns={board.columns}
+              rows={filteredRows}
+              editable={!!editable}
+              onCellChange={onCellChange}
+              onColumnChange={onColumnChange}
+              onColumnMove={onColumnMove}
+              onColumnDelete={onColumnDelete}
+              onConfigureBehavior={(colId) => setBehaviorColId(colId)}
+              onRecalcColumn={recalcColumn}
+              onAddColumn={onAddColumn}
+              onAddRow={onAddRow}
+              onDeleteRow={onDeleteRow}
+              onRecalcCell={recalcCell}
+              computing={computing}
+            />
+          )}
         </>
       )}
 

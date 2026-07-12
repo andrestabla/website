@@ -48,7 +48,7 @@ export type PcView = { search: string; filters: PcFilter[]; sort: PcSort }
 
 // ── Vista pública fijada por el propietario ──────────────────────────────────
 export type PcAnalyticsConfig = { groupId: string; secondaryId: string; metric: 'count' | 'sum' | 'avg'; valueColId: string }
-export type PcPublicView = { tab: 'grid' | 'analitica'; gridView?: PcView; analytics?: PcAnalyticsConfig }
+export type PcPublicView = { tab: 'grid' | 'analitica'; gridView?: PcView; gridMode?: 'table' | 'cards'; analytics?: PcAnalyticsConfig }
 
 export type PcBoard = {
   id: string

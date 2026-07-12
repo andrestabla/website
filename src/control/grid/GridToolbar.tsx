@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Search, SlidersHorizontal, ArrowUpDown, X } from 'lucide-react'
+import { Search, SlidersHorizontal, ArrowUpDown, X, Table2, LayoutGrid } from 'lucide-react'
 import type { PcColumn } from '../lib/types'
 import type { PcFilter, PcView } from '../lib/view'
 
@@ -8,11 +8,15 @@ export function GridToolbar({
   view,
   onChange,
   rightSlot,
+  viewMode,
+  onViewModeChange,
 }: {
   columns: PcColumn[]
   view: PcView
   onChange: (v: PcView) => void
   rightSlot?: React.ReactNode
+  viewMode?: 'table' | 'cards'
+  onViewModeChange?: (m: 'table' | 'cards') => void
 }) {
   const activeFilters = view.filters.filter((f) =>
     (f.kind === 'in' && f.values.length) || (f.kind === 'contains' && f.value) || (f.kind === 'range' && (f.min !== undefined || f.max !== undefined))
@@ -42,7 +46,27 @@ export function GridToolbar({
         </button>
       )}
 
-      <div className="ml-auto flex items-center gap-2">{rightSlot}</div>
+      <div className="ml-auto flex items-center gap-2">
+        {viewMode && onViewModeChange && (
+          <div className="flex items-center rounded-lg border border-slate-300 bg-white p-0.5">
+            <button
+              onClick={() => onViewModeChange('table')}
+              title="Vista tabla"
+              className={`grid h-7 w-7 place-items-center rounded-md ${viewMode === 'table' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <Table2 size={15} />
+            </button>
+            <button
+              onClick={() => onViewModeChange('cards')}
+              title="Vista tarjetas"
+              className={`grid h-7 w-7 place-items-center rounded-md ${viewMode === 'cards' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <LayoutGrid size={15} />
+            </button>
+          </div>
+        )}
+        {rightSlot}
+      </div>
     </div>
   )
 }

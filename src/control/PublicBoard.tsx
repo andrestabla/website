@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { LayoutGrid, Loader2, Table2, BarChart3 } from 'lucide-react'
 import { getPublicBoard, type PublicBoardData } from './lib/control-api'
 import { DataGrid } from './grid/DataGrid'
+import { CardsView } from './grid/CardsView'
 import { GridToolbar } from './grid/GridToolbar'
 import { Analitica } from './grid/Analitica'
 import { BoardChat } from './grid/BoardChat'
@@ -15,6 +16,7 @@ export default function PublicBoard() {
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'grid' | 'analitica'>('grid')
   const [view, setView] = useState<PcView>(emptyView)
+  const [gridMode, setGridMode] = useState<'table' | 'cards'>('table')
   const filteredRows = useMemo(() => (data ? applyView(data.rows, data.columns, view) : []), [data, view])
 
   useEffect(() => {
@@ -26,6 +28,7 @@ export default function PublicBoard() {
         // Aplica la vista pública fijada por el propietario (pestaña + filtros).
         if (d.publicView?.tab) setTab(d.publicView.tab)
         if (d.publicView?.gridView) setView(d.publicView.gridView)
+        if (d.publicView?.gridMode) setGridMode(d.publicView.gridMode)
         setLoading(false)
       })
       .catch((e) => { if (!cancelled) { setError(e?.message || 'Tablero no disponible'); setLoading(false) } })
@@ -75,9 +78,15 @@ export default function PublicBoard() {
                   columns={data.columns}
                   view={view}
                   onChange={setView}
-                  rightSlot={<span className="text-[12px] text-slate-400">{filteredRows.length} de {data.rows.length} filas</span>}
+                  viewMode={gridMode}
+                  onViewModeChange={setGridMode}
+                  rightSlot={<span className="hidden text-[12px] text-slate-400 sm:inline">{filteredRows.length} de {data.rows.length} filas</span>}
                 />
-                <DataGrid columns={data.columns} rows={filteredRows} editable={false} />
+                {gridMode === 'cards' ? (
+                  <CardsView columns={data.columns} rows={filteredRows} editable={false} />
+                ) : (
+                  <DataGrid columns={data.columns} rows={filteredRows} editable={false} />
+                )}
               </>
             ) : (
               <Analitica columns={data.columns} rows={data.rows} initialConfig={data.publicView?.analytics} />

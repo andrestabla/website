@@ -112,22 +112,14 @@ export function DataGrid({
                   className="border-b border-r border-slate-200 p-0 align-top"
                   style={{ minWidth: col.width || 160 }}
                 >
-                  {col.behavior?.mode === 'formula' ? (
-                    <FormulaCell
-                      col={col}
-                      value={row.cells[col.id] ?? null}
-                      editable={editable}
-                      computing={!!computing?.has(`${row.id}:${col.id}`)}
-                      onRecalc={() => onRecalcCell?.(row.id, col.id)}
-                    />
-                  ) : (
-                    <Cell
-                      col={col}
-                      value={row.cells[col.id] ?? null}
-                      editable={editable}
-                      onChange={(v) => onCellChange?.(row.id, col.id, v)}
-                    />
-                  )}
+                  <BoardCell
+                    col={col}
+                    value={row.cells[col.id] ?? null}
+                    editable={editable}
+                    computing={!!computing?.has(`${row.id}:${col.id}`)}
+                    onChange={(v) => onCellChange?.(row.id, col.id, v)}
+                    onRecalc={() => onRecalcCell?.(row.id, col.id)}
+                  />
                 </td>
               ))}
               {editable && <td className="border-b border-slate-200" />}
@@ -152,6 +144,28 @@ export function DataGrid({
       )}
     </div>
   )
+}
+
+// ── Celda enrutada (reutilizable por la vista tabla y la vista tarjetas) ─────
+export function BoardCell({
+  col,
+  value,
+  editable,
+  computing,
+  onChange,
+  onRecalc,
+}: {
+  col: PcColumn
+  value: PcCellValue
+  editable: boolean
+  computing?: boolean
+  onChange?: (v: PcCellValue) => void
+  onRecalc?: () => void
+}) {
+  if (col.behavior?.mode === 'formula') {
+    return <FormulaCell col={col} value={value} editable={editable} computing={!!computing} onRecalc={() => onRecalc?.()} />
+  }
+  return <Cell col={col} value={value} editable={editable} onChange={(v) => onChange?.(v)} />
 }
 
 // ── Celda ────────────────────────────────────────────────────────────────────

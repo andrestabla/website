@@ -148,6 +148,16 @@ export function SiteSEO() {
       description = 'Consulta lineamientos de privacidad, consentimiento y tratamiento de datos.'
       isKnownRoute = true
       breadcrumbs.push({ name: 'Política de datos', path: normalizedPath })
+    } else if (normalizedPath === '/control' || normalizedPath.startsWith('/control/')) {
+      title = `Project Control | ${siteName}`
+      description = 'Tableros de seguimiento tipo hoja de cálculo, 100% customizables.'
+      isKnownRoute = true
+      shouldNoIndex = true
+    } else if (normalizedPath.startsWith('/board/')) {
+      title = `Tablero · Project Control | ${siteName}`
+      description = 'Vista pública de un tablero de seguimiento.'
+      isKnownRoute = true
+      shouldNoIndex = true
     }
 
     if (!isKnownRoute) {

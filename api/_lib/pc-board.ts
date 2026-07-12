@@ -77,6 +77,7 @@ export function sanitizePublicView(input: unknown): any {
   const v = input as any
   const tab = v.tab === 'analitica' ? 'analitica' : 'grid'
   const out: any = { tab }
+  if (v.gridMode === 'cards' || v.gridMode === 'table') out.gridMode = v.gridMode
 
   if (v.gridView && typeof v.gridView === 'object') {
     const gv = v.gridView
