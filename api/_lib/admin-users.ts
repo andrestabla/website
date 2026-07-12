@@ -21,6 +21,9 @@ export const ADMIN_MODULES = [
   'DOCUMENTS',
   'BI',
   'PROJECT_CONTROL',
+  'PROFE_TABLA',
+  'MIS_PROYECTOS',
+  'ADMIN_BRIDGE',
 ] as const
 
 export type AdminModuleKey = (typeof ADMIN_MODULES)[number]

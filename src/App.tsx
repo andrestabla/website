@@ -8,7 +8,7 @@ import { SmartPopup } from './components/marketing/SmartPopup'
 import { SiteSEO } from './components/seo/SiteSEO'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { canAccessModule, getAdminModuleForPath, isAdminRole, ADMIN_ONLY_MODULES, type AdminModuleKey } from './admin/lib/permissions'
+import { canAccessModule, getAdminModuleForPath, hasAdminBridge, ADMIN_ONLY_MODULES, type AdminModuleKey } from './admin/lib/permissions'
 import { BI_HOST_MODE } from './bi/lib/base'
 
 const Home = lazy(() => import('./pages/Home').then((module) => ({ default: module.Home })))
@@ -154,7 +154,7 @@ const ProtectedRoute = ({
   const module = requiredModule || getAdminModuleForPath(pathname)
   // Regla de negocio: el panel de administración es solo para SUPERADMIN/ADMIN.
   // Los usuarios no-admin que intenten un módulo de gestión van al Ecosistema.
-  if (!isAdminRole(sessionUser?.role) && (pathname === '/admin/dashboard' || (module && ADMIN_ONLY_MODULES.includes(module)))) {
+  if (!hasAdminBridge(sessionUser) && (pathname === '/admin/dashboard' || (module && ADMIN_ONLY_MODULES.includes(module)))) {
     return <Navigate to="/ecosistema" replace />
   }
   if (module && !canAccessModule(sessionUser, module)) {

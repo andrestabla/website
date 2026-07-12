@@ -57,6 +57,20 @@ const ADMIN_MODULE_INFO: Record<AdminModuleKey, { label: string; description: st
     description: 'Tableros de seguimiento tipo hoja de cálculo, customizables, con opción de compartir por enlace o con usuarios.',
     url: '/control',
   },
+  PROFE_TABLA: {
+    label: 'ProfeTabla',
+    description: 'Plataforma educativa ProfeTabla.',
+    url: 'https://profetabla.com',
+  },
+  MIS_PROYECTOS: {
+    label: 'Mis Proyectos',
+    description: 'Plataforma de tableros y seguimiento Mis Proyectos.',
+    url: 'https://misproyectos.com.co',
+  },
+  ADMIN_BRIDGE: {
+    label: 'Acceso puente al panel',
+    description: 'Permite entrar al panel de administración (a los módulos habilitados) sin ser administrador.',
+  },
 }
 
 function grantedModulesFrom(map: AdminPermissionMap): AdminModuleKey[] {

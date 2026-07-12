@@ -209,6 +209,9 @@ enum AdminModule {
   DOCUMENTS
   BI
   PROJECT_CONTROL
+  PROFE_TABLA
+  MIS_PROYECTOS
+  ADMIN_BRIDGE
 }
 
 // ─── Gestor Documental ───────────────────────────────────────────────────────

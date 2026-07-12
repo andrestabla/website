@@ -116,9 +116,15 @@ const ADMIN_ONLY_MODULES: AdminModuleKey[] = [
   'DASHBOARD', 'SITE_BUILDER', 'SERVICES', 'PRODUCTS', 'DESIGN', 'SEO', 'MARKETING', 'INTEGRATIONS', 'SETTINGS', 'USERS',
 ]
 
+function hasAdminBridge(session: SessionPayload): boolean {
+  return session.role === 'SUPERADMIN' || session.role === 'ADMIN' ||
+    !!(session.permissions && (session.permissions as Record<string, boolean>).ADMIN_BRIDGE === true)
+}
+
 export function canAccessAdminModule(session: SessionPayload, module: AdminModuleKey) {
   if (session.role === 'SUPERADMIN') return true
-  if (ADMIN_ONLY_MODULES.includes(module) && session.role !== 'ADMIN') return false
+  // Módulos de gestión: rol admin, o usuario con acceso puente.
+  if (ADMIN_ONLY_MODULES.includes(module) && session.role !== 'ADMIN' && !hasAdminBridge(session)) return false
   if (module === 'USERS' && isPrimaryAdminUser(session)) return true
   const tokenPermissions = session.permissions || undefined
   if (tokenPermissions && Object.prototype.hasOwnProperty.call(tokenPermissions, module)) {

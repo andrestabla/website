@@ -15,6 +15,9 @@ export const ADMIN_MODULES = [
   'DOCUMENTS',
   'BI',
   'PROJECT_CONTROL',
+  'PROFE_TABLA',
+  'MIS_PROYECTOS',
+  'ADMIN_BRIDGE',
 ] as const
 
 export type AdminModuleKey = (typeof ADMIN_MODULES)[number]
@@ -38,6 +41,9 @@ export const ADMIN_MODULE_LABELS: Record<AdminModuleKey, string> = {
   DOCUMENTS: 'Gestor Documental',
   BI: 'Algoritmo BI',
   PROJECT_CONTROL: 'Project Control',
+  PROFE_TABLA: 'ProfeTabla (externo)',
+  MIS_PROYECTOS: 'Mis Proyectos (externo)',
+  ADMIN_BRIDGE: 'Acceso puente (panel admin)',
 }
 
 function emptyPermissionMap() {
@@ -132,6 +138,14 @@ export function isAdminRole(role: string | null | undefined): boolean {
   return role === 'SUPERADMIN' || role === 'ADMIN'
 }
 
+/** Acceso puente: un usuario no-admin al que se le permitió entrar al panel. */
+export function hasAdminBridge(user: { role?: string; permissions?: unknown } | null | undefined): boolean {
+  if (!user) return false
+  if (isAdminRole(user.role)) return true
+  const perms = user.permissions
+  return !!(perms && typeof perms === 'object' && (perms as Record<string, unknown>).ADMIN_BRIDGE === true)
+}
+
 export function canAccessModule(
   user: { role: string; username?: string; permissions?: unknown } | null | undefined,
   module: AdminModuleKey
@@ -139,8 +153,8 @@ export function canAccessModule(
   if (!user) return false
   const role = String(user.role || '') as AdminRoleKey
   if (role === 'SUPERADMIN') return true
-  // Los módulos de gestión del panel requieren rol admin (SUPERADMIN/ADMIN).
-  if (ADMIN_ONLY_MODULES.includes(module) && role !== 'ADMIN') return false
+  // Módulos de gestión: rol admin, o usuario con acceso puente. Los demás no.
+  if (ADMIN_ONLY_MODULES.includes(module) && role !== 'ADMIN' && !hasAdminBridge(user)) return false
   const primaryAdminUsername = (import.meta.env.VITE_ADMIN_PRIMARY_USERNAME || 'admin').trim().toLowerCase()
   const normalizedUsername = String(user.username || '').trim().toLowerCase()
   if (module === 'USERS' && normalizedUsername && normalizedUsername === primaryAdminUsername) return true

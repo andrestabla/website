@@ -1,13 +1,15 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight } from 'lucide-react'
-import { canAccessModule, isAdminRole, type AdminModuleKey } from '../admin/lib/permissions'
+import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink } from 'lucide-react'
+import { canAccessModule, hasAdminBridge, type AdminModuleKey } from '../admin/lib/permissions'
 import { ecoLogout, type EcoUser } from './lib/session'
 
-type Mod = { module: AdminModuleKey; name: string; desc: string; to: string; accent: string; icon: any; tag: string }
+type Mod = { module: AdminModuleKey; name: string; desc: string; to: string; accent: string; icon: any; tag: string; external?: boolean }
 
 const MODULES: Mod[] = [
   { module: 'BI', name: 'Algoritmo BI', desc: 'Observatorios de oferta educativa, laboral y análisis regional con asistente de IA.', to: '/bi', accent: 'from-blue-600 to-sky-500', icon: Gauge, tag: 'Inteligencia' },
   { module: 'PROJECT_CONTROL', name: 'Project Control', desc: 'Tableros de seguimiento tipo hoja de cálculo, 100% customizables y compartibles.', to: '/control', accent: 'from-indigo-600 to-sky-500', icon: LayoutGrid, tag: 'Tableros' },
+  { module: 'PROFE_TABLA', name: 'ProfeTabla', desc: 'Plataforma educativa ProfeTabla.', to: 'https://profetabla.com', accent: 'from-rose-500 to-orange-500', icon: GraduationCap, tag: 'Educación', external: true },
+  { module: 'MIS_PROYECTOS', name: 'Mis Proyectos', desc: 'Tableros y seguimiento de proyectos (plataforma hermana).', to: 'https://misproyectos.com.co', accent: 'from-teal-600 to-emerald-500', icon: ClipboardList, tag: 'Proyectos', external: true },
   { module: 'LEADS', name: 'Contactos', desc: 'Ver y atender los contactos y solicitudes recibidas.', to: '/admin/leads', accent: 'from-emerald-600 to-green-500', icon: Mail, tag: 'CRM' },
   { module: 'BOOKINGS', name: 'Citas', desc: 'Gestiona reservas, citas y disponibilidad.', to: '/admin/bookings', accent: 'from-amber-500 to-orange-500', icon: Calendar, tag: 'Agenda' },
   { module: 'DOCUMENTS', name: 'Gestor Documental', desc: 'Sube, organiza y comparte archivos con trazabilidad.', to: '/admin/documentos', accent: 'from-fuchsia-600 to-purple-500', icon: FolderOpen, tag: 'Documentos' },
@@ -17,7 +19,7 @@ const MODULES: Mod[] = [
 export function EcosistemaHub({ user, onLogout }: { user: EcoUser; onLogout: () => void }) {
   const navigate = useNavigate()
   const modules = MODULES.filter((m) => canAccessModule(user, m.module))
-  const admin = isAdminRole(user?.role)
+  const admin = hasAdminBridge(user)
 
   const initials = (user?.displayName || user?.username || 'AT')
     .split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
@@ -52,21 +54,28 @@ export function EcosistemaHub({ user, onLogout }: { user: EcoUser; onLogout: () 
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {modules.map((m) => (
-              <Link
-                key={m.module}
-                to={m.to}
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-lg"
-              >
-                <div className={`grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br ${m.accent} text-white`}><m.icon size={22} /></div>
-                <h3 className="mt-3 text-[17px] font-bold tracking-tight">{m.name}</h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-slate-600">{m.desc}</p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10.5px] text-slate-500">{m.tag}</span>
-                </div>
-                <div className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-indigo-600">Abrir <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></div>
-              </Link>
-            ))}
+            {modules.map((m) => {
+              const inner = (
+                <>
+                  <div className={`grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br ${m.accent} text-white`}><m.icon size={22} /></div>
+                  <h3 className="mt-3 flex items-center gap-1.5 text-[17px] font-bold tracking-tight">
+                    {m.name}
+                    {m.external && <ExternalLink size={14} className="text-slate-300" />}
+                  </h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-slate-600">{m.desc}</p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10.5px] text-slate-500">{m.tag}</span>
+                  </div>
+                  <div className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-indigo-600">Abrir <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></div>
+                </>
+              )
+              const cls = 'group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-lg'
+              return m.external ? (
+                <a key={m.module} href={m.to} target="_blank" rel="noreferrer" className={cls}>{inner}</a>
+              ) : (
+                <Link key={m.module} to={m.to} className={cls}>{inner}</Link>
+              )
+            })}
 
             {admin && (
               <Link
