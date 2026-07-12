@@ -36,9 +36,13 @@ export function EcosistemaLogin({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <div className="grid min-h-screen bg-white md:grid-cols-[1.1fr_0.9fr]">
-      <section className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-900 to-indigo-700 p-14 text-white md:flex">
-        <div className="grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur"><LayoutGrid size={24} /></div>
-        <div>
+      <section
+        className="relative hidden flex-col justify-between overflow-hidden p-14 text-white md:flex"
+        style={{ backgroundImage: 'url(/back-ecosistema.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-900/85 via-indigo-900/75 to-indigo-800/70" aria-hidden />
+        <div className="relative grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur"><LayoutGrid size={24} /></div>
+        <div className="relative">
           <h1 className="max-w-[16ch] text-4xl font-black leading-tight tracking-tight">
             Ecosistema digital <span className="text-indigo-200">Algoritmo T</span>
           </h1>
@@ -46,7 +50,7 @@ export function EcosistemaLogin({ onSuccess }: { onSuccess: () => void }) {
             Un solo acceso a todas tus herramientas. Inicia sesión y entra a los módulos habilitados para tu cuenta.
           </p>
         </div>
-        <div className="text-xs leading-relaxed text-indigo-200">Inteligencia de negocio · Tableros · Contactos · Citas · Documentos</div>
+        <div className="relative text-xs leading-relaxed text-indigo-200">Inteligencia de negocio · Tableros · Contactos · Citas · Documentos</div>
       </section>
 
       <section className="flex items-center justify-center p-8">

@@ -35,9 +35,13 @@ export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <div className="grid min-h-screen bg-white md:grid-cols-[1.1fr_0.9fr]">
-      <section className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-indigo-900 via-indigo-700 to-sky-600 p-14 text-white md:flex">
-        <div className="grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur"><LayoutGrid size={24} /></div>
-        <div>
+      <section
+        className="relative hidden flex-col justify-between overflow-hidden p-14 text-white md:flex"
+        style={{ backgroundImage: 'url(/back-project-control.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-900/85 via-indigo-800/70 to-sky-700/70" aria-hidden />
+        <div className="relative grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur"><LayoutGrid size={24} /></div>
+        <div className="relative">
           <h1 className="max-w-[16ch] text-4xl font-black leading-tight tracking-tight">
             Project <span className="text-indigo-200">Control</span>
           </h1>
@@ -46,7 +50,7 @@ export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
             define tus columnas, tipos de dato y listas, y compártelos con tu equipo o por enlace público.
           </p>
         </div>
-        <div className="text-xs leading-relaxed text-indigo-200">Crea · Edita · Comparte</div>
+        <div className="relative text-xs leading-relaxed text-indigo-200">Crea · Edita · Comparte</div>
       </section>
 
       <section className="flex items-center justify-center p-8">
