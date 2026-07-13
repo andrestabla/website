@@ -45,6 +45,15 @@ import {
 
 type DocPermissions = { roles: string[]; userEmails: string[] };
 
+type ModuleUser = {
+  id: string;
+  username: string;
+  displayName: string;
+  email: string | null;
+  role: string;
+  isAdmin: boolean;
+};
+
 const ROLE_OPTIONS: { value: string; label: string }[] = [
   { value: "ADMIN", label: "Administrador" },
   { value: "EDITOR", label: "Editor" },
@@ -460,6 +469,7 @@ export function ManageDocuments() {
   // Modal de permisos de espacio + drag&drop
   const [permModal, setPermModal] = useState<Category | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [moduleUsers, setModuleUsers] = useState<ModuleUser[]>([]);
 
   // Feedback messages
   const [toast, setToast] = useState<{
@@ -530,6 +540,20 @@ export function ManageDocuments() {
   useEffect(() => {
     try { localStorage.setItem("docs_view", viewMode); } catch { /* ignore */ }
   }, [viewMode]);
+
+  // Usuarios con acceso al módulo (para el modal de permisos); solo admin.
+  useEffect(() => {
+    if (!isAdmin) return;
+    (async () => {
+      try {
+        const r = await fetch("/api/admin/documents/module-users");
+        const d = await r.json().catch(() => null);
+        if (d?.ok && Array.isArray(d.data)) setModuleUsers(d.data);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [isAdmin]);
 
   // Documentos ordenados según el criterio elegido
   const sortedDocuments = useMemo(() => {
@@ -2057,6 +2081,7 @@ export function ManageDocuments() {
       {permModal && (
         <PermissionsModal
           category={permModal}
+          moduleUsers={moduleUsers}
           onSave={handleSavePermissions}
           onClose={() => setPermModal(null)}
         />
@@ -2348,21 +2373,27 @@ function MoveModal({
 
 function PermissionsModal({
   category,
+  moduleUsers,
   onSave,
   onClose,
 }: {
   category: Category;
+  moduleUsers: ModuleUser[];
   onSave: (cat: Category, perms: DocPermissions) => void;
   onClose: () => void;
 }) {
   const initial = parsePerms(category.permissions);
   const [roles, setRoles] = useState<string[]>(initial.roles);
-  const [emails, setEmails] = useState<string[]>(initial.userEmails);
+  const [emails, setEmails] = useState<string[]>(initial.userEmails.map((e) => e.toLowerCase()));
   const [emailInput, setEmailInput] = useState("");
   const [saving, setSaving] = useState(false);
 
   const toggleRole = (r: string) =>
     setRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
+  const toggleEmail = (email: string) => {
+    const e = email.toLowerCase();
+    setEmails((prev) => (prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e]));
+  };
   const addEmail = () => {
     const e = emailInput.trim().toLowerCase();
     if (e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !emails.includes(e)) {
@@ -2371,6 +2402,12 @@ function PermissionsModal({
     }
   };
   const open = roles.length === 0 && emails.length === 0;
+  // Usuarios del módulo que no son admin (los admin ven todo igualmente).
+  const selectableUsers = moduleUsers.filter((u) => !u.isAdmin && u.email);
+  // Correos ya seleccionados que no corresponden a un usuario del módulo (externos).
+  const extraEmails = emails.filter(
+    (e) => !selectableUsers.some((u) => (u.email || "").toLowerCase() === e),
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -2412,9 +2449,46 @@ function PermissionsModal({
           </div>
         </div>
 
+        {/* Usuarios con acceso al módulo: seleccionar/limitar */}
+        {selectableUsers.length > 0 && (
+          <div>
+            <label className="text-xs font-semibold text-zinc-400 mb-2 flex items-center gap-1.5">
+              <Users size={12} /> Usuarios con acceso al módulo
+            </label>
+            <div className="max-h-44 overflow-y-auto rounded-lg border border-zinc-800 divide-y divide-zinc-800">
+              {selectableUsers.map((u) => {
+                const email = (u.email || "").toLowerCase();
+                const checked = emails.includes(email);
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => toggleEmail(email)}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-zinc-800/60"
+                  >
+                    <span className={`grid h-4 w-4 place-items-center rounded border ${checked ? "bg-fuchsia-600 border-fuchsia-500" : "border-zinc-600"}`}>
+                      {checked && <Check size={11} className="text-white" />}
+                    </span>
+                    <span className="grid h-7 w-7 place-items-center rounded-full bg-zinc-800 text-[10px] font-bold text-white flex-shrink-0">
+                      {(u.displayName || u.username).slice(0, 2).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm text-zinc-200 truncate">{u.displayName || u.username}</span>
+                      <span className="block text-[11px] text-zinc-500 truncate">{u.email} · {u.role}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-zinc-600 mt-1.5">
+              Marca los usuarios que podrán ver este espacio. Sin marcar ninguno (ni roles), el espacio queda abierto a todos.
+            </p>
+          </div>
+        )}
+
+        {/* Invitar por correo (usuarios externos / aún sin cuenta en el módulo) */}
         <div>
           <label className="text-xs font-semibold text-zinc-400 mb-2 flex items-center gap-1.5">
-            <Mail size={12} /> Usuarios por correo
+            <Mail size={12} /> Añadir por correo
           </label>
           <div className="flex gap-2">
             <input
@@ -2429,9 +2503,9 @@ function PermissionsModal({
               <Plus size={16} />
             </button>
           </div>
-          {emails.length > 0 && (
+          {extraEmails.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
-              {emails.map((e) => (
+              {extraEmails.map((e) => (
                 <span key={e} className="flex items-center gap-1.5 bg-zinc-800 text-zinc-300 text-xs px-2 py-1 rounded-full">
                   {e}
                   <button onClick={() => setEmails((prev) => prev.filter((x) => x !== e))} className="text-zinc-500 hover:text-red-400">
