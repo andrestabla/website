@@ -86,12 +86,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // POST: send a share email
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
-      const { recipientEmail, recipientName, subject, message, expiresAt, maxViews, password } = body
+      const { recipientEmail, recipientName, subject, message, expiresAt, maxViews } = body
 
       if (!recipientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(recipientEmail))) {
         return res.status(400).json({ ok: false, error: 'Valid recipientEmail is required' })
       }
-      const pwPlain = typeof password === 'string' ? password.trim() : ''
+      // Nota: se lee body.password directamente para no colisionar con el
+      // `password` de smtp.config más abajo en este mismo bloque.
+      const pwPlain = typeof body.password === 'string' ? body.password.trim() : ''
       const pwHash = pwPlain ? crypto.createHash('sha256').update(pwPlain).digest('hex') : null
 
       const document = await prisma.document.findUnique({ where: { id } })
