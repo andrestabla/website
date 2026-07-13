@@ -41,6 +41,7 @@ import {
   Home,
   History,
   RotateCcw,
+  Menu,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -440,6 +441,10 @@ export function ManageDocuments() {
   // Panel modes: null | 'viewer' | 'metadata' | 'comments' | 'review' | 'share' | 'analytics'
   const [panel, setPanel] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Drawer de detalles (se abre con el botón "Detalles"); en móvil ocupa toda la pantalla.
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  // Navegación de espacios en móvil (barra lateral como overlay).
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Modal modes
   const [catModal, setCatModal] = useState<{
@@ -1165,8 +1170,9 @@ export function ManageDocuments() {
     setEditTitle(doc.title);
     setEditDesc(doc.description || "");
     setEditKeywords((doc.keywords || []).join(", "));
-    // Si abrimos el visor, por defecto mostramos metadatos en el lateral
+    // El drawer de detalles se abre para todo modo salvo el visor puro.
     setPanel(mode === "viewer" ? "metadata" : mode);
+    setDetailsOpen(mode !== "viewer");
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -1188,20 +1194,27 @@ export function ManageDocuments() {
       )}
 
       {/* ── Topbar full-screen ── */}
-      <header className="flex-shrink-0 h-14 flex items-center gap-3 px-4 border-b border-zinc-800 bg-zinc-900">
+      <header className="flex-shrink-0 h-14 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 border-b border-zinc-800 bg-zinc-900">
+        <button
+          onClick={() => setMobileNavOpen((v) => !v)}
+          className="md:hidden p-1.5 rounded-md text-zinc-300 hover:bg-zinc-800"
+          title="Espacios"
+        >
+          <Menu size={18} />
+        </button>
         <Link
           to="/admin/dashboard"
           className="flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-medium px-2 py-1.5 rounded-md hover:bg-zinc-800 transition-colors"
           title="Volver al panel"
         >
-          <ArrowLeft size={16} /> Volver al panel
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">Volver al panel</span>
         </Link>
-        <div className="h-5 w-px bg-zinc-700" />
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-fuchsia-600 to-purple-500 grid place-items-center">
+        <div className="h-5 w-px bg-zinc-700 hidden sm:block" />
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-fuchsia-600 to-purple-500 grid place-items-center flex-shrink-0">
             <FolderOpen size={15} className="text-white" />
           </div>
-          <span className="text-sm font-black tracking-tight">Gestor Documental</span>
+          <span className="text-sm font-black tracking-tight truncate">Gestor Documental</span>
         </div>
         <div className="flex-1" />
         {me && (
@@ -1215,10 +1228,14 @@ export function ManageDocuments() {
       </header>
 
       {/* ── Cuerpo: sidebar + área principal ── */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
-      {/* ── Left: Category tree ── */}
+      <div className="flex-1 flex overflow-hidden min-h-0 relative">
+      {/* Backdrop de la barra lateral en móvil */}
+      {mobileNavOpen && (
+        <div className="absolute inset-0 z-20 bg-black/50 md:hidden" onClick={() => setMobileNavOpen(false)} aria-hidden />
+      )}
+      {/* ── Left: Category tree (overlay en móvil) ── */}
       <div
-        className={`${isSidebarCollapsed ? "w-12" : "w-64"} transition-all duration-300 ease-in-out flex-shrink-0 border-r border-zinc-800 flex flex-col bg-zinc-900 overflow-hidden`}
+        className={`${mobileNavOpen ? "flex" : "hidden"} md:flex absolute md:relative z-30 h-full ${isSidebarCollapsed ? "md:w-12 w-64" : "w-64"} transition-all duration-300 ease-in-out flex-shrink-0 border-r border-zinc-800 flex-col bg-zinc-900 overflow-hidden`}
       >
         <div
           className={`p-4 border-b border-zinc-800 flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"}`}
@@ -1272,7 +1289,7 @@ export function ManageDocuments() {
           ) : (
             <>
               <button
-                onClick={() => { setSelectedCategory(null); setTrashView(false); }}
+                onClick={() => { setSelectedCategory(null); setTrashView(false); setMobileNavOpen(false); }}
                 className={`w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-sm mb-1 ${!selectedCategory && !trashView ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-400"}`}
               >
                 <FolderOpen size={14} className="text-zinc-400" />
@@ -1283,7 +1300,7 @@ export function ManageDocuments() {
                   key={node.id}
                   node={node}
                   selectedId={trashView ? null : selectedCategory?.id ?? null}
-                  onSelect={(c) => { setTrashView(false); setSelectedCategory(c); }}
+                  onSelect={(c) => { setTrashView(false); setSelectedCategory(c); setMobileNavOpen(false); }}
                   onAdd={(parent) => setCatModal({ mode: "create", parent })}
                   onEdit={(cat) => setCatModal({ mode: "edit", cat })}
                   onDelete={handleDeleteCategory}
@@ -1298,7 +1315,7 @@ export function ManageDocuments() {
         {/* Papelera */}
         {!isSidebarCollapsed && (
           <button
-            onClick={() => { setTrashView(true); setSelectedCategory(null); setSelectedDoc(null); setPage(1); clearSelection(); }}
+            onClick={() => { setTrashView(true); setSelectedCategory(null); setSelectedDoc(null); setPage(1); clearSelection(); setMobileNavOpen(false); }}
             className={`m-2 flex items-center gap-2 rounded-md px-2 py-2 text-sm border-t border-zinc-800 ${trashView ? "bg-zinc-700 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}
           >
             <Trash2 size={14} className="text-zinc-400" />
@@ -1700,15 +1717,23 @@ export function ManageDocuments() {
                     href={selectedDoc.publicUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white px-2 sm:px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 transition-colors"
                   >
-                    <Download size={14} /> Descargar
+                    <Download size={14} /> <span className="hidden sm:inline">Descargar</span>
                   </a>
                 )}
+                <button
+                  onClick={() => { if (!detailsOpen && !panel) setPanel("metadata"); setDetailsOpen((v) => !v); }}
+                  className={`flex items-center gap-1.5 text-xs px-2 sm:px-3 py-1.5 rounded transition-colors ${detailsOpen ? "bg-fuchsia-600 text-white" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"}`}
+                  title="Detalles"
+                >
+                  <List size={14} /> <span className="hidden sm:inline">Detalles</span>
+                </button>
                 <button
                   onClick={() => {
                     setSelectedDoc(null);
                     setPanel(null);
+                    setDetailsOpen(false);
                   }}
                   className="p-1.5 rounded-md hover:bg-red-500/10 text-zinc-500 hover:text-red-400"
                 >
@@ -1756,11 +1781,25 @@ export function ManageDocuments() {
           </div>
         )}
 
-        {/* ── Right: Sidebar Tools ── */}
-        {selectedDoc && (
-          <div className="w-96 flex-shrink-0 border-l border-zinc-800 flex flex-col bg-zinc-900 transition-all duration-300 shadow-2xl">
-            {/* Tool tabs */}
-            <div className="flex items-center gap-0.5 px-3 pt-3 border-b border-zinc-800 overflow-x-auto">
+        {/* ── Right: Detalles (drawer) ── */}
+        {selectedDoc && detailsOpen && (
+          <>
+            {/* Fondo para cerrar (solo móvil, el drawer es overlay) */}
+            <div
+              className="absolute inset-0 z-20 bg-black/50 md:hidden"
+              onClick={() => setDetailsOpen(false)}
+              aria-hidden
+            />
+          <div className="absolute md:relative right-0 top-0 z-30 h-full w-full md:w-2/5 md:flex-shrink-0 border-l border-zinc-800 flex flex-col bg-zinc-900 transition-all duration-300 shadow-2xl">
+            {/* Encabezado del drawer con cierre */}
+            <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800">
+              <span className="text-xs font-black uppercase tracking-[0.15em] text-zinc-400">Detalles</span>
+              <button onClick={() => setDetailsOpen(false)} className="p-1 rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-white" title="Cerrar">
+                <X size={16} />
+              </button>
+            </div>
+            {/* Tool tabs (sin scroll horizontal: envuelven en varias filas) */}
+            <div className="flex flex-wrap items-center gap-1 px-3 pt-2 pb-1 border-b border-zinc-800">
               {[
                 {
                   key: "metadata",
@@ -1796,7 +1835,7 @@ export function ManageDocuments() {
                 <button
                   key={t.key}
                   onClick={() => setPanel(t.key)}
-                  className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${panel === t.key ? "border-white text-white" : "border-transparent text-zinc-500 hover:text-zinc-300"}`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors ${panel === t.key ? "bg-fuchsia-600/20 text-fuchsia-200 border border-fuchsia-500/30" : "text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"}`}
                 >
                   {t.icon}
                   {t.label}
@@ -2452,6 +2491,7 @@ export function ManageDocuments() {
               )}
             </div>
           </div>
+          </>
         )}
       </div>
 
