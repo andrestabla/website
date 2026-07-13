@@ -39,6 +39,8 @@ import {
   Lock,
   Users,
   Home,
+  History,
+  RotateCcw,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -131,6 +133,15 @@ type Review = {
   dueDate: string | null;
   notes: string | null;
   resolution: string | null;
+  createdAt: string;
+};
+
+type DocVersion = {
+  id: string;
+  version: number;
+  r2Key: string;
+  size: number;
+  notes: string | null;
   createdAt: string;
 };
 
@@ -473,6 +484,11 @@ export function ManageDocuments() {
   const [sharePassword, setSharePassword] = useState("");
   const [sendingShare, setSendingShare] = useState(false);
 
+  // Versiones
+  const [versions, setVersions] = useState<DocVersion[]>([]);
+  const [versionUploading, setVersionUploading] = useState(false);
+  const versionInputRef = useRef<HTMLInputElement>(null);
+
   // Review form
   const [reviewNotes, setReviewNotes] = useState("");
   const [reviewAssignee, setReviewAssignee] = useState("");
@@ -647,6 +663,11 @@ export function ManageDocuments() {
         const r = await fetch(`/api/admin/documents/share?id=${id}`);
         const d = await r.json();
         if (d.ok) setShares(d.data);
+      },
+      versions: async () => {
+        const r = await fetch(`/api/admin/documents/versions?id=${id}`);
+        const d = await r.json();
+        if (d.ok) setVersions(d.data.versions || []);
       },
     };
     const loader = loaders[panel];
@@ -1084,6 +1105,57 @@ export function ManageDocuments() {
       setShareMaxViews("");
       setSharePassword("");
       showToast("Documento enviado");
+    } else showToast(data.error || "Error", "err");
+  }
+
+  // ── Versiones: subir nueva / restaurar ──
+  async function handleUploadVersion(file: File) {
+    if (!selectedDoc) return;
+    setVersionUploading(true);
+    try {
+      const presignRes = await fetch("/api/admin/documents/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, categoryId: selectedDoc.categoryId }),
+      });
+      const presignData = await presignRes.json();
+      if (!presignData.ok) throw new Error(presignData.error || "Error al autorizar subida");
+      const { presignedUrl, key, publicUrl } = presignData.data;
+      const putRes = await fetch(presignedUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+      if (!putRes.ok) throw new Error("Error al subir el archivo a R2");
+      const res = await fetch(`/api/admin/documents/versions?id=${selectedDoc.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ r2Key: key, publicUrl, size: file.size, notes: `Reemplazado por ${file.name}` }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setVersions(data.data.versions || []);
+        setSelectedDoc(data.data.document);
+        loadDocuments();
+        showToast("Nueva versión subida");
+      } else showToast(data.error || "Error", "err");
+    } catch (e: any) {
+      showToast(e.message || "Error al subir versión", "err");
+    } finally {
+      setVersionUploading(false);
+    }
+  }
+
+  async function handleRestoreVersion(versionId: string) {
+    if (!selectedDoc) return;
+    if (!confirm("¿Restaurar esta versión como la actual? La versión actual se guardará en el historial.")) return;
+    const res = await fetch(`/api/admin/documents/versions?id=${selectedDoc.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ versionId }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setVersions(data.data.versions || []);
+      setSelectedDoc(data.data.document);
+      loadDocuments();
+      showToast("Versión restaurada");
     } else showToast(data.error || "Error", "err");
   }
 
@@ -1711,9 +1783,14 @@ export function ManageDocuments() {
                   label: "Compartir",
                 },
                 {
+                  key: "versions",
+                  icon: <History size={13} />,
+                  label: "Versiones",
+                },
+                {
                   key: "analytics",
                   icon: <BarChart2 size={13} />,
-                  label: "Analítica",
+                  label: "Seguimiento",
                 },
               ].map((t) => (
                 <button
@@ -2174,6 +2251,72 @@ export function ManageDocuments() {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Versions panel ── */}
+              {panel === "versions" && (
+                <div className="p-4 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-white">Versiones</h3>
+                    <button
+                      onClick={() => versionInputRef.current?.click()}
+                      disabled={versionUploading}
+                      className="flex items-center gap-1.5 text-xs bg-fuchsia-600/20 text-fuchsia-300 border border-fuchsia-500/30 px-2.5 py-1.5 rounded-md hover:bg-fuchsia-600/30 disabled:opacity-50"
+                    >
+                      {versionUploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                      {versionUploading ? "Subiendo…" : "Subir nueva versión"}
+                    </button>
+                    <input
+                      ref={versionInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUploadVersion(f); e.target.value = ""; }}
+                    />
+                  </div>
+
+                  {/* Versión actual */}
+                  <div className="rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/5 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-white flex items-center gap-1.5">
+                        <Check size={13} className="text-emerald-400" /> Versión {selectedDoc.version} (actual)
+                      </span>
+                      <span className="text-xs text-zinc-500">{formatBytes(selectedDoc.size)}</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 mt-1">Actualizada {formatDate(selectedDoc.updatedAt)}</p>
+                  </div>
+
+                  {/* Historial */}
+                  {subLoading ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Loader2 size={18} className="animate-spin text-zinc-500" />
+                    </div>
+                  ) : versions.length === 0 ? (
+                    <div className="text-center py-8 text-zinc-600 text-sm">
+                      <History size={24} className="mx-auto mb-2 opacity-40" />
+                      Sin versiones anteriores. Sube una nueva versión para reemplazar el archivo.
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-xs font-medium text-zinc-400">Historial</p>
+                      {versions.map((v) => (
+                        <div key={v.id} className="bg-zinc-800 rounded-lg p-3 text-xs flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-zinc-200 font-medium">Versión {v.version}</p>
+                            <p className="text-zinc-500">{formatBytes(v.size)} · {formatDate(v.createdAt)}</p>
+                            {v.notes && <p className="text-zinc-600 truncate">{v.notes}</p>}
+                          </div>
+                          <button
+                            onClick={() => handleRestoreVersion(v.id)}
+                            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 flex-shrink-0"
+                            title="Restaurar esta versión"
+                          >
+                            <RotateCcw size={13} /> Restaurar
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
