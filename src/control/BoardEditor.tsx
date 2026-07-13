@@ -6,6 +6,7 @@ import { controlPath } from './lib/base'
 import { newColumn, newRow, type PcAnalyticsConfig, type PcBoard, type PcCellValue, type PcColumn } from './lib/types'
 import { exportBoardToExcel } from './lib/export'
 import { applyView, emptyView, type PcView } from './lib/view'
+import { mergeBoards } from './lib/merge'
 import { DataGrid } from './grid/DataGrid'
 import { CardsView } from './grid/CardsView'
 import { RecordPanel } from './grid/RecordPanel'
@@ -28,6 +29,9 @@ export function BoardEditor() {
   // un enlace y pulsar "Guardar": el blur actualiza el estado de forma asíncrona).
   const boardRef = useRef<PcBoard | null>(null)
   boardRef.current = board
+  // Base = estado que el cliente tenía al cargar/guardar por última vez. Se usa
+  // para combinar cambios concurrentes de otros usuarios (concurrencia optimista).
+  const baseRef = useRef<PcBoard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [shareOpen, setShareOpen] = useState(false)
@@ -54,9 +58,33 @@ export function BoardEditor() {
     let cancelled = false
     setLoading(true)
     getBoard(id)
-      .then((b) => { if (!cancelled) { setBoard(b); setDirty(false); setLoading(false) } })
+      .then((b) => { if (!cancelled) { setBoard(b); baseRef.current = b; setDirty(false); setLoading(false) } })
       .catch((e) => { if (!cancelled) { setError(e?.message || 'No se pudo cargar'); setLoading(false) } })
     return () => { cancelled = true }
+  }, [id])
+
+  // Refresco periódico para ver los cambios de otros usuarios. Solo aplica si no
+  // hay edición local pendiente (dirty), ni guardado en curso, ni un campo con foco
+  // (para no interrumpir mientras alguien escribe/selecciona).
+  const dirtyRef = useRef(false)
+  const savingRef = useRef(false)
+  dirtyRef.current = dirty
+  savingRef.current = saving
+  useEffect(() => {
+    if (!id) return
+    const t = window.setInterval(async () => {
+      if (dirtyRef.current || savingRef.current) return
+      const ae = typeof document !== 'undefined' ? document.activeElement : null
+      if (ae && ['INPUT', 'TEXTAREA', 'SELECT'].includes(ae.tagName)) return
+      try {
+        const fresh = await getBoard(id)
+        if (dirtyRef.current || savingRef.current) return
+        const cur = boardRef.current
+        if (!cur || !fresh.updatedAt || fresh.updatedAt === cur.updatedAt) return
+        setBoard(fresh); boardRef.current = fresh; baseRef.current = fresh
+      } catch { /* silencioso */ }
+    }, 12000)
+    return () => window.clearInterval(t)
   }, [id])
 
   const editable = board?.access === 'owner' || board?.access === 'EDIT'
@@ -75,9 +103,40 @@ export function BoardEditor() {
       // Deja fluir cualquier commit pendiente (un blur de celda dispara setBoard de
       // forma asíncrona) y toma el estado más reciente desde la ref.
       await new Promise((r) => setTimeout(r, 0))
-      const b = boardRef.current
-      if (!b) return
-      await saveBoard(b.id, { title: b.title, description: b.description, columns: b.columns, rows: b.rows, publicView: b.publicView })
+      const current = boardRef.current
+      if (!current) return
+
+      // Guardado con concurrencia optimista + combinación por celda. `originalBase`
+      // (lo que teníamos al cargar/guardar) y `originalLocal` (nuestra edición) se
+      // mantienen fijos: en cada conflicto reaplicamos NUESTRO diff sobre el estado
+      // más reciente del servidor y reintentamos, hasta 4 veces.
+      const originalBase = baseRef.current ?? current
+      const originalLocal = current
+      let toSave: PcBoard = originalLocal
+      let baseTs = originalBase.updatedAt
+      let ok = false
+      for (let attempt = 0; attempt < 4 && !ok; attempt++) {
+        const result = await saveBoard(
+          toSave.id,
+          { title: toSave.title, description: toSave.description, columns: toSave.columns, rows: toSave.rows, publicView: toSave.publicView },
+          baseTs,
+        )
+        if (result.status === 'ok') {
+          const saved: PcBoard = { ...toSave, updatedAt: result.updatedAt ?? toSave.updatedAt }
+          setBoard(saved)
+          boardRef.current = saved
+          baseRef.current = saved
+          ok = true
+        } else {
+          // Conflicto: combinar el estado del servidor con NUESTRO diff original.
+          const merged = mergeBoards(result.board, originalBase, originalLocal)
+          setBoard(merged)
+          boardRef.current = merged
+          toSave = merged
+          baseTs = result.board.updatedAt // reintentar contra la versión que combinamos
+        }
+      }
+      if (!ok) { setSaveErr('No se pudo combinar los cambios de varios usuarios. Recarga e intenta de nuevo.'); return }
       setDirty(false)
       setModal(null)
       setSavedFlash(true)

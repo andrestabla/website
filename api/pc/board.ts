@@ -31,31 +31,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const access = await resolveAccess(board, userId)
     if (!board || !access) return res.status(404).json({ ok: false, error: 'Tablero no encontrado' })
 
+    const serialize = (b: any) => ({
+      id: b.id,
+      title: b.title,
+      description: b.description || '',
+      columns: b.columns || [],
+      rows: b.rows || [],
+      shareEnabled: !!b.shareEnabled,
+      shareToken: access === 'owner' ? b.shareToken || null : null,
+      publicView: b.publicView || null,
+      access,
+      isOwner: access === 'owner',
+      updatedAt: b.updatedAt ? new Date(b.updatedAt).toISOString() : null,
+      collaborators:
+        access === 'owner'
+          ? (b.shares || []).map((s: any) => ({ userId: s.userId, role: s.role }))
+          : [],
+    })
+
     if (req.method === 'GET') {
-      return res.status(200).json({
-        ok: true,
-        board: {
-          id: board.id,
-          title: board.title,
-          description: board.description || '',
-          columns: board.columns || [],
-          rows: board.rows || [],
-          shareEnabled: !!board.shareEnabled,
-          shareToken: access === 'owner' ? board.shareToken || null : null,
-          publicView: board.publicView || null,
-          access,
-          isOwner: access === 'owner',
-          collaborators:
-            access === 'owner'
-              ? (board.shares || []).map((s: any) => ({ userId: s.userId, role: s.role }))
-              : [],
-        },
-      })
+      return res.status(200).json({ ok: true, board: serialize(board) })
     }
 
     if (req.method === 'PUT') {
       if (access === 'VIEW') return res.status(403).json({ ok: false, error: 'Solo lectura' })
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
+
+      // Concurrencia optimista: si el cliente envía baseUpdatedAt y el tablero ya
+      // cambió en el servidor (otro usuario guardó), rechazamos con 409 y le
+      // devolvemos el estado actual para que el cliente combine y reintente.
+      if (body.baseUpdatedAt) {
+        const currentTs = board.updatedAt ? new Date(board.updatedAt).getTime() : 0
+        const baseTs = new Date(body.baseUpdatedAt).getTime()
+        if (Number.isFinite(baseTs) && currentTs && baseTs !== currentTs) {
+          return res.status(409).json({ ok: false, code: 'CONFLICT', board: serialize(board) })
+        }
+      }
+
       const data: any = {}
       if (typeof body.title === 'string') data.title = body.title.slice(0, 200)
       if (typeof body.description === 'string') data.description = body.description.slice(0, 2000)
@@ -65,8 +77,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         data.rows = sanitizeRows(body.rows, cols)
       }
       if (body.publicView !== undefined) data.publicView = sanitizePublicView(body.publicView)
-      await db().update({ where: { id }, data })
-      return res.status(200).json({ ok: true })
+      const updated = await db().update({ where: { id }, data })
+      return res.status(200).json({ ok: true, updatedAt: updated.updatedAt ? new Date(updated.updatedAt).toISOString() : null })
     }
 
     if (req.method === 'DELETE') {

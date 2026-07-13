@@ -39,15 +39,29 @@ export async function getBoard(id: string): Promise<PcBoard> {
   return p.board
 }
 
+export type SaveBoardResult =
+  | { status: 'ok'; updatedAt: string | null }
+  | { status: 'conflict'; board: PcBoard }
+
 export async function saveBoard(
   id: string,
-  patch: Partial<Pick<PcBoard, 'title' | 'description' | 'columns' | 'rows' | 'publicView'>>
-): Promise<void> {
-  await req(`/api/pc/board?id=${encodeURIComponent(id)}`, {
+  patch: Partial<Pick<PcBoard, 'title' | 'description' | 'columns' | 'rows' | 'publicView'>>,
+  baseUpdatedAt?: string | null,
+): Promise<SaveBoardResult> {
+  const res = await fetch(`/api/pc/board?id=${encodeURIComponent(id)}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patch),
+    body: JSON.stringify({ ...patch, baseUpdatedAt: baseUpdatedAt ?? undefined }),
   })
+  const payload = await res.json().catch(() => null)
+  if (res.status === 409 && payload?.code === 'CONFLICT' && payload.board) {
+    return { status: 'conflict', board: payload.board as PcBoard }
+  }
+  if (!res.ok || !payload?.ok) {
+    if (res.status === 401) emitPcUnauthorized()
+    throw new Error(payload?.error || 'Error de red')
+  }
+  return { status: 'ok', updatedAt: payload.updatedAt ?? null }
 }
 
 export async function deleteBoard(id: string): Promise<void> {

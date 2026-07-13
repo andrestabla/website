@@ -67,6 +67,8 @@ export type PcBoard = {
   access: 'owner' | 'EDIT' | 'VIEW'
   isOwner: boolean
   collaborators: { userId: string; role: 'VIEW' | 'EDIT' }[]
+  /** Marca de tiempo de la última modificación (para concurrencia optimista). */
+  updatedAt?: string
 }
 
 export type PcBoardSummary = {
