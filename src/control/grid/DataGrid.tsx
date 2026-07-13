@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Plus, Trash2, RefreshCw, Info } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, Info, ExternalLink } from 'lucide-react'
 import type { PcCellValue, PcColumn, PcRow } from '../lib/types'
 import { PC_OPTION_COLORS } from '../lib/types'
 import { ColumnHeaderMenu } from './ColumnHeaderMenu'
@@ -215,14 +215,29 @@ function Cell({
       )
     }
     const url = value ? String(value) : ''
+    const href = url && !/^https?:\/\//i.test(url) ? `https://${url}` : url
     return (
-      <div className="min-h-[32px] px-2.5 py-1.5" onDoubleClick={() => editable && setEditing(true)}>
+      <div
+        className={`flex min-h-[32px] items-center gap-1.5 px-2.5 py-1.5 ${editable ? 'cursor-text' : ''}`}
+        title={editable ? 'Clic para editar' : url}
+        onClick={() => editable && setEditing(true)}
+      >
         {url ? (
-          <a href={url} target="_blank" rel="noreferrer" className="text-indigo-600 underline decoration-indigo-300 hover:decoration-indigo-600 break-all">
-            {url.replace(/^https?:\/\//, '').slice(0, 40)}
-          </a>
+          <>
+            <span className="min-w-0 flex-1 truncate text-indigo-600">{url.replace(/^https?:\/\//, '')}</span>
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="shrink-0 text-indigo-400 hover:text-indigo-700"
+              title="Abrir enlace en una pestaña nueva"
+            >
+              <ExternalLink size={13} />
+            </a>
+          </>
         ) : (
-          <span className="text-slate-300">{editable ? 'doble clic…' : ''}</span>
+          <span className="text-slate-300">{editable ? 'clic para añadir…' : ''}</span>
         )}
       </div>
     )

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Share2, Check, Loader2, Copy, Download, Table2, Database, BarChart3, Sparkles, Save, Pin } from 'lucide-react'
 import { computeCell, duplicateBoard, getBoard, saveBoard } from './lib/control-api'
@@ -23,6 +23,11 @@ export function BoardEditor() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const [board, setBoard] = useState<PcBoard | null>(null)
+  // Referencia siempre actualizada al board, para leer el estado más reciente en
+  // guardados que pueden competir con un commit de celda por `blur` (p. ej. pegar
+  // un enlace y pulsar "Guardar": el blur actualiza el estado de forma asíncrona).
+  const boardRef = useRef<PcBoard | null>(null)
+  boardRef.current = board
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [shareOpen, setShareOpen] = useState(false)
@@ -67,7 +72,12 @@ export function BoardEditor() {
     setSaving(true)
     setSaveErr('')
     try {
-      await saveBoard(board.id, { title: board.title, description: board.description, columns: board.columns, rows: board.rows, publicView: board.publicView })
+      // Deja fluir cualquier commit pendiente (un blur de celda dispara setBoard de
+      // forma asíncrona) y toma el estado más reciente desde la ref.
+      await new Promise((r) => setTimeout(r, 0))
+      const b = boardRef.current
+      if (!b) return
+      await saveBoard(b.id, { title: b.title, description: b.description, columns: b.columns, rows: b.rows, publicView: b.publicView })
       setDirty(false)
       setModal(null)
       setSavedFlash(true)
