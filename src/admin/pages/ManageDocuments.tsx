@@ -1164,6 +1164,19 @@ export function ManageDocuments() {
     } else showToast(data.error || "Error", "err");
   }
 
+  async function handleDeleteVersion(versionId: string) {
+    if (!selectedDoc) return;
+    if (!confirm("¿Borrar esta versión del historial? Esta acción no se puede deshacer.")) return;
+    const res = await fetch(`/api/admin/documents/versions?id=${selectedDoc.id}&versionId=${versionId}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setVersions(data.data.versions || []);
+      showToast("Versión borrada");
+    } else showToast(data.error || "Error", "err");
+  }
+
   // ── Select doc and open panel ──
   function openDoc(doc: DocumentItem, mode: string) {
     setSelectedDoc(doc);
@@ -2347,13 +2360,22 @@ export function ManageDocuments() {
                             <p className="text-zinc-500">{formatBytes(v.size)} · {formatDate(v.createdAt)}</p>
                             {v.notes && <p className="text-zinc-600 truncate">{v.notes}</p>}
                           </div>
-                          <button
-                            onClick={() => handleRestoreVersion(v.id)}
-                            className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 flex-shrink-0"
-                            title="Restaurar esta versión"
-                          >
-                            <RotateCcw size={13} /> Restaurar
-                          </button>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => handleRestoreVersion(v.id)}
+                              className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300"
+                              title="Restaurar esta versión"
+                            >
+                              <RotateCcw size={13} /> Restaurar
+                            </button>
+                            <button
+                              onClick={() => handleDeleteVersion(v.id)}
+                              className="grid place-items-center text-zinc-500 hover:text-red-400"
+                              title="Borrar esta versión"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

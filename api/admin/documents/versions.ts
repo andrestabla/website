@@ -1,3 +1,4 @@
+import { AwsClient } from 'aws4fetch'
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../../_lib/integrations.js'
@@ -5,6 +6,18 @@ import { canAccessDocumentCategory } from '../../_lib/doc-permissions.js'
 
 type VercelRequest = any
 type VercelResponse = any
+
+/** Borra un objeto en R2 (best-effort). */
+async function deleteR2Object(r2Key: string) {
+  const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
+  const integrations = sanitizeIntegrations(snapshot?.data ?? {})
+  const r2 = integrations.r2
+  if (!r2.enabled || r2.status !== 'configured') return
+  const { accountId, accessKeyId, secretAccessKey, bucketName, region } = r2.config
+  const aws = new AwsClient({ accessKeyId, secretAccessKey, service: 's3', region: region || 'auto' })
+  const url = new URL(`https://${accountId}.r2.cloudflarestorage.com/${bucketName}/${r2Key}`)
+  await aws.fetch(url, { method: 'DELETE' })
+}
 
 function parseBody(req: VercelRequest) {
   if (!req.body) return {}
@@ -126,7 +139,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, data: { document: updated, versions } })
     }
 
-    res.setHeader('Allow', 'GET,POST,PUT')
+    // DELETE: borrar una versión del historial.
+    if (req.method === 'DELETE') {
+      const versionId = String(req.query?.versionId || parseBody(req).versionId || '')
+      if (!versionId) return res.status(400).json({ ok: false, error: 'versionId es requerido' })
+
+      const version = await prisma.documentVersion.findUnique({ where: { id: versionId } })
+      if (!version || version.documentId !== id) {
+        return res.status(404).json({ ok: false, error: 'Versión no encontrada' })
+      }
+
+      await prisma.documentVersion.delete({ where: { id: versionId } })
+
+      // Borra el objeto en R2 solo si ningún otro registro (el documento u otra
+      // versión) sigue usando esa misma key.
+      const stillUsedByOther = await prisma.documentVersion.count({ where: { documentId: id, r2Key: version.r2Key } })
+      if (document.r2Key !== version.r2Key && stillUsedByOther === 0) {
+        try { await deleteR2Object(version.r2Key) } catch (e) { console.warn('R2 delete version failed:', e) }
+      }
+
+      const versions = await prisma.documentVersion.findMany({ where: { documentId: id }, orderBy: { version: 'desc' } })
+      return res.status(200).json({ ok: true, data: { versions } })
+    }
+
+    res.setHeader('Allow', 'GET,POST,PUT,DELETE')
     return res.status(405).json({ ok: false, error: 'Method not allowed' })
   } catch (error) {
     console.error('api/admin/documents/versions error', error)
