@@ -215,6 +215,7 @@ function CategoryNode({
   onDelete,
   onMove,
   onPermissions,
+  onDropDoc,
   depth = 0,
 }: {
   node: Category;
@@ -225,18 +226,41 @@ function CategoryNode({
   onDelete: (c: Category) => void;
   onMove: (c: Category) => void;
   onPermissions?: (c: Category) => void;
+  onDropDoc?: (docId: string, catId: string) => void;
   depth?: number;
 }) {
   const [expanded, setExpanded] = useState(depth < 2);
+  const [dropActive, setDropActive] = useState(false);
   const hasChildren = (node.children?.length ?? 0) > 0;
   const isSelected = selectedId === node.id;
 
   return (
     <div>
       <div
-        className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer text-sm select-none ${isSelected ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-300"}`}
+        className={`group flex items-center gap-1 rounded-md px-2 py-1.5 cursor-pointer text-sm select-none ${
+          dropActive
+            ? "bg-fuchsia-600/30 ring-1 ring-fuchsia-500"
+            : isSelected
+              ? "bg-zinc-700 text-white"
+              : "hover:bg-zinc-800 text-zinc-300"
+        }`}
         style={{ paddingLeft: `${8 + depth * 16}px` }}
         onClick={() => onSelect(node)}
+        onDragOver={(e) => {
+          if (!onDropDoc) return;
+          e.preventDefault();
+          e.stopPropagation();
+          if (!dropActive) setDropActive(true);
+        }}
+        onDragLeave={() => setDropActive(false)}
+        onDrop={(e) => {
+          if (!onDropDoc) return;
+          e.preventDefault();
+          e.stopPropagation();
+          setDropActive(false);
+          const docId = e.dataTransfer.getData("docId");
+          if (docId) onDropDoc(docId, node.id);
+        }}
       >
         <button
           onClick={(e) => {
@@ -338,6 +362,7 @@ function CategoryNode({
               onDelete={onDelete}
               onMove={onMove}
               onPermissions={onPermissions}
+              onDropDoc={onDropDoc}
               depth={depth + 1}
             />
           ))}
@@ -471,6 +496,19 @@ export function ManageDocuments() {
   const [isDragging, setIsDragging] = useState(false);
   const [moduleUsers, setModuleUsers] = useState<ModuleUser[]>([]);
 
+  // Papelera + selección múltiple + mover en lote
+  const [trashView, setTrashView] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
+
+  const toggleSelected = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  const clearSelection = () => setSelectedIds(new Set());
+
   // Feedback messages
   const [toast, setToast] = useState<{
     msg: string;
@@ -499,9 +537,10 @@ export function ManageDocuments() {
     setDocsLoading(true);
     try {
       const params = new URLSearchParams();
-      if (selectedCategory) params.set("categoryId", selectedCategory.id);
+      if (!trashView && selectedCategory) params.set("categoryId", selectedCategory.id);
       if (search) params.set("search", search);
-      if (filterStatus) params.set("status", filterStatus);
+      // La papelera muestra siempre los archivados; fuera de ella, el filtro normal.
+      params.set("status", trashView ? "ARCHIVED" : filterStatus);
       if (filterMime) params.set("mimeGroup", filterMime);
       params.set("page", String(page));
       params.set("limit", "24");
@@ -514,7 +553,7 @@ export function ManageDocuments() {
     } finally {
       setDocsLoading(false);
     }
-  }, [selectedCategory, search, filterStatus, filterMime, page]);
+  }, [selectedCategory, search, filterStatus, filterMime, page, trashView]);
 
   useEffect(() => {
     loadCategories();
@@ -682,6 +721,80 @@ export function ManageDocuments() {
       setMoveDocModal(null);
       showToast("Documento movido");
     } else showToast(data.error || "Error", "err");
+  }
+
+  // ── Mover un documento a una carpeta soltándolo (drag & drop) ──
+  async function moveDocToCategory(docId: string, categoryId: string) {
+    const res = await fetch(`/api/admin/documents/manage?id=${docId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categoryId }),
+    });
+    const data = await res.json();
+    if (data.ok) { loadDocuments(); showToast("Documento movido"); }
+    else showToast(data.error || "Error", "err");
+  }
+
+  // ── Acciones en lote sobre la selección ──
+  async function handleBulkMove(newCategoryId: string) {
+    const ids = Array.from(selectedIds);
+    await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/admin/documents/manage?id=${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categoryId: newCategoryId }),
+        }).catch(() => {}),
+      ),
+    );
+    setBulkMoveOpen(false);
+    clearSelection();
+    loadDocuments();
+    showToast(`${ids.length} documento(s) movido(s)`);
+  }
+
+  async function handleBulkArchive() {
+    const ids = Array.from(selectedIds);
+    if (!confirm(`¿Archivar ${ids.length} documento(s)?`)) return;
+    await Promise.all(
+      ids.map((id) =>
+        fetch(`/api/admin/documents/manage?id=${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "ARCHIVED" }),
+        }).catch(() => {}),
+      ),
+    );
+    clearSelection();
+    loadDocuments();
+    showToast(`${ids.length} documento(s) archivado(s)`);
+  }
+
+  function handleBulkDownload() {
+    const docs = documents.filter((d) => selectedIds.has(d.id) && d.publicUrl);
+    docs.forEach((d, i) => setTimeout(() => window.open(d.publicUrl!, "_blank"), i * 300));
+    showToast(`Descargando ${docs.length} documento(s)`);
+  }
+
+  // ── Papelera: restaurar / eliminar definitivo ──
+  async function handleRestoreDoc(doc: DocumentItem) {
+    const res = await fetch(`/api/admin/documents/manage?id=${doc.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "ACTIVE" }),
+    });
+    const data = await res.json();
+    if (data.ok) { loadDocuments(); showToast("Documento restaurado"); }
+    else showToast(data.error || "Error", "err");
+  }
+
+  async function handlePermanentDelete(doc: DocumentItem) {
+    if (!confirm(`Eliminar definitivamente "${doc.title}"? Esta acción no se puede deshacer.`)) return;
+    const res = await fetch(`/api/admin/documents/manage?id=${doc.id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (data.ok && !data.message) { loadDocuments(); showToast("Documento eliminado definitivamente"); }
+    else if (data.ok) { loadDocuments(); showToast(data.message); }
+    else showToast(data.error || "Error", "err");
   }
 
   // ── Upload flow (server-side via base64) ──
@@ -1076,8 +1189,8 @@ export function ManageDocuments() {
           ) : (
             <>
               <button
-                onClick={() => setSelectedCategory(null)}
-                className={`w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-sm mb-1 ${!selectedCategory ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-400"}`}
+                onClick={() => { setSelectedCategory(null); setTrashView(false); }}
+                className={`w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-sm mb-1 ${!selectedCategory && !trashView ? "bg-zinc-700 text-white" : "hover:bg-zinc-800 text-zinc-400"}`}
               >
                 <FolderOpen size={14} className="text-zinc-400" />
                 Todos los documentos
@@ -1086,18 +1199,29 @@ export function ManageDocuments() {
                 <CategoryNode
                   key={node.id}
                   node={node}
-                  selectedId={selectedCategory?.id ?? null}
-                  onSelect={setSelectedCategory}
+                  selectedId={trashView ? null : selectedCategory?.id ?? null}
+                  onSelect={(c) => { setTrashView(false); setSelectedCategory(c); }}
                   onAdd={(parent) => setCatModal({ mode: "create", parent })}
                   onEdit={(cat) => setCatModal({ mode: "edit", cat })}
                   onDelete={handleDeleteCategory}
                   onMove={(cat) => setMoveCatModal(cat)}
                   onPermissions={isAdmin ? (cat) => setPermModal(cat) : undefined}
+                  onDropDoc={moveDocToCategory}
                 />
               ))}
             </>
           )}
         </div>
+        {/* Papelera */}
+        {!isSidebarCollapsed && (
+          <button
+            onClick={() => { setTrashView(true); setSelectedCategory(null); setSelectedDoc(null); setPage(1); clearSelection(); }}
+            className={`m-2 flex items-center gap-2 rounded-md px-2 py-2 text-sm border-t border-zinc-800 ${trashView ? "bg-zinc-700 text-white" : "text-zinc-400 hover:bg-zinc-800"}`}
+          >
+            <Trash2 size={14} className="text-zinc-400" />
+            Papelera
+          </button>
+        )}
       </div>
 
       {/* ── Main Workspace Area ── */}
@@ -1109,28 +1233,34 @@ export function ManageDocuments() {
             {/* Header */}
             <div className="border-b border-zinc-800 px-6 py-4 flex items-center gap-3 flex-wrap bg-zinc-900/50">
               <div className="flex-1 min-w-0">
-                {/* Migas de pan */}
-                <div className="flex items-center gap-1 text-sm min-w-0 flex-wrap">
-                  <button
-                    onClick={() => setSelectedCategory(null)}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-zinc-800 ${!selectedCategory ? "text-white font-semibold" : "text-zinc-400"}`}
-                  >
-                    <Home size={14} /> Todos
-                  </button>
-                  {breadcrumbs.map((c, i) => (
-                    <span key={c.id} className="flex items-center gap-1 min-w-0">
-                      <ChevronRight size={13} className="text-zinc-600 flex-shrink-0" />
-                      <button
-                        onClick={() => setSelectedCategory(c)}
-                        className={`px-1.5 py-0.5 rounded hover:bg-zinc-800 truncate ${i === breadcrumbs.length - 1 ? "text-white font-semibold" : "text-zinc-400"}`}
-                      >
-                        {c.name}
-                      </button>
-                    </span>
-                  ))}
-                </div>
+                {/* Migas de pan / Papelera */}
+                {trashView ? (
+                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <Trash2 size={15} className="text-zinc-400" /> Papelera
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-sm min-w-0 flex-wrap">
+                    <button
+                      onClick={() => setSelectedCategory(null)}
+                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-zinc-800 ${!selectedCategory ? "text-white font-semibold" : "text-zinc-400"}`}
+                    >
+                      <Home size={14} /> Todos
+                    </button>
+                    {breadcrumbs.map((c, i) => (
+                      <span key={c.id} className="flex items-center gap-1 min-w-0">
+                        <ChevronRight size={13} className="text-zinc-600 flex-shrink-0" />
+                        <button
+                          onClick={() => setSelectedCategory(c)}
+                          className={`px-1.5 py-0.5 rounded hover:bg-zinc-800 truncate ${i === breadcrumbs.length - 1 ? "text-white font-semibold" : "text-zinc-400"}`}
+                        >
+                          {c.name}
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <p className="text-xs text-zinc-500 mt-0.5">
-                  {total} documento{total !== 1 ? "s" : ""}
+                  {trashView ? "Documentos archivados · Restaura o elimina definitivamente" : `${total} documento${total !== 1 ? "s" : ""}`}
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -1215,12 +1345,36 @@ export function ManageDocuments() {
               </div>
             </div>
 
+            {/* Barra de acciones en lote */}
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-3 px-6 py-2.5 bg-fuchsia-600/15 border-b border-fuchsia-500/30">
+                <span className="text-sm font-semibold text-fuchsia-200">{selectedIds.size} seleccionado(s)</span>
+                <div className="flex-1" />
+                {!trashView && (
+                  <>
+                    <button onClick={() => setBulkMoveOpen(true)} className="flex items-center gap-1.5 text-xs text-zinc-200 hover:text-white px-2.5 py-1.5 rounded hover:bg-white/10">
+                      <MoveRight size={14} /> Mover
+                    </button>
+                    <button onClick={handleBulkDownload} className="flex items-center gap-1.5 text-xs text-zinc-200 hover:text-white px-2.5 py-1.5 rounded hover:bg-white/10">
+                      <Download size={14} /> Descargar
+                    </button>
+                    <button onClick={handleBulkArchive} className="flex items-center gap-1.5 text-xs text-zinc-200 hover:text-white px-2.5 py-1.5 rounded hover:bg-white/10">
+                      <Archive size={14} /> Archivar
+                    </button>
+                  </>
+                )}
+                <button onClick={clearSelection} className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white px-2.5 py-1.5 rounded hover:bg-white/10">
+                  <X size={14} /> Cancelar
+                </button>
+              </div>
+            )}
+
             {/* Document grid */}
             <div
               className="flex-1 overflow-y-auto p-6 relative"
-              onDragOver={(e) => { e.preventDefault(); if (!isDragging) setIsDragging(true); }}
+              onDragOver={(e) => { if (trashView || !e.dataTransfer.types.includes("Files")) return; e.preventDefault(); if (!isDragging) setIsDragging(true); }}
               onDragLeave={(e) => { if (e.currentTarget === e.target) setIsDragging(false); }}
-              onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleDropFiles(e.dataTransfer.files); }}
+              onDrop={(e) => { if (trashView || !e.dataTransfer.types.includes("Files")) return; e.preventDefault(); setIsDragging(false); handleDropFiles(e.dataTransfer.files); }}
             >
               {isDragging && (
                 <div className="absolute inset-3 z-10 rounded-2xl border-2 border-dashed border-fuchsia-500 bg-fuchsia-500/10 flex flex-col items-center justify-center pointer-events-none">
@@ -1250,13 +1404,28 @@ export function ManageDocuments() {
                 </div>
               ) : (
                 <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-2"}>
-                  {sortedDocuments.map((doc) => (
+                  {sortedDocuments.map((doc) => {
+                    const isSel = selectedIds.has(doc.id);
+                    return (
                     <div
                       key={doc.id}
-                      className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-600 transition-colors group flex flex-col gap-3"
+                      draggable={!trashView}
+                      onDragStart={(e) => e.dataTransfer.setData("docId", doc.id)}
+                      className={`bg-zinc-900 border rounded-xl p-4 transition-colors group flex flex-col gap-3 ${
+                        isSel ? "border-fuchsia-500 ring-1 ring-fuchsia-500/40" : "border-zinc-800 hover:border-zinc-600"
+                      } ${!trashView ? "cursor-grab active:cursor-grabbing" : ""}`}
                     >
                       {/* Doc header */}
                       <div className="flex items-start gap-3">
+                        <button
+                          onClick={() => toggleSelected(doc.id)}
+                          className={`mt-0.5 grid h-4 w-4 flex-shrink-0 place-items-center rounded border transition-colors ${
+                            isSel ? "bg-fuchsia-600 border-fuchsia-500" : "border-zinc-600 hover:border-zinc-400"
+                          }`}
+                          title="Seleccionar"
+                        >
+                          {isSel && <Check size={11} className="text-white" />}
+                        </button>
                         <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
                           {getMimeIcon(doc.mimeType)}
                         </div>
@@ -1309,45 +1478,64 @@ export function ManageDocuments() {
                         </span>
                       </div>
                       {/* Actions */}
-                      <div className="flex items-center gap-1 border-t border-zinc-800 pt-2 -mx-1">
-                        {doc.publicUrl && (
+                      {trashView ? (
+                        <div className="flex items-center gap-1 border-t border-zinc-800 pt-2 -mx-1">
                           <button
-                            onClick={() => openDoc(doc, "viewer")}
-                            title="Ver"
+                            onClick={() => handleRestoreDoc(doc)}
+                            className="flex-1 flex items-center justify-center gap-1 py-1 rounded hover:bg-zinc-800 text-emerald-500 hover:text-emerald-400 text-xs"
+                          >
+                            <ArrowLeft size={13} /> Restaurar
+                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handlePermanentDelete(doc)}
+                              className="flex-1 flex items-center justify-center gap-1 py-1 rounded hover:bg-zinc-800 text-red-500 hover:text-red-400 text-xs"
+                            >
+                              <Trash2 size={13} /> Eliminar
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 border-t border-zinc-800 pt-2 -mx-1">
+                          {doc.publicUrl && (
+                            <button
+                              onClick={() => openDoc(doc, "viewer")}
+                              title="Ver"
+                              className="flex-1 flex items-center justify-center gap-1 py-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white text-xs"
+                            >
+                              <Eye size={13} /> Ver
+                            </button>
+                          )}
+                          <button
+                            onClick={() => openDoc(doc, "metadata")}
+                            title="Editar"
                             className="flex-1 flex items-center justify-center gap-1 py-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white text-xs"
                           >
-                            <Eye size={13} /> Ver
+                            <Edit3 size={13} /> Editar
                           </button>
-                        )}
-                        <button
-                          onClick={() => openDoc(doc, "metadata")}
-                          title="Editar"
-                          className="flex-1 flex items-center justify-center gap-1 py-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white text-xs"
-                        >
-                          <Edit3 size={13} /> Editar
-                        </button>
-                        <button
-                          onClick={() => openDoc(doc, "share")}
-                          title="Compartir"
-                          className="flex-1 flex items-center justify-center gap-1 py-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white text-xs"
-                        >
-                          <Share2 size={13} /> Enviar
-                        </button>
-                        <button
-                          onClick={() => setMoveDocModal(doc)}
-                          title="Mover a..."
-                          className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-white"
-                        >
-                          <MoveRight size={13} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDoc(doc)}
-                          title="Archivar/Eliminar"
-                          className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400"
-                        >
-                          <Archive size={13} />
-                        </button>
-                      </div>
+                          <button
+                            onClick={() => openDoc(doc, "share")}
+                            title="Compartir"
+                            className="flex-1 flex items-center justify-center gap-1 py-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white text-xs"
+                          >
+                            <Share2 size={13} /> Enviar
+                          </button>
+                          <button
+                            onClick={() => setMoveDocModal(doc)}
+                            title="Mover a..."
+                            className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-white"
+                          >
+                            <MoveRight size={13} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDoc(doc)}
+                            title="Archivar"
+                            className="p-1 rounded hover:bg-zinc-800 text-zinc-600 hover:text-red-400"
+                          >
+                            <Archive size={13} />
+                          </button>
+                        </div>
+                      )}
                       {/* Stats */}
                       {doc._count && (
                         <div className="flex items-center gap-3 text-xs text-zinc-600">
@@ -1366,7 +1554,8 @@ export function ManageDocuments() {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               {/* Pagination */}
@@ -2110,6 +2299,16 @@ export function ManageDocuments() {
           currentId={moveDocModal.categoryId}
           onConfirm={(newId) => handleMoveDocument(moveDocModal, newId!)}
           onClose={() => setMoveDocModal(null)}
+        />
+      )}
+
+      {/* ── Bulk move modal ── */}
+      {bulkMoveOpen && (
+        <MoveModal
+          title={`Mover ${selectedIds.size} documento(s) a...`}
+          categories={categories}
+          onConfirm={(newId) => handleBulkMove(newId!)}
+          onClose={() => setBulkMoveOpen(false)}
         />
       )}
 
