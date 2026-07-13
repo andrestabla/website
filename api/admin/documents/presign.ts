@@ -3,6 +3,7 @@ import { AwsClient } from 'aws4fetch'
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../../_lib/integrations.js'
+import { canAccessDocumentCategory } from '../../_lib/doc-permissions.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -56,6 +57,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const category = await prisma.docCategory.findUnique({ where: { id: String(categoryId) } })
     if (!category) return res.status(404).json({ ok: false, error: 'Category not found' })
+    if (!(await canAccessDocumentCategory(session, String(categoryId)))) {
+      return res.status(403).json({ ok: false, error: 'No tienes acceso a este espacio' })
+    }
 
     const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
     const integrations = sanitizeIntegrations(snapshot?.data ?? {})

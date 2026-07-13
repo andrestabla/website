@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   FolderOpen,
   Folder,
@@ -32,9 +33,32 @@ import {
   FolderEdit,
   Archive,
   MoveRight,
+  LayoutGrid,
+  List,
+  ArrowLeft,
+  Lock,
+  Users,
+  Home,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+type DocPermissions = { roles: string[]; userEmails: string[] };
+
+const ROLE_OPTIONS: { value: string; label: string }[] = [
+  { value: "ADMIN", label: "Administrador" },
+  { value: "EDITOR", label: "Editor" },
+  { value: "ANALYST", label: "Analista" },
+];
+
+function parsePerms(raw: unknown): DocPermissions {
+  if (!raw || Array.isArray(raw)) return { roles: [], userEmails: [] };
+  const o = raw as Record<string, unknown>;
+  return {
+    roles: Array.isArray(o.roles) ? o.roles.map(String) : [],
+    userEmails: Array.isArray(o.userEmails) ? o.userEmails.map(String) : [],
+  };
+}
 
 type Category = {
   id: string;
@@ -47,7 +71,7 @@ type Category = {
   icon: string | null;
   color: string | null;
   sortOrder: number;
-  permissions: unknown[];
+  permissions: unknown;
   createdAt: string;
   children?: Category[];
 };
@@ -181,6 +205,7 @@ function CategoryNode({
   onEdit,
   onDelete,
   onMove,
+  onPermissions,
   depth = 0,
 }: {
   node: Category;
@@ -190,6 +215,7 @@ function CategoryNode({
   onEdit: (c: Category) => void;
   onDelete: (c: Category) => void;
   onMove: (c: Category) => void;
+  onPermissions?: (c: Category) => void;
   depth?: number;
 }) {
   const [expanded, setExpanded] = useState(depth < 2);
@@ -266,6 +292,18 @@ function CategoryNode({
           >
             <MoveRight size={12} />
           </button>
+          {onPermissions && node.level === 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPermissions(node);
+              }}
+              className="p-0.5 rounded hover:bg-zinc-600 text-zinc-500"
+              title="Permisos del espacio"
+            >
+              <Lock size={12} />
+            </button>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -290,6 +328,7 @@ function CategoryNode({
               onEdit={onEdit}
               onDelete={onDelete}
               onMove={onMove}
+              onPermissions={onPermissions}
               depth={depth + 1}
             />
           ))}
@@ -408,6 +447,20 @@ export function ManageDocuments() {
   const [moveCatModal, setMoveCatModal] = useState<Category | null>(null);
   const [moveDocModal, setMoveDocModal] = useState<DocumentItem | null>(null);
 
+  // Usuario actual (para saber si es admin y poder gestionar permisos)
+  const [me, setMe] = useState<{ role: string; displayName: string; username: string } | null>(null);
+  const isAdmin = me?.role === "SUPERADMIN" || me?.role === "ADMIN";
+
+  // Vista (cuadrícula / lista) + orden
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() =>
+    (typeof window !== "undefined" && (localStorage.getItem("docs_view") as "grid" | "list")) || "grid",
+  );
+  const [sortBy, setSortBy] = useState<"recent" | "name" | "size">("recent");
+
+  // Modal de permisos de espacio + drag&drop
+  const [permModal, setPermModal] = useState<Category | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   // Feedback messages
   const [toast, setToast] = useState<{
     msg: string;
@@ -459,6 +512,47 @@ export function ManageDocuments() {
   useEffect(() => {
     loadDocuments();
   }, [loadDocuments]);
+
+  // Usuario actual (rol para permisos)
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("/api/admin/session");
+        const d = await r.json().catch(() => null);
+        if (d?.authenticated && d.user) setMe({ role: d.user.role, displayName: d.user.displayName, username: d.user.username });
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
+  // Persistir preferencia de vista
+  useEffect(() => {
+    try { localStorage.setItem("docs_view", viewMode); } catch { /* ignore */ }
+  }, [viewMode]);
+
+  // Documentos ordenados según el criterio elegido
+  const sortedDocuments = useMemo(() => {
+    const arr = [...documents];
+    if (sortBy === "name") arr.sort((a, b) => a.title.localeCompare(b.title));
+    else if (sortBy === "size") arr.sort((a, b) => b.size - a.size);
+    return arr;
+  }, [documents, sortBy]);
+
+  // Migas de pan del espacio/carpeta seleccionada
+  const breadcrumbs = useMemo(() => {
+    if (!selectedCategory) return [] as Category[];
+    const byId = new Map(categories.map((c) => [c.id, c]));
+    const chain: Category[] = [];
+    let cur: Category | undefined = selectedCategory;
+    const guard = new Set<string>();
+    while (cur && !guard.has(cur.id)) {
+      guard.add(cur.id);
+      chain.unshift(cur);
+      cur = cur.parentId ? byId.get(cur.parentId) : undefined;
+    }
+    return chain;
+  }, [selectedCategory, categories]);
 
   // ── Load sub-data when panel changes ──
   useEffect(() => {
@@ -643,6 +737,68 @@ export function ManageDocuments() {
     }
   }
 
+  // ── Subida por arrastre (drag & drop) directo al espacio actual ──
+  async function uploadDroppedFile(file: File, categoryId: string) {
+    try {
+      showToast(`Subiendo ${file.name}…`);
+      const presignRes = await fetch("/api/admin/documents/presign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size, categoryId }),
+      });
+      const presignData = await presignRes.json();
+      if (!presignData.ok) throw new Error(presignData.error || "Error al autorizar subida");
+      const { presignedUrl, key, publicUrl } = presignData.data;
+      const putRes = await fetch(presignedUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
+      if (!putRes.ok) throw new Error("Error al subir el archivo a R2");
+      const saveRes = await fetch("/api/admin/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: file.name.replace(/\.[^.]+$/, ""),
+          originalName: file.name,
+          mimeType: file.type,
+          size: file.size,
+          r2Key: key,
+          publicUrl,
+          categoryId,
+        }),
+      });
+      const saveData = await saveRes.json();
+      if (!saveData.ok) throw new Error(saveData.error || "Error al guardar");
+      fetch(`/api/admin/documents/ai-process?id=${saveData.data.id}`, { method: "POST" }).catch(() => {});
+      loadDocuments();
+      showToast("Documento subido");
+    } catch (e: any) {
+      showToast(e.message || "Error al subir", "err");
+    }
+  }
+
+  function handleDropFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const targetCat = selectedCategory?.id || uploadCategory || categories[0]?.id;
+    if (!targetCat) {
+      showToast("Selecciona o crea un espacio primero", "err");
+      return;
+    }
+    Array.from(files).forEach((f) => void uploadDroppedFile(f, targetCat));
+  }
+
+  // ── Guardar permisos de un espacio (solo admin) ──
+  async function handleSavePermissions(cat: Category, perms: DocPermissions) {
+    const res = await fetch("/api/admin/documents/categories", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: cat.id, permissions: perms }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setPermModal(null);
+      loadCategories();
+      showToast("Permisos actualizados");
+    } else showToast(data.error || "Error", "err");
+  }
+
   // ── Metadata save ──
   async function handleSaveMetadata() {
     if (!selectedDoc) return;
@@ -796,7 +952,7 @@ export function ManageDocuments() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="-m-8 md:-m-12 h-[calc(100vh-6rem)] flex bg-zinc-950 text-white overflow-hidden">
+    <div className="fixed inset-0 z-40 flex flex-col bg-zinc-950 text-white overflow-hidden">
       {/* Toast */}
       {toast && (
         <div
@@ -811,6 +967,35 @@ export function ManageDocuments() {
         </div>
       )}
 
+      {/* ── Topbar full-screen ── */}
+      <header className="flex-shrink-0 h-14 flex items-center gap-3 px-4 border-b border-zinc-800 bg-zinc-900">
+        <Link
+          to="/admin/dashboard"
+          className="flex items-center gap-2 text-zinc-400 hover:text-white text-sm font-medium px-2 py-1.5 rounded-md hover:bg-zinc-800 transition-colors"
+          title="Volver al panel"
+        >
+          <ArrowLeft size={16} /> Volver al panel
+        </Link>
+        <div className="h-5 w-px bg-zinc-700" />
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-fuchsia-600 to-purple-500 grid place-items-center">
+            <FolderOpen size={15} className="text-white" />
+          </div>
+          <span className="text-sm font-black tracking-tight">Gestor Documental</span>
+        </div>
+        <div className="flex-1" />
+        {me && (
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            <div className="grid h-7 w-7 place-items-center rounded-full bg-zinc-800 text-[11px] font-bold text-white">
+              {(me.displayName || me.username || "?").slice(0, 2).toUpperCase()}
+            </div>
+            <span className="hidden sm:block font-semibold text-zinc-300">{me.displayName || me.username}</span>
+          </div>
+        )}
+      </header>
+
+      {/* ── Cuerpo: sidebar + área principal ── */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
       {/* ── Left: Category tree ── */}
       <div
         className={`${isSidebarCollapsed ? "w-12" : "w-64"} transition-all duration-300 ease-in-out flex-shrink-0 border-r border-zinc-800 flex flex-col bg-zinc-900 overflow-hidden`}
@@ -819,7 +1004,7 @@ export function ManageDocuments() {
           className={`p-4 border-b border-zinc-800 flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"}`}
         >
           {!isSidebarCollapsed && (
-            <h2 className="text-sm font-semibold text-zinc-300">Categorías</h2>
+            <h2 className="text-xs font-black uppercase tracking-[0.15em] text-zinc-400">Espacios de trabajo</h2>
           )}
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -836,7 +1021,7 @@ export function ManageDocuments() {
             <button
               onClick={() => setCatModal({ mode: "create" })}
               className="p-1.5 rounded-md hover:bg-zinc-700 text-zinc-400 hover:text-white"
-              title="Nueva categoría raíz"
+              title="Nuevo espacio"
             >
               <FolderPlus size={15} />
             </button>
@@ -883,6 +1068,7 @@ export function ManageDocuments() {
                   onEdit={(cat) => setCatModal({ mode: "edit", cat })}
                   onDelete={handleDeleteCategory}
                   onMove={(cat) => setMoveCatModal(cat)}
+                  onPermissions={isAdmin ? (cat) => setPermModal(cat) : undefined}
                 />
               ))}
             </>
@@ -899,22 +1085,26 @@ export function ManageDocuments() {
             {/* Header */}
             <div className="border-b border-zinc-800 px-6 py-4 flex items-center gap-3 flex-wrap bg-zinc-900/50">
               <div className="flex-1 min-w-0">
-                <h1 className="text-base font-semibold text-white truncate">
-                  {selectedCategory ? (
-                    <span className="flex items-center gap-2">
-                      <Folder
-                        size={15}
-                        className="text-amber-400 flex-shrink-0"
-                      />
-                      {selectedCategory.name}
-                      <span className="text-zinc-500 text-sm font-normal truncate">
-                        {selectedCategory.path}
-                      </span>
+                {/* Migas de pan */}
+                <div className="flex items-center gap-1 text-sm min-w-0 flex-wrap">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-zinc-800 ${!selectedCategory ? "text-white font-semibold" : "text-zinc-400"}`}
+                  >
+                    <Home size={14} /> Todos
+                  </button>
+                  {breadcrumbs.map((c, i) => (
+                    <span key={c.id} className="flex items-center gap-1 min-w-0">
+                      <ChevronRight size={13} className="text-zinc-600 flex-shrink-0" />
+                      <button
+                        onClick={() => setSelectedCategory(c)}
+                        className={`px-1.5 py-0.5 rounded hover:bg-zinc-800 truncate ${i === breadcrumbs.length - 1 ? "text-white font-semibold" : "text-zinc-400"}`}
+                      >
+                        {c.name}
+                      </button>
                     </span>
-                  ) : (
-                    "Gestor Documental"
-                  )}
-                </h1>
+                  ))}
+                </div>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   {total} documento{total !== 1 ? "s" : ""}
                 </p>
@@ -965,6 +1155,32 @@ export function ManageDocuments() {
                   <option value="image">Imágenes</option>
                   <option value="text">Texto / CSV</option>
                 </select>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as "recent" | "name" | "size")}
+                  className="bg-zinc-800 border border-zinc-700 rounded-md px-2.5 py-1.5 text-sm text-white focus:outline-none"
+                  title="Ordenar"
+                >
+                  <option value="recent">Más recientes</option>
+                  <option value="name">Nombre (A–Z)</option>
+                  <option value="size">Tamaño</option>
+                </select>
+                <div className="flex items-center rounded-md border border-zinc-700 overflow-hidden">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`p-1.5 ${viewMode === "grid" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-white"}`}
+                    title="Cuadrícula"
+                  >
+                    <LayoutGrid size={15} />
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`p-1.5 ${viewMode === "list" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-white"}`}
+                    title="Lista"
+                  >
+                    <List size={15} />
+                  </button>
+                </div>
                 <button
                   onClick={() => setUploadModal(true)}
                   className="flex items-center gap-2 bg-white text-black px-3 py-1.5 rounded-md text-sm font-medium hover:bg-zinc-100"
@@ -976,7 +1192,20 @@ export function ManageDocuments() {
             </div>
 
             {/* Document grid */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div
+              className="flex-1 overflow-y-auto p-6 relative"
+              onDragOver={(e) => { e.preventDefault(); if (!isDragging) setIsDragging(true); }}
+              onDragLeave={(e) => { if (e.currentTarget === e.target) setIsDragging(false); }}
+              onDrop={(e) => { e.preventDefault(); setIsDragging(false); handleDropFiles(e.dataTransfer.files); }}
+            >
+              {isDragging && (
+                <div className="absolute inset-3 z-10 rounded-2xl border-2 border-dashed border-fuchsia-500 bg-fuchsia-500/10 flex flex-col items-center justify-center pointer-events-none">
+                  <Upload size={32} className="text-fuchsia-400 mb-2" />
+                  <p className="text-sm font-semibold text-fuchsia-200">
+                    Suelta para subir {selectedCategory ? `a “${selectedCategory.name}”` : "aquí"}
+                  </p>
+                </div>
+              )}
               {docsLoading ? (
                 <div className="flex items-center justify-center py-16">
                   <Loader2 size={24} className="animate-spin text-zinc-500" />
@@ -996,8 +1225,8 @@ export function ManageDocuments() {
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {documents.map((doc) => (
+                <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" : "flex flex-col gap-2"}>
+                  {sortedDocuments.map((doc) => (
                     <div
                       key={doc.id}
                       className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-600 transition-colors group flex flex-col gap-3"
@@ -1291,7 +1520,7 @@ export function ManageDocuments() {
                       ) : (
                         <Sparkles size={12} />
                       )}
-                      {aiLoading ? "Procesando..." : "Extraer con IA"}
+                      {aiLoading ? "Procesando..." : "Resumen IA"}
                     </button>
                   </div>
                   <div className="flex flex-col gap-3">
@@ -1306,13 +1535,15 @@ export function ManageDocuments() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-zinc-400 mb-1 block">
-                        Descripción
+                      <label className="text-xs text-zinc-400 mb-1 flex items-center gap-1">
+                        <Sparkles size={11} className="text-purple-400" />
+                        Resumen (IA en español)
                       </label>
                       <textarea
                         value={editDesc}
                         onChange={(e) => setEditDesc(e.target.value)}
-                        rows={3}
+                        rows={4}
+                        placeholder="Genera un resumen automático con el botón “Resumen IA”."
                         className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500 resize-none"
                       />
                     </div>
@@ -1808,6 +2039,9 @@ export function ManageDocuments() {
         )}
       </div>
 
+      </div>
+      {/* ── Fin cuerpo ── */}
+
       {/* ── Category modal ── */}
       {catModal && (
         <CategoryModal
@@ -1816,6 +2050,15 @@ export function ManageDocuments() {
           existing={catModal.cat}
           onSave={handleSaveCategory}
           onClose={() => setCatModal(null)}
+        />
+      )}
+
+      {/* ── Permissions modal ── */}
+      {permModal && (
+        <PermissionsModal
+          category={permModal}
+          onSave={handleSavePermissions}
+          onClose={() => setPermModal(null)}
         />
       )}
 
@@ -2094,6 +2337,122 @@ function MoveModal({
             className="flex-1 py-2 rounded-xl text-sm font-medium bg-white text-black hover:bg-zinc-100 disabled:opacity-50"
           >
             Mover aquí
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Permissions Modal (permisos de un espacio) ────────────────────────────────
+
+function PermissionsModal({
+  category,
+  onSave,
+  onClose,
+}: {
+  category: Category;
+  onSave: (cat: Category, perms: DocPermissions) => void;
+  onClose: () => void;
+}) {
+  const initial = parsePerms(category.permissions);
+  const [roles, setRoles] = useState<string[]>(initial.roles);
+  const [emails, setEmails] = useState<string[]>(initial.userEmails);
+  const [emailInput, setEmailInput] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const toggleRole = (r: string) =>
+    setRoles((prev) => (prev.includes(r) ? prev.filter((x) => x !== r) : [...prev, r]));
+  const addEmail = () => {
+    const e = emailInput.trim().toLowerCase();
+    if (e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !emails.includes(e)) {
+      setEmails((prev) => [...prev, e]);
+      setEmailInput("");
+    }
+  };
+  const open = roles.length === 0 && emails.length === 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-6 flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Lock size={16} className="text-fuchsia-400" />
+            <h2 className="text-base font-semibold text-white">Permisos · {category.name}</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-400">
+            <X size={18} />
+          </button>
+        </div>
+
+        <p className="text-xs text-zinc-500 -mt-2">
+          {open
+            ? "Abierto: visible para todos los usuarios con acceso al módulo. Añade roles o correos para restringirlo."
+            : "Restringido: solo los roles y correos indicados (y los administradores) pueden ver este espacio."}
+        </p>
+
+        <div>
+          <label className="text-xs font-semibold text-zinc-400 mb-2 flex items-center gap-1.5">
+            <Users size={12} /> Roles con acceso
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {ROLE_OPTIONS.map((r) => (
+              <button
+                key={r.value}
+                onClick={() => toggleRole(r.value)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                  roles.includes(r.value)
+                    ? "bg-fuchsia-600/20 border-fuchsia-500/40 text-fuchsia-300"
+                    : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-zinc-400 mb-2 flex items-center gap-1.5">
+            <Mail size={12} /> Usuarios por correo
+          </label>
+          <div className="flex gap-2">
+            <input
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addEmail())}
+              type="email"
+              placeholder="usuario@empresa.com"
+              className="flex-1 bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+            />
+            <button onClick={addEmail} className="px-3 py-2 bg-zinc-700 rounded-md text-white hover:bg-zinc-600">
+              <Plus size={16} />
+            </button>
+          </div>
+          {emails.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {emails.map((e) => (
+                <span key={e} className="flex items-center gap-1.5 bg-zinc-800 text-zinc-300 text-xs px-2 py-1 rounded-full">
+                  {e}
+                  <button onClick={() => setEmails((prev) => prev.filter((x) => x !== e))} className="text-zinc-500 hover:text-red-400">
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 pt-1">
+          <button onClick={onClose} className="flex-1 py-2 rounded-xl text-sm text-zinc-400 hover:bg-zinc-800">
+            Cancelar
+          </button>
+          <button
+            onClick={() => { setSaving(true); onSave(category, { roles, userEmails: emails }); }}
+            disabled={saving}
+            className="flex-1 py-2 rounded-xl text-sm font-medium bg-white text-black hover:bg-zinc-100 disabled:opacity-50"
+          >
+            {saving ? "Guardando…" : "Guardar permisos"}
           </button>
         </div>
       </div>

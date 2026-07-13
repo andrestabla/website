@@ -1,5 +1,6 @@
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
+import { filterVisibleCategories, getSessionEmail, isDocAdmin, sanitizeDocPermissionsInput } from '../../_lib/doc-permissions.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -27,16 +28,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const categories = await prisma.docCategory.findMany({
         orderBy: [{ level: 'asc' }, { sortOrder: 'asc' }, { name: 'asc' }],
       })
-      return res.status(200).json({ ok: true, data: categories })
+      const email = isDocAdmin(session) ? null : await getSessionEmail(session)
+      const visible = filterVisibleCategories(session, email, categories as any)
+      return res.status(200).json({ ok: true, data: visible })
     }
 
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
-      const { name, parentId, description, icon, color, sortOrder } = body
+      const { name, parentId, description, icon, color, sortOrder, permissions } = body
 
       if (!name || typeof name !== 'string') {
         return res.status(400).json({ ok: false, error: 'name is required' })
       }
+      // Solo admin puede definir permisos de un espacio; si no, queda abierto.
+      const permData = isDocAdmin(session) && permissions !== undefined
+        ? sanitizeDocPermissionsInput(permissions)
+        : { roles: [], userEmails: [] }
 
       let level = 0
       let parentPath: string | null = null
@@ -69,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           icon: icon || null,
           color: color || null,
           sortOrder: sortOrder ?? 0,
-          permissions: [],
+          permissions: permData,
         },
       })
 
@@ -146,7 +153,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ...(icon !== undefined ? { icon: icon || null } : {}),
           ...(color !== undefined ? { color: color || null } : {}),
           ...(sortOrder !== undefined ? { sortOrder: Number(sortOrder) } : {}),
-          ...(permissions !== undefined ? { permissions } : {}),
+          // Solo admin puede editar permisos de un espacio.
+          ...(permissions !== undefined && isDocAdmin(session)
+            ? { permissions: sanitizeDocPermissionsInput(permissions) }
+            : {}),
         },
       })
 

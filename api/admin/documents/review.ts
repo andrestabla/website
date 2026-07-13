@@ -1,5 +1,6 @@
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
+import { canAccessDocumentCategory } from '../../_lib/doc-permissions.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -11,6 +12,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const id = String(req.query?.id || '')
     if (!id) return res.status(400).json({ ok: false, error: 'id is required' })
+
+    const docForAccess = await prisma.document.findUnique({ where: { id }, select: { categoryId: true } })
+    if (!docForAccess) return res.status(404).json({ ok: false, error: 'Document not found' })
+    if (!(await canAccessDocumentCategory(session, docForAccess.categoryId))) {
+      return res.status(403).json({ ok: false, error: 'No tienes acceso a este documento' })
+    }
 
     if (req.method === 'GET') {
       const reviews = await prisma.docReview.findMany({

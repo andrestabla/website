@@ -359,7 +359,7 @@ function App() {
               <Route path="/admin/analytics" element={<ProtectedRoute requiredModule="ANALYTICS"><Analytics /></ProtectedRoute>} />
               <Route path="/admin/users" element={<ProtectedRoute requiredModule="USERS"><ManageUsers /></ProtectedRoute>} />
               <Route path="/admin/bookings" element={<ProtectedRoute requiredModule="BOOKINGS"><ManageBookings /></ProtectedRoute>} />
-              <Route path="/admin/documentos" element={<ProtectedRoute requiredModule="DOCUMENTS"><ManageDocuments /></ProtectedRoute>} />
+              <Route path="/admin/documentos" element={<ProtectedRouteNoLayout requiredModule="DOCUMENTS"><ManageDocuments /></ProtectedRouteNoLayout>} />
               <Route path="*" element={<SiteArchitectureFallbackRoute />} />
             </Routes>
           </Suspense>

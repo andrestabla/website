@@ -1,5 +1,6 @@
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
+import { canAccessDocumentCategory, filterVisibleCategories, getSessionEmail, isDocAdmin } from '../../_lib/doc-permissions.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -30,7 +31,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           { keywords: { hasSome: [search] } },
         ]
       }
-      if (categoryId) where.categoryId = categoryId
+      // Restringe a las categorías visibles para el usuario (admin ve todo).
+      if (!isDocAdmin(session)) {
+        const email = await getSessionEmail(session)
+        const allCats = await prisma.docCategory.findMany({ select: { id: true, parentId: true, permissions: true } })
+        const visibleIds = filterVisibleCategories(session, email, allCats as any).map((c: any) => c.id)
+        where.categoryId = categoryId
+          ? (visibleIds.includes(categoryId) ? categoryId : '__none__')
+          : { in: visibleIds.length ? visibleIds : ['__none__'] }
+      } else if (categoryId) {
+        where.categoryId = categoryId
+      }
       if (status) where.status = status
       if (mimeGroup) {
         const mimeMap: Record<string, string[]> = {
@@ -72,6 +83,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const category = await prisma.docCategory.findUnique({ where: { id: String(categoryId) } })
       if (!category) return res.status(404).json({ ok: false, error: 'Category not found' })
+      if (!(await canAccessDocumentCategory(session, String(categoryId)))) {
+        return res.status(403).json({ ok: false, error: 'No tienes acceso a este espacio' })
+      }
 
       const document = await prisma.document.create({
         data: {

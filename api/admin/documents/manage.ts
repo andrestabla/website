@@ -2,6 +2,7 @@ import { AwsClient } from 'aws4fetch'
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
 import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../../_lib/integrations.js'
+import { canAccessDocumentCategory } from '../../_lib/doc-permissions.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -24,6 +25,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     })
     if (!document) return res.status(404).json({ ok: false, error: 'Document not found' })
+    if (!(await canAccessDocumentCategory(session, document.categoryId))) {
+      return res.status(403).json({ ok: false, error: 'No tienes acceso a este documento' })
+    }
 
     if (req.method === 'GET') {
       return res.status(200).json({ ok: true, data: document })
@@ -32,6 +36,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'PUT') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
       const { title, description, keywords, status, categoryId, metadata } = body
+
+      // Al mover a otro espacio, exige acceso al espacio destino.
+      if (categoryId !== undefined && !(await canAccessDocumentCategory(session, String(categoryId)))) {
+        return res.status(403).json({ ok: false, error: 'No tienes acceso al espacio destino' })
+      }
 
       const updated = await prisma.document.update({
         where: { id },
