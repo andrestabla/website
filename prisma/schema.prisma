@@ -352,6 +352,7 @@ model DocShare {
   sentByName     String?
   subject        String?
   message        String?
+  password       String?
   expiresAt      DateTime?
   maxViews       Int?
   viewCount      Int             @default(0)

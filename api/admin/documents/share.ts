@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import nodemailer from 'nodemailer'
 import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { prisma } from '../../_lib/prisma.js'
@@ -74,17 +75,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         include: { events: { orderBy: { createdAt: 'desc' } } },
         orderBy: { createdAt: 'desc' },
       })
-      return res.status(200).json({ ok: true, data: shares })
+      // No exponer el hash de la contraseña; solo indicar si tiene.
+      const data = shares.map((s: any) => {
+        const { password, ...rest } = s
+        return { ...rest, hasPassword: !!password }
+      })
+      return res.status(200).json({ ok: true, data })
     }
 
     // POST: send a share email
     if (req.method === 'POST') {
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
-      const { recipientEmail, recipientName, subject, message, expiresAt, maxViews } = body
+      const { recipientEmail, recipientName, subject, message, expiresAt, maxViews, password } = body
 
       if (!recipientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(recipientEmail))) {
         return res.status(400).json({ ok: false, error: 'Valid recipientEmail is required' })
       }
+      const pwPlain = typeof password === 'string' ? password.trim() : ''
+      const pwHash = pwPlain ? crypto.createHash('sha256').update(pwPlain).digest('hex') : null
 
       const document = await prisma.document.findUnique({ where: { id } })
       if (!document) return res.status(404).json({ ok: false, error: 'Document not found' })
@@ -105,6 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           sentByName: session.displayName,
           subject: subject ? String(subject).trim() : `Documento compartido: ${document.title}`,
           message: message ? String(message).trim() : null,
+          password: pwHash,
           expiresAt: expiresAt ? new Date(expiresAt) : null,
           maxViews: maxViews ? Number(maxViews) : null,
         },

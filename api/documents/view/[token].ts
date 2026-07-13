@@ -1,7 +1,36 @@
+import crypto from 'node:crypto'
 import { prisma } from '../../_lib/prisma.js'
 
 type VercelRequest = any
 type VercelResponse = any
+
+function buildPasswordPromptHtml(token: string, wrong: boolean) {
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documento protegido</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f11;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:#18181b;border:1px solid #27272a;border-radius:16px;padding:32px;width:100%;max-width:380px;text-align:center}
+  .lock{width:48px;height:48px;margin:0 auto 16px;display:grid;place-items:center;background:#7c3aed22;border-radius:12px}
+  h1{font-size:18px;font-weight:800;margin-bottom:6px}
+  p{font-size:13px;color:#a1a1aa;margin-bottom:20px}
+  input{width:100%;background:#0f0f11;border:1px solid #3f3f46;border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;outline:none}
+  input:focus{border-color:#7c3aed}
+  button{width:100%;margin-top:12px;background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}
+  button:hover{background:#6d28d9}
+  .err{color:#f87171;font-size:12px;margin-top:10px}
+</style></head><body>
+  <form class="card" method="GET" action="/api/documents/view/${token}">
+    <div class="lock"><svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#a78bfa" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg></div>
+    <h1>Documento protegido</h1>
+    <p>Ingresa la contraseña para ver este documento.</p>
+    <input type="password" name="pw" placeholder="Contraseña" autofocus required>
+    <button type="submit">Ver documento</button>
+    ${wrong ? '<div class="err">Contraseña incorrecta. Intenta de nuevo.</div>' : ''}
+  </form>
+</body></html>`
+}
 
 function buildViewerHtml(opts: {
   title: string
@@ -85,6 +114,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (share.maxViews && share.viewCount >= share.maxViews) {
       return res.status(410).send('This link has reached its maximum number of views')
+    }
+
+    // Enlace protegido con contraseña: exige y valida antes de mostrar/registrar.
+    if ((share as any).password) {
+      const provided = String(req.query?.pw || '')
+      const providedHash = provided ? crypto.createHash('sha256').update(provided).digest('hex') : ''
+      if (providedHash !== (share as any).password) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        res.setHeader('X-Robots-Tag', 'noindex,nofollow')
+        return res.status(provided ? 401 : 200).send(buildPasswordPromptHtml(token, !!provided))
+      }
     }
 
     const ip = String(req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim()

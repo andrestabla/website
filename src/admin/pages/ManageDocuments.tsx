@@ -142,6 +142,8 @@ type ShareRecord = {
   sentByName: string | null;
   subject: string | null;
   viewCount: number;
+  maxViews?: number | null;
+  hasPassword?: boolean;
   createdAt: string;
   expiresAt: string | null;
   events: { id: string; eventType: string; createdAt: string }[];
@@ -466,6 +468,9 @@ export function ManageDocuments() {
   const [shareEmail, setShareEmail] = useState("");
   const [shareName, setShareName] = useState("");
   const [shareMsg, setShareMsg] = useState("");
+  const [shareExpires, setShareExpires] = useState("");
+  const [shareMaxViews, setShareMaxViews] = useState("");
+  const [sharePassword, setSharePassword] = useState("");
   const [sendingShare, setSendingShare] = useState(false);
 
   // Review form
@@ -1063,6 +1068,9 @@ export function ManageDocuments() {
         recipientEmail: shareEmail,
         recipientName: shareName,
         message: shareMsg,
+        expiresAt: shareExpires || undefined,
+        maxViews: shareMaxViews || undefined,
+        password: sharePassword || undefined,
       }),
     });
     const data = await res.json();
@@ -1072,6 +1080,9 @@ export function ManageDocuments() {
       setShareEmail("");
       setShareName("");
       setShareMsg("");
+      setShareExpires("");
+      setShareMaxViews("");
+      setSharePassword("");
       showToast("Documento enviado");
     } else showToast(data.error || "Error", "err");
   }
@@ -2063,6 +2074,46 @@ export function ManageDocuments() {
                         className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500 resize-none"
                       />
                     </div>
+                    {/* Opciones de seguridad del enlace */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">Expira el (opcional)</label>
+                        <input
+                          type="date"
+                          value={shareExpires}
+                          onChange={(e) => setShareExpires(e.target.value)}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">Máx. vistas (opcional)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={shareMaxViews}
+                          onChange={(e) => setShareMaxViews(e.target.value)}
+                          placeholder="∞"
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 flex items-center gap-1">
+                        <Lock size={11} /> Contraseña (opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={sharePassword}
+                        onChange={(e) => setSharePassword(e.target.value)}
+                        placeholder="Protege el enlace con una contraseña"
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-500"
+                      />
+                      {sharePassword && (
+                        <p className="text-[11px] text-zinc-500 mt-1">
+                          Comparte esta contraseña con el destinatario por otro medio; no se incluye en el correo.
+                        </p>
+                      )}
+                    </div>
                     <button
                       onClick={handleSendShare}
                       disabled={sendingShare || !shareEmail}
@@ -2096,10 +2147,11 @@ export function ManageDocuments() {
                                 {formatDate(s.createdAt)}
                               </span>
                             </div>
-                            <div className="flex items-center gap-3 text-zinc-500">
+                            <div className="flex items-center gap-3 text-zinc-500 flex-wrap">
                               <span className="flex items-center gap-1">
                                 <Eye size={10} />
-                                {s.viewCount} vis.
+                                {s.viewCount}
+                                {s.maxViews ? `/${s.maxViews}` : ""} vis.
                               </span>
                               <span className="flex items-center gap-1">
                                 <Mail size={10} />
@@ -2110,6 +2162,14 @@ export function ManageDocuments() {
                                 }{" "}
                                 abiertos
                               </span>
+                              {s.hasPassword && (
+                                <span className="flex items-center gap-1 text-fuchsia-400" title="Protegido con contraseña">
+                                  <Lock size={10} /> clave
+                                </span>
+                              )}
+                              {s.expiresAt && (
+                                <span className="text-amber-400">vence {formatDate(s.expiresAt)}</span>
+                              )}
                             </div>
                           </div>
                         ))}
