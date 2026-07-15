@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Plus, X, Database, Tag, Upload, Loader2 } from 'lucide-react'
+import { Plus, X, Database, Tag, Upload, Loader2, ChevronUp, ChevronDown } from 'lucide-react'
 import type { PcColumn, PcOption, PcOptionField } from '../lib/types'
 import { PC_OPTION_COLORS, newOptionField } from '../lib/types'
 import { importDatosEntradaFromFile } from '../lib/excel'
@@ -28,6 +28,22 @@ export function DatosEntrada({
 }) {
   const categories = columns.filter((c) => c.type === 'select')
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Reordena una categoría (subir/bajar). Intercambia la posición de esa columna
+  // con la de la categoría contigua en el array completo de columnas, de modo que
+  // el nuevo orden se refleja también en el tablero.
+  const moveCategory = (colId: string, dir: 'up' | 'down') => {
+    const catIds = categories.map((c) => c.id)
+    const ci = catIds.indexOf(colId)
+    const tj = dir === 'up' ? ci - 1 : ci + 1
+    if (ci < 0 || tj < 0 || tj >= catIds.length) return
+    const ai = columns.findIndex((c) => c.id === catIds[ci])
+    const bi = columns.findIndex((c) => c.id === catIds[tj])
+    if (ai < 0 || bi < 0) return
+    const next = columns.slice()
+    ;[next[ai], next[bi]] = [next[bi], next[ai]]
+    onColumnsChange(next)
+  }
   const [importing, setImporting] = useState(false)
   const [msg, setMsg] = useState('')
 
@@ -101,8 +117,17 @@ export function DatosEntrada({
           </div>
         </div>
       ) : (
-        categories.map((col) => (
-          <CategoryCard key={col.id} col={col} editable={editable} onChange={onColumnChange} onConfirmDelete={onConfirmDelete} />
+        categories.map((col, i) => (
+          <CategoryCard
+            key={col.id}
+            col={col}
+            editable={editable}
+            canUp={i > 0}
+            canDown={i < categories.length - 1}
+            onMove={(dir) => moveCategory(col.id, dir)}
+            onChange={onColumnChange}
+            onConfirmDelete={onConfirmDelete}
+          />
         ))
       )}
     </div>
@@ -112,11 +137,17 @@ export function DatosEntrada({
 function CategoryCard({
   col,
   editable,
+  canUp,
+  canDown,
+  onMove,
   onChange,
   onConfirmDelete,
 }: {
   col: PcColumn
   editable: boolean
+  canUp: boolean
+  canDown: boolean
+  onMove: (dir: 'up' | 'down') => void
   onChange: (col: PcColumn) => void
   onConfirmDelete: (label: string, run: () => void) => void
 }) {
@@ -157,17 +188,39 @@ function CategoryCard({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <div className="mb-3 flex items-center justify-between">
-        {editable ? (
-          <input
-            value={col.name}
-            onChange={(e) => onChange({ ...col, name: e.target.value })}
-            className="rounded-md border-0 bg-transparent text-[15px] font-black tracking-tight text-slate-900 outline-none focus:bg-slate-50 focus:px-1.5 focus:py-0.5 focus:ring-1 focus:ring-indigo-300"
-          />
-        ) : (
-          <h3 className="text-[15px] font-black tracking-tight text-slate-900">{col.name}</h3>
-        )}
-        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          {editable && (
+            <div className="flex flex-col">
+              <button
+                onClick={() => onMove('up')}
+                disabled={!canUp}
+                title="Subir (mueve la columna a la izquierda en el tablero)"
+                className="text-slate-300 hover:text-indigo-600 disabled:cursor-default disabled:opacity-30"
+              >
+                <ChevronUp size={15} />
+              </button>
+              <button
+                onClick={() => onMove('down')}
+                disabled={!canDown}
+                title="Bajar (mueve la columna a la derecha en el tablero)"
+                className="text-slate-300 hover:text-indigo-600 disabled:cursor-default disabled:opacity-30"
+              >
+                <ChevronDown size={15} />
+              </button>
+            </div>
+          )}
+          {editable ? (
+            <input
+              value={col.name}
+              onChange={(e) => onChange({ ...col, name: e.target.value })}
+              className="min-w-0 rounded-md border-0 bg-transparent text-[15px] font-black tracking-tight text-slate-900 outline-none focus:bg-slate-50 focus:px-1.5 focus:py-0.5 focus:ring-1 focus:ring-indigo-300"
+            />
+          ) : (
+            <h3 className="truncate text-[15px] font-black tracking-tight text-slate-900">{col.name}</h3>
+          )}
+        </div>
+        <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-500">
           {options.length} entradas
         </span>
       </div>
