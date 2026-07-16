@@ -51,6 +51,7 @@ ORDEN DE PRIORIDAD DE FUENTES (obligatorio):
    • consultar_empleabilidad — OLE: vinculación formal, empleabilidad, ingreso, atractivo por área/departamento.
    • consultar_recomendaciones — programas a ofertar por región/departamento.
    • consultar_pertinencia — brechas oferta↔demanda por departamento.
+   • consultar_matricula — SNIES: estudiantes matriculados 2015–2021 (2021: 2.448.271), por departamento/área/nivel/género/metodología/sector y top de programas e IES.
 2) ARCHIVOS adjuntos por el usuario.
 3) BÚSQUEDA WEB (buscar_web)${webAccess ? ' — habilitada' : ' — NO habilitada en este mensaje'}: solo si el dato no está en la plataforma ni en los archivos.
 

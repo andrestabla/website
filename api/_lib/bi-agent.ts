@@ -146,6 +146,49 @@ async function consultarPertinencia(cache: Map<string, any>, args: any) {
   return { por_cuadrante: byQuad, mayores_brechas_demanda_sobre_oferta: topGaps }
 }
 
+async function consultarMatricula(cache: Map<string, any>, args: any) {
+  const p = await loadDataset(cache, 'matricula')
+  if (!p) return { error: 'Dataset de matrícula no disponible' }
+  const last = Number(p.meta?.anio_ultimo || 2021)
+  const anio = args?.anio ? Number(args.anio) : last
+  const of = (arr: any[]) => (arr || []).filter((x: any) => x.anio === anio)
+
+  if (args?.departamento) {
+    const serie = (p.por_departamento || []).filter((x: any) => strip(x.departamento).includes(strip(args.departamento)))
+    if (!serie.length) {
+      return { error: 'Departamento no encontrado', disponibles: [...new Set((p.por_departamento || []).map((x: any) => x.departamento))] }
+    }
+    return { departamento: serie[0].departamento, serie: serie.map((x: any) => ({ anio: x.anio, matriculados: x.matriculados })), nota: p.meta?.nota_normalizacion, fuente: p.meta?.fuente }
+  }
+
+  const dim = String(args?.dimension || '')
+  if (dim === 'serie') return { serie_nacional: p.serie_nacional, nota: p.meta?.nota_normalizacion, fuente: p.meta?.fuente }
+  const dims: Record<string, any[]> = {
+    departamento: of(p.por_departamento),
+    area: of(p.por_area),
+    nivel: of(p.por_nivel),
+    nivel_formacion: of(p.por_nivel_formacion),
+    genero: of(p.por_genero),
+    metodologia: of(p.por_metodologia),
+    sector: of(p.por_sector),
+    programa: p.top_programas || [],
+    institucion: p.top_ies || [],
+  }
+  if (dim && dims[dim]) {
+    const fixedYear = dim === 'programa' || dim === 'institucion' ? last : anio
+    return { anio: fixedYear, [`por_${dim}`]: dims[dim].slice(0, 40), nota: p.meta?.nota_normalizacion, fuente: p.meta?.fuente }
+  }
+  return {
+    cobertura: p.meta?.cobertura_temporal,
+    serie_nacional: p.serie_nacional,
+    por_nivel_ultimo: of(p.por_nivel),
+    por_sector_ultimo: of(p.por_sector),
+    por_genero_ultimo: of(p.por_genero),
+    nota: p.meta?.nota_normalizacion,
+    fuente: p.meta?.fuente,
+  }
+}
+
 async function buscarWeb(query: string) {
   const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
   const integrations = applyServerEnv(sanitizeIntegrations(snapshot?.data))
@@ -210,6 +253,21 @@ const TOOLS = (webEnabled: boolean) => {
         parameters: { type: 'object', properties: { departamento: { type: 'string' } } },
       },
     },
+    {
+      type: 'function',
+      function: {
+        name: 'consultar_matricula',
+        description: 'Matrícula en educación superior (SNIES/MEN, 2015–2021, totales oficiales; 2021: 2.448.271 estudiantes). Serie nacional y desgloses por departamento, área de conocimiento, nivel (Pregrado/Posgrado), nivel de formación, género, metodología (Presencial/Distancia/Virtual) y sector (Oficial/Privada); top de programas e IES por matriculados (2021). Úsala para "cuántos estudiantes/matriculados hay en…". NO tiene matrícula por programa individual más allá del top 60.',
+        parameters: {
+          type: 'object',
+          properties: {
+            dimension: { type: 'string', enum: ['serie', 'departamento', 'area', 'nivel', 'nivel_formacion', 'genero', 'metodologia', 'sector', 'programa', 'institucion'] },
+            anio: { type: 'integer', description: '2015–2021 (por defecto 2021)' },
+            departamento: { type: 'string', description: 'Devuelve la serie anual de ese departamento' },
+          },
+        },
+      },
+    },
   ]
   if (webEnabled) {
     t.push({ type: 'function', function: { name: 'buscar_web', description: 'Busca en Internet (Tavily) información externa reciente. Úsala SOLO después de agotar la base de datos de la plataforma y los archivos, o para datos que no están en la plataforma.', parameters: { type: 'object', properties: { consulta: { type: 'string' } }, required: ['consulta'] } } })
@@ -223,6 +281,7 @@ async function executeTool(cache: Map<string, any>, name: string, args: any) {
     case 'consultar_empleabilidad': return consultarEmpleabilidad(cache, args)
     case 'consultar_recomendaciones': return consultarRecomendaciones(cache, args)
     case 'consultar_pertinencia': return consultarPertinencia(cache, args)
+    case 'consultar_matricula': return consultarMatricula(cache, args)
     case 'buscar_web': return buscarWeb(args?.consulta || '')
     default: return { error: 'Herramienta desconocida' }
   }

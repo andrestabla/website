@@ -4,7 +4,7 @@ import {
   buildMask, countBy, countLabel, distinctCount, labelIndex, rowsToCsv, sortDesc, topN,
   totalMask, type Factorized, type Filters,
 } from '../lib/factorized'
-import { barH, choropleth, donut, roseConcentration, fmt, PALETTE, COLORS } from '../lib/charts'
+import { barH, choropleth, donut, lineChart, roseConcentration, fmt, f1, PALETTE, COLORS } from '../lib/charts'
 import { ensureMaps, toGeoName } from '../lib/geo'
 import { EChart } from '../components/EChart'
 import { Block as Card } from '../assistant/Block'
@@ -28,6 +28,7 @@ const TABS = [
   { id: 'academico', label: 'Distribución académica' },
   { id: 'geografia', label: 'Geografía' },
   { id: 'instituciones', label: 'Instituciones y calidad' },
+  { id: 'matricula', label: 'Matrícula' },
   { id: 'reporte', label: 'Reporte técnico' },
 ]
 
@@ -106,6 +107,9 @@ export function OfertaModule() {
   // Contexto de filtros activos para el asistente IA.
   const viewCtx = useMemo(() => {
     if (!ds) return ''
+    if (tab === 'matricula') {
+      return 'Pestaña: Matrícula (estudiantes matriculados SNIES 2015–2021, agregados nacionales; los filtros del observatorio no aplican a esta pestaña)'
+    }
     const parts: string[] = [`Pestaña: ${TABS.find((t) => t.id === tab)?.label || tab}`]
     if (filters.institucion >= 0) parts.push(`Institución: ${ds.dicts.institucion[filters.institucion]}`)
     for (const f of SELECT_FILTERS) {
@@ -165,7 +169,8 @@ export function OfertaModule() {
         ))}
       </div>
 
-      {/* Filtros */}
+      {/* Filtros y KPIs del registro (no aplican a la pestaña Matrícula) */}
+      {tab !== 'matricula' && (<>
       <div className="mb-3 flex flex-wrap items-end gap-2.5 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <div ref={comboRef} className="relative flex flex-col gap-1">
           <label className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">Institución educativa</label>
@@ -229,6 +234,9 @@ export function OfertaModule() {
           </div>
         ))}
       </div>
+      </>)}
+
+      {tab === 'matricula' && <MatriculaTab mapsReady={mapsReady} />}
 
       {tab === 'resumen' && (
         <div className="grid gap-4 md:grid-cols-2">
@@ -331,6 +339,137 @@ export function OfertaModule() {
           <p className="mt-2 text-[12px] text-slate-400">Nombre del programa reconstruido desde el título académico otorgado (la columna nombreprograma de la fuente viene corrupta). Estado "Activo" → "Vigente".</p>
         </Card>
       )}
+    </div>
+  )
+}
+
+// ── Pestaña Matrícula (SNIES 2015–2021) ─────────────────────────────────────
+type MatRow = { anio: number; matriculados: number }
+type Matricula = {
+  meta: Meta
+  serie_nacional: MatRow[]
+  por_departamento: ({ departamento: string } & MatRow)[]
+  por_area: ({ area: string } & MatRow)[]
+  por_nivel: ({ nivel: string } & MatRow)[]
+  por_nivel_formacion: ({ nivel_formacion: string } & MatRow)[]
+  por_genero: ({ genero: string } & MatRow)[]
+  por_metodologia: ({ metodologia: string } & MatRow)[]
+  por_sector: ({ sector: string } & MatRow)[]
+  top_programas: { programa: string; matriculados: number }[]
+  top_ies: { institucion: string; matriculados: number }[]
+}
+
+function MatriculaTab({ mapsReady }: { mapsReady: boolean }) {
+  const [mat, setMat] = useState<Matricula | null>(null)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    fetchDataset('matricula')
+      .then((r) => { if (!cancelled) setMat(r.data as Matricula) })
+      .catch((e) => { if (!cancelled) setErr((e as Error).message) })
+    return () => { cancelled = true }
+  }, [])
+
+  if (err) return <div className="p-6 text-rose-600">Error al cargar matrícula: {err}</div>
+  if (!mat) return <div className="grid min-h-[40vh] place-items-center text-sm text-slate-400">Cargando matrícula…</div>
+
+  const last = Number(mat.meta.anio_ultimo ?? 2021)
+  const total = Number(mat.meta.total_ultimo ?? 0)
+  const of = <T extends MatRow>(arr: T[]) => arr.filter((x) => x.anio === last)
+  const pct = (part: number) => (total ? (part / total) * 100 : 0)
+
+  const first = mat.serie_nacional[0]
+  const growth = first ? ((total - first.matriculados) / first.matriculados) * 100 : 0
+  const mujeres = of(mat.por_genero).find((g) => g.genero === 'Mujeres')?.matriculados ?? 0
+  const oficial = of(mat.por_sector).find((s) => s.sector === 'Oficial')?.matriculados ?? 0
+  const virtual = of(mat.por_metodologia).find((m) => m.metodologia === 'Virtual')?.matriculados ?? 0
+  const posgrado = of(mat.por_nivel).find((n) => n.nivel === 'Posgrado')?.matriculados ?? 0
+
+  const years = mat.serie_nacional.map((s) => s.anio)
+  const metSeries = ['Presencial', 'Distancia', 'Virtual'].map((m, i) => ({
+    name: m,
+    color: [PALETTE[0], PALETTE[1], PALETTE[2]][i],
+    data: years.map((y) => mat.por_metodologia.find((x) => x.metodologia === m && x.anio === y)?.matriculados ?? null),
+  }))
+  const depLast = of(mat.por_departamento)
+  const mapData = depLast
+    .map((d) => ({ name: toGeoName(d.departamento) || '', value: d.matriculados }))
+    .filter((x) => x.name)
+
+  const kpis = [
+    { c: PALETTE[0], v: fmt(total), l: `Matriculados ${last}` },
+    { c: growth >= 0 ? COLORS.good : '#d64550', v: `${growth >= 0 ? '+' : ''}${f1(growth)}%`, l: `Variación vs ${years[0]}` },
+    { c: PALETTE[6], v: `${f1(pct(mujeres))}%`, l: 'Mujeres' },
+    { c: PALETTE[4], v: `${f1(pct(oficial))}%`, l: 'Sector oficial' },
+    { c: PALETTE[2], v: `${f1(pct(virtual))}%`, l: 'Modalidad virtual' },
+    { c: PALETTE[3], v: `${f1(pct(posgrado))}%`, l: 'Posgrado' },
+  ]
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {kpis.map((k) => (
+          <div key={k.l} className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="absolute left-0 top-0 h-[3px] w-full" style={{ background: k.c }} />
+            <div className="text-[23px] font-extrabold tracking-tight">{k.v}</div>
+            <div className="mt-0.5 text-[12px] text-slate-500">{k.l}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card title={`Evolución de la matrícula (${years[0]}–${last})`} hint="Estudiantes matriculados por año · totales verificados con cifras oficiales SNIES">
+          <EChart height={380} option={lineChart(years, [{ name: 'Matriculados', color: PALETTE[0], area: true, data: mat.serie_nacional.map((s) => s.matriculados) }])} />
+        </Card>
+        <Card title="Evolución por modalidad" hint="La modalidad virtual multiplica su participación en el periodo">
+          <EChart height={380} option={lineChart(years, metSeries)} />
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card title={`Matrícula por departamento (${last})`} hint="Departamento de oferta del programa">
+          {mapsReady ? (
+            <EChart height={480} option={{ ...choropleth(mapData, 'CO', 'NOMBRE_DPT', false), tooltip: { trigger: 'item', backgroundColor: '#fff', borderColor: '#e4e7ec', textStyle: { color: '#1a1f29' }, formatter: (p: { name: string; value?: number }) => `${p.name}<br><b>${p.value != null ? fmt(p.value) : 's/d'}</b> matriculados` } }} />
+          ) : (
+            <div className="grid h-[480px] place-items-center text-sm text-slate-400">Cargando mapa…</div>
+          )}
+        </Card>
+        <Card title={`Top departamentos por matrícula (${last})`}>
+          <EChart height={480} option={barH(depLast.map((d) => ({ label: d.departamento, value: d.matriculados })), PALETTE[0], 15)} />
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card title={`Matrícula por área de conocimiento (${last})`}>
+          <EChart height={380} option={barH(of(mat.por_area).map((a) => ({ label: a.area, value: a.matriculados })), PALETTE[6], 10)} />
+        </Card>
+        <Card title={`Matrícula por nivel de formación (${last})`}>
+          <EChart height={380} option={barH(of(mat.por_nivel_formacion).map((n) => ({ label: n.nivel_formacion, value: n.matriculados })), PALETTE[3], 10)} />
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card title={`Programas con más matriculados (${last})`} hint="Nombre de programa unificado (Top 15)">
+          <EChart height={480} option={barH(mat.top_programas.map((p) => ({ label: p.programa, value: p.matriculados })), PALETTE[2], 15)} />
+        </Card>
+        <Card title={`IES con más matriculados (${last})`}>
+          <EChart height={480} option={barH(mat.top_ies.map((i) => ({ label: i.institucion, value: i.matriculados })), PALETTE[4], 15)} />
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card title={`Distribución por género (${last})`}>
+          <EChart option={donut(of(mat.por_genero).map((g) => ({ label: g.genero, value: g.matriculados })))} />
+        </Card>
+        <Card title={`Distribución por sector (${last})`}>
+          <EChart option={donut(of(mat.por_sector).map((s) => ({ label: s.sector, value: s.matriculados })))} />
+        </Card>
+      </div>
+
+      <p className="rounded-xl border border-slate-200 bg-white p-3.5 text-[11.5px] leading-relaxed text-slate-500">
+        Fuente: {String(mat.meta.fuente ?? '')} · Cobertura {String(mat.meta.cobertura_temporal ?? '')}. {String(mat.meta.nota_normalizacion ?? '')} Los filtros del observatorio (arriba) no aplican a esta pestaña: son agregados oficiales de matrícula.
+      </p>
     </div>
   )
 }
