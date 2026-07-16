@@ -163,6 +163,11 @@ export function SiteSEO() {
       description = 'Vista pública de un tablero de seguimiento.'
       isKnownRoute = true
       shouldNoIndex = true
+    } else if (normalizedPath === '/bi' || normalizedPath.startsWith('/bi/')) {
+      title = 'Algoritmo BI · Educación Superior Colombia'
+      description = 'Inteligencia de mercado sobre la oferta y demanda de educación superior en Colombia.'
+      isKnownRoute = true
+      shouldNoIndex = true
     }
 
     if (!isKnownRoute) {

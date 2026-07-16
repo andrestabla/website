@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useBiSession } from './lib/session'
-import { BI_HOME } from './lib/base'
+import { BI_HOME, BI_HOST_MODE } from './lib/base'
 import { SetupPasswordPage } from '../admin/pages/SetupPasswordPage'
 import { BiLogin } from './BiLogin'
 import { BiLayout } from './BiLayout'
@@ -22,6 +22,11 @@ function Centered({ children }: { children: ReactNode }) {
 export default function BiApp() {
   const { pathname } = useLocation()
   const { status, user, refresh } = useBiSession()
+
+  // En el subdominio no corre el SiteSEO del sitio: fijamos el título aquí.
+  useEffect(() => {
+    if (BI_HOST_MODE) document.title = 'Algoritmo BI · Educación Superior Colombia'
+  }, [pathname])
 
   // Activación de credenciales (usuarios solo-BI): ruta pública, sin sesión.
   if (/\/setup\/?$/.test(pathname)) {
