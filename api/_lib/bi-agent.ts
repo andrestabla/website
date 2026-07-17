@@ -189,6 +189,88 @@ async function consultarMatricula(cache: Map<string, any>, args: any) {
   }
 }
 
+async function consultarDesercion(cache: Map<string, any>, args: any) {
+  const p = await loadDataset(cache, 'desercion')
+  if (!p) return { error: 'Dataset de deserción no disponible' }
+  const D = p.dicts || {}
+  const nota = p.meta?.advertencia
+  const fuente = p.meta?.fuente
+  const anio = args?.anio ? Number(args.anio) : null
+
+  const findIdx = (list: string[], q: unknown) =>
+    q ? (list || []).findIndex((x) => strip(x).includes(strip(String(q)))) : -1
+  const depIdx = findIdx(D.departamento, args?.departamento)
+  if (args?.departamento && depIdx < 0) return { error: 'Departamento no encontrado', disponibles: D.departamento }
+  const areaIdx = findIdx(D.area, args?.area)
+
+  // panel: [anio, dep, area, nf, matricula, tasa_anual, desertores, tasa_cohorte, graduacion, atractivo]
+  const rows: any[][] = (p.panel?.rows || []).filter(
+    (r: any[]) => (anio == null || r[0] === anio) && (depIdx < 0 || r[1] === depIdx) && (areaIdx < 0 || r[2] === areaIdx)
+  )
+  const rate = (mat: number, des: number) => (mat ? +((des / mat) * 100).toFixed(2) : null)
+  const groupRate = (keyOf: (r: any[]) => number, dict: string[]) => {
+    const acc = new Map<number, { mat: number; des: number }>()
+    for (const r of rows) {
+      const k = keyOf(r)
+      const a = acc.get(k) || { mat: 0, des: 0 }
+      a.mat += r[4] || 0
+      a.des += r[6] || 0
+      acc.set(k, a)
+    }
+    return [...acc.entries()]
+      .map(([k, a]) => ({ nombre: dict[k], matricula_estimada: a.mat, desertores_estimados: a.des, tasa_desercion_anual_pct: rate(a.mat, a.des) }))
+      .sort((x, y) => (y.tasa_desercion_anual_pct || 0) - (x.tasa_desercion_anual_pct || 0))
+  }
+
+  const dim = String(args?.dimension || '')
+  if (dim === 'serie') return { indicadores_nacionales: p.indicadores_nacionales, nota, fuente }
+  if (dim === 'departamento') return { anio: anio || '2019–2024', por_departamento: groupRate((r) => r[1], D.departamento).slice(0, 40), nota, fuente }
+  if (dim === 'area') return { anio: anio || '2019–2024', por_area: groupRate((r) => r[2], D.area), nota, fuente }
+  if (dim === 'nivel') return { anio: anio || '2019–2024', por_nivel_formacion: groupRate((r) => r[3], D.nivel_formacion), nota, fuente }
+  if (dim === 'cohorte') {
+    // cohortes: [cohorte, dep, area, nf, matIni, desAcum, tasaCoh, ret, grad]
+    const acc = new Map<string, { s: number; w: number }>()
+    for (const r of p.cohortes?.rows || []) {
+      if (depIdx >= 0 && r[1] !== depIdx) continue
+      if (areaIdx >= 0 && r[2] !== areaIdx) continue
+      if (r[6] == null) continue
+      const k = `${r[0]} · ${D.nivel_formacion[r[3]]}`
+      const a = acc.get(k) || { s: 0, w: 0 }
+      a.s += r[6] * (r[4] || 0)
+      a.w += r[4] || 0
+      acc.set(k, a)
+    }
+    const series = [...acc.entries()].map(([k, a]) => ({ cohorte_nivel: k, tasa_desercion_cohorte_pct: a.w ? +(a.s / a.w).toFixed(2) : null }))
+    return { cohortes: series, nota, fuente }
+  }
+  if (dim === 'programa') {
+    // programas_panel: [anio, dep, prog, area, nf, mat, tasa, desert, atractivo]
+    const acc = new Map<number, { mat: number; des: number }>()
+    for (const r of p.programas_panel?.rows || []) {
+      if (anio != null && r[0] !== anio) continue
+      if (depIdx >= 0 && r[1] !== depIdx) continue
+      const a = acc.get(r[2]) || { mat: 0, des: 0 }
+      a.mat += r[5] || 0
+      a.des += r[7] || 0
+      acc.set(r[2], a)
+    }
+    const porPrograma = [...acc.entries()]
+      .map(([k, a]) => ({ programa: D.programa[k], matricula_estimada: a.mat, desertores_estimados: a.des, tasa_desercion_anual_pct: rate(a.mat, a.des) }))
+      .sort((x, y) => (y.tasa_desercion_anual_pct || 0) - (x.tasa_desercion_anual_pct || 0))
+    return { anio: anio || '2019–2024', por_programa_referencial: porPrograma, top_nacional_cohorte: p.top_programas, nota, fuente }
+  }
+  if (dim === 'prioridad') return { prioridad_intervencion: p.resumen_departamental, nota, fuente }
+
+  // Resumen por defecto: nacional oficial + focos territoriales.
+  return {
+    cobertura: p.meta?.cobertura_temporal,
+    indicadores_nacionales: p.indicadores_nacionales,
+    departamentos_mayor_desercion: groupRate((r) => r[1], D.departamento).slice(0, 8),
+    nota,
+    fuente,
+  }
+}
+
 async function buscarWeb(query: string) {
   const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
   const integrations = applyServerEnv(sanitizeIntegrations(snapshot?.data))
@@ -268,6 +350,22 @@ const TOOLS = (webEnabled: boolean) => {
         },
       },
     },
+    {
+      type: 'function',
+      function: {
+        name: 'consultar_desercion',
+        description: 'Deserción y permanencia en educación superior (SPADIES/SNIES, 2019–2024; cifras nacionales oficiales: 2023 deserción anual 8,97% y matrícula 2.475.833; 2024 matrícula 2.553.560). Desgloses por departamento, área, nivel (Universitario/Tecnológico), cohortes de ingreso 2019–2023, 9 programas referenciales y prioridad de intervención territorial. IMPORTANTE: los desgloses territoriales/por área/programa son ESTIMACIONES ANALÍTICAS calibradas con tasas SPADIES publicadas, no microdatos oficiales; dilo al citarlos.',
+        parameters: {
+          type: 'object',
+          properties: {
+            dimension: { type: 'string', enum: ['serie', 'departamento', 'area', 'nivel', 'cohorte', 'programa', 'prioridad'] },
+            anio: { type: 'integer', description: '2019–2024 (sin especificar: todo el periodo)' },
+            departamento: { type: 'string' },
+            area: { type: 'string', description: 'Área de conocimiento (búsqueda parcial)' },
+          },
+        },
+      },
+    },
   ]
   if (webEnabled) {
     t.push({ type: 'function', function: { name: 'buscar_web', description: 'Busca en Internet (Tavily) información externa reciente. Úsala SOLO después de agotar la base de datos de la plataforma y los archivos, o para datos que no están en la plataforma.', parameters: { type: 'object', properties: { consulta: { type: 'string' } }, required: ['consulta'] } } })
@@ -282,6 +380,7 @@ async function executeTool(cache: Map<string, any>, name: string, args: any) {
     case 'consultar_recomendaciones': return consultarRecomendaciones(cache, args)
     case 'consultar_pertinencia': return consultarPertinencia(cache, args)
     case 'consultar_matricula': return consultarMatricula(cache, args)
+    case 'consultar_desercion': return consultarDesercion(cache, args)
     case 'buscar_web': return buscarWeb(args?.consulta || '')
     default: return { error: 'Herramienta desconocida' }
   }

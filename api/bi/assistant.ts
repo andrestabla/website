@@ -10,7 +10,7 @@ type ChatMessage = { role: 'user' | 'assistant'; content: string }
 
 const SECTION_CONTEXT: Record<string, string> = {
   oferta:
-    'Observatorio de oferta educativa. Fuente: MEN / SNIES (registro calificado de programas de educación superior). Cubre programas, instituciones (IES), niveles académicos y de formación, modalidades, áreas de conocimiento y distribución geográfica (departamentos, municipios, regiones). Incluye además una pestaña de Matrícula (estudiantes matriculados, SNIES 2015–2021, agregados oficiales por departamento/área/nivel/género/metodología/sector).',
+    'Observatorio de oferta educativa. Fuente: MEN / SNIES (registro calificado de programas de educación superior). Cubre programas, instituciones (IES), niveles académicos y de formación, modalidades, áreas de conocimiento y distribución geográfica (departamentos, municipios, regiones). Incluye además una pestaña de Matrícula (estudiantes matriculados, SNIES 2015–2021, agregados oficiales filtrables por año/departamento/área/nivel/sector) y una pestaña de Deserción (SPADIES/SNIES 2019–2024: tasa anual —2023 oficial: 8,97%—, cohortes, mapa territorial y prioridad de intervención; los desgloses territoriales y por área/programa son estimaciones analíticas calibradas con cifras oficiales, no microdatos).',
   laboral:
     'Observatorio laboral y de empleabilidad. Fuentes: prospectiva de competencias LATAM, Observatorio Laboral para la Educación (OLE), OIT y DANE. Cubre demanda de competencias (IA, digital, verde, blandas), empleabilidad y vinculación formal de graduados, ingresos, reskilling y mercado laboral (desocupación, informalidad, ocupación).',
   regional:

@@ -10,6 +10,7 @@ export type BiDatasetKey =
   | 'recomendaciones'
   | 'cohortes'
   | 'matricula'
+  | 'desercion'
 
 export type BiDatasetResponse = {
   ok: boolean

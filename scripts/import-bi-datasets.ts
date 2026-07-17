@@ -30,6 +30,8 @@ const ENTRIES: Entry[] = [
   { key: 'puente', file: 'puente_web.js', title: 'Pertinencia por disciplina', category: 'regional' },
   { key: 'recomendaciones', file: 'recomendaciones_web.js', title: 'Recomendación de programas', category: 'regional' },
   { key: 'cohortes', file: 'cohortes_web.js', title: 'Demanda potencial por cohortes (DANE)', category: 'regional' },
+  { key: 'matricula', file: 'matricula_web.js', title: 'Matrícula en educación superior (SNIES)', category: 'oferta' },
+  { key: 'desercion', file: 'desercion_web.js', title: 'Deserción y permanencia (SPADIES, capa analítica)', category: 'oferta' },
 ]
 
 function parsePayload(file: string): any {
@@ -48,8 +50,12 @@ async function main() {
   const PrismaClient = (PrismaModule as any).PrismaClient
   const prisma = new PrismaClient({ adapter } as any)
 
+  // BI_KEYS=matricula,desercion limita la importación a esas llaves.
+  const only = (process.env.BI_KEYS || '').split(',').map((s) => s.trim()).filter(Boolean)
+  const entries = only.length ? ENTRIES.filter((e) => only.includes(e.key)) : ENTRIES
+
   let ok = 0
-  for (const e of ENTRIES) {
+  for (const e of entries) {
     const full = path.join(DATA_DIR, e.file)
     if (!fs.existsSync(full)) {
       console.warn(`  ⚠ omitido (no existe): ${e.file}`)
@@ -68,7 +74,7 @@ async function main() {
   }
   await prisma.$disconnect()
   await pool.end()
-  console.log(`\nImportados ${ok}/${ENTRIES.length} datasets BI a Postgres.`)
+  console.log(`\nImportados ${ok}/${entries.length} datasets BI a Postgres.`)
 }
 
 main().catch((err) => {
