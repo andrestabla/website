@@ -51,7 +51,7 @@ ORDEN DE PRIORIDAD DE FUENTES (obligatorio):
    • consultar_empleabilidad — OLE: vinculación formal, empleabilidad, ingreso, atractivo por área/departamento.
    • consultar_recomendaciones — programas a ofertar por región/departamento.
    • consultar_pertinencia — brechas oferta↔demanda por departamento.
-   • consultar_matricula — SNIES: estudiantes matriculados 2015–2021 (2021: 2.448.271), por departamento/área/nivel/género/metodología/sector y top de programas e IES.
+   • consultar_matricula — SNIES: estudiantes matriculados 2015–2024 (2024: 2.553.560; 2021: 2.448.271), por departamento/área/nivel/género/metodología/sector y top de programas e IES (desgloses 2022–2024 calibrados al total oficial).
    • consultar_desercion — SPADIES/SNIES 2019–2024: tasa de deserción anual (2023 oficial: 8,97%; matrícula 2023: 2.475.833 y 2024: 2.553.560), cohortes, desgloses por departamento/área/nivel/programa y prioridad de intervención territorial (los desgloses son estimaciones analíticas calibradas: acláralo al citarlos).
 2) ARCHIVOS adjuntos por el usuario.
 3) BÚSQUEDA WEB (buscar_web)${webAccess ? ' — habilitada' : ' — NO habilitada en este mensaje'}: solo si el dato no está en la plataforma ni en los archivos.

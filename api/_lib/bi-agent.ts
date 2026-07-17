@@ -339,12 +339,12 @@ const TOOLS = (webEnabled: boolean) => {
       type: 'function',
       function: {
         name: 'consultar_matricula',
-        description: 'Matrícula en educación superior (SNIES/MEN, 2015–2021, totales oficiales; 2021: 2.448.271 estudiantes). Serie nacional y desgloses por departamento, área de conocimiento, nivel (Pregrado/Posgrado), nivel de formación, género, metodología (Presencial/Distancia/Virtual) y sector (Oficial/Privada); top de programas e IES por matriculados (2021). Úsala para "cuántos estudiantes/matriculados hay en…". NO tiene matrícula por programa individual más allá del top 60.',
+        description: 'Matrícula en educación superior (SNIES/MEN, 2015–2024, totales oficiales; 2024: 2.553.560 estudiantes; 2021: 2.448.271). Serie nacional y desgloses por departamento, área de conocimiento, nivel (Pregrado/Posgrado), nivel de formación, género, metodología (Presencial/Distancia/Virtual/Híbrida) y sector (Oficial/Privada); top de programas e IES por matriculados. Los desgloses 2022–2024 provienen de los consolidados del portal SNIES calibrados al total oficial anual. Úsala para "cuántos estudiantes/matriculados hay en…". NO tiene matrícula por programa individual más allá del top 60.',
         parameters: {
           type: 'object',
           properties: {
             dimension: { type: 'string', enum: ['serie', 'departamento', 'area', 'nivel', 'nivel_formacion', 'genero', 'metodologia', 'sector', 'programa', 'institucion'] },
-            anio: { type: 'integer', description: '2015–2021 (por defecto 2021)' },
+            anio: { type: 'integer', description: '2015–2024 (por defecto el último)' },
             departamento: { type: 'string', description: 'Devuelve la serie anual de ese departamento' },
           },
         },

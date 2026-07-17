@@ -514,7 +514,7 @@ function MatriculaTab({ mapsReady, onCtx }: { mapsReady: boolean; onCtx: (s: str
   useEffect(() => {
     if (!mat || !A) return
     const D = mat.dicts
-    const parts = ['Pestaña: Matrícula (SNIES 2015–2021, agregados oficiales)']
+    const parts = [`Pestaña: Matrícula (SNIES ${firstYear}–${lastYear}, agregados oficiales; 2022–2024 calibrados al total oficial del MEN)`]
     if (flt.anio >= 0) parts.push(`Año: ${flt.anio}`)
     if (flt.dep >= 0) parts.push(`Departamento: ${D.departamento[flt.dep]}`)
     if (flt.area >= 0) parts.push(`Área: ${D.area[flt.area]}`)
@@ -772,7 +772,9 @@ function DesercionTab({ mapsReady, onCtx }: { mapsReady: boolean; onCtx: (s: str
   ]
 
   // Cruce matrícula × deserción: nacional (oficial) sin filtros; panel estimado con filtros.
-  const cruceYears = hasDims ? years : [...(serieOficial?.map((s) => s.anio) ?? []), 2022, 2023, 2024]
+  const cruceYears = hasDims
+    ? years
+    : [...new Set([...(serieOficial?.map((s) => s.anio) ?? []), ...des.indicadores_nacionales.map((i) => i.anio)])].sort()
   const cruceMat = hasDims
     ? years.map((y) => A.serie.get(y)?.mat ?? null)
     : cruceYears.map((y) => serieOficial?.find((s) => s.anio === y)?.matriculados ?? nat(y)?.matricula_total ?? null)
