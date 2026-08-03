@@ -35,8 +35,11 @@ function preserveMaskedSecrets(next: any, prev: any) {
       prevRef = prevRef?.[prevPath[i]]
     }
     const key = targetPath[targetPath.length - 1]
-    if (isMaskedSecret(targetRef?.[key]) && typeof prevRef?.[key] === 'string') {
-      targetRef[key] = prevRef[key]
+    if (isMaskedSecret(targetRef?.[key])) {
+      const previous = typeof prevRef?.[key] === 'string' ? prevRef[key] : ''
+      // Si lo guardado antes también quedó enmascarado, se limpia: una máscara
+      // jamás debe persistirse como credencial.
+      targetRef[key] = isMaskedSecret(previous) ? '' : previous
     }
   }
 

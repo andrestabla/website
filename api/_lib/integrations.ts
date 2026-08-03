@@ -123,10 +123,23 @@ export function sanitizeIntegrations(input: unknown): IntegrationsState {
   return merged
 }
 
-export function applyServerEnv(state: IntegrationsState): IntegrationsState {
-  const next = sanitizeIntegrations(state)
+/** Un secreto enmascarado (p. ej. "sk-•••abc") jamás sirve como credencial. */
+function scrubMaskedSecrets(state: IntegrationsState): IntegrationsState {
+  const next = state
+  const scrub = (value: string) => (value.includes('\u2022') ? '' : value)
+  next.gemini.config.apiKey = scrub(next.gemini.config.apiKey)
+  next.openai.config.apiKey = scrub(next.openai.config.apiKey)
+  next.tavily.config.apiKey = scrub(next.tavily.config.apiKey)
+  next.smtp.config.password = scrub(next.smtp.config.password)
+  next.r2.config.secretAccessKey = scrub(next.r2.config.secretAccessKey)
+  next.r2.config.accessKeyId = scrub(next.r2.config.accessKeyId)
+  return next
+}
 
-  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || ''
+export function applyServerEnv(state: IntegrationsState): IntegrationsState {
+  const next = scrubMaskedSecrets(sanitizeIntegrations(state))
+
+  const geminiApiKey = process.env.GEMINI_API_KEY || ''
   const geminiModel = process.env.GEMINI_MODEL || process.env.VITE_GEMINI_MODEL || ''
   if (geminiApiKey) {
     next.gemini.config.apiKey = geminiApiKey

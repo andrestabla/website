@@ -134,4 +134,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`[dev-api] API + proxy Vite en http://localhost:${PORT} (Vite: ${VITE})`)
+  console.log(`[dev-api] env: OPENAI=${(process.env.OPENAI_API_KEY || '').length} chars · DATABASE_URL=${process.env.DATABASE_URL ? 'sí' : 'no'}`)
 })

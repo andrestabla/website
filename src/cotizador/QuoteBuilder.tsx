@@ -170,11 +170,18 @@ export function QuoteBuilder() {
   const published = quote.status === 'PUBLISHED'
   const content = quote.content || {}
   const narrative: Array<[string, boolean]> = [
-    ['Carta de presentación', !!content.intro],
-    ['Diagnóstico y frentes', !!(content.diagnosis?.lede || content.diagnosis?.fronts?.length)],
-    ['Enfoque de solución', !!content.approach],
+    ['Carta', !!content.intro],
+    ['Diagnóstico', !!(content.diagnosis?.lede || content.diagnosis?.fronts?.length)],
+    ['Arquitectura', !!(content.architecture?.lede || content.architecture?.layers?.length)],
+    ['Capturas', !!content.screens?.items?.length],
+    ['Cronograma', !!content.schedule?.groups?.length],
+    ['Hitos', !!content.milestones?.length],
+    ['Servicio', !!(content.service?.levels?.length || content.service?.includedMonths)],
+    ['Equipo', !!content.team?.length],
     ['Supuestos', !!content.assumptions?.length],
     ['Exclusiones', !!content.exclusions?.length],
+    ['Garantías', !!content.guarantees?.length],
+    ['Cierre', !!content.backQuote],
   ]
 
   return (
