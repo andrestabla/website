@@ -11,6 +11,7 @@ export type QuoteListItem = {
   weeks: number
   moduleCount: number
   views: number
+  ownerName?: string | null
   publishedAt: string | null
   updatedAt: string
 }

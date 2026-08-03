@@ -289,7 +289,10 @@ export function CotizadorList() {
                   >
                     <td className="px-4 py-3">
                       <div className="font-semibold text-slate-800">{quote.clientName}</div>
-                      <div className="max-w-[280px] truncate text-[12px] text-slate-400">{quote.title}</div>
+                      <div className="max-w-[280px] truncate text-[12px] text-slate-400">
+                        {quote.title}
+                        {quote.ownerName ? ` · por ${quote.ownerName}` : ''}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[quote.status]}`}>

@@ -88,7 +88,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (op === 'list') {
-      const where = isAdmin && body.all === true ? {} : { ownerId: userId }
+      // Los administradores ven las cotizaciones de todo el equipo; los demás, las suyas.
+      const where = isAdmin ? {} : { ownerId: userId }
       const quotes = await db().findMany({
         where,
         orderBy: { updatedAt: 'desc' },
@@ -99,15 +100,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           publishedAt: true, createdAt: true, updatedAt: true, ownerId: true,
         },
       })
-      // Una sola pasada por las métricas para no hacer N+1.
+      // Una sola pasada por métricas y dueños para no hacer N+1.
       const ids = quotes.map((q: any) => q.id)
-      const views = ids.length
-        ? await eventDb().groupBy({ by: ['quoteId'], where: { quoteId: { in: ids }, type: 'view' }, _count: { _all: true } })
-        : []
+      const ownerIds = [...new Set(quotes.map((q: any) => q.ownerId))]
+      const [views, owners] = await Promise.all([
+        ids.length
+          ? eventDb().groupBy({ by: ['quoteId'], where: { quoteId: { in: ids }, type: 'view' }, _count: { _all: true } })
+          : [],
+        ownerIds.length
+          ? (prisma as any).adminUser.findMany({ where: { id: { in: ownerIds } }, select: { id: true, displayName: true, username: true } })
+          : [],
+      ])
       const viewsBy = new Map(views.map((v: any) => [v.quoteId, v._count._all]))
+      const ownerBy = new Map(owners.map((o: any) => [o.id, o.displayName || o.username]))
       return res.status(200).json({
         ok: true,
-        quotes: quotes.map((q: any) => ({ ...q, views: viewsBy.get(q.id) ?? 0 })),
+        quotes: quotes.map((q: any) => ({
+          ...q,
+          views: viewsBy.get(q.id) ?? 0,
+          ownerName: ownerBy.get(q.ownerId) ?? null,
+        })),
       })
     }
 
