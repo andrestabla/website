@@ -10,6 +10,7 @@ export function GridToolbar({
   rightSlot,
   viewMode,
   onViewModeChange,
+  openFiltersSignal,
 }: {
   columns: PcColumn[]
   view: PcView
@@ -17,6 +18,7 @@ export function GridToolbar({
   rightSlot?: React.ReactNode
   viewMode?: 'table' | 'cards'
   onViewModeChange?: (m: 'table' | 'cards') => void
+  openFiltersSignal?: number
 }) {
   const activeFilters = view.filters.filter((f) =>
     (f.kind === 'in' && f.values.length) || (f.kind === 'contains' && f.value) || (f.kind === 'range' && (f.min !== undefined || f.max !== undefined))
@@ -34,7 +36,7 @@ export function GridToolbar({
         />
       </div>
 
-      <FilterMenu columns={columns} view={view} onChange={onChange} activeCount={activeFilters} />
+      <FilterMenu columns={columns} view={view} onChange={onChange} activeCount={activeFilters} openSignal={openFiltersSignal} />
       <SortMenu columns={columns} view={view} onChange={onChange} />
 
       {(activeFilters > 0 || view.sort || view.search) && (
@@ -85,8 +87,9 @@ function Pop({ children, onClose }: { children: React.ReactNode; onClose: () => 
   )
 }
 
-function FilterMenu({ columns, view, onChange, activeCount }: { columns: PcColumn[]; view: PcView; onChange: (v: PcView) => void; activeCount: number }) {
+function FilterMenu({ columns, view, onChange, activeCount, openSignal }: { columns: PcColumn[]; view: PcView; onChange: (v: PcView) => void; activeCount: number; openSignal?: number }) {
   const [open, setOpen] = useState(false)
+  useEffect(() => { if (openSignal) setOpen(true) }, [openSignal])
   const getFilter = (colId: string) => view.filters.find((f) => f.colId === colId)
   const setFilter = (f: PcFilter) => {
     const others = view.filters.filter((x) => x.colId !== f.colId)

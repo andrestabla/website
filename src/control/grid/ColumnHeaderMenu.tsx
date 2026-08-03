@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, ArrowLeft, ArrowRight, Trash2, Plus, X, Sparkles, RefreshCw, LayoutGrid } from 'lucide-react'
+import { ChevronDown, ArrowLeft, ArrowRight, Trash2, Plus, X, Sparkles, RefreshCw, LayoutGrid, Pin, PinOff, SlidersHorizontal } from 'lucide-react'
 import type { PcColType, PcColumn } from '../lib/types'
 import { PC_COL_TYPE_LABELS, PC_OPTION_COLORS } from '../lib/types'
 
@@ -24,6 +24,7 @@ export function ColumnHeaderMenu({
   onDelete,
   onConfigureBehavior,
   onRecalcColumn,
+  onFilterColumn,
 }: {
   col: PcColumn
   editable: boolean
@@ -34,6 +35,7 @@ export function ColumnHeaderMenu({
   onDelete?: (colId: string) => void
   onConfigureBehavior?: (colId: string) => void
   onRecalcColumn?: (colId: string) => void
+  onFilterColumn?: (colId: string) => void
 }) {
   const [open, setOpen] = useState(false)
   const [editingName, setEditingName] = useState(false)
@@ -128,6 +130,21 @@ export function ColumnHeaderMenu({
             </span>
           </button>
 
+          <div className="my-1 border-t border-slate-100" />
+          {onFilterColumn && (
+            <button
+              onClick={() => { setOpen(false); onFilterColumn(col.id) }}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-slate-600 hover:bg-slate-100"
+            >
+              <SlidersHorizontal size={13} /> Filtrar por esta columna
+            </button>
+          )}
+          <button
+            onClick={() => { onChange?.({ ...col, frozen: !(col.frozen === true) }); setOpen(false) }}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[12px] text-slate-600 hover:bg-slate-100"
+          >
+            {col.frozen ? <><PinOff size={13} /> Liberar columna</> : <><Pin size={13} /> Inmovilizar columna</>}
+          </button>
           <div className="my-1 border-t border-slate-100" />
           <button
             disabled={!canMoveLeft}

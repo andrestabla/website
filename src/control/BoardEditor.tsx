@@ -38,6 +38,7 @@ export function BoardEditor() {
   const [tab, setTab] = useState<Tab>('grid')
   const [view, setView] = useState<PcView>(emptyView)
   const [gridMode, setGridMode] = useState<'table' | 'cards'>('table')
+  const [filtersSignal, setFiltersSignal] = useState(0)
   const [openRecordId, setOpenRecordId] = useState<string | null>(null)
   const [duplicating, setDuplicating] = useState(false)
   const [behaviorColId, setBehaviorColId] = useState<string | null>(null)
@@ -420,6 +421,7 @@ export function BoardEditor() {
             onChange={setView}
             viewMode={gridMode}
             onViewModeChange={setGridMode}
+            openFiltersSignal={filtersSignal}
             rightSlot={<span className="hidden text-[12px] text-slate-400 sm:inline">{filteredRows.length} de {board.rows.length} filas</span>}
           />
           {computeMsg && (
@@ -452,6 +454,7 @@ export function BoardEditor() {
               onColumnDelete={onColumnDelete}
               onConfigureBehavior={(colId) => setBehaviorColId(colId)}
               onRecalcColumn={recalcColumn}
+              onFilterColumn={() => { setGridMode('table'); setFiltersSignal((n) => n + 1) }}
               onAddColumn={onAddColumn}
               onAddRow={onAddRow}
               onDeleteRow={onDeleteRow}

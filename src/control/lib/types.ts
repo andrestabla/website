@@ -34,6 +34,8 @@ export type PcColumn = {
   /** Si se muestra en el resumen de la vista tarjetas (lo decide el admin). */
   card?: boolean
   width?: number
+  /** Columna inmovilizada (fija a la izquierda al hacer scroll horizontal). */
+  frozen?: boolean
 }
 
 export type PcCellValue = string | number | boolean | null | PcComment[]

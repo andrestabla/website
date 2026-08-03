@@ -57,6 +57,7 @@ export function sanitizeColumns(input: unknown): any[] {
     }
 
     if (raw?.card === true || raw?.card === false) col.card = raw.card
+    if (raw?.frozen === true) col.frozen = true
 
     const width = Number(raw?.width)
     if (Number.isFinite(width) && width > 0) col.width = Math.min(Math.round(width), 800)

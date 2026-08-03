@@ -25,6 +25,7 @@ type Props = {
   onColumnDelete?: (colId: string) => void
   onConfigureBehavior?: (colId: string) => void
   onRecalcColumn?: (colId: string) => void
+  onFilterColumn?: (colId: string) => void
   onAddColumn?: () => void
   onAddRow?: () => void
   onDeleteRow?: (rowId: string) => void
@@ -42,12 +43,23 @@ export function DataGrid({
   onColumnDelete,
   onConfigureBehavior,
   onRecalcColumn,
+  onFilterColumn,
   onAddColumn,
   onAddRow,
   onDeleteRow,
   onRecalcCell,
   computing,
 }: Props) {
+  // Columnas inmovilizadas: se fijan a la izquierda al hacer scroll horizontal.
+  // Se calcula el desplazamiento acumulado de cada una (tras la columna "#" = 40px).
+  const FROZEN_START = 40
+  const frozenLeft: Record<string, number> = {}
+  {
+    let off = FROZEN_START
+    for (const c of columns) {
+      if (c.frozen) { frozenLeft[c.id] = off; off += c.width || 160 }
+    }
+  }
   return (
     <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
       <table className="w-full border-collapse text-[13px]">
@@ -59,8 +71,8 @@ export function DataGrid({
             {columns.map((col, i) => (
               <th
                 key={col.id}
-                className="border-b border-r border-slate-200 px-0 py-0 text-left align-top"
-                style={{ minWidth: col.width || 160, maxWidth: col.width ? col.width : undefined }}
+                className={`border-b border-r border-slate-200 px-0 py-0 text-left align-top ${col.frozen ? 'sticky z-20 bg-slate-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.12)]' : ''}`}
+                style={{ minWidth: col.width || 160, maxWidth: col.width ? col.width : undefined, ...(col.frozen ? { left: frozenLeft[col.id] } : {}) }}
               >
                 <ColumnHeaderMenu
                   col={col}
@@ -72,6 +84,7 @@ export function DataGrid({
                   onDelete={onColumnDelete}
                   onConfigureBehavior={onConfigureBehavior}
                   onRecalcColumn={onRecalcColumn}
+                  onFilterColumn={onFilterColumn}
                 />
               </th>
             ))}
@@ -110,8 +123,8 @@ export function DataGrid({
               {columns.map((col) => (
                 <td
                   key={col.id}
-                  className="border-b border-r border-slate-200 p-0 align-top"
-                  style={{ minWidth: col.width || 160 }}
+                  className={`border-b border-r border-slate-200 p-0 align-top ${col.frozen ? 'sticky z-10 bg-white group-hover:bg-slate-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.12)]' : ''}`}
+                  style={{ minWidth: col.width || 160, ...(col.frozen ? { left: frozenLeft[col.id] } : {}) }}
                 >
                   <BoardCell
                     col={col}
