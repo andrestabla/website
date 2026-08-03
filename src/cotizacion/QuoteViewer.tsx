@@ -152,7 +152,6 @@ export default function QuoteViewer() {
         const loaded: QuoteItem[] = Array.isArray(q.pricing?.items) ? q.pricing.items : []
         setItems(loaded)
         initialOn.current = new Map(loaded.map((i) => [i.code, i.kind === 'CORE' ? true : i.on]))
-        document.title = `${q.title} · Algoritmo T`
         setState('ready')
       } catch {
         if (!cancelled) setState('error')
@@ -160,6 +159,17 @@ export default function QuoteViewer() {
     })()
     return () => { cancelled = true }
   }, [publicId, recipientToken])
+
+  // Título del documento. El SEO global del sitio (SiteSEO) escribe el suyo al
+  // hidratar el CMS; se reafirma un par de veces para ganar esa carrera.
+  useEffect(() => {
+    if (state !== 'ready' || !quote) return
+    const apply = () => { document.title = `${quote.title} · Algoritmo T` }
+    apply()
+    const t1 = window.setTimeout(apply, 1500)
+    const t2 = window.setTimeout(apply, 4000)
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2) }
+  }, [state, quote])
 
   // Apertura + latidos de permanencia.
   useEffect(() => {

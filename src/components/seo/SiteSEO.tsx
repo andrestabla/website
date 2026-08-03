@@ -168,6 +168,13 @@ export function SiteSEO() {
       description = 'Inteligencia de mercado sobre la oferta y demanda de educación superior en Colombia.'
       isKnownRoute = true
       shouldNoIndex = true
+    } else if (normalizedPath.startsWith('/c/')) {
+      // Cotizaciones compartidas: el visor fija el título específico al cargar;
+      // noindex porque son enlaces privados del cliente.
+      title = `Cotización | ${siteName}`
+      description = 'Propuesta técnica y económica preparada por Algoritmo T.'
+      isKnownRoute = true
+      shouldNoIndex = true
     }
 
     if (!isKnownRoute) {
