@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink } from 'lucide-react'
+import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink, FileSignature } from 'lucide-react'
 import { canAccessModule, hasAdminBridge, type AdminModuleKey } from '../admin/lib/permissions'
 import { ecoLogout, type EcoUser } from './lib/session'
 
@@ -8,6 +8,7 @@ type Mod = { module: AdminModuleKey; name: string; desc: string; to: string; acc
 const MODULES: Mod[] = [
   { module: 'BI', name: 'Algoritmo BI', desc: 'Observatorios de oferta educativa, laboral y análisis regional con asistente de IA.', to: '/bi', accent: 'from-blue-600 to-sky-500', icon: Gauge, tag: 'Inteligencia' },
   { module: 'PROJECT_CONTROL', name: 'Project Control', desc: 'Tableros de seguimiento tipo hoja de cálculo, 100% customizables y compartibles.', to: '/control', accent: 'from-indigo-600 to-sky-500', icon: LayoutGrid, tag: 'Tableros' },
+  { module: 'COTIZADOR', name: 'Cotizador', desc: 'Cotizaciones interactivas construidas con IA, con URL propia y métricas de lectura.', to: '/ecosistema/cotizador', accent: 'from-cyan-600 to-teal-500', icon: FileSignature, tag: 'Comercial' },
   { module: 'PROFE_TABLA', name: 'ProfeTabla', desc: 'Plataforma educativa ProfeTabla.', to: 'https://profetabla.com', accent: 'from-rose-500 to-orange-500', icon: GraduationCap, tag: 'Educación', external: true },
   { module: 'MIS_PROYECTOS', name: 'Mis Proyectos', desc: 'Tableros y seguimiento de proyectos (plataforma hermana).', to: 'https://misproyectos.com.co', accent: 'from-teal-600 to-emerald-500', icon: ClipboardList, tag: 'Proyectos', external: true },
   { module: 'LEADS', name: 'Contactos', desc: 'Ver y atender los contactos y solicitudes recibidas.', to: '/admin/leads', accent: 'from-emerald-600 to-green-500', icon: Mail, tag: 'CRM' },

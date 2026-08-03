@@ -1,7 +1,11 @@
 import type { ReactNode } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { canAccessModule } from '../admin/lib/permissions'
 import { useEcoSession } from './lib/session'
 import { EcosistemaLogin } from './EcosistemaLogin'
 import { EcosistemaHub } from './EcosistemaHub'
+import { CotizadorList } from '../cotizador/CotizadorList'
+import { QuoteBuilder } from '../cotizador/QuoteBuilder'
 
 function Centered({ children }: { children: ReactNode }) {
   return (
@@ -20,5 +24,21 @@ export default function EcosistemaApp() {
   if (status === 'unauthenticated') {
     return <EcosistemaLogin onSuccess={() => void refresh()} />
   }
-  return <EcosistemaHub user={user} onLogout={() => void refresh()} />
+
+  const cotizadorAllowed = canAccessModule(user, 'COTIZADOR')
+
+  return (
+    <Routes>
+      <Route index element={<EcosistemaHub user={user} onLogout={() => void refresh()} />} />
+      <Route
+        path="cotizador"
+        element={cotizadorAllowed ? <CotizadorList /> : <Navigate to="/ecosistema" replace />}
+      />
+      <Route
+        path="cotizador/:quoteId"
+        element={cotizadorAllowed ? <QuoteBuilder /> : <Navigate to="/ecosistema" replace />}
+      />
+      <Route path="*" element={<Navigate to="/ecosistema" replace />} />
+    </Routes>
+  )
 }

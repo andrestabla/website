@@ -209,6 +209,7 @@ enum AdminModule {
   DOCUMENTS
   BI
   PROJECT_CONTROL
+  COTIZADOR
   PROFE_TABLA
   MIS_PROYECTOS
   ADMIN_BRIDGE
@@ -603,4 +604,140 @@ model PcBoardShare {
 
   @@unique([boardId, userId])
   @@index([userId])
+}
+
+// ─── Cotizador (Ecosistema) ──────────────────────────────────────────────────
+// Cada cotización se construye conversando con la IA, apoyada en dos fuentes:
+// el catálogo de módulos con precios (QuoteCatalogItem, la única fuente de
+// cifras) y la base de documentos de contexto (QuoteKnowledgeDoc, de donde la
+// IA toma metodología, tono y antecedentes). La IA nunca inventa montos.
+
+model QuoteCatalogItem {
+  id           String   @id @default(cuid())
+  code         String   @unique // NUCLEO, M01, M02…
+  name         String
+  summary      String // qué resuelve, en 2-3 líneas
+  category     String // Núcleo · Operación editorial · Comercial · Canal digital…
+  kind         String   @default("MODULE") // CORE (obligatorio) | MODULE (opcional)
+  price        Int // precio base en la moneda del catálogo
+  currency     String   @default("COP")
+  deliverables Int      @default(0)
+  weeks        Float    @default(1) // esfuerzo en semanas
+  defaultOn    Boolean  @default(true) // encendido por defecto en una cotización nueva
+  active       Boolean  @default(true)
+  tags         String[] @default([])
+  detail       Json? // { entregables: string[], notas?: string }
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active, sortOrder])
+  @@index([category, sortOrder])
+}
+
+model QuoteKnowledgeDoc {
+  id         String   @id @default(cuid())
+  title      String
+  kind       String   @default("REFERENCE") // METHODOLOGY | PRICING | CASE | TERMS | BRAND | REFERENCE
+  sourceName String? // archivo original
+  mimeType   String?
+  content    String // texto plano extraído: es el contexto que lee la IA
+  summary    String?
+  charCount  Int      @default(0)
+  active     Boolean  @default(true)
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([active, updatedAt(sort: Desc)])
+  @@index([kind, updatedAt(sort: Desc)])
+}
+
+model Quote {
+  id            String  @id @default(cuid())
+  publicId      String  @unique // id no adivinable de la URL /c/:publicId
+  ownerId       String // AdminUser.id
+  status        String  @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  clientName    String
+  clientContact String?
+  clientEmail   String?
+  sector        String?
+  title         String
+  subtitle      String?
+  currency      String  @default("COP")
+
+  content       Json // documento: secciones narrativas, cronograma, condiciones
+  pricing       Json // { items: [{code,name,price,weeks,deliverables,on}], scale: [...] }
+  discountScale Json?
+
+  totalBase   Int       @default(0)
+  totalFinal  Int       @default(0)
+  weeks       Int       @default(0)
+  moduleCount Int       @default(0)
+  validDays   Int       @default(45)
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipients QuoteRecipient[]
+  events     QuoteEvent[]
+  messages   QuoteMessage[]
+
+  @@index([ownerId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model QuoteRecipient {
+  id          String    @id @default(cuid())
+  quoteId     String
+  token       String    @unique // /c/:publicId?d=<token>
+  name        String
+  email       String?
+  role        String?
+  sentAt      DateTime?
+  firstSeenAt DateTime?
+  lastSeenAt  DateTime?
+  openCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  quote       Quote     @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+}
+
+model QuoteEvent {
+  id          String   @id @default(cuid())
+  quoteId     String
+  recipientId String?
+  type        String // view | heartbeat | section | toggle | preset | pdf | cta
+  sectionId   String?
+  moduleCode  String?
+  value       String?
+  durationMs  Int?
+  visitorId   String?
+  sessionId   String?
+  country     String?
+  region      String?
+  city        String?
+  referrer    String?
+  userAgent   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId, createdAt(sort: Desc)])
+  @@index([quoteId, type, createdAt(sort: Desc)])
+  @@index([recipientId, createdAt(sort: Desc)])
+}
+
+model QuoteMessage {
+  id        String   @id @default(cuid())
+  quoteId   String
+  role      String // user | assistant
+  content   String
+  meta      Json? // { providerUsed, patch }
+  createdAt DateTime @default(now())
+  quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId, createdAt])
 }

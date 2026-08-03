@@ -36,6 +36,7 @@ const BiApp = lazyWithRetry(() => import('./bi/BiApp'))
 const ControlApp = lazyWithRetry(() => import('./control/ControlApp'))
 const PublicBoard = lazyWithRetry(() => import('./control/PublicBoard'))
 const EcosistemaApp = lazyWithRetry(() => import('./ecosistema/EcosistemaApp'))
+const QuoteViewer = lazyWithRetry(() => import('./cotizacion/QuoteViewer'))
 
 const LoginPage = lazyWithRetry(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const Dashboard = lazyWithRetry(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
@@ -283,6 +284,7 @@ function App() {
         <Suspense fallback={<RouteLoader />}>
           <Routes>
             <Route path="/board/:token" element={<PublicBoard />} />
+            <Route path="/c/:publicId" element={<QuoteViewer />} />
             <Route path="/control/*" element={<ControlApp />} />
             <Route path="/ecosistema/*" element={<EcosistemaApp />} />
             <Route path="/*" element={<BiApp />} />
@@ -335,6 +337,7 @@ function App() {
               {/* Project Control (tableros customizables) */}
               <Route path="/control/*" element={<ControlApp />} />
               <Route path="/board/:token" element={<PublicBoard />} />
+              <Route path="/c/:publicId" element={<QuoteViewer />} />
 
               {/* Ecosistema digital Algoritmo T (portal de módulos por permiso) */}
               <Route path="/ecosistema/*" element={<EcosistemaApp />} />

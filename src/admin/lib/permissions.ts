@@ -15,6 +15,7 @@ export const ADMIN_MODULES = [
   'DOCUMENTS',
   'BI',
   'PROJECT_CONTROL',
+  'COTIZADOR',
   'PROFE_TABLA',
   'MIS_PROYECTOS',
   'ADMIN_BRIDGE',
@@ -41,6 +42,7 @@ export const ADMIN_MODULE_LABELS: Record<AdminModuleKey, string> = {
   DOCUMENTS: 'Gestor Documental',
   BI: 'Algoritmo BI',
   PROJECT_CONTROL: 'Project Control',
+  COTIZADOR: 'Cotizador',
   PROFE_TABLA: 'ProfeTabla (externo)',
   MIS_PROYECTOS: 'Mis Proyectos (externo)',
   ADMIN_BRIDGE: 'Acceso puente (panel admin)',
@@ -113,6 +115,7 @@ const ROUTE_MODULES: Array<{ prefix: string; module: AdminModuleKey }> = [
   { prefix: '/admin/users', module: 'USERS' },
   { prefix: '/admin/bookings', module: 'BOOKINGS' },
   { prefix: '/admin/documentos', module: 'DOCUMENTS' },
+  { prefix: '/ecosistema/cotizador', module: 'COTIZADOR' },
 ]
 
 export function getAdminModuleForPath(pathname: string): AdminModuleKey | null {
@@ -127,7 +130,7 @@ export const ADMIN_ROLES: AdminRoleKey[] = ['SUPERADMIN', 'ADMIN']
 
 /**
  * Módulos de gestión del panel: solo SUPERADMIN/ADMIN. Los demás módulos
- * (LEADS, BOOKINGS, DOCUMENTS, ANALYTICS, BI, PROJECT_CONTROL) se gobiernan por
+ * (LEADS, BOOKINGS, DOCUMENTS, ANALYTICS, BI, PROJECT_CONTROL, COTIZADOR) se gobiernan por
  * permiso y son accesibles a usuarios no-admin desde el Ecosistema.
  */
 export const ADMIN_ONLY_MODULES: AdminModuleKey[] = [
