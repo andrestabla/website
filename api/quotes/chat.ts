@@ -32,7 +32,7 @@ const strArray = (v: unknown, max = 12) =>
 
 /** Presupuesto de contexto documental, en caracteres (~30k tokens: holgado en gpt-4o).
  *  Debe alcanzar para los casos históricos completos más los documentos de metodología. */
-const KNOWLEDGE_BUDGET = 120_000
+const KNOWLEDGE_BUDGET = 260_000
 const HISTORY_TURNS = 16
 
 const SYSTEM_RULES = `

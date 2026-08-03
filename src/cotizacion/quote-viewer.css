@@ -373,3 +373,132 @@
   .qv-mod.is-off h3, .qv-mod.is-off .md-p { color: var(--faint); }
   .qv-mod.is-off .md-p { text-decoration: line-through; }
 }
+
+/* ---------- subtítulos y texto compacto ---------- */
+.qv-subtitle {
+  font-family: var(--sans); font-weight: 700; font-size: 17px; color: var(--navy);
+  margin: 22px 0 4px; letter-spacing: -0.02em;
+}
+.qv-compact { font-size: 13px; color: var(--ink-soft); }
+
+/* ---------- arquitectura en capas ---------- */
+.qv-arch { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 14px 0 6px; }
+.qv-arch .ar { background: var(--paper-2); border: 1px solid var(--line-strong); padding: 12px 13px; }
+.qv-arch .ar-n {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--cyan-deep); margin-bottom: 6px;
+}
+.qv-arch .ar-t { font-family: var(--sans); font-weight: 700; font-size: 13.5px; color: var(--navy); margin-bottom: 5px; letter-spacing: -0.015em; }
+.qv-arch .ar-d { font-size: 11px; color: var(--muted); line-height: 1.45; }
+
+/* stack tecnológico */
+.qv-stack { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+.qv-stack th {
+  font-family: var(--mono); font-size: 9px; font-weight: 500; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); text-align: left;
+  padding: 0 8px 8px; border-bottom: 1px solid var(--ink);
+}
+.qv-stack td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.42; }
+.qv-stack .sk-c { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan-deep); white-space: nowrap; }
+.qv-stack .sk-t { font-family: var(--sans); font-weight: 700; font-size: 12.5px; color: var(--navy); white-space: nowrap; }
+
+/* ---------- capturas de la plataforma ---------- */
+.qv-shots { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+@media (max-width: 700px) { .qv-shots { grid-template-columns: 1fr; } }
+.qv-shot { margin: 0; border: 1px solid var(--line-strong); background: var(--card); }
+.qv-shot.wide { grid-column: 1 / -1; }
+.qv-shot img { display: block; width: 100%; height: auto; }
+.qv-shot figcaption {
+  display: flex; align-items: baseline; gap: 9px; padding: 8px 12px;
+  background: var(--paper-2); border-top: 1px solid var(--line-strong);
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.04em; color: var(--muted); line-height: 1.5;
+}
+.qv-shot figcaption b { color: var(--cyan-deep); font-weight: 600; flex: none; text-transform: uppercase; letter-spacing: 0.1em; font-size: 8.5px; }
+.qv-shotnote { font-family: var(--mono); font-size: 10.5px; color: var(--faint); margin-top: 12px; line-height: 1.6; }
+
+/* ---------- entregables del núcleo ---------- */
+.qv-deliv { list-style: none; margin: 4px 0 10px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+.qv-deliv.one { grid-template-columns: 1fr; }
+@media (max-width: 640px) { .qv-deliv { grid-template-columns: 1fr; } }
+.qv-deliv li { position: relative; padding: 4.5px 0 4.5px 16px; border-bottom: 1px solid var(--line); font-size: 11.5px; line-height: 1.45; color: var(--ink-soft); }
+.qv-deliv li::before { content: ''; position: absolute; left: 0; top: 10px; width: 6px; height: 6px; background: var(--cyan-fill); border: 1px solid var(--cyan); }
+.qv-deliv li b { color: var(--navy); font-weight: 600; }
+
+/* ---------- cronograma ---------- */
+.qv-crono { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11.5px; min-width: 620px; }
+.qv-crono th {
+  font-family: var(--mono); font-size: 9px; font-weight: 500; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--muted); padding: 0 3px 9px; text-align: center;
+}
+.qv-crono th:first-child { text-align: left; }
+.qv-crono td { padding: 4.5px 3px; border-top: 1px solid var(--line); }
+.qv-crono td:first-child { font-family: var(--sans); font-size: 11.5px; color: var(--ink); padding-right: 12px; min-width: 210px; }
+.qv-crono tr.grp td {
+  border-top: 1.5px solid var(--line-strong); padding-top: 9px; padding-bottom: 3px;
+  font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--cyan-deep); white-space: nowrap;
+}
+.qv-crono tr.off td { opacity: 0.3; }
+.qv-crono tr.off td:first-child { text-decoration: line-through; }
+.qv-crono .gbar { height: 9px; background: var(--paper-2); border: 1px solid var(--line-strong); }
+.qv-crono .gbar.on { background: var(--cyan-fill); border-color: var(--cyan); }
+.qv-crono .gbar.hito { background: var(--gold-fill); border-color: var(--gold); }
+.qv-crono-legend { display: flex; gap: 20px; margin-top: 14px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); flex-wrap: wrap; }
+.qv-crono-legend span { display: flex; align-items: center; gap: 7px; }
+.qv-crono-legend i { width: 15px; height: 10px; display: inline-block; border: 1px solid var(--line-strong); }
+.qv-crono-legend i.on { background: var(--cyan-fill); border-color: var(--cyan); }
+.qv-crono-legend i.hito { background: var(--gold-fill); border-color: var(--gold); }
+.qv-crono-legend .txt { color: var(--faint); }
+
+/* ---------- tabla de inversión ---------- */
+.qv-inv { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12.5px; }
+.qv-inv th {
+  font-family: var(--mono); font-size: 9.5px; font-weight: 500; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted); text-align: left;
+  padding: 0 6px 10px; border-bottom: 1px solid var(--ink);
+}
+.qv-inv th:nth-child(2), .qv-inv td:nth-child(2) { text-align: center; }
+.qv-inv th:last-child, .qv-inv td:last-child { text-align: right; }
+.qv-inv td { padding: 5.5px 6px; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+.qv-inv .ci { font-family: var(--sans); font-weight: 600; font-size: 13px; color: var(--navy); }
+.qv-inv .cn { font-family: var(--mono); color: var(--muted); font-size: 11.5px; }
+.qv-inv .cv { font-family: var(--mono); color: var(--ink-soft); white-space: nowrap; }
+.qv-inv tr.grp td {
+  border-bottom: 1px solid var(--line-strong); padding-top: 12px; padding-bottom: 4px;
+  font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--cyan-deep); text-align: left !important;
+}
+.qv-inv tr.off { opacity: 0.38; }
+.qv-inv tr.off .cv { text-decoration: line-through; }
+.qv-inv tr.sub td { border-bottom: 1px solid var(--line-strong); padding-top: 11px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.qv-inv tr.sub td:first-child { font-family: var(--sans); font-weight: 600; font-size: 13px; color: var(--ink); }
+.qv-inv tr.dto td { border-bottom: 1px solid var(--line-strong); padding: 7px 6px; }
+.qv-inv tr.dto td:first-child { font-family: var(--sans); font-weight: 600; font-size: 12.5px; color: var(--cyan-deep); }
+.qv-inv tr.dto .cv { color: var(--cyan-deep); font-weight: 600; }
+.qv-inv tr.tot td { border-bottom: 0; padding-top: 13px; }
+.qv-inv tr.tot .lab { font-family: var(--sans); font-weight: 700; font-size: 16px; color: var(--navy); }
+.qv-inv tr.tot .big {
+  display: inline-block; white-space: nowrap; font-family: var(--mono); font-weight: 700;
+  font-size: 18px; color: var(--navy); border-bottom: 2px solid var(--gold-fill); padding-bottom: 3px;
+}
+
+/* ---------- equipo ---------- */
+.qv-team { list-style: none; margin: 14px 0 0; padding: 0; }
+.qv-team > li {
+  display: grid; grid-template-columns: minmax(200px, 240px) 1fr; gap: 20px;
+  align-items: start; padding: 13px 0; border-top: 1px solid var(--line);
+}
+@media (max-width: 640px) { .qv-team > li { grid-template-columns: 1fr; gap: 7px; } }
+.qv-team > li:last-child { border-bottom: 1px solid var(--line); }
+.qv-team .tm-head { display: flex; gap: 12px; align-items: baseline; }
+.qv-team .tm-n { font-family: var(--mono); font-size: 12px; color: var(--gold); flex: none; }
+.qv-team h4 { font-family: var(--sans); font-weight: 700; font-size: 15px; color: var(--navy); margin: 0; line-height: 1.2; letter-spacing: -0.012em; }
+.qv-team .tm-resp { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; letter-spacing: 0.02em; }
+.qv-team .tm-fns { list-style: none; margin: 0; padding: 0; }
+.qv-team .tm-fns li { position: relative; padding-left: 14px; font-size: 12px; color: var(--ink-soft); line-height: 1.45; margin-bottom: 3px; }
+.qv-team .tm-fns li::before { content: '–'; position: absolute; left: 0; color: var(--cyan-deep); font-weight: 600; }
+
+@media print {
+  .qv-shot { break-inside: avoid; }
+  .qv-crono .gbar, .qv-crono-legend i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

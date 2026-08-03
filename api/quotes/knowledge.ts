@@ -51,10 +51,15 @@ async function extractText(buffer: Buffer, fileName: string, mimeType: string): 
     return String(result?.value || '')
   }
   if (isPdf) {
+    // pdf-parse v2: API de clase (PDFParse → getText)
     const mod: any = await import('pdf-parse')
-    const parse = mod.default ?? mod
-    const result = await parse(buffer)
-    return String(result?.text || '')
+    const parser = new mod.PDFParse({ data: new Uint8Array(buffer) })
+    try {
+      const result = await parser.getText()
+      return String(result?.text || '')
+    } finally {
+      await parser.destroy().catch(() => undefined)
+    }
   }
   // .txt, .md, .html y cualquier otro texto plano
   return buffer.toString('utf8')

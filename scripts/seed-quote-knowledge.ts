@@ -127,3 +127,139 @@ for (const source of SOURCES) {
 
 const total = await db.quoteKnowledgeDoc.count({ where: { active: true } })
 console.log(`\nBase de contexto: ${created} creados · ${updated} actualizados · ${total} documentos activos`)
+
+// ─── Segunda tanda: líneas de servicio de educación digital y plataformas ────
+// Carpetas con formatos mixtos (docx, pdf, html). Se extrae el texto y se carga
+// un documento por archivo relevante, con tope de 16k caracteres cada uno.
+
+const MAX_CHARS_2 = 16_000
+
+async function extractFile(file: string): Promise<string> {
+  const buffer = readFileSync(file)
+  const lower = file.toLowerCase()
+  if (lower.endsWith('.docx')) {
+    const mammoth: any = await import('mammoth')
+    const result = await (mammoth.default ?? mammoth).extractRawText({ buffer })
+    return String(result?.value || '')
+  }
+  if (lower.endsWith('.pdf')) {
+    // pdf-parse v2: API de clase (PDFParse → getText)
+    const mod: any = await import('pdf-parse')
+    const parser = new mod.PDFParse({ data: new Uint8Array(buffer) })
+    try {
+      const result = await parser.getText()
+      return String(result?.text || '')
+    } finally {
+      await parser.destroy().catch(() => undefined)
+    }
+  }
+  return htmlToText(buffer.toString('utf8'))
+}
+
+type BatchSource = { file: string; title: string; summary: string; line: string }
+
+const BATCH2: BatchSource[] = [
+  {
+    file: `${BASE}/USCO/Producción de contenidos.docx`,
+    title: 'Caso · USCO — Producción de contenidos',
+    summary: 'Propuesta de producción de contenidos educativos digitales para la Universidad Surcolombiana.',
+    line: 'Producción de contenidos educativos',
+  },
+  {
+    file: `${BASE}/USCO/Creación de programas.docx`,
+    title: 'Caso · USCO — Creación de programas académicos',
+    summary: 'Propuesta de acompañamiento en creación de programas académicos para la Universidad Surcolombiana.',
+    line: 'Creación de programas académicos',
+  },
+  {
+    file: `${BASE}/Unicafam/Propuesta 20260304.docx`,
+    title: 'Caso mar-2026 · Unicafam',
+    summary: 'Propuesta comercial para la Fundación Universitaria Cafam (versión 2026-03-04).',
+    line: 'Educación digital',
+  },
+  {
+    file: `${BASE}/SanMartín/formacion-docente/index.html`,
+    title: 'Caso · Fundación Universitaria San Martín — Formación docente',
+    summary: 'Programa de formación docente para la Fundación Universitaria San Martín.',
+    line: 'Formación docente',
+  },
+  {
+    file: `${BASE}/UPC/Propuesta 20260303.docx`,
+    title: 'Caso mar-2026 · UPC',
+    summary: 'Propuesta comercial para la Universidad Popular del Cesar (versión 2026-03-03).',
+    line: 'Educación digital',
+  },
+  {
+    file: `${BASE}/UPC/Propuesta producción de contenidos.docx`,
+    title: 'Caso · UPC — Producción de contenidos',
+    summary: 'Propuesta de producción de contenidos educativos para la Universidad Popular del Cesar.',
+    line: 'Producción de contenidos educativos',
+  },
+  {
+    file: `${BASE}/Registro calificado/Insumos/Propuesta comercial de consultoría para estudio de mercado de nuevos programas académicos.docx`,
+    title: 'Caso · Estudio de mercado para nuevos programas académicos',
+    summary: 'Consultoría de estudio de mercado para registro calificado de nuevos programas académicos.',
+    line: 'Registro calificado y estudios de mercado',
+  },
+  {
+    file: `${BASE}/Registro calificado/Creación de programas — AlgoritmoT.pdf`,
+    title: 'Portafolio · Creación de programas académicos',
+    summary: 'Portafolio de servicio: acompañamiento integral en creación de programas y registro calificado.',
+    line: 'Registro calificado y estudios de mercado',
+  },
+  {
+    file: `${BASE}/ProfeTabla/ProfeTabla_Brochure_AlgoritmoT.pdf`,
+    title: 'Portafolio · ProfeTabla',
+    summary: 'Brochure de ProfeTabla, la plataforma educativa de Algoritmo T.',
+    line: 'Plataformas educativas',
+  },
+  {
+    file: `${BASE}/Plataforma LMS/Plataforma_LMS_AlgoritmoT.pdf`,
+    title: 'Portafolio · Plataforma LMS Algoritmo T',
+    summary: 'Oferta de plataforma LMS de Algoritmo T: alcance, características y modelo de servicio.',
+    line: 'Plataformas educativas · LMS',
+  },
+]
+
+for (const source of BATCH2) {
+  let raw = ''
+  try {
+    raw = (await extractFile(source.file)).replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
+  } catch (error: any) {
+    console.log(`✗ ${source.title}: ${error?.message || error}`)
+    continue
+  }
+  if (raw.length < 200) {
+    console.log(`✗ ${source.title}: sin texto aprovechable (${raw.length} caracteres)`) // p. ej. PDF escaneado
+    continue
+  }
+  const header = [
+    '[COTIZACIÓN / PORTAFOLIO HISTÓRICO · ALGORITMO T]',
+    `Línea de servicio: ${source.line}`,
+    `Documento: ${source.title}`,
+    'Uso: referencia de alcances, estructura y rangos de precio para cotizaciones de esta línea.',
+  ].join('\n')
+  const content = `${header}\n\n--- TEXTO DEL DOCUMENTO ---\n\n${raw.slice(0, MAX_CHARS_2)}`
+
+  const existing = await db.quoteKnowledgeDoc.findFirst({ where: { title: source.title } })
+  const data = {
+    title: source.title,
+    kind: 'CASE',
+    sourceName: source.file.split('/').slice(-2).join('/'),
+    mimeType: source.file.endsWith('.pdf') ? 'application/pdf' : source.file.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/html',
+    content,
+    summary: source.summary,
+    charCount: content.length,
+    active: true,
+  }
+  if (existing) {
+    await db.quoteKnowledgeDoc.update({ where: { id: existing.id }, data })
+    console.log(`↻ ${source.title} · ${(content.length / 1000).toFixed(1)}k`)
+  } else {
+    await db.quoteKnowledgeDoc.create({ data })
+    console.log(`+ ${source.title} · ${(content.length / 1000).toFixed(1)}k`)
+  }
+}
+
+const total2 = await db.quoteKnowledgeDoc.count({ where: { active: true } })
+console.log(`\nBase de contexto total: ${total2} documentos activos`)

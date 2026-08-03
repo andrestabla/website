@@ -1,0 +1,382 @@
+{
+ "screens": [
+  {
+   "file": "ui-panel.png",
+   "caption": "Panel de inicio · ventas del mes, catálogo, clientes y unidades en bodega, con las obras por etapa editorial y los últimos pedidos",
+   "wide": true
+  },
+  {
+   "file": "ui-obra.png",
+   "caption": "Expediente de obra: la línea de tiempo del proceso editorial marca la etapa actual y el responsable de cada paso",
+   "wide": false
+  },
+  {
+   "file": "ui-inventario.png",
+   "caption": "Inventario de la línea física: existencias, valor a precio de lista, ejemplares en consignación y alertas de stock",
+   "wide": false
+  },
+  {
+   "file": "ui-analitica.png",
+   "caption": "Analítica · ventas del año contra la meta presupuestal, ticket promedio, ejemplares vendidos y cumplimiento, con desglose por región y por línea",
+   "wide": true
+  },
+  {
+   "file": "ui-analitica-mapa.png",
+   "caption": "Mapa de clientes: instituciones, librerías y convenios de Colombia, Latinoamérica y Europa, dimensionados por venta",
+   "wide": false
+  },
+  {
+   "file": "ui-cotizacion.png",
+   "caption": "Pedido en consignación: obras, edición, cantidad, descuento y total, con el paso siguiente del flujo siempre visible",
+   "wide": false
+  },
+  {
+   "file": "ui-permisos.png",
+   "caption": "Permisos: qué ve y qué edita cada rol, módulo por módulo, con excepciones para personas puntuales",
+   "wide": false
+  },
+  {
+   "file": "ui-catalogo.png",
+   "caption": "Catálogo público: mismo maestro que usa el equipo, con filtro por formato y por materia, y precio desde",
+   "wide": false
+  }
+ ],
+ "schedule_groups": [
+  {
+   "name": "Núcleo · semanas 1–2",
+   "rows": [
+    {
+     "label": "Kickoff, inventario de procesos y modelo de datos",
+     "on": [
+      1
+     ],
+     "hito": []
+    },
+    {
+     "label": "Infraestructura, ambientes y despliegue continuo",
+     "on": [
+      1
+     ],
+     "hito": []
+    },
+    {
+     "label": "Autenticación, roles y matriz de permisos",
+     "on": [
+      1,
+      2
+     ],
+     "hito": []
+    },
+    {
+     "label": "Maestros: obras, ediciones, autores, clientes y regiones",
+     "on": [
+      2
+     ],
+     "hito": []
+    },
+    {
+     "label": "Identidad gráfica y sistema de interfaz",
+     "on": [],
+     "hito": [
+      2
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Operación editorial · semanas 3–4",
+   "rows": [
+    {
+     "label": "M01 · Gestión editorial y plan de producción",
+     "on": [
+      3
+     ],
+     "hito": []
+    },
+    {
+     "label": "M02 · Inventarios y almacén",
+     "on": [
+      3
+     ],
+     "hito": []
+    },
+    {
+     "label": "M04 · Consignaciones y liquidación",
+     "on": [
+      4
+     ],
+     "hito": []
+    },
+    {
+     "label": "M09 · Regalías de autores",
+     "on": [
+      4
+     ],
+     "hito": []
+    },
+    {
+     "label": "M10 · Costos y rentabilidad por título",
+     "on": [
+      4
+     ],
+     "hito": []
+    }
+   ]
+  },
+  {
+   "name": "Comercial y financiero · semanas 4–6",
+   "rows": [
+    {
+     "label": "M03 · Cotizaciones y pedidos",
+     "on": [
+      4,
+      5
+     ],
+     "hito": []
+    },
+    {
+     "label": "M05 · Facturación, cartera y notas crédito",
+     "on": [
+      5
+     ],
+     "hito": []
+    },
+    {
+     "label": "M06 · Presupuesto anual y ejecución",
+     "on": [
+      5,
+      6
+     ],
+     "hito": []
+    },
+    {
+     "label": "M07 · Seguimiento por gestor comercial",
+     "on": [
+      6
+     ],
+     "hito": []
+    },
+    {
+     "label": "M08 · Analítica, tableros y mapas",
+     "on": [
+      6
+     ],
+     "hito": []
+    }
+   ]
+  },
+  {
+   "name": "Canal digital y salida a producción · semanas 7–8",
+   "rows": [
+    {
+     "label": "M11 · Portal público y catálogo en línea",
+     "on": [
+      7
+     ],
+     "hito": []
+    },
+    {
+     "label": "M12 · Tienda en línea y portal del cliente",
+     "on": [
+      7,
+      8
+     ],
+     "hito": []
+    },
+    {
+     "label": "M13 · Logística y gestión de entregas",
+     "on": [
+      7
+     ],
+     "hito": []
+    },
+    {
+     "label": "M14 · Integraciones e inteligencia artificial",
+     "on": [
+      7,
+      8
+     ],
+     "hito": []
+    },
+    {
+     "label": "Migración de datos, pruebas y capacitación",
+     "on": [
+      8
+     ],
+     "hito": []
+    },
+    {
+     "label": "Salida a producción y acompañamiento",
+     "on": [],
+     "hito": [
+      8
+     ]
+    }
+   ]
+  },
+  {
+   "name": "Hitos de aprobación",
+   "rows": [
+    {
+     "label": "Hito 01 · S2 · Hito 02 · S4 · Hito 03 · S6 · Hito 04 · S8",
+     "on": [],
+     "hito": [
+      2,
+      4,
+      6,
+      8
+     ]
+    }
+   ]
+  }
+ ],
+ "layers": [
+  {
+   "name": "Capa 01",
+   "title": "Datos",
+   "desc": "Modelo relacional del oficio editorial: obras, ediciones, autores, clientes, movimientos, pedidos, presupuesto. Versionado con migraciones y respaldos automáticos."
+  },
+  {
+   "name": "Capa 02",
+   "title": "Dominio",
+   "desc": "Las reglas del negocio en un solo sitio: qué es stock disponible, cuándo se liquida una consignación, cómo se calcula una regalía, qué cuenta contra el presupuesto."
+  },
+  {
+   "name": "Capa 03",
+   "title": "Accesos",
+   "desc": "Cinco roles y una matriz de permisos que gobierna a la vez el menú, las páginas y las acciones. Cada persona ve lo suyo, y la dirección lo ve todo."
+  },
+  {
+   "name": "Capa 04",
+   "title": "Canales",
+   "desc": "Panel interno, portal público de catálogo, tienda en línea y portal del cliente. Cuatro experiencias sobre la misma verdad operativa."
+  }
+ ],
+ "stack": [
+  {
+   "component": "Aplicación",
+   "tech": "Next.js · React",
+   "what": "Interfaz rápida y responsive, renderizada en servidor. Un mismo código sirve el panel interno y el portal público."
+  },
+  {
+   "component": "Base de datos",
+   "tech": "PostgreSQL · Prisma",
+   "what": "Motor relacional maduro. Cada cambio de estructura queda registrado en una migración, con historial y reversión."
+  },
+  {
+   "component": "Infraestructura",
+   "tech": "Vercel",
+   "what": "Despliegue continuo, ambientes de prueba y producción separados, escalado automático y certificado SSL incluido."
+  },
+  {
+   "component": "Archivos",
+   "tech": "Cloudflare R2",
+   "what": "Portadas, PDF de muestra, archivos de edición y logotipos, servidos desde red global y sin costo de salida de datos."
+  },
+  {
+   "component": "Identidad",
+   "tech": "Auth.js",
+   "what": "Sesiones seguras, política de contraseñas, control de intentos fallidos y cierre automático por inactividad."
+  },
+  {
+   "component": "Inteligencia",
+   "tech": "OpenAI",
+   "what": "Redacción asistida de fichas de catálogo, normalización de datos en importaciones masivas y búsqueda por lenguaje natural."
+  }
+ ],
+ "team": [
+  {
+   "role": "Dirección de proyecto",
+   "dedication": "Dedicación 25% · las 8 semanas",
+   "functions": [
+    "Interlocución única con la dirección de la editorial",
+    "Gestión de hitos, alcance y actas de aprobación",
+    "Demostración funcional semanal y reporte de avance"
+   ]
+  },
+  {
+   "role": "Arquitectura y liderazgo técnico",
+   "dedication": "Dedicación 60% · las 8 semanas",
+   "functions": [
+    "Modelo de datos del dominio editorial y reglas de negocio",
+    "Infraestructura, seguridad, permisos y despliegue continuo",
+    "Revisión de código y calidad de cada módulo antes de entregar"
+   ]
+  },
+  {
+   "role": "Desarrollo full-stack",
+   "dedication": "Dos personas · dedicación completa",
+   "functions": [
+    "Construcción de los módulos activos, del dato a la pantalla",
+    "Importaciones, exportaciones y migración de la información histórica",
+    "Pruebas automatizadas de los flujos críticos de cada módulo"
+   ]
+  },
+  {
+   "role": "Diseño de producto e interfaz",
+   "dedication": "Dedicación 50% · semanas 1–6",
+   "functions": [
+    "Sistema de interfaz claro y consistente en todos los módulos",
+    "Aplicación de la identidad gráfica de Ediciones de la U",
+    "Diseño del portal público y de la experiencia de compra"
+   ]
+  },
+  {
+   "role": "Analista funcional y calidad",
+   "dedication": "Dedicación 50% · las 8 semanas",
+   "functions": [
+    "Levantamiento de reglas reales con el equipo de la editorial",
+    "Casos de prueba por módulo y validación con usuarios finales",
+    "Capacitación por rol y manual de operación"
+   ]
+  }
+ ],
+ "guarantees": [
+  {
+   "concept": "Garantía",
+   "text": "12 meses desde la salida a producción. Corrección de defectos sobre el alcance entregado, dentro del servicio de soporte."
+  },
+  {
+   "concept": "Propiedad",
+   "text": "100% de Ediciones de la U. Código fuente, datos y diseño, con licencia perpetua, usuarios ilimitados y crecimiento libre del catálogo."
+  },
+  {
+   "concept": "Servicio",
+   "text": "Renovación anual desde el mes 13. $ 8.000.000 COP al año por infraestructura y soporte de niveles 2, 3 y 4, con ajuste anual por IPC."
+  },
+  {
+   "concept": "Ampliación",
+   "text": "Módulos apagados hoy. Se incorporan después al precio unitario de esta propuesta, aprovechando todo lo construido."
+  }
+ ],
+ "milestones": [
+  {
+   "name": "Hito 01",
+   "week": "Fin S2",
+   "criterion": "Núcleo. La editorial ingresa con sus propios usuarios, ve el catálogo maestro cargado y comprueba que cada rol accede a lo que le corresponde."
+  },
+  {
+   "name": "Hito 02",
+   "week": "Fin S4",
+   "criterion": "Operación editorial. Los módulos activos de obra, inventario, consignación, regalías y costos funcionan con datos reales."
+  },
+  {
+   "name": "Hito 03",
+   "week": "Fin S6",
+   "criterion": "Comercial y financiero. Cotización, pedido, factura, cartera, presupuesto y seguimiento por gestor recorren un caso completo."
+  },
+  {
+   "name": "Hito 04",
+   "week": "Fin S8",
+   "criterion": "Producción. Portal y tienda publicados, datos históricos migrados, pruebas automatizadas en verde y equipo capacitado por rol."
+  }
+ ],
+ "boxes": {
+  "Por qué a la medida": "Un ERP de estantería suele obligar a la editorial a adaptar su operación al modelo del software. La consignación termina resolviéndose con ajustes parciales, las regalías se gestionan en una hoja aparte y el proceso editorial queda reducido a un campo de texto libre. Además, el cobro por usuario limita la adopción interna justo cuando la meta es que toda la editorial trabaje dentro del sistema. Un desarrollo propio, en cambio, se paga una vez, opera sobre una infraestructura de bajo costo marginal y puede crecer al ritmo del catálogo.",
+  "Propiedad, infraestructura y continuidad": "El código fuente, la base de datos y el diseño son propiedad de Ediciones de la U desde la primera semana, con licencia perpetua y usuarios ilimitados. Durante los doce primeros meses Algoritmo T provisiona y opera la infraestructura dentro del precio de implementación. Al vencer ese periodo la editorial elige: renovar el servicio, asumir la operación con su propio equipo o trasladarla a un tercero. En los tres casos se lleva todo; las dos últimas opciones tienen un costo de traslado y trasladan a la editorial el gasto de infraestructura.",
+  "Lectura de la cifra": "El núcleo concentra el trabajo de fondo que determina el costo de todo lo demás: modelo de datos, seguridad, despliegue y sistema de interfaz. Como ese trabajo se hace una sola vez, cada módulo adicional cuesta una fracción de lo que costaría por separado, y ampliar el alcance reduce el precio unitario de cada módulo, según la escala.",
+  "Cómo leer el plazo": "Las 8 semanas corresponden a la plataforma completa. Un alcance menor se ejecuta en menos tiempo, con un piso de 4 semanas: es lo que toman el núcleo, la migración de datos y la salida a producción, cualquiera sea el número de módulos activos.",
+  "Qué implica para el presupuesto de la editorial": "Durante el primer año el costo de operación de la plataforma es cero: hosting, base de datos, almacenamiento, consumo de inteligencia artificial y soporte quedan cubiertos. Desde el mes 13, la línea presupuestal anual es de $ 8.000.000 COP, un valor fijo que cubre a todos los usuarios y todo el catálogo, con independencia de cuánto crezcan.",
+  "Ritmo de trabajo": "Cada viernes hay una demostración funcional de 45 minutos sobre el ambiente real. Cada lunes, una sesión de 30 minutos para priorizar la semana. La editorial designa un contraparte funcional con capacidad de decisión: es el requisito crítico del proyecto."
+ }
+}

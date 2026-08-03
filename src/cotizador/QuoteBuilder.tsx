@@ -7,22 +7,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Send, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, Sparkles,
-  Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw,
+  Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw, PenSquare,
 } from 'lucide-react'
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
+import { ContentEditor } from './ContentEditor'
 import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type QuoteRecipient } from './api'
 
-type Tab = 'propuesta' | 'destinatarios' | 'metricas'
+type Tab = 'propuesta' | 'contenido' | 'destinatarios' | 'metricas'
 
 const SECTION_LABEL: Record<string, string> = {
   portada: 'Portada',
   presentacion: 'Presentación',
   diagnostico: 'Diagnóstico',
+  arquitectura: 'Arquitectura',
   enfoque: 'Enfoque',
+  pantallas: 'Capturas',
   modulos: 'Módulos',
   configurador: 'Configurador',
+  cronograma: 'Cronograma',
+  inversion: 'Inversión',
   pagos: 'Plan de pagos',
   servicio: 'Servicio',
+  equipo: 'Equipo',
   condiciones: 'Condiciones',
   cierre: 'Cierre',
 }
@@ -281,7 +287,7 @@ export function QuoteBuilder() {
         {/* ── Estado ── */}
         <section className="flex flex-col">
           <nav className="flex gap-1 border-b border-slate-200 bg-white px-4 pt-2 sm:px-6">
-            {([['propuesta', 'Propuesta', FileText], ['destinatarios', 'Destinatarios', Users], ['metricas', 'Métricas', BarChart2]] as const).map(([key, label, Icon]) => (
+            {([['propuesta', 'Propuesta', FileText], ['contenido', 'Contenido', PenSquare], ['destinatarios', 'Destinatarios', Users], ['metricas', 'Métricas', BarChart2]] as const).map(([key, label, Icon]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
@@ -354,6 +360,18 @@ export function QuoteBuilder() {
                   </ul>
                 </div>
               </div>
+            )}
+
+            {tab === 'contenido' && (
+              <ContentEditor
+                key={quote.id}
+                quoteId={quoteId}
+                quote={quote}
+                onSaved={(saved) => {
+                  setQuote(saved)
+                  setItems(Array.isArray(saved?.pricing?.items) ? saved.pricing.items : items)
+                }}
+              />
             )}
 
             {tab === 'destinatarios' && (
