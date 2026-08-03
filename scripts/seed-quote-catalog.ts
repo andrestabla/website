@@ -18,6 +18,8 @@ type Row = {
   name: string
   summary: string
   category: string
+  template?: 'PRODUCTO' | 'SERVICIO'
+  unit?: string
   kind?: 'CORE' | 'MODULE'
   price: number
   weeks: number
@@ -232,6 +234,85 @@ const CATALOG: Row[] = [
   },
 ]
 
+/**
+ * Plantilla SERVICIO: precio POR UNIDAD, anclado al histórico real de la casa
+ * (La Salle, USCO/UPC, San Martín, Registro calificado, portafolios). Ajustable
+ * por cotización con cantidades.
+ */
+const SERVICE_CATALOG: Row[] = [
+  {
+    code: 'SV01',
+    name: 'Producción de curso virtual completo',
+    summary:
+      'Diseño instruccional, guion, producción multimedia, montaje en plataforma y control de calidad de un curso virtual completo. Precio del paquete estándar del histórico USCO/UPC (rango 6–8,5 M según complejidad).',
+    category: 'Producción académica',
+    template: 'SERVICIO',
+    unit: 'curso',
+    price: 6_000_000,
+    weeks: 1.5,
+    deliverables: 4,
+    defaultOn: true,
+    tags: ['curso virtual', 'producción', 'diseño instruccional'],
+  },
+  {
+    code: 'SV02',
+    name: 'Recurso educativo digital (unidad)',
+    summary:
+      'Recurso educativo digital interactivo en versión web (.html): guion, diseño, desarrollo y ajustes. Precio unitario del caso Universidad de La Salle (67 recursos, con escala por volumen).',
+    category: 'Producción académica',
+    template: 'SERVICIO',
+    unit: 'recurso',
+    price: 680_000,
+    weeks: 0.12,
+    deliverables: 1,
+    defaultOn: false,
+    tags: ['recurso digital', 'RED', 'html'],
+  },
+  {
+    code: 'SV03',
+    name: 'Programa de formación docente',
+    summary:
+      'Programa de formación docente en competencias digitales y pedagógicas, con talleres, acompañamiento y certificación. Precio del caso Fundación Universitaria San Martín.',
+    category: 'Formación',
+    template: 'SERVICIO',
+    unit: 'programa',
+    price: 17_600_000,
+    weeks: 4,
+    deliverables: 6,
+    defaultOn: false,
+    tags: ['formación docente', 'talleres'],
+  },
+  {
+    code: 'SV04',
+    name: 'Estudio de mercado para nuevos programas académicos',
+    summary:
+      'Consultoría de estudio de mercado para registro calificado: demanda, oferta comparada, empleabilidad y pertinencia. Precio del caso Registro calificado.',
+    category: 'Consultoría académica',
+    template: 'SERVICIO',
+    unit: 'estudio',
+    price: 98_000_000,
+    weeks: 8,
+    deliverables: 5,
+    defaultOn: false,
+    tags: ['estudio de mercado', 'registro calificado'],
+  },
+  {
+    code: 'SV05',
+    name: 'Creación de programa académico (registro calificado)',
+    summary:
+      'Acompañamiento integral en la creación de un programa académico: documento maestro, condiciones de calidad y radicación. Precio del portafolio de creación de programas (tramo medio 30–65 M).',
+    category: 'Consultoría académica',
+    template: 'SERVICIO',
+    unit: 'programa',
+    price: 40_000_000,
+    weeks: 10,
+    deliverables: 8,
+    defaultOn: false,
+    tags: ['creación de programas', 'registro calificado', 'documento maestro'],
+  },
+]
+CATALOG.push(...SERVICE_CATALOG)
+
 async function main() {
   let created = 0
   let updated = 0
@@ -240,6 +321,8 @@ async function main() {
       name: row.name,
       summary: row.summary,
       category: row.category,
+      template: (row as any).template ?? 'PRODUCTO',
+      unit: (row as any).unit ?? null,
       kind: row.kind ?? 'MODULE',
       price: row.price,
       currency: 'COP',

@@ -17,7 +17,7 @@ const quoteDb = () => (prisma as any).quote
 const recipientDb = () => (prisma as any).quoteRecipient
 const eventDb = () => (prisma as any).quoteEvent
 
-const EVENT_TYPES = new Set(['view', 'heartbeat', 'section', 'toggle', 'preset', 'pdf', 'cta'])
+const EVENT_TYPES = new Set(['view', 'heartbeat', 'section', 'toggle', 'qty', 'preset', 'pdf', 'cta'])
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {

@@ -14,6 +14,8 @@ import {
   catalogMap,
   computeTotals,
   formatMoney,
+  QUOTE_TEMPLATES,
+  normalizeTemplate,
   type QuoteItem,
 } from '../_lib/quotes.js'
 
@@ -72,25 +74,38 @@ ESTILO (la casa es estricta con esto)
 /** Aplica los cambios de módulos que propuso el modelo, contra el catálogo real. */
 function applyModulePatch(
   items: QuoteItem[],
-  patch: { on?: string[] | null; off?: string[] | null },
+  patch: { on?: string[] | null; off?: string[] | null; qty?: Array<{ code?: string; qty?: number }> | null },
   catalog: Map<string, any>
 ) {
-  const on = new Set((patch.on ?? []).map((c) => c.toUpperCase()))
-  const off = new Set((patch.off ?? []).map((c) => c.toUpperCase()))
+  const on = new Set((patch.on ?? []).map((c) => String(c).toUpperCase()))
+  const off = new Set((patch.off ?? []).map((c) => String(c).toUpperCase()))
+  const qtyBy = new Map<string, number>()
+  for (const entry of patch.qty ?? []) {
+    const code = String(entry?.code ?? '').toUpperCase()
+    const qty = Math.round(Number(entry?.qty))
+    if (code && Number.isFinite(qty)) qtyBy.set(code, Math.min(999, Math.max(1, qty)))
+  }
   const applied: string[] = []
 
   const next = items.map((item) => {
-    if (item.kind === 'CORE') return item // el núcleo no se apaga
+    let out = item
     const code = item.code.toUpperCase()
-    if (on.has(code) && !item.on) {
-      applied.push(`+${item.code}`)
-      return { ...item, on: true }
+    if (item.kind !== 'CORE') {
+      if (on.has(code) && !out.on) {
+        applied.push(`+${item.code}`)
+        out = { ...out, on: true }
+      }
+      if (off.has(code) && out.on) {
+        applied.push(`−${item.code}`)
+        out = { ...out, on: false }
+      }
     }
-    if (off.has(code) && item.on) {
-      applied.push(`−${item.code}`)
-      return { ...item, on: false }
+    const qty = qtyBy.get(code)
+    if (qty !== undefined && qty !== (out.qty ?? 1)) {
+      applied.push(`${item.code}×${qty}`)
+      out = { ...out, qty }
     }
-    return item
+    return out
   })
 
   // Códigos que el modelo pidió encender y no están en la cotización: los añade desde el catálogo.
@@ -105,12 +120,14 @@ function applyModulePatch(
       category: source.category,
       kind: source.kind === 'CORE' ? 'CORE' : 'MODULE',
       price: source.price,
+      qty: qtyBy.get(code) ?? 1,
+      unit: source.unit ?? null,
       weeks: Number(source.weeks) || 0,
       deliverables: source.deliverables,
       on: true,
       detail: source.detail ?? null,
     })
-    applied.push(`+${source.code}`)
+    applied.push(`+${source.code}${qtyBy.has(code) ? `×${qtyBy.get(code)}` : ''}`)
   }
 
   return { items: next, applied }
@@ -332,8 +349,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ ok: false, error: 'Esta cotización es de otro usuario' })
     }
 
+    const template = normalizeTemplate(quote.template)
     const [catalogRows, history, docs] = await Promise.all([
-      loadCatalog(),
+      loadCatalog(template),
       msgDb().findMany({ where: { quoteId }, orderBy: { createdAt: 'desc' }, take: HISTORY_TURNS }),
       knowledgeDb().findMany({
         where: { active: true },
@@ -390,12 +408,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .map(
         (r: any) =>
           `- ${r.code} · ${r.name} · ${r.category} · ${r.kind === 'CORE' ? 'OBLIGATORIO' : 'opcional'} · ` +
-          `${formatMoney(r.price, r.currency)} · ${r.deliverables} entregables · ${r.weeks} sem\n  ${r.summary}`
+          `${formatMoney(r.price, r.currency)}${r.unit ? ` por ${r.unit}` : ''} · ${r.deliverables} entregables · ${r.weeks} sem\n  ${r.summary}`
       )
       .join('\n')
 
-    const activeCodes = items.filter((i) => i.on || i.kind === 'CORE').map((i) => i.code)
-    const totals = computeTotals(items, { scale: quote.discountScale })
+    const activeCodes = items
+      .filter((i) => i.on || i.kind === 'CORE')
+      .map((i) => `${i.code}${(i.qty ?? 1) > 1 ? `×${i.qty}` : ''}`)
+    const totals = computeTotals(items, { scale: quote.discountScale, minWeeks: QUOTE_TEMPLATES[template].minWeeks })
 
     const transcript = history
       .slice()
@@ -418,6 +438,7 @@ Si el consultor pregunta por un caso del índice que no está en detalle, dilo y
 explícitamente en su siguiente mensaje para traerlo al contexto.
 
 ## ESTADO ACTUAL DE LA COTIZACIÓN
+Plantilla: ${template} — ${QUOTE_TEMPLATES[template].description}
 Cliente: ${quote.clientName}${quote.sector ? ` · Sector: ${quote.sector}` : ''}
 Título: ${quote.title}
 Módulos activos (${totals.moduleCount}): ${activeCodes.join(', ') || 'ninguno'}
@@ -450,7 +471,7 @@ CONSULTOR: ${message}
   "reply": "tu respuesta al consultor, 2 a 5 frases; si redactaste algo, dilo y ofrece el siguiente paso",
   "patch": {
     "clientName": "opcional", "sector": "opcional", "title": "opcional", "subtitle": "opcional",
-    "modules": { "on": ["M03"], "off": ["M12"] },
+    "modules": { "on": ["M03"], "off": ["M12"], "qty": [{ "code": "SV01", "qty": 5 }] },
     "content": {
       "intro": "carta, párrafos separados por \\n\\n",
       "diagnosis": { "lede": "", "fronts": [{ "title": "", "body": "", "needs": "" }], "note": { "title": "", "body": "" } },
@@ -483,6 +504,8 @@ CONSULTOR: ${message}
   }
 }
 REGLAS DEL PATCH
+- Plantilla SERVICIO: las líneas tienen precio POR UNIDAD; fija cantidades con "modules.qty"
+  (p. ej. 5 cursos → {"code":"SV01","qty":5}) y apaga las líneas que no apliquen. No hay núcleo.
 - Incluye SOLO las claves que cambian en este turno; lo demás se conserva. Sin cambios: "patch": {}.
 - Las listas (fronts, layers, stack, groups, milestones, levels, team, guarantees, assumptions, exclusions)
   REEMPLAZAN la lista completa: si agregas o quitas un elemento, reenvía la lista entera ya corregida.
@@ -492,7 +515,20 @@ REGLAS DEL PATCH
 - En "service", solo cambia cifras (includedMonths/renewalPrice/exitPrice) si el consultor las dictó explícitamente.
 `.trim()
 
-    const { data, providerUsed } = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 3800 })
+    // La organización de OpenAI limita tokens/minuto: ante un 429 se reintenta
+    // una vez tras una pausa corta antes de rendirse.
+    let aiResult
+    try {
+      aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 3800 })
+    } catch (error: any) {
+      if (/rate limit|tokens per min|TPM/i.test(String(error?.message))) {
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 3800 })
+      } else {
+        throw error
+      }
+    }
+    const { data, providerUsed } = aiResult
 
     const reply = str(data?.reply, 3000) || 'Listo.'
     const patch = data?.patch && typeof data.patch === 'object' ? data.patch : {}
@@ -542,7 +578,7 @@ REGLAS DEL PATCH
       }
     }
 
-    const nextTotals = computeTotals(nextItems, { scale: quote.discountScale })
+    const nextTotals = computeTotals(nextItems, { scale: quote.discountScale, minWeeks: QUOTE_TEMPLATES[template].minWeeks })
     if (nextItems !== items || nextTotals.total !== quote.totalFinal) {
       updates.pricing = { items: nextItems, totals: nextTotals }
       updates.totalBase = nextTotals.subtotal

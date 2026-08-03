@@ -54,6 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       quote: {
         publicId: quote.publicId,
         status: quote.status,
+        template: quote.template || 'PRODUCTO',
         clientName: quote.clientName,
         sector: quote.sector,
         title: quote.title,

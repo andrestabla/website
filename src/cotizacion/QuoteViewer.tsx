@@ -21,6 +21,7 @@ import './quote-viewer.css'
 type PublicQuote = {
   publicId: string
   status: string
+  template?: 'PRODUCTO' | 'SERVICIO'
   clientName: string
   sector?: string | null
   title: string
@@ -238,8 +239,13 @@ export default function QuoteViewer() {
     return () => observer.disconnect()
   }, [state, track])
 
+  const isService = quote?.template === 'SERVICIO'
   const scale = quote?.discountScale?.length ? quote.discountScale : DEFAULT_DISCOUNT_SCALE
-  const totals = useMemo(() => computeTotals(items, { scale }), [items, scale])
+  const flatScale = scale.every((tier: DiscountTier) => tier.pct === 0)
+  const totals = useMemo(
+    () => computeTotals(items, { scale, minWeeks: isService ? 2 : 4 }),
+    [items, scale, isService]
+  )
   const currency = quote?.currency || 'COP'
   const money = useCallback((n: number) => formatMoney(n, currency), [currency])
 
@@ -250,6 +256,14 @@ export default function QuoteViewer() {
     if (!current || current.kind === 'CORE') return
     track({ type: 'toggle', moduleCode: code, value: current.on ? 'off' : 'on' })
     setItems((prev) => prev.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i)))
+  }
+
+  const setQty = (code: string, qty: number) => {
+    const clamped = Math.min(999, Math.max(1, Math.round(qty) || 1))
+    const current = items.find((i) => i.code === code)
+    if (!current || (current.qty ?? 1) === clamped) return
+    track({ type: 'qty', moduleCode: code, value: String(clamped) })
+    setItems((prev) => prev.map((i) => (i.code === code ? { ...i, qty: clamped } : i)))
   }
 
   const applyPreset = (name: 'sugerida' | 'completa' | 'nucleo') => {
@@ -322,7 +336,7 @@ export default function QuoteViewer() {
           <div className="meta">
             <div className="m"><div className="ml">Cliente</div><div className="mv">{quote.clientName}</div></div>
             <div className="m"><div className="ml">Duración</div><div className="mv">{totals.weeks} semanas desde el kickoff</div></div>
-            <div className="m"><div className="ml">Alcance</div><div className="mv">Núcleo + {totals.moduleCount} módulos · {totals.deliverables} entregables</div></div>
+            <div className="m"><div className="ml">Alcance</div><div className="mv">{isService ? `${totals.moduleCount} ${totals.moduleCount === 1 ? 'línea' : 'líneas'} de servicio · ${totals.deliverables} entregables` : `Núcleo + ${totals.moduleCount} módulos · ${totals.deliverables} entregables`}</div></div>
             <div className="m"><div className="ml">Inversión</div><div className="mv">{money(totals.total)} {currency}</div></div>
           </div>
           <div className="tagline">Soluciones digitales con <b>sentido humano</b></div>
@@ -429,8 +443,16 @@ export default function QuoteViewer() {
 
         {/* Núcleo + módulos */}
         <section className="qv-section" data-qsec="modulos">
-          <SectionHead num={nextNum()} kicker="Alcance configurable" title="Núcleo y catálogo de módulos" />
-          <span className="qv-livehint">Interactivo · toca cada interruptor y la propuesta se recalcula</span>
+          <SectionHead
+            num={nextNum()}
+            kicker="Alcance configurable"
+            title={isService ? 'Servicios incluidos' : 'Núcleo y catálogo de módulos'}
+          />
+          <span className="qv-livehint">
+            {isService
+              ? 'Interactivo · ajusta cantidades y líneas, y la propuesta se recalcula'
+              : 'Interactivo · toca cada interruptor y la propuesta se recalcula'}
+          </span>
 
           {core.map((item) => (
             <article className="qv-mod core" key={item.code} style={{ marginBottom: 10 }}>
@@ -471,9 +493,22 @@ export default function QuoteViewer() {
                       </div>
                       <h3>{item.name}</h3>
                       <p>{item.summary}</p>
+                      {item.unit && item.on && (
+                        <div className="qv-qty">
+                          <span className="q-l">Cantidad de {item.unit}s</span>
+                          <button onClick={() => setQty(item.code, (item.qty ?? 1) - 1)} aria-label="Menos">−</button>
+                          <input
+                            type="number" min={1} max={999} value={item.qty ?? 1}
+                            onChange={(e) => setQty(item.code, Number(e.target.value))}
+                          />
+                          <button onClick={() => setQty(item.code, (item.qty ?? 1) + 1)} aria-label="Más">+</button>
+                        </div>
+                      )}
                       <div className="md-f">
-                        <span className="md-e">{item.deliverables} entregables</span>
-                        <span className="md-p">{money(item.price)}</span>
+                        <span className="md-e">{item.deliverables} entregables{item.unit ? ` por ${item.unit}` : ''}</span>
+                        <span className="md-p">
+                          {(item.qty ?? 1) > 1 ? `${item.qty} × ` : ''}{money(item.price)}{item.unit ? ` / ${item.unit}` : ''}
+                        </span>
                       </div>
                     </article>
                   ))}
@@ -501,7 +536,10 @@ export default function QuoteViewer() {
                 ))}
                 {active.length === 0 && <li className="cl-empty">Sin módulos adicionales seleccionados.</li>}
                 {active.map((item) => (
-                  <li key={item.code}><span>{item.code} · {item.name}</span><span className="cl-v">{money(item.price)}</span></li>
+                  <li key={item.code}>
+                    <span>{item.code} · {item.name}{(item.qty ?? 1) > 1 ? ` × ${item.qty}` : ''}</span>
+                    <span className="cl-v">{money(item.price * (item.qty ?? 1))}</span>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -527,7 +565,7 @@ export default function QuoteViewer() {
             </div>
           </div>
 
-          <div className="qv-escala">
+          {!flatScale && <div className="qv-escala">
             {scale.map((tier, index) => {
               const from = index === 0 ? 0 : scale[index - 1].upTo + 1
               const label = tier.upTo >= 90
@@ -541,7 +579,7 @@ export default function QuoteViewer() {
                 </span>
               )
             })}
-          </div>
+          </div>}
           {content.timelineNote && <ScopeBox title="Cómo leer el plazo" body={content.timelineNote} />}
         </section>
 
@@ -613,9 +651,9 @@ export default function QuoteViewer() {
                     .filter((i) => i.kind !== 'CORE' && (i.category || 'Módulos') === category)
                     .map((item) => (
                       <tr key={item.code} className={item.on ? '' : 'off'}>
-                        <td className="ci">{item.code} · {item.name}</td>
-                        <td className="cn">{item.deliverables}</td>
-                        <td className="cv">{money(item.price)}</td>
+                        <td className="ci">{item.code} · {item.name}{(item.qty ?? 1) > 1 ? ` × ${item.qty}` : ''}</td>
+                        <td className="cn">{(item.deliverables ?? 0) * (item.qty ?? 1)}</td>
+                        <td className="cv">{money(item.price * (item.qty ?? 1))}</td>
                       </tr>
                     )),
                 ])}

@@ -15,7 +15,11 @@ import {
   loadCatalog,
   catalogMap,
   DEFAULT_DISCOUNT_SCALE,
+  FLAT_DISCOUNT_SCALE,
+  QUOTE_TEMPLATES,
+  normalizeTemplate,
   type QuoteItem,
+  type QuoteTemplateKey,
 } from '../_lib/quotes.js'
 
 type VercelRequest = any
@@ -48,8 +52,11 @@ function emptyContent() {
 }
 
 /** Recalcula totales en el servidor y devuelve el registro listo para guardar. */
-async function priced(items: QuoteItem[], scale: any) {
-  const totals = computeTotals(items, { scale: Array.isArray(scale) && scale.length ? scale : undefined })
+async function priced(items: QuoteItem[], scale: any, template: QuoteTemplateKey = 'PRODUCTO') {
+  const totals = computeTotals(items, {
+    scale: Array.isArray(scale) && scale.length ? scale : undefined,
+    minWeeks: QUOTE_TEMPLATES[template].minWeeks,
+  })
   return {
     pricing: { items, totals },
     totalBase: totals.subtotal,
@@ -95,7 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         orderBy: { updatedAt: 'desc' },
         take: 100,
         select: {
-          id: true, publicId: true, status: true, clientName: true, title: true,
+          id: true, publicId: true, status: true, template: true, clientName: true, title: true,
           currency: true, totalFinal: true, weeks: true, moduleCount: true,
           publishedAt: true, createdAt: true, updatedAt: true, ownerId: true,
         },
@@ -128,7 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const [recipients, messages, catalog] = await Promise.all([
         recipientDb().findMany({ where: { quoteId: quote.id }, orderBy: { createdAt: 'asc' } }),
         (prisma as any).quoteMessage.findMany({ where: { quoteId: quote.id }, orderBy: { createdAt: 'asc' }, take: 200 }),
-        loadCatalog(),
+        loadCatalog(normalizeTemplate(quote.template)),
       ])
       return res.status(200).json({ ok: true, quote, recipients, messages, catalog })
     }
@@ -136,24 +143,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (op === 'create') {
       const clientName = str(body.clientName, 160)
       if (!clientName) return res.status(400).json({ ok: false, error: 'Falta el nombre del cliente' })
-      const catalog = await loadCatalog()
-      if (!catalog.length) return res.status(400).json({ ok: false, error: 'El catálogo está vacío' })
+      const template = normalizeTemplate(body.template)
+      const catalog = await loadCatalog(template)
+      if (!catalog.length) {
+        return res.status(400).json({ ok: false, error: `El catálogo de la plantilla ${template} está vacío` })
+      }
 
       const items = itemsFromCatalog(catalog)
-      const p = await priced(items, DEFAULT_DISCOUNT_SCALE)
+      const scale = template === 'SERVICIO' ? FLAT_DISCOUNT_SCALE : DEFAULT_DISCOUNT_SCALE
+      const p = await priced(items, scale, template)
+      const defaultTitle =
+        template === 'SERVICIO'
+          ? `Propuesta de servicios para ${clientName}`
+          : `Plataforma a la medida para ${clientName}`
+      const content = emptyContent()
+      if (template === 'SERVICIO') {
+        // los servicios no traen año de infraestructura por defecto
+        ;(content as any).service = { includedMonths: 0, renewalPrice: 0, exitPrice: 0 }
+      }
       const quote = await db().create({
         data: {
           publicId: newPublicId(),
           ownerId: userId,
+          template,
           clientName,
           clientContact: str(body.clientContact, 160) || null,
           clientEmail: str(body.clientEmail, 200) || null,
           sector: str(body.sector, 120) || null,
-          title: str(body.title, 200) || `Plataforma a la medida para ${clientName}`,
+          title: str(body.title, 200) || defaultTitle,
           subtitle: str(body.subtitle, 400) || null,
           currency: catalog[0]?.currency || 'COP',
-          content: emptyContent(),
-          discountScale: DEFAULT_DISCOUNT_SCALE,
+          content,
+          discountScale: scale,
           ...p,
         },
       })
@@ -177,10 +198,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         data.discountScale = body.discountScale
       }
       if (body.items !== undefined) {
-        const catalog = await loadCatalog()
+        const catalog = await loadCatalog(normalizeTemplate(quote.template))
         const items = normalizeItems(body.items, catalogMap(catalog))
         if (!items.length) return res.status(400).json({ ok: false, error: 'La cotización necesita al menos un ítem del catálogo' })
-        Object.assign(data, await priced(items, data.discountScale ?? quote.discountScale))
+        Object.assign(data, await priced(items, data.discountScale ?? quote.discountScale, normalizeTemplate(quote.template)))
       }
 
       const updated = await db().update({ where: { id: quote.id }, data })
@@ -204,6 +225,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           publicId: newPublicId(),
           ownerId: userId,
           status: 'DRAFT',
+          template: quote.template,
           clientName: str(body.clientName, 160) || `${quote.clientName} (copia)`,
           clientContact: quote.clientContact,
           clientEmail: quote.clientEmail,

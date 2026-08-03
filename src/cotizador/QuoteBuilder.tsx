@@ -110,8 +110,7 @@ export function QuoteBuilder() {
     }
   }
 
-  const toggleItem = async (code: string) => {
-    const next = items.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i))
+  const saveItems = async (next: QuoteItem[]) => {
     setItems(next) // optimista; el servidor recalcula y confirma
     try {
       const payload = await quotesApi.update(quoteId, { items: next })
@@ -121,6 +120,16 @@ export function QuoteBuilder() {
       setError(e.message)
       await load()
     }
+  }
+
+  const toggleItem = (code: string) =>
+    saveItems(items.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i)))
+
+  const setItemQty = (code: string, qty: number) => {
+    const clamped = Math.min(999, Math.max(1, Math.round(qty) || 1))
+    const current = items.find((i) => i.code === code)
+    if (!current || (current.qty ?? 1) === clamped) return
+    void saveItems(items.map((i) => (i.code === code ? { ...i, qty: clamped } : i)))
   }
 
   const togglePublish = async () => {
@@ -199,6 +208,9 @@ export function QuoteBuilder() {
         <span className={`ml-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${published ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
           {published ? 'Publicada' : 'Borrador'}
         </span>
+        {quote.template === 'SERVICIO' && (
+          <span className="shrink-0 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-700">Servicio</span>
+        )}
         <div className="flex-1" />
         <button
           onClick={() => copy(publicUrl, 'link')}
@@ -350,7 +362,19 @@ export function QuoteBuilder() {
                         <span className={`min-w-0 flex-1 truncate text-[13px] ${item.kind === 'CORE' ? 'font-bold text-slate-900' : item.on ? 'text-slate-700' : 'text-slate-400 line-through'}`}>
                           {item.name}
                         </span>
-                        <span className="shrink-0 font-mono text-[12px] text-slate-500">{money(item.price, currency)}</span>
+                        {item.unit && item.kind !== 'CORE' && (
+                          <input
+                            type="number" min={1} max={999}
+                            value={item.qty ?? 1}
+                            disabled={!item.on}
+                            onChange={(e) => setItemQty(item.code, Number(e.target.value))}
+                            className="w-14 shrink-0 rounded-lg border border-slate-300 px-1.5 py-0.5 text-center font-mono text-[12px] disabled:opacity-30"
+                            title={`Cantidad de ${item.unit}s`}
+                          />
+                        )}
+                        <span className="shrink-0 font-mono text-[12px] text-slate-500">
+                          {(item.qty ?? 1) > 1 ? `${item.qty} × ` : ''}{money(item.price, currency)}{item.unit ? `/${item.unit}` : ''}
+                        </span>
                         {item.kind === 'CORE' ? (
                           <span className="w-11 shrink-0 text-center text-[10px] font-bold uppercase text-slate-400">Fijo</span>
                         ) : (

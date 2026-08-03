@@ -4,6 +4,7 @@ export type QuoteListItem = {
   id: string
   publicId: string
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  template?: 'PRODUCTO' | 'SERVICIO'
   clientName: string
   title: string
   currency: string
@@ -52,7 +53,7 @@ async function post(path: string, body: Record<string, unknown>) {
 export const quotesApi = {
   list: () => post('/api/quotes/manage', { op: 'list' }),
   get: (quoteId: string) => post('/api/quotes/manage', { op: 'get', quoteId }),
-  create: (data: { clientName: string; sector?: string; clientContact?: string; clientEmail?: string }) =>
+  create: (data: { clientName: string; sector?: string; template?: 'PRODUCTO' | 'SERVICIO'; clientContact?: string; clientEmail?: string }) =>
     post('/api/quotes/manage', { op: 'create', ...data }),
   update: (quoteId: string, data: Record<string, unknown>) =>
     post('/api/quotes/manage', { op: 'update', quoteId, ...data }),

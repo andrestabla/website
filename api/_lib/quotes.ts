@@ -55,11 +55,36 @@ export type QuoteItem = {
   category?: string
   kind?: 'CORE' | 'MODULE'
   price: number
+  /** SERVICIO: cantidad de unidades (cursos, recursos…). PRODUCTO: siempre 1. */
+  qty?: number
+  unit?: string | null
   weeks?: number
   deliverables?: number
   on: boolean
   detail?: unknown
 }
+
+/** Plantillas de cotización disponibles. */
+export const QUOTE_TEMPLATES = {
+  PRODUCTO: {
+    label: 'Producto · Plataforma a la medida',
+    description: 'Núcleo obligatorio + módulos activables con economía de escala. Modelo de la plataforma editorial.',
+    minWeeks: 4,
+  },
+  SERVICIO: {
+    label: 'Servicio · Proyectos y producción',
+    description: 'Líneas de servicio por unidad (cursos, recursos, estudios) con cantidades. Sin núcleo ni descuento automático.',
+    minWeeks: 2,
+  },
+} as const
+export type QuoteTemplateKey = keyof typeof QUOTE_TEMPLATES
+export const normalizeTemplate = (v: unknown): QuoteTemplateKey =>
+  v === 'SERVICIO' ? 'SERVICIO' : 'PRODUCTO'
+
+/** Escala plana para servicios: el precio es unitario y no hay descuento automático. */
+export const FLAT_DISCOUNT_SCALE: DiscountTier[] = [{ upTo: 99, pct: 0 }]
+
+const itemQty = (item: QuoteItem) => Math.max(1, Math.round(Number(item.qty) || 1))
 
 export type DiscountTier = { upTo: number; pct: number }
 
@@ -108,8 +133,8 @@ export function computeTotals(
   const core = items.filter((i) => i.kind === 'CORE')
   const active = items.filter((i) => i.kind !== 'CORE' && i.on)
 
-  const coreTotal = core.reduce((sum, i) => sum + (Number(i.price) || 0), 0)
-  const modulesTotal = active.reduce((sum, i) => sum + (Number(i.price) || 0), 0)
+  const coreTotal = core.reduce((sum, i) => sum + (Number(i.price) || 0) * itemQty(i), 0)
+  const modulesTotal = active.reduce((sum, i) => sum + (Number(i.price) || 0) * itemQty(i), 0)
   const subtotal = coreTotal + modulesTotal
 
   const discountPct = tierFor(scale, active.length).pct
@@ -117,7 +142,7 @@ export function computeTotals(
   const total = subtotal - discount
 
   const coreWeeks = core.reduce((sum, i) => sum + (Number(i.weeks) || 0), 0)
-  const moduleWeeks = active.reduce((sum, i) => sum + (Number(i.weeks) || 0), 0)
+  const moduleWeeks = active.reduce((sum, i) => sum + (Number(i.weeks) || 0) * itemQty(i), 0)
   // Los módulos se construyen en bloques paralelos, no en serie: el plazo crece
   // con la raíz del esfuerzo acumulado, con un piso por el núcleo y la puesta en
   // marcha (que se hacen sí o sí, haya uno o catorce módulos).
@@ -125,7 +150,7 @@ export function computeTotals(
 
   const deliverables =
     core.reduce((sum, i) => sum + (Number(i.deliverables) || 0), 0) +
-    active.reduce((sum, i) => sum + (Number(i.deliverables) || 0), 0)
+    active.reduce((sum, i) => sum + (Number(i.deliverables) || 0) * itemQty(i), 0)
 
   // El último pago absorbe el redondeo para que la suma cuadre con el total.
   let accumulated = 0
@@ -168,6 +193,7 @@ export function normalizeItems(raw: unknown, catalogByCode: Map<string, any>): Q
     const source = catalogByCode.get(code)
     if (!source) continue // el precio debe existir en el catálogo
     seen.add(code)
+    const qtyRaw = Math.round(Number((entry as any)?.qty))
     items.push({
       code,
       name: asString((entry as any)?.name, 160) || source.name,
@@ -175,6 +201,8 @@ export function normalizeItems(raw: unknown, catalogByCode: Map<string, any>): Q
       category: source.category,
       kind: source.kind === 'CORE' ? 'CORE' : 'MODULE',
       price: asInt(source.price), // ← precio del catálogo, no del cliente
+      qty: Number.isFinite(qtyRaw) ? Math.min(999, Math.max(1, qtyRaw)) : 1,
+      unit: source.unit ?? null,
       weeks: Number(source.weeks) || 0,
       deliverables: asInt(source.deliverables),
       on: source.kind === 'CORE' ? true : (entry as any)?.on !== false,
@@ -184,9 +212,9 @@ export function normalizeItems(raw: unknown, catalogByCode: Map<string, any>): Q
   return items
 }
 
-export async function loadCatalog() {
+export async function loadCatalog(template?: QuoteTemplateKey) {
   const rows = await (prisma as any).quoteCatalogItem.findMany({
-    where: { active: true },
+    where: { active: true, ...(template ? { template } : {}) },
     orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
   })
   return rows as any[]
@@ -205,6 +233,8 @@ export function itemsFromCatalog(rows: any[]): QuoteItem[] {
     category: r.category,
     kind: r.kind === 'CORE' ? 'CORE' : 'MODULE',
     price: r.price,
+    qty: 1,
+    unit: r.unit ?? null,
     weeks: Number(r.weeks) || 0,
     deliverables: r.deliverables,
     on: r.kind === 'CORE' ? true : r.defaultOn !== false,

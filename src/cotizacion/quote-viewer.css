@@ -363,15 +363,81 @@
   font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; padding: 24px;
 }
 
-/* ---------- impresión ---------- */
+/* ============================================================
+   IMPRESIÓN / PDF — diagramación por hojas A4.
+   Portada y contraportada ocupan su hoja completa; cada sección
+   arranca en hoja nueva; las piezas (tarjetas, figuras, filas de
+   tabla, roles) no se parten entre hojas.
+   ============================================================ */
+@page { size: A4; margin: 0; }
+
 @media print {
+  html, body { background: #fff !important; margin: 0; padding: 0; }
+  .qv { background: #fff; font-size: 12.5px; line-height: 1.55; }
+  .qv * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .qv-bar, .qv-presets, .qv-livehint { display: none !important; }
-  .qv { background: #fff; }
-  .qv-cover, .qv-back { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .qv-section { break-inside: avoid-page; }
+  .qv a { color: inherit; text-decoration: none; }
+
+  /* margen de hoja: lo aporta el contenedor, no @page (evita el
+     encabezado/pie del navegador) */
+  .qv-page { max-width: none; padding: 0 16mm; }
+
+  /* ── portada: hoja completa ── */
+  .qv-cover {
+    height: 296mm; box-sizing: border-box; overflow: hidden;
+    display: flex; align-items: stretch;
+    padding: 18mm 0; break-after: page;
+  }
+  .qv-cover .qv-page { display: flex; flex-direction: column; justify-content: center; width: 100%; }
+  .qv-cover h1 { font-size: 34pt; }
+  .qv-cover .sub { font-size: 11.5pt; }
+  .qv-cover .meta { margin-top: 12mm; }
+  .qv-cover .tagline { margin-top: 12mm; }
+
+  /* ── cada sección en hoja nueva ── */
+  .qv-section {
+    break-before: page;
+    padding: 14mm 0 0;
+  }
+  .qv-sechead { break-inside: avoid; break-after: avoid; }
+  .qv-subtitle { break-after: avoid; }
+
+  /* piezas atómicas: nunca partidas entre hojas */
+  .qv-mod, .qv-front, .qv-shot, .qv-scopebox, .qv-cfg-tot, .qv-cfg-sum,
+  .qv-cfg-meta, .qv-team > li, .qv-arch .ar, .qv-escala, .qv-tcbox,
+  .qv-deliv li, .qv-crono tr, .qv-inv tr, .qv-table tr, .qv-stack tr {
+    break-inside: avoid;
+  }
+  thead { display: table-header-group; }
+
+  /* módulos apagados: legibles en papel */
   .qv-mod.is-off { opacity: 1; background: #fff; }
   .qv-mod.is-off h3, .qv-mod.is-off .md-p { color: var(--faint); }
   .qv-mod.is-off .md-p { text-decoration: line-through; }
+  .qv-crono tr.off td, .qv-inv tr.off { opacity: 0.45; }
+
+  /* capturas: cada figura entera; altura acotada para no desbordar la hoja */
+  .qv-shots { display: block; }
+  .qv-shot { margin: 0 0 6mm; }
+  .qv-shot img { max-height: 118mm; width: auto; max-width: 100%; margin: 0 auto; }
+
+  /* rejillas que en pantalla dependen del viewport */
+  .qv-fronts { grid-template-columns: 1fr 1fr; }
+  .qv-arch { grid-template-columns: repeat(4, 1fr); }
+  .qv-mods { grid-template-columns: 1fr 1fr; }
+  .qv-cfg { grid-template-columns: 1.15fr 1fr; }
+  .qv-twocol { grid-template-columns: 1fr 1fr; }
+  .qv-deliv { grid-template-columns: 1fr 1fr; }
+  .qv-tablewrap { overflow: visible; }
+  .qv-crono { min-width: 0; width: 100%; }
+
+  /* ── contraportada: hoja completa ── */
+  .qv-back {
+    break-before: page; margin-top: 0;
+    height: 296mm; box-sizing: border-box; overflow: hidden;
+    display: flex; align-items: stretch; padding: 18mm 0;
+  }
+  .qv-back .qv-page { display: flex; flex-direction: column; justify-content: center; width: 100%; }
 }
 
 /* ---------- subtítulos y texto compacto ---------- */
@@ -498,7 +564,29 @@
 .qv-team .tm-fns li { position: relative; padding-left: 14px; font-size: 12px; color: var(--ink-soft); line-height: 1.45; margin-bottom: 3px; }
 .qv-team .tm-fns li::before { content: '–'; position: absolute; left: 0; color: var(--cyan-deep); font-weight: 600; }
 
+
+/* ---------- cantidades (plantilla de servicios) ---------- */
+.qv-qty {
+  display: flex; align-items: center; gap: 6px; margin: 2px 0 9px;
+}
+.qv-qty .q-l {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-right: 4px;
+}
+.qv-qty button {
+  width: 24px; height: 24px; border-radius: 4px; border: 1px solid var(--line-strong);
+  background: var(--paper-2); color: var(--navy); font-size: 14px; line-height: 1;
+  cursor: pointer; display: grid; place-items: center;
+}
+.qv-qty button:hover { background: var(--gold-fill); border-color: var(--gold); }
+.qv-qty input {
+  width: 52px; text-align: center; font-family: var(--mono); font-size: 13px; font-weight: 700;
+  color: var(--navy); border: 1px solid var(--line-strong); border-radius: 4px;
+  padding: 3px 4px; background: var(--card); -moz-appearance: textfield;
+}
+.qv-qty input::-webkit-outer-spin-button, .qv-qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
 @media print {
-  .qv-shot { break-inside: avoid; }
-  .qv-crono .gbar, .qv-crono-legend i { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .qv-qty button { display: none; }
+  .qv-qty input { border: 0; background: transparent; padding: 0; width: auto; }
 }

@@ -12,11 +12,15 @@ export type QuoteItem = {
   category?: string
   kind?: 'CORE' | 'MODULE'
   price: number
+  qty?: number
+  unit?: string | null
   weeks?: number
   deliverables?: number
   on: boolean
   detail?: { entregables?: string[] } | null
 }
+
+const itemQty = (item: QuoteItem) => Math.max(1, Math.round(Number(item.qty) || 1))
 
 export type DiscountTier = { upTo: number; pct: number }
 
@@ -59,8 +63,8 @@ export function computeTotals(
   const core = items.filter((i) => i.kind === 'CORE')
   const active = items.filter((i) => i.kind !== 'CORE' && i.on)
 
-  const coreTotal = core.reduce((sum, i) => sum + (Number(i.price) || 0), 0)
-  const modulesTotal = active.reduce((sum, i) => sum + (Number(i.price) || 0), 0)
+  const coreTotal = core.reduce((sum, i) => sum + (Number(i.price) || 0) * itemQty(i), 0)
+  const modulesTotal = active.reduce((sum, i) => sum + (Number(i.price) || 0) * itemQty(i), 0)
   const subtotal = coreTotal + modulesTotal
 
   const discountPct = tierFor(scale, active.length).pct
@@ -68,12 +72,12 @@ export function computeTotals(
   const total = subtotal - discount
 
   const coreWeeks = core.reduce((sum, i) => sum + (Number(i.weeks) || 0), 0)
-  const moduleWeeks = active.reduce((sum, i) => sum + (Number(i.weeks) || 0), 0)
+  const moduleWeeks = active.reduce((sum, i) => sum + (Number(i.weeks) || 0) * itemQty(i), 0)
   const weeks = Math.max(minWeeks, Math.round(coreWeeks + Math.sqrt(Math.max(0, moduleWeeks)) * 1.6))
 
   const deliverables =
     core.reduce((sum, i) => sum + (Number(i.deliverables) || 0), 0) +
-    active.reduce((sum, i) => sum + (Number(i.deliverables) || 0), 0)
+    active.reduce((sum, i) => sum + (Number(i.deliverables) || 0) * itemQty(i), 0)
 
   let accumulated = 0
   const payments = split.map((pct, index) => {

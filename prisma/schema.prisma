@@ -614,10 +614,12 @@ model PcBoardShare {
 
 model QuoteCatalogItem {
   id           String   @id @default(cuid())
-  code         String   @unique // NUCLEO, M01, M02…
+  code         String   @unique // NUCLEO, M01, M02… / SV01, SV02…
   name         String
   summary      String // qué resuelve, en 2-3 líneas
   category     String // Núcleo · Operación editorial · Comercial · Canal digital…
+  template     String   @default("PRODUCTO") // PRODUCTO (plataforma modular) | SERVICIO (proyectos por unidad)
+  unit         String? // para SERVICIO: curso, recurso, programa, estudio…
   kind         String   @default("MODULE") // CORE (obligatorio) | MODULE (opcional)
   price        Int // precio base en la moneda del catálogo
   currency     String   @default("COP")
@@ -658,6 +660,7 @@ model Quote {
   publicId      String  @unique // id no adivinable de la URL /c/:publicId
   ownerId       String // AdminUser.id
   status        String  @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  template      String  @default("PRODUCTO") // PRODUCTO | SERVICIO
   clientName    String
   clientContact String?
   clientEmail   String?

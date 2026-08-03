@@ -184,6 +184,7 @@ export function CotizadorList() {
   const [creating, setCreating] = useState(false)
   const [clientName, setClientName] = useState('')
   const [sector, setSector] = useState('')
+  const [template, setTemplate] = useState<'PRODUCTO' | 'SERVICIO'>('PRODUCTO')
   const [copied, setCopied] = useState('')
 
   const load = useCallback(async () => {
@@ -198,7 +199,7 @@ export function CotizadorList() {
     if (!clientName.trim()) return
     setCreating(true); setError('')
     try {
-      const payload = await quotesApi.create({ clientName: clientName.trim(), sector: sector.trim() || undefined })
+      const payload = await quotesApi.create({ clientName: clientName.trim(), sector: sector.trim() || undefined, template })
       navigate(`/ecosistema/cotizador/${payload.quote.id}`)
     } catch (e: any) { setError(e.message); setCreating(false) }
   }
@@ -233,7 +234,23 @@ export function CotizadorList() {
         </p>
 
         {/* Crear */}
-        <div className="mt-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex flex-wrap gap-2">
+            {([
+              ['PRODUCTO', 'Producto · Plataforma a la medida', 'Núcleo + módulos activables con economía de escala.'],
+              ['SERVICIO', 'Servicio · Proyectos y producción', 'Líneas por unidad (cursos, recursos, estudios) con cantidades.'],
+            ] as const).map(([key, label, desc]) => (
+              <button
+                key={key}
+                onClick={() => setTemplate(key)}
+                className={`flex-1 min-w-[240px] rounded-xl border px-4 py-3 text-left transition ${template === key ? 'border-indigo-500 bg-indigo-50/60 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}
+              >
+                <div className={`text-[13px] font-bold ${template === key ? 'text-indigo-700' : 'text-slate-700'}`}>{label}</div>
+                <div className="mt-0.5 text-[12px] text-slate-500">{desc}</div>
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
           <input
             value={clientName} onChange={(e) => setClientName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') void create() }}
@@ -252,6 +269,7 @@ export function CotizadorList() {
           >
             {creating ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Nueva cotización
           </button>
+          </div>
         </div>
         {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
 
@@ -288,7 +306,12 @@ export function CotizadorList() {
                     onClick={() => navigate(`/ecosistema/cotizador/${quote.id}`)}
                   >
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-slate-800">{quote.clientName}</div>
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                        {quote.clientName}
+                        {quote.template === 'SERVICIO' && (
+                          <span className="rounded bg-cyan-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-700">Servicio</span>
+                        )}
+                      </div>
                       <div className="max-w-[280px] truncate text-[12px] text-slate-400">
                         {quote.title}
                         {quote.ownerName ? ` · por ${quote.ownerName}` : ''}
