@@ -30,8 +30,9 @@ const str = (v: unknown, max = 400) => (typeof v === 'string' ? v.trim().slice(0
 const strArray = (v: unknown, max = 12) =>
   Array.isArray(v) ? v.map((x) => str(x, 400)).filter(Boolean).slice(0, max) : null
 
-/** Presupuesto de contexto documental, en caracteres. Cabe de sobra en gpt-4o. */
-const KNOWLEDGE_BUDGET = 60_000
+/** Presupuesto de contexto documental, en caracteres (~30k tokens: holgado en gpt-4o).
+ *  Debe alcanzar para los casos históricos completos más los documentos de metodología. */
+const KNOWLEDGE_BUDGET = 120_000
 const HISTORY_TURNS = 16
 
 const SYSTEM_RULES = `
