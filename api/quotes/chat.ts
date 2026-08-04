@@ -51,8 +51,9 @@ REGLAS DURAS
 1. Nunca inventes precios, plazos ni descuentos. Los montos salen del CATÁLOGO y el servidor los recalcula.
    Si necesitas mover el precio, di que hay que ajustar el catálogo; no lo cambies tú.
 2. Solo puedes encender o apagar módulos usando los CÓDIGOS exactos del catálogo.
-3. Toda afirmación sobre metodología, condiciones o antecedentes debe apoyarse en el CONTEXTO documental.
-   Si el contexto no alcanza, dilo y pregunta; no rellenes con supuestos.
+3. Toda afirmación sobre metodología, condiciones o antecedentes debe apoyarse en el ÍNDICE o en el
+   CONTEXTO documental. Una cifra que no esté escrita ahí NO EXISTE: dilo y pide traer el caso al
+   contexto. Jamás des una cifra aproximada, deducida o "de memoria".
 4. Pregunta de a una cosa. Si ya tienes lo necesario para redactar una sección, redáctala.
 5. Quien cotiza decide las variables del precio: la cotización arranca vacía y solo enciendes
    las líneas que el consultor pida o confirme. Jamás enciendas líneas "por si acaso".
@@ -367,7 +368,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         where: { active: true },
         orderBy: { updatedAt: 'desc' },
         take: 20,
-        select: { title: true, kind: true, content: true },
+        select: { title: true, kind: true, summary: true, content: true },
       }),
     ])
 
@@ -377,22 +378,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── Contexto documental: índice completo + texto íntegro de lo relevante ──
     // Señal de relevancia: palabras del mensaje, del cliente y de los últimos
     // turnos, contrastadas con título/resumen/inicio de cada documento.
-    const signalText = [
-      message,
-      quote.clientName || '',
-      quote.sector || '',
-      ...history.slice(0, 6).map((m: any) => m.content),
-    ]
-      .join(' ')
-      .toLowerCase()
-    const signalWords = [...new Set(signalText.match(/[a-záéíóúñü]{4,}/gi) ?? [])].map((w) => w.toLowerCase())
+    // El mensaje actual manda; el historial reciente solo acompaña (si pesara
+    // igual, el tema anterior seguiría arrastrando documentos irrelevantes).
+    const currentWords = new Set(
+      (message.toLowerCase().match(/[a-z0-9áéíóúñü]{3,}/gi) ?? []).map((w: string) => w.toLowerCase())
+    )
+    const backgroundWords = new Set(
+      [quote.clientName || '', quote.sector || '', ...history.slice(0, 2).map((m: any) => m.content)]
+        .join(' ')
+        .toLowerCase()
+        .match(/[a-z0-9áéíóúñü]{3,}/gi) ?? []
+    )
 
     const scored = docs.map((doc: any) => {
-      const haystack = `${doc.title} ${doc.summary ?? ''} ${String(doc.content || '').slice(0, 1200)}`.toLowerCase()
+      const titleLc = doc.title.toLowerCase()
+      const summaryLc = `${doc.summary ?? ''} ${String(doc.content || '').slice(0, 1200)}`.toLowerCase()
       let score = 0
-      for (const word of signalWords) if (haystack.includes(word)) score++
+      for (const word of currentWords) {
+        if (titleLc.includes(word)) score += 4 // acierto en el título del caso: señal fuerte
+        else if (summaryLc.includes(word)) score += 1
+      }
+      for (const word of backgroundWords) if (titleLc.includes(word as string)) score += 1
       // el caso del propio cliente siempre pesa
-      if (quote.clientName && doc.title.toLowerCase().includes(quote.clientName.toLowerCase().slice(0, 12))) score += 25
+      if (quote.clientName && titleLc.includes(quote.clientName.toLowerCase().slice(0, 12))) score += 25
       return { doc, score }
     })
     scored.sort((a: any, b: any) => b.score - a.score)

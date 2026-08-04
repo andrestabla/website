@@ -96,20 +96,71 @@ function htmlToText(html: string): string {
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
+/** Colapsa texto de PDF con letras espaciadas: "F O R M A C I Ó N" → "FORMACIÓN". */
+function despace(text: string): string {
+  return text.replace(/\b(?:[A-ZÁÉÍÓÚÑÜ0-9] ){2,}[A-ZÁÉÍÓÚÑÜ0-9]\b/g, (run) => run.replace(/ /g, ''))
+}
+
+/** Normaliza a Markdown legible: saltos, viñetas y espacios. */
+function mdify(text: string): string {
+  return despace(text)
+    .replace(/\r\n?/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/^[-•▪●]\s*/gm, '- ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+const PRICE_RE = /\$\s?[\d.,]{6,15}|COP\s?[\d.,]{6,15}|USD\s?[\d.,]{3,10}|\b\d{1,3}\.\d{3}\.\d{3}\b/g
+
+/**
+ * Recorte con garantía de cifras: si el texto supera el tope, conserva la
+ * cabeza y añade un apéndice con TODAS las líneas que contienen valores
+ * monetarios (con su contexto). Un caso jamás pierde sus precios por recorte.
+ */
+function smartCap(text: string, max: number): string {
+  if (text.length <= max) return text
+  const headBudget = Math.floor(max * 0.72)
+  const head = text.slice(0, headBudget)
+
+  const priceLines: string[] = []
+  const seen = new Set<string>()
+  const lines = text.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (!PRICE_RE.test(line)) { PRICE_RE.lastIndex = 0; continue }
+    PRICE_RE.lastIndex = 0
+    let clean = line.trim().slice(0, 300)
+    // cifra suelta sin etiqueta (celda de tabla): antepone la línea anterior como contexto
+    if (clean.length < 25) {
+      for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
+        const prev = lines[j].trim()
+        if (prev && !PRICE_RE.test(prev)) { clean = `${prev.slice(0, 120)} → ${clean}`; break }
+        PRICE_RE.lastIndex = 0
+      }
+    }
+    if (clean && !seen.has(clean)) { seen.add(clean); priceLines.push(`- ${clean}`) }
+  }
+  const appendix = priceLines.length
+    ? `\n\n## Cifras y valores del documento (extracto garantizado)\n${priceLines.join('\n').slice(0, max - headBudget - 200)}`
+    : ''
+  return `${head}\n\n[… documento recortado: sigue el extracto de cifras …]${appendix}`
+}
+
 let created = 0
 let updated = 0
 
 for (const source of SOURCES) {
   const html = readFileSync(source.file, 'utf8')
-  const body = htmlToText(html).slice(0, MAX_CHARS)
-  const content = `${source.header}\n\n--- TEXTO COMPLETO DE LA PROPUESTA ---\n\n${body}`
+  const body = smartCap(mdify(htmlToText(html)), MAX_CHARS)
+  const content = `# ${source.title}\n\n${source.header}\n\n## Texto de la propuesta\n\n${body}`
 
   const existing = await db.quoteKnowledgeDoc.findFirst({ where: { title: source.title } })
   const data = {
     title: source.title,
     kind: 'CASE',
     sourceName: source.file.split('/').slice(-2).join('/'),
-    mimeType: 'text/html',
+    mimeType: 'text/markdown',
     content,
     summary: source.summary,
     charCount: content.length,
@@ -224,7 +275,7 @@ const BATCH2: BatchSource[] = [
 for (const source of BATCH2) {
   let raw = ''
   try {
-    raw = (await extractFile(source.file)).replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
+    raw = mdify(await extractFile(source.file))
   } catch (error: any) {
     console.log(`✗ ${source.title}: ${error?.message || error}`)
     continue
@@ -239,14 +290,14 @@ for (const source of BATCH2) {
     `Documento: ${source.title}`,
     'Uso: referencia de alcances, estructura y rangos de precio para cotizaciones de esta línea.',
   ].join('\n')
-  const content = `${header}\n\n--- TEXTO DEL DOCUMENTO ---\n\n${raw.slice(0, MAX_CHARS_2)}`
+  const content = `# ${source.title}\n\n${header}\n\n## Texto del documento\n\n${smartCap(raw, MAX_CHARS_2)}`
 
   const existing = await db.quoteKnowledgeDoc.findFirst({ where: { title: source.title } })
   const data = {
     title: source.title,
     kind: 'CASE',
     sourceName: source.file.split('/').slice(-2).join('/'),
-    mimeType: source.file.endsWith('.pdf') ? 'application/pdf' : source.file.endsWith('.docx') ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'text/html',
+    mimeType: 'text/markdown',
     content,
     summary: source.summary,
     charCount: content.length,
