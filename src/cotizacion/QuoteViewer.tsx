@@ -32,6 +32,7 @@ type PublicQuote = {
   pricing: { items: QuoteItem[] }
   discountScale?: DiscountTier[] | null
   validDays: number
+  publishedAt?: string | null
 }
 
 // ── Identidad del visitante (métricas) ──────────────────────────────────────
@@ -113,15 +114,23 @@ function useTracker(publicId: string | undefined, recipientToken: string, enable
 }
 
 // ── Utilidades de sección ───────────────────────────────────────────────────
-function SectionHead({ num, kicker, title }: { num: string; kicker: string; title: string }) {
+function SectionHead({ num, kicker, title, client }: { num: string; kicker: string; title: string; client?: string }) {
   return (
-    <div className="qv-sechead">
-      <div className="sn">{num}</div>
-      <div>
-        <div className="kicker">{kicker}</div>
-        <h2>{title}</h2>
+    <>
+      {client && (
+        <div className="qv-rhead">
+          <span className="r-l">Propuesta · {client}</span>
+          <span className="r-r">Algoritmo&nbsp;T</span>
+        </div>
+      )}
+      <div className="qv-sechead">
+        <div className="sn">{num}</div>
+        <div>
+          <div className="kicker">{kicker}</div>
+          <h2>{title}</h2>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -317,7 +326,7 @@ export default function QuoteViewer() {
   return (
     <div className="qv">
       <div className="qv-bar">
-        <span className="b-brand">Algoritmo&nbsp;T</span>
+        <span className="b-brand"><img src="/assets/algoritmot-mark.svg" alt="" />Algoritmo&nbsp;T</span>
         <div className="b-total">
           <div className="t-l">Inversión · {totals.moduleCount} módulos</div>
           <div className="t-v">{money(totals.total)}</div>
@@ -328,6 +337,10 @@ export default function QuoteViewer() {
       {/* Portada */}
       <header className="qv-cover" data-qsec="portada">
         <div className="qv-page">
+          <div className="cv-top">
+            <span className="brandmark"><b>Algoritmo</b><img src="/assets/algoritmot-mark.svg" alt="Algoritmo T" /></span>
+            <span className="cv-idx">PROPUESTA · {new Date(quote.publishedAt || Date.now()).getFullYear()}</span>
+          </div>
           {preview && <span className="qv-preview-flag">Vista previa · sin publicar</span>}
           <div className="kick">
             Propuesta técnica y económica · documento interactivo
@@ -350,7 +363,7 @@ export default function QuoteViewer() {
         {/* Presentación */}
         {content.intro && (
           <section className="qv-section" data-qsec="presentacion">
-            <SectionHead num={nextNum()} kicker="Presentación" title="Una propuesta que se lee y se configura" />
+            <SectionHead client={quote.clientName} num={nextNum()} kicker="Presentación" title="Una propuesta que se lee y se configura" />
             <p className="qv-letter qv-drop">{content.intro}</p>
           </section>
         )}
@@ -358,7 +371,7 @@ export default function QuoteViewer() {
         {/* Diagnóstico */}
         {(content.diagnosis?.lede || fronts.length > 0) && (
           <section className="qv-section" data-qsec="diagnostico">
-            <SectionHead num={nextNum()} kicker="Diagnóstico" title="Lectura del reto" />
+            <SectionHead client={quote.clientName} num={nextNum()} kicker="Diagnóstico" title="Lectura del reto" />
             {content.diagnosis?.lede && <p className="qv-lede">{content.diagnosis.lede}</p>}
             {fronts.length > 0 && (
               <div className="qv-fronts">
@@ -379,8 +392,7 @@ export default function QuoteViewer() {
         {/* Arquitectura */}
         {(architecture.lede || architecture.layers?.length) && (
           <section className="qv-section" data-qsec="arquitectura">
-            <SectionHead
-              num={nextNum()}
+            <SectionHead client={quote.clientName} num={nextNum()}
               kicker={isService ? 'Método' : 'Solución'}
               title={isService ? 'Cómo lo hacemos' : 'Arquitectura de la solución'}
             />
@@ -423,7 +435,7 @@ export default function QuoteViewer() {
         {/* Enfoque (texto libre, si no hay arquitectura estructurada) */}
         {content.approach && !architecture.lede && (
           <section className="qv-section" data-qsec="enfoque">
-            <SectionHead num={nextNum()} kicker="Solución" title="Cómo lo resolvemos" />
+            <SectionHead client={quote.clientName} num={nextNum()} kicker="Solución" title="Cómo lo resolvemos" />
             <p className="qv-letter">{content.approach}</p>
             {content.scopeNote && <ScopeBox title="Nota de alcance" body={content.scopeNote} />}
           </section>
@@ -432,7 +444,7 @@ export default function QuoteViewer() {
         {/* La plataforma en pantalla */}
         {screenItems.length > 0 && (
           <section className="qv-section" data-qsec="pantallas">
-            <SectionHead num={nextNum()} kicker="La plataforma en pantalla" title="Así se ve funcionando" />
+            <SectionHead client={quote.clientName} num={nextNum()} kicker="La plataforma en pantalla" title="Así se ve funcionando" />
             {screens.intro && <p className="qv-compact">{screens.intro}</p>}
             <div className="qv-shots">
               {screenItems.map((shot, index) => (
@@ -450,8 +462,7 @@ export default function QuoteViewer() {
 
         {/* Núcleo + módulos */}
         <section className="qv-section" data-qsec="modulos">
-          <SectionHead
-            num={nextNum()}
+          <SectionHead client={quote.clientName} num={nextNum()}
             kicker="Alcance configurable"
             title={isService ? 'Servicios incluidos' : 'Núcleo y catálogo de módulos'}
           />
@@ -533,7 +544,7 @@ export default function QuoteViewer() {
 
         {/* Configurador */}
         <section className="qv-section" data-qsec="configurador">
-          <SectionHead num={nextNum()} kicker="Alcance elegido" title="Configurador de alcance" />
+          <SectionHead client={quote.clientName} num={nextNum()} kicker="Alcance elegido" title="Configurador de alcance" />
           <div className="qv-cfg">
             <div className="qv-cfg-sum">
               <div className="cs-h">Configuración actual · {totals.moduleCount} de {items.filter((i) => i.kind !== 'CORE').length} módulos</div>
@@ -593,7 +604,7 @@ export default function QuoteViewer() {
         {/* Cronograma */}
         {scheduleGroups.length > 0 && (
           <section className="qv-section" data-qsec="cronograma">
-            <SectionHead num={nextNum()} kicker="Tiempos" title="Cronograma de ejecución" />
+            <SectionHead client={quote.clientName} num={nextNum()} kicker="Tiempos" title="Cronograma de ejecución" />
             {schedule.intro && <p className="qv-compact">{schedule.intro}</p>}
             <div className="qv-tablewrap">
               <table className="qv-crono">
@@ -636,7 +647,7 @@ export default function QuoteViewer() {
 
         {/* Inversión */}
         <section className="qv-section" data-qsec="inversion">
-          <SectionHead num={nextNum()} kicker="Inversión" title="Propuesta económica" />
+          <SectionHead client={quote.clientName} num={nextNum()} kicker="Inversión" title="Propuesta económica" />
           <p className="qv-compact">
             Valores en {currency === 'USD' ? 'dólares estadounidenses' : 'pesos colombianos'}. Las líneas
             atenuadas corresponden a módulos desactivados, que quedan fuera del total.
@@ -687,7 +698,7 @@ export default function QuoteViewer() {
 
         {/* Plan de pagos */}
         <section className="qv-section" data-qsec="pagos">
-          <SectionHead num={nextNum()} kicker="Condiciones" title="Plan de pagos e hitos" />
+          <SectionHead client={quote.clientName} num={nextNum()} kicker="Condiciones" title="Plan de pagos e hitos" />
           <div className="qv-tablewrap">
             <table className="qv-table">
               <thead><tr><th>Momento</th><th>Hito habilitante</th><th>%</th><th>Valor ({currency})</th></tr></thead>
@@ -738,7 +749,7 @@ export default function QuoteViewer() {
         {/* Servicio */}
         {service.includedMonths ? (
           <section className="qv-section" data-qsec="servicio">
-            <SectionHead num={nextNum()} kicker="Después de la entrega" title="Servicio, soporte y renovación" />
+            <SectionHead client={quote.clientName} num={nextNum()} kicker="Después de la entrega" title="Servicio, soporte y renovación" />
             <div className="qv-tablewrap">
               <table className="qv-table">
                 <thead><tr><th>Periodo</th><th>Qué cubre</th><th>Valor</th></tr></thead>
@@ -784,7 +795,7 @@ export default function QuoteViewer() {
         {/* Equipo */}
         {team.length > 0 && (
           <section className="qv-section" data-qsec="equipo">
-            <SectionHead num={nextNum()} kicker="Cómo trabajamos" title="Equipo y forma de trabajo" />
+            <SectionHead client={quote.clientName} num={nextNum()} kicker="Cómo trabajamos" title="Equipo y forma de trabajo" />
             {content.teamIntro && <p className="qv-lede">{content.teamIntro}</p>}
             <ul className="qv-team">
               {team.map((member, index) => (
@@ -809,7 +820,7 @@ export default function QuoteViewer() {
         {/* Supuestos y exclusiones */}
         {(content.assumptions?.length || content.exclusions?.length || guarantees.length) ? (
           <section className="qv-section" data-qsec="condiciones">
-            <SectionHead num={nextNum()} kicker="Letra clara" title="Supuestos y exclusiones" />
+            <SectionHead client={quote.clientName} num={nextNum()} kicker="Letra clara" title="Supuestos y exclusiones" />
             <div className="qv-twocol">
               {content.assumptions?.length ? (
                 <div className="qv-tcbox">
@@ -852,6 +863,7 @@ export default function QuoteViewer() {
       {/* Cierre */}
       <footer className="qv-back" data-qsec="cierre">
         <div className="qv-page">
+          <div className="bk-top"><b>Algoritmo</b><img src="/assets/algoritmot-mark.svg" alt="Algoritmo T" /></div>
           <div className="bk-q">
             {content.backQuote || <>Toda la operación de <em>{quote.clientName}</em> en un solo lugar.</>}
           </div>

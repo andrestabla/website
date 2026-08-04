@@ -590,3 +590,44 @@
   .qv-qty button { display: none; }
   .qv-qty input { border: 0; background: transparent; padding: 0; width: auto; }
 }
+
+/* ---------- marca Algoritmo T ---------- */
+.qv-bar .b-brand { display: inline-flex; align-items: center; gap: 8px; }
+.qv-bar .b-brand img { height: 18px; width: 18px; }
+.qv-cover .cv-top {
+  display: flex; justify-content: space-between; align-items: center; gap: 20px;
+  padding-bottom: 20px; margin-bottom: 26px; border-bottom: 1px solid rgba(255, 255, 255, 0.27);
+}
+.qv-cover .brandmark { display: inline-flex; align-items: center; gap: 9px; }
+.qv-cover .brandmark img { height: 32px; width: 32px; }
+.qv-cover .brandmark b {
+  font-family: var(--mono); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.15em; text-transform: uppercase; color: #fff;
+}
+.qv-cover .cv-idx { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; color: #9eb0ce; }
+.qv-back .bk-top {
+  display: flex; align-items: center; gap: 9px;
+  padding-bottom: 20px; margin-bottom: 26px; border-bottom: 1px solid rgba(255, 255, 255, 0.27);
+}
+.qv-back .bk-top img { height: 28px; width: 28px; }
+.qv-back .bk-top b {
+  font-family: var(--mono); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.15em; text-transform: uppercase; color: #fff;
+}
+
+/* cabecera corrida (solo impresión, como la propuesta editorial) */
+.qv-rhead { display: none; }
+@media print {
+  /* overlays del sitio (consentimiento, popups): nada posicionado fijo entra al PDF */
+  .fixed, .no-print { display: none !important; }
+  .qv-rhead {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 8pt; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--faint); padding-bottom: 3mm; margin-bottom: 6mm; border-bottom: 1px solid var(--line);
+  }
+  .qv-rhead .r-r { color: var(--gold); }
+  /* hojas crema como la versión editorial */
+  .qv { background: var(--paper) !important; }
+  html, body { background: var(--paper) !important; }
+  .qv-cover .cv-top { padding-bottom: 6mm; margin-bottom: 10mm; }
+}
