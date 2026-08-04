@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Plus, FileText, Eye, Copy, BookOpen, Trash2, UploadCloud, X, Loader2, CheckCircle2,
+  ArrowLeft, Plus, FileText, Eye, Copy, BookOpen, Trash2, UploadCloud, X, Loader2, CheckCircle2, CopyPlus,
 } from 'lucide-react'
 import { quotesApi, money, timeAgo, type QuoteListItem } from './api'
 
@@ -210,6 +210,24 @@ export function CotizadorList() {
     window.setTimeout(() => setCopied(''), 1600)
   }
 
+  const duplicateQuote = async (quote: QuoteListItem) => {
+    try {
+      const payload = await quotesApi.duplicate(quote.id)
+      navigate(`/ecosistema/cotizador/${payload.quote.id}`)
+    } catch (e: any) { setError(e.message) }
+  }
+
+  const deleteQuote = async (quote: QuoteListItem) => {
+    const ok = confirm(
+      `¿Eliminar la cotización de «${quote.clientName}»?\n\nSe borran su URL pública, sus destinatarios y todas sus métricas. Esta acción no se puede deshacer.`
+    )
+    if (!ok) return
+    try {
+      await quotesApi.remove(quote.id)
+      setQuotes((prev) => prev.filter((q) => q.id !== quote.id))
+    } catch (e: any) { setError(e.message) }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
@@ -329,13 +347,29 @@ export function CotizadorList() {
                     <td className="px-4 py-3 text-center font-semibold text-slate-600">{quote.views}</td>
                     <td className="hidden px-4 py-3 text-[12px] text-slate-400 md:table-cell">{timeAgo(quote.updatedAt)}</td>
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => copyLink(quote)}
-                        title="Copiar enlace público"
-                        className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                      >
-                        {copied === quote.id ? <CheckCircle2 size={15} className="text-emerald-600" /> : <Copy size={15} />}
-                      </button>
+                      <div className="flex items-center justify-end">
+                        <button
+                          onClick={() => copyLink(quote)}
+                          title="Copiar enlace público"
+                          className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                        >
+                          {copied === quote.id ? <CheckCircle2 size={15} className="text-emerald-600" /> : <Copy size={15} />}
+                        </button>
+                        <button
+                          onClick={() => duplicateQuote(quote)}
+                          title="Duplicar cotización"
+                          className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                        >
+                          <CopyPlus size={15} />
+                        </button>
+                        <button
+                          onClick={() => deleteQuote(quote)}
+                          title="Eliminar cotización"
+                          className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

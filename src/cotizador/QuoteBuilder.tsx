@@ -4,10 +4,10 @@
  * métricas) a la derecha.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Send, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, Sparkles,
-  Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw, PenSquare,
+  Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw, PenSquare, MoreVertical, CopyPlus, Archive,
 } from 'lucide-react'
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
 import { ContentEditor } from './ContentEditor'
@@ -35,6 +35,8 @@ const SECTION_LABEL: Record<string, string> = {
 
 export function QuoteBuilder() {
   const { quoteId = '' } = useParams<{ quoteId: string }>()
+  const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
   const [quote, setQuote] = useState<any>(null)
   const [items, setItems] = useState<QuoteItem[]>([])
   const [messages, setMessages] = useState<QuoteMessageRow[]>([])
@@ -132,6 +134,37 @@ export function QuoteBuilder() {
     void saveItems(items.map((i) => (i.code === code ? { ...i, qty: clamped } : i)))
   }
 
+  const duplicateQuote = async () => {
+    setMenuOpen(false)
+    try {
+      const payload = await quotesApi.duplicate(quoteId)
+      navigate(`/ecosistema/cotizador/${payload.quote.id}`)
+      window.location.reload()
+    } catch (e: any) { setError(e.message) }
+  }
+
+  const archiveQuote = async () => {
+    setMenuOpen(false)
+    try {
+      const payload = quote.status === 'ARCHIVED'
+        ? await quotesApi.unpublish(quoteId) // reactivar → borrador
+        : await quotesApi.archive(quoteId)
+      setQuote((prev: any) => ({ ...prev, ...payload.quote }))
+    } catch (e: any) { setError(e.message) }
+  }
+
+  const deleteQuote = async () => {
+    setMenuOpen(false)
+    const ok = confirm(
+      `¿Eliminar la cotización de «${quote.clientName}»?\n\nSe borran su URL pública, sus destinatarios y todas sus métricas. Esta acción no se puede deshacer.`
+    )
+    if (!ok) return
+    try {
+      await quotesApi.remove(quoteId)
+      navigate('/ecosistema/cotizador')
+    } catch (e: any) { setError(e.message) }
+  }
+
   const togglePublish = async () => {
     setPublishing(true); setError('')
     try {
@@ -205,8 +238,8 @@ export function QuoteBuilder() {
           <div className="truncate text-sm font-black tracking-tight">{quote.clientName}</div>
           <div className="truncate text-[11px] text-slate-400">{quote.title}</div>
         </div>
-        <span className={`ml-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${published ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
-          {published ? 'Publicada' : 'Borrador'}
+        <span className={`ml-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${published ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : quote.status === 'ARCHIVED' ? 'border-slate-200 bg-slate-100 text-slate-500' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+          {published ? 'Publicada' : quote.status === 'ARCHIVED' ? 'Archivada' : 'Borrador'}
         </span>
         {quote.template === 'SERVICIO' && (
           <span className="shrink-0 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-700">Servicio</span>
@@ -231,6 +264,32 @@ export function QuoteBuilder() {
           {publishing ? <Loader2 size={14} className="animate-spin" /> : published ? <EyeOff size={14} /> : <Globe size={14} />}
           {published ? 'Despublicar' : 'Publicar'}
         </button>
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            aria-label="Más acciones"
+          >
+            <MoreVertical size={16} />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-9 z-20 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                <button onClick={duplicateQuote} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-slate-700 hover:bg-slate-50">
+                  <CopyPlus size={14} className="text-slate-400" /> Duplicar cotización
+                </button>
+                <button onClick={archiveQuote} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-slate-700 hover:bg-slate-50">
+                  <Archive size={14} className="text-slate-400" /> {quote.status === 'ARCHIVED' ? 'Reactivar (borrador)' : 'Archivar'}
+                </button>
+                <div className="my-1 border-t border-slate-100" />
+                <button onClick={deleteQuote} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-rose-600 hover:bg-rose-50">
+                  <Trash2 size={14} /> Eliminar…
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
       {error && <div className="border-b border-rose-200 bg-rose-50 px-6 py-2 text-[13px] text-rose-700">{error}</div>}

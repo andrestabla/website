@@ -60,6 +60,7 @@ export const quotesApi = {
   publish: (quoteId: string) => post('/api/quotes/manage', { op: 'publish', quoteId }),
   unpublish: (quoteId: string) => post('/api/quotes/manage', { op: 'unpublish', quoteId }),
   duplicate: (quoteId: string) => post('/api/quotes/manage', { op: 'duplicate', quoteId }),
+  archive: (quoteId: string) => post('/api/quotes/manage', { op: 'archive', quoteId }),
   remove: (quoteId: string) => post('/api/quotes/manage', { op: 'delete', quoteId }),
   addRecipient: (quoteId: string, data: { name: string; email?: string; role?: string }) =>
     post('/api/quotes/manage', { op: 'add-recipient', quoteId, ...data }),

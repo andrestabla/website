@@ -49,7 +49,19 @@ export function ContentEditor({
   quote: any
   onSaved: (quote: any) => void
 }) {
-  const [meta, setMeta] = useState({ title: quote.title || '', subtitle: quote.subtitle || '' })
+  const [meta, setMeta] = useState({
+    title: quote.title || '',
+    subtitle: quote.subtitle || '',
+    clientName: quote.clientName || '',
+    sector: quote.sector || '',
+    clientContact: quote.clientContact || '',
+    clientEmail: quote.clientEmail || '',
+    validDays: quote.validDays ?? 45,
+  })
+  const setMetaField = (key: string, value: unknown) => {
+    setMeta((prev) => ({ ...prev, [key]: value }))
+    setDirty(true)
+  }
   const [content, setContent] = useState<any>(() => structuredClone(quote.content ?? {}))
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -69,9 +81,15 @@ export function ContentEditor({
     setSaving(true)
     setError('')
     try {
+      if (!meta.clientName.trim()) throw new Error('El nombre del cliente es obligatorio')
       const payload = await quotesApi.update(quoteId, {
         title: meta.title,
         subtitle: meta.subtitle,
+        clientName: meta.clientName,
+        sector: meta.sector,
+        clientContact: meta.clientContact,
+        clientEmail: meta.clientEmail,
+        validDays: meta.validDays,
         content,
       })
       onSaved(payload.quote)
@@ -233,9 +251,22 @@ export function ContentEditor({
         </button>
       </div>
 
-      <Section id="portada" title="Portada">
-        <Field label="Título"><textarea rows={2} value={meta.title} onChange={(e) => { setMeta({ ...meta, title: e.target.value }); setDirty(true) }} className={inputCls} /></Field>
-        <Field label="Bajada (subtítulo)"><textarea rows={3} value={meta.subtitle} onChange={(e) => { setMeta({ ...meta, subtitle: e.target.value }); setDirty(true) }} className={inputCls} /></Field>
+      <Section id="portada" title="Portada y datos del cliente">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Cliente *"><input value={meta.clientName} onChange={(e) => setMetaField('clientName', e.target.value)} className={inputCls} /></Field>
+          <Field label="Sector"><input value={meta.sector} onChange={(e) => setMetaField('sector', e.target.value)} className={inputCls} /></Field>
+          <Field label="Contacto"><input value={meta.clientContact} onChange={(e) => setMetaField('clientContact', e.target.value)} className={inputCls} /></Field>
+          <Field label="Correo del contacto"><input value={meta.clientEmail} onChange={(e) => setMetaField('clientEmail', e.target.value)} className={inputCls} /></Field>
+        </div>
+        <Field label="Título"><textarea rows={2} value={meta.title} onChange={(e) => setMetaField('title', e.target.value)} className={inputCls} /></Field>
+        <Field label="Bajada (subtítulo)"><textarea rows={3} value={meta.subtitle} onChange={(e) => setMetaField('subtitle', e.target.value)} className={inputCls} /></Field>
+        <Field label="Validez de la propuesta (días)">
+          <input
+            type="number" min={1} max={365} value={meta.validDays}
+            onChange={(e) => setMetaField('validDays', Math.min(365, Math.max(1, parseInt(e.target.value, 10) || 45)))}
+            className={`${inputCls} w-32`}
+          />
+        </Field>
       </Section>
 
       <Section id="presentacion" title="01 · Presentación (carta)">

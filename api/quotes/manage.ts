@@ -186,7 +186,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const data: Record<string, unknown> = {}
 
       for (const field of ['clientName', 'clientContact', 'clientEmail', 'sector', 'title', 'subtitle'] as const) {
-        if (body[field] !== undefined) data[field] = str(body[field], 400) || null
+        if (body[field] === undefined) continue
+        const value = str(body[field], 400)
+        // el nombre del cliente y el título son obligatorios: vacío = no tocar
+        if (!value && (field === 'clientName' || field === 'title')) continue
+        data[field] = value || null
       }
       if (body.validDays !== undefined) {
         data.validDays = Math.min(365, Math.max(1, Math.round(Number(body.validDays) || 45)))
