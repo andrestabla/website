@@ -8,13 +8,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Send, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, Sparkles,
   Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw, PenSquare, MoreVertical, CopyPlus, Archive,
+  Mic, Square, Eye,
 } from 'lucide-react'
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
 import { ContentEditor } from './ContentEditor'
 import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type QuoteRecipient } from './api'
 import { TEMPLATE_LABEL } from './CotizadorList'
 
-type Tab = 'propuesta' | 'contenido' | 'destinatarios' | 'metricas'
+type Tab = 'propuesta' | 'contenido' | 'vista' | 'destinatarios' | 'metricas'
 
 const SECTION_LABEL: Record<string, string> = {
   portada: 'Portada',
@@ -50,6 +51,12 @@ export function QuoteBuilder() {
   const [draft, setDraft] = useState('')
   const [thinking, setThinking] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // dictado por voz
+  const [recording, setRecording] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
 
   // acciones
   const [publishing, setPublishing] = useState(false)
@@ -110,6 +117,59 @@ export function QuoteBuilder() {
       setError(e.message)
     } finally {
       setThinking(false)
+    }
+  }
+
+  const stopTracks = () => {
+    recorderRef.current?.stream.getTracks().forEach((t) => t.stop())
+    recorderRef.current = null
+  }
+
+  const toggleRecording = async () => {
+    if (recording) {
+      recorderRef.current?.stop()
+      setRecording(false)
+      return
+    }
+    setError('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4']
+        .find((t) => MediaRecorder.isTypeSupported(t)) || ''
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
+      chunksRef.current = []
+      recorder.ondataavailable = (event) => { if (event.data.size > 0) chunksRef.current.push(event.data) }
+      recorder.onstop = async () => {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        stopTracks()
+        if (blob.size < 1200) return // toque accidental: nada que transcribir
+        setTranscribing(true)
+        try {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(String(reader.result))
+            reader.onerror = () => reject(new Error('No se pudo leer la grabación'))
+            reader.readAsDataURL(blob)
+          })
+          const res = await fetch('/api/quotes/transcribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audioBase64: base64, mimeType: blob.type }),
+          })
+          const payload = await res.json()
+          if (!res.ok || !payload.ok) throw new Error(payload?.error || 'No se pudo transcribir')
+          if (payload.text) setDraft((prev) => (prev ? `${prev} ${payload.text}` : payload.text))
+        } catch (e: any) {
+          setError(e.message)
+        } finally {
+          setTranscribing(false)
+        }
+      }
+      recorder.start()
+      recorderRef.current = recorder
+      setRecording(true)
+    } catch {
+      setError('No hay acceso al micrófono. Autorízalo en el navegador y vuelve a intentar.')
     }
   }
 
@@ -352,9 +412,17 @@ export function QuoteBuilder() {
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void ask() } }}
                 rows={2}
-                placeholder="Describe al cliente o pide una sección… (Enter envía)"
+                placeholder={recording ? 'Grabando… habla y vuelve a tocar el micrófono' : 'Describe, dicta o pide una sección… (Enter envía)'}
                 className="flex-1 resize-none rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500"
               />
+              <button
+                onClick={toggleRecording}
+                disabled={transcribing}
+                title={recording ? 'Detener y transcribir' : 'Dictar por voz'}
+                className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border shadow-sm transition disabled:opacity-40 ${recording ? 'animate-pulse border-rose-600 bg-rose-600 text-white' : 'border-slate-300 bg-white text-slate-500 hover:border-indigo-400 hover:text-indigo-600'}`}
+              >
+                {transcribing ? <Loader2 size={17} className="animate-spin" /> : recording ? <Square size={15} /> : <Mic size={17} />}
+              </button>
               <button
                 onClick={ask} disabled={thinking || !draft.trim()}
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 disabled:opacity-40"
@@ -368,7 +436,7 @@ export function QuoteBuilder() {
         {/* ── Estado ── */}
         <section className="flex flex-col">
           <nav className="flex gap-1 border-b border-slate-200 bg-white px-4 pt-2 sm:px-6">
-            {([['propuesta', 'Propuesta', FileText], ['contenido', 'Contenido', PenSquare], ['destinatarios', 'Destinatarios', Users], ['metricas', 'Métricas', BarChart2]] as const).map(([key, label, Icon]) => (
+            {([['propuesta', 'Propuesta', FileText], ['contenido', 'Contenido', PenSquare], ['vista', 'Vista previa', Eye], ['destinatarios', 'Destinatarios', Users], ['metricas', 'Métricas', BarChart2]] as const).map(([key, label, Icon]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
@@ -452,6 +520,20 @@ export function QuoteBuilder() {
                     ))}
                   </ul>
                 </div>
+              </div>
+            )}
+
+            {tab === 'vista' && (
+              <div className="flex h-full flex-col">
+                <p className="mb-2 text-[12px] text-slate-400">
+                  El documento tal como lo verá el cliente. Se actualiza con cada cambio del chat, de los módulos o del editor.
+                </p>
+                <iframe
+                  key={quote.updatedAt}
+                  src={publicUrl}
+                  title="Vista previa de la cotización"
+                  className="min-h-[70vh] w-full flex-1 rounded-xl border border-slate-200 bg-white shadow-sm"
+                />
               </div>
             )}
 
