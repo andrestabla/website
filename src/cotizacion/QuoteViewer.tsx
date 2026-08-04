@@ -376,7 +376,11 @@ export default function QuoteViewer() {
         {/* Arquitectura */}
         {(architecture.lede || architecture.layers?.length) && (
           <section className="qv-section" data-qsec="arquitectura">
-            <SectionHead num={nextNum()} kicker="Solución" title="Arquitectura de la solución" />
+            <SectionHead
+              num={nextNum()}
+              kicker={isService ? 'Método' : 'Solución'}
+              title={isService ? 'Cómo lo hacemos' : 'Arquitectura de la solución'}
+            />
             {architecture.lede && <p className="qv-lede">{architecture.lede}</p>}
             {architecture.layers?.length > 0 && (
               <div className="qv-arch">

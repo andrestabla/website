@@ -40,7 +40,7 @@ const CATALOG: Row[] = [
     price: 12_000_000,
     weeks: 2,
     deliverables: 11,
-    defaultOn: true,
+    defaultOn: false,
     tags: ['obligatorio', 'infraestructura', 'accesos'],
     detail: {
       entregables: [
@@ -69,7 +69,7 @@ const CATALOG: Row[] = [
     price: 4_900_000,
     weeks: 1.2,
     deliverables: 6,
-    defaultOn: true,
+    defaultOn: false,
     tags: ['editorial', 'producción', 'workflow'],
   },
   {
@@ -81,7 +81,7 @@ const CATALOG: Row[] = [
     price: 3_600_000,
     weeks: 0.9,
     deliverables: 5,
-    defaultOn: true,
+    defaultOn: false,
     tags: ['inventario', 'almacén'],
   },
   {
@@ -93,7 +93,7 @@ const CATALOG: Row[] = [
     price: 3_200_000,
     weeks: 0.8,
     deliverables: 4,
-    defaultOn: true,
+    defaultOn: false,
     tags: ['consignación', 'liquidación'],
   },
   {
@@ -117,7 +117,7 @@ const CATALOG: Row[] = [
     price: 2_600_000,
     weeks: 0.65,
     deliverables: 3,
-    defaultOn: true,
+    defaultOn: false,
     tags: ['costos', 'rentabilidad'],
   },
 
@@ -155,7 +155,7 @@ const CATALOG: Row[] = [
     price: 4_100_000,
     weeks: 1.0,
     deliverables: 5,
-    defaultOn: true,
+    defaultOn: false,
     tags: ['presupuesto', 'metas'],
   },
   {
@@ -167,7 +167,7 @@ const CATALOG: Row[] = [
     price: 4_700_000,
     weeks: 1.2,
     deliverables: 6,
-    defaultOn: true,
+    defaultOn: false,
     tags: ['comercial', 'visitas', 'cartera'],
   },
   {
@@ -179,7 +179,7 @@ const CATALOG: Row[] = [
     price: 4_300_000,
     weeks: 1.1,
     deliverables: 5,
-    defaultOn: true,
+    defaultOn: false,
     tags: ['analítica', 'tableros', 'mapas'],
   },
 
@@ -251,7 +251,7 @@ const SERVICE_CATALOG: Row[] = [
     price: 6_000_000,
     weeks: 1.5,
     deliverables: 4,
-    defaultOn: true,
+    defaultOn: false,
     tags: ['curso virtual', 'producción', 'diseño instruccional'],
   },
   {

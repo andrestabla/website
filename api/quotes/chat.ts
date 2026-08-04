@@ -40,7 +40,7 @@ const strArray = (v: unknown, max = 12) =>
  * (título + resumen) y el texto íntegro solo de los más relevantes para esta
  * conversación, hasta agotar el presupuesto.
  */
-const KNOWLEDGE_BUDGET = 78_000
+const KNOWLEDGE_BUDGET = 72_000
 const HISTORY_TURNS = 16
 
 const SYSTEM_RULES = `
@@ -54,6 +54,16 @@ REGLAS DURAS
 3. Toda afirmación sobre metodología, condiciones o antecedentes debe apoyarse en el CONTEXTO documental.
    Si el contexto no alcanza, dilo y pregunta; no rellenes con supuestos.
 4. Pregunta de a una cosa. Si ya tienes lo necesario para redactar una sección, redáctala.
+5. Quien cotiza decide las variables del precio: la cotización arranca vacía y solo enciendes
+   las líneas que el consultor pida o confirme. Jamás enciendas líneas "por si acaso".
+6. ESTRUCTURA SEGÚN EL HISTÓRICO: antes de redactar, identifica en el índice el caso más parecido
+   (mismo servicio o producto) y modela sobre él las secciones, las variables de precio, las fases
+   y el plan de pagos de esta cotización. Adapta al cliente actual; nunca copies literal.
+7. Si el consultor pide "completar todo el contenido", devuelve EN ESTE MISMO TURNO un patch con
+   TODAS las secciones aplicables a la plantilla (guía abajo). Si el espacio no alcanza, prioriza
+   carta, diagnóstico, método/fases, cronograma e hitos, y di qué falta para el siguiente turno.
+8. Tu "reply" solo afirma lo que de verdad va en el patch de este turno. Si no cambiaste algo,
+   di que falta, jamás que "procederás" a hacerlo.
 
 ESTILO (la casa es estricta con esto)
 - Prohibido: "compuerta", "en la era digital", "desbloquear el potencial", "robusto", "sin fisuras",
@@ -437,6 +447,20 @@ ${contextBlocks.length ? contextBlocks.join('\n\n') : '(ninguno seleccionado)'}
 Si el consultor pregunta por un caso del índice que no está en detalle, dilo y pide que lo mencione
 explícitamente en su siguiente mensaje para traerlo al contexto.
 
+## GUÍA DE SECCIONES PARA ESTA PLANTILLA
+${template === 'SERVICIO'
+    ? `Aplican: intro (carta), diagnosis (lede + frentes del reto del cliente + note), architecture
+  (úsala como MÉTODO: lede = enfoque de trabajo; layers = fases con name "Fase 01…"; SIN stack ni
+  stackNote salvo que el servicio sea tecnológico; ownership solo si aplica propiedad de entregables),
+  schedule (semanas reales del proyecto), milestones, investmentNote, paymentsNote, team, workRhythm,
+  assumptions, exclusions, guarantees, finalNote, backQuote y signature.
+  NO aplican: screens (capturas de software), coreNote, service (renovación SaaS) salvo que el
+  servicio incluya operación continua; scopeNote/timelineNote úsalos si aportan.`
+    : `Aplican todas las secciones: intro, diagnosis (+note), architecture (capas + stack + ownership),
+  coreNote, screens (solo textos/pies), schedule, milestones, investmentNote, paymentsNote, service
+  (niveles, budgetNote, note), team, workRhythm, assumptions, exclusions, guarantees, finalNote,
+  backQuote y signature.`}
+
 ## ESTADO ACTUAL DE LA COTIZACIÓN
 Plantilla: ${template} — ${QUOTE_TEMPLATES[template].description}
 Cliente: ${quote.clientName}${quote.sector ? ` · Sector: ${quote.sector}` : ''}
@@ -519,11 +543,11 @@ REGLAS DEL PATCH
     // una vez tras una pausa corta antes de rendirse.
     let aiResult
     try {
-      aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 3800 })
+      aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 4600 })
     } catch (error: any) {
       if (/rate limit|tokens per min|TPM/i.test(String(error?.message))) {
         await new Promise((resolve) => setTimeout(resolve, 1500))
-        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 3800 })
+        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 4600 })
       } else {
         throw error
       }
