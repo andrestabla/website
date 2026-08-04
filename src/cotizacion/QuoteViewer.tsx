@@ -21,7 +21,8 @@ import './quote-viewer.css'
 type PublicQuote = {
   publicId: string
   status: string
-  template?: 'PRODUCTO' | 'SERVICIO'
+  template?: string
+  templateKind?: 'MODULAR' | 'UNIDADES'
   clientName: string
   sector?: string | null
   title: string
@@ -239,7 +240,9 @@ export default function QuoteViewer() {
     return () => observer.disconnect()
   }, [state, track])
 
-  const isService = quote?.template === 'SERVICIO'
+  const isService = quote?.templateKind
+    ? quote.templateKind === 'UNIDADES'
+    : quote?.template === 'SERVICIO' // cotizaciones anteriores al registro de plantillas
   const scale = quote?.discountScale?.length ? quote.discountScale : DEFAULT_DISCOUNT_SCALE
   const flatScale = scale.every((tier: DiscountTier) => tier.pct === 0)
   const totals = useMemo(

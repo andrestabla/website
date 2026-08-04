@@ -52,7 +52,7 @@ function emptyContent() {
 }
 
 /** Recalcula totales en el servidor y devuelve el registro listo para guardar. */
-async function priced(items: QuoteItem[], scale: any, template: QuoteTemplateKey = 'PRODUCTO') {
+async function priced(items: QuoteItem[], scale: any, template: QuoteTemplateKey = 'SOLUCIONES') {
   const totals = computeTotals(items, {
     scale: Array.isArray(scale) && scale.length ? scale : undefined,
     minWeeks: QUOTE_TEMPLATES[template].minWeeks,
@@ -150,15 +150,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const items = itemsFromCatalog(catalog)
-      const scale = template === 'SERVICIO' ? FLAT_DISCOUNT_SCALE : DEFAULT_DISCOUNT_SCALE
+      const def = QUOTE_TEMPLATES[template]
+      const scale = def.kind === 'MODULAR' ? DEFAULT_DISCOUNT_SCALE : FLAT_DISCOUNT_SCALE
       const p = await priced(items, scale, template)
-      const defaultTitle =
-        template === 'SERVICIO'
-          ? `Propuesta de servicios para ${clientName}`
-          : `Plataforma a la medida para ${clientName}`
+      const defaultTitle = `${def.titlePrefix} para ${clientName}`
       const content = emptyContent()
-      if (template === 'SERVICIO') {
-        // los servicios no traen año de infraestructura por defecto
+      if (def.kind === 'UNIDADES') {
+        // los servicios por unidad no traen año de infraestructura por defecto
         ;(content as any).service = { includedMonths: 0, renewalPrice: 0, exitPrice: 0 }
       }
       const quote = await db().create({

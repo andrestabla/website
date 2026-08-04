@@ -6,7 +6,7 @@
  * su borrador. Nunca se exponen datos de otros destinatarios ni del propietario.
  */
 import { prisma } from '../_lib/prisma.js'
-import { quoteSessionState } from '../_lib/quotes.js'
+import { quoteSessionState, QUOTE_TEMPLATES, normalizeTemplate } from '../_lib/quotes.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -54,7 +54,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       quote: {
         publicId: quote.publicId,
         status: quote.status,
-        template: quote.template || 'PRODUCTO',
+        template: quote.template || 'SOLUCIONES',
+        templateKind: QUOTE_TEMPLATES[normalizeTemplate(quote.template)].kind,
         clientName: quote.clientName,
         sector: quote.sector,
         title: quote.title,

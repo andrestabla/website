@@ -32,15 +32,18 @@ const str = (v: unknown, max = 400) => (typeof v === 'string' ? v.trim().slice(0
 const strArray = (v: unknown, max = 12) =>
   Array.isArray(v) ? v.map((x) => str(x, 400)).filter(Boolean).slice(0, max) : null
 
+/** Modelo del Cotizador: el mejor disponible para igualar la redacción de las
+ *  propuestas de la casa. Sobreescribible por entorno sin tocar el resto del
+ *  sitio (BI y simulador siguen con el modelo global). */
+const QUOTES_MODEL = process.env.OPENAI_QUOTES_MODEL || 'gpt-5.5'
+
 /**
- * Presupuesto de contexto documental, en caracteres. La organización de OpenAI
- * opera con 30k tokens/minuto: el prompt completo debe quedar por debajo de
- * ~25k tokens (≈100k caracteres) contando catálogo, reglas e historial. Por eso
- * el histórico no se trunca a ciegas: se envía el índice de TODOS los documentos
- * (título + resumen) y el texto íntegro solo de los más relevantes para esta
- * conversación, hasta agotar el presupuesto.
+ * Presupuesto de contexto documental, en caracteres. gpt-5.5 opera con 500k
+ * tokens/minuto en esta organización: cabe el histórico completo. Se mantiene
+ * la selección por relevancia (índice de todos + detalle de los pertinentes)
+ * para que el modelo lea primero lo que importa.
  */
-const KNOWLEDGE_BUDGET = 72_000
+const KNOWLEDGE_BUDGET = 200_000
 const HISTORY_TURNS = 16
 
 const SYSTEM_RULES = `
@@ -456,7 +459,7 @@ Si el consultor pregunta por un caso del índice que no está en detalle, dilo y
 explícitamente en su siguiente mensaje para traerlo al contexto.
 
 ## GUÍA DE SECCIONES PARA ESTA PLANTILLA
-${template === 'SERVICIO'
+${QUOTE_TEMPLATES[template].kind === 'UNIDADES'
     ? `Aplican: intro (carta), diagnosis (lede + frentes del reto del cliente + note), architecture
   (úsala como MÉTODO: lede = enfoque de trabajo; layers = fases con name "Fase 01…"; SIN stack ni
   stackNote salvo que el servicio sea tecnológico; ownership solo si aplica propiedad de entregables),
@@ -468,6 +471,7 @@ ${template === 'SERVICIO'
   coreNote, screens (solo textos/pies), schedule, milestones, investmentNote, paymentsNote, service
   (niveles, budgetNote, note), team, workRhythm, assumptions, exclusions, guarantees, finalNote,
   backQuote y signature.`}
+ESTRUCTURA DE REFERENCIA DE ESTA LÍNEA: ${QUOTE_TEMPLATES[template].aiNotes}
 
 ## ESTADO ACTUAL DE LA COTIZACIÓN
 Plantilla: ${template} — ${QUOTE_TEMPLATES[template].description}
@@ -536,7 +540,7 @@ CONSULTOR: ${message}
   }
 }
 REGLAS DEL PATCH
-- Plantilla SERVICIO: las líneas tienen precio POR UNIDAD; fija cantidades con "modules.qty"
+- Plantillas por UNIDADES: las líneas tienen precio POR UNIDAD; fija cantidades con "modules.qty"
   (p. ej. 5 cursos → {"code":"SV01","qty":5}) y apaga las líneas que no apliquen. No hay núcleo.
 - Incluye SOLO las claves que cambian en este turno; lo demás se conserva. Sin cambios: "patch": {}.
 - Las listas (fronts, layers, stack, groups, milestones, levels, team, guarantees, assumptions, exclusions)
@@ -551,11 +555,11 @@ REGLAS DEL PATCH
     // una vez tras una pausa corta antes de rendirse.
     let aiResult
     try {
-      aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 4600 })
+      aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 9000, model: QUOTES_MODEL })
     } catch (error: any) {
       if (/rate limit|tokens per min|TPM/i.test(String(error?.message))) {
         await new Promise((resolve) => setTimeout(resolve, 1500))
-        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 4600 })
+        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 9000, model: QUOTES_MODEL })
       } else {
         throw error
       }

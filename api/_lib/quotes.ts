@@ -64,22 +64,94 @@ export type QuoteItem = {
   detail?: unknown
 }
 
-/** Plantillas de cotización disponibles. */
+/**
+ * Plantillas de cotización: una por línea de servicio de Algoritmo T.
+ * kind MODULAR = núcleo + módulos con economía de escala.
+ * kind UNIDADES = líneas con precio por unidad y cantidades.
+ * aiNotes: guía para la IA — casos del histórico que modelan la estructura.
+ */
 export const QUOTE_TEMPLATES = {
-  PRODUCTO: {
-    label: 'Producto · Plataforma a la medida',
-    description: 'Núcleo obligatorio + módulos activables con economía de escala. Modelo de la plataforma editorial.',
+  SOLUCIONES: {
+    label: 'Soluciones digitales a la medida',
+    short: 'Soluciones',
+    kind: 'MODULAR',
+    titlePrefix: 'Una plataforma a la medida',
+    description: 'Diseño, desarrollo e implementación de plataformas y automatizaciones: núcleo + módulos activables con economía de escala.',
     minWeeks: 4,
+    aiNotes: 'Modela sobre el caso Ediciones de la U: núcleo, módulos por frente, capturas del prototipo, hitos 30/25/25/20 y año de servicio incluido.',
   },
-  SERVICIO: {
-    label: 'Servicio · Proyectos y producción',
-    description: 'Líneas de servicio por unidad (cursos, recursos, estudios) con cantidades. Sin núcleo ni descuento automático.',
+  TRANSFORMACION: {
+    label: 'Consultoría en transformación digital',
+    short: 'Transformación',
+    kind: 'UNIDADES',
+    titlePrefix: 'Consultoría en transformación digital',
+    description: 'Diagnóstico de madurez, mapeo de procesos, soluciones digitales y mejora continua. Precios en USD.',
+    minWeeks: 3,
+    aiNotes: 'Estructura por fases del método de transformación (diagnóstico → mapeo → diseño/desarrollo → mejora continua). Las cantidades son procesos, soluciones y meses de retainer.',
+  },
+  CURSOS: {
+    label: 'Producción de cursos virtuales',
+    short: 'Cursos',
+    kind: 'UNIDADES',
+    titlePrefix: 'Producción de cursos virtuales',
+    description: 'Cursos completos en 5 fases o por fases sueltas, y recursos educativos digitales por unidad.',
     minWeeks: 2,
+    aiNotes: 'Modela sobre los casos USCO/UPC (tabla por créditos: curso completo $13,0–17,4 M; precios fábrica desde 10 cursos) y La Salle para recursos. Fases: ruta, autoría, producción, montaje LMS, calidad.',
+  },
+  FORMACION: {
+    label: 'Formación docente como servicio',
+    short: 'Formación',
+    kind: 'UNIDADES',
+    titlePrefix: 'Programa de formación docente',
+    description: 'Programas de formación docente con talleres, acompañamiento y certificación.',
+    minWeeks: 3,
+    aiNotes: 'Modela sobre el caso Fundación Universitaria San Martín ($17,6 M + IVA por programa).',
+  },
+  PROFETABLA: {
+    label: 'ProfeTabla · Plataforma de formación docente',
+    short: 'ProfeTabla',
+    kind: 'UNIDADES',
+    titlePrefix: 'Experiencias ProfeTabla',
+    description: 'Experiencias de formación docente sobre la plataforma ProfeTabla, por sesiones y rango de profesores.',
+    minWeeks: 2,
+    aiNotes: 'Modela sobre el portafolio ProfeTabla: experiencias por tipo (Proyecto 6 sesiones, Reto 3 sesiones) con precio por rango de profesores (1–5, 6–10, 11–15).',
+  },
+  LMS: {
+    label: 'Plataforma de aprendizaje como servicio (LMS)',
+    short: 'LMS',
+    kind: 'UNIDADES',
+    titlePrefix: 'Plataforma de aprendizaje como servicio',
+    description: 'Licencia anual del LMS Algoritmo T: usuarios ilimitados, infraestructura y soporte N1–N4.',
+    minWeeks: 4,
+    aiNotes: 'Modela sobre el portafolio LMS: licencia anual $160 M el primer año y $130 M desde el segundo; hasta 5 TB de almacenamiento nuevo por año; 5% de descuento por pago anticipado.',
+  },
+  ESTUDIO: {
+    label: 'Estudio de mercado',
+    short: 'Estudio',
+    kind: 'UNIDADES',
+    titlePrefix: 'Estudio de mercado',
+    description: 'Estudios de mercado para nuevos programas académicos: demanda, oferta comparada, empleabilidad y pertinencia.',
+    minWeeks: 6,
+    aiNotes: 'Modela sobre el caso de Registro calificado (COP 98 M por estudio).',
+  },
+  PROGRAMAS: {
+    label: 'Construcción de programas académicos',
+    short: 'Programas',
+    kind: 'UNIDADES',
+    titlePrefix: 'Construcción de programa académico',
+    description: 'Documento maestro, anexos, PEP y syllabus para registro calificado, con precio por nivel del programa.',
+    minWeeks: 8,
+    aiNotes: 'Modela sobre el caso USCO y el portafolio de creación de programas: pregrado $65 M, especialización $30 M, maestría $40 M (antes de impuestos).',
   },
 } as const
 export type QuoteTemplateKey = keyof typeof QUOTE_TEMPLATES
-export const normalizeTemplate = (v: unknown): QuoteTemplateKey =>
-  v === 'SERVICIO' ? 'SERVICIO' : 'PRODUCTO'
+
+/** Acepta claves nuevas y las heredadas (PRODUCTO/SERVICIO) de las primeras cotizaciones. */
+export const normalizeTemplate = (v: unknown): QuoteTemplateKey => {
+  if (typeof v === 'string' && v in QUOTE_TEMPLATES) return v as QuoteTemplateKey
+  if (v === 'SERVICIO') return 'CURSOS'
+  return 'SOLUCIONES'
+}
 
 /** Escala plana para servicios: el precio es unitario y no hay descuento automático. */
 export const FLAT_DISCOUNT_SCALE: DiscountTier[] = [{ upTo: 99, pct: 0 }]

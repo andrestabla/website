@@ -38,19 +38,29 @@ function getProviderOrder(provider: AIProvider, integrations: AiIntegrations): A
   return order
 }
 
+/** Los gpt-5/o-series usan max_completion_tokens y no aceptan temperature explícita. */
+function openAiTokenParams(model: string, temperature: number, maxTokens: number) {
+  if (/^(gpt-5|o\d)/.test(model)) {
+    return { max_completion_tokens: maxTokens }
+  }
+  return { temperature, max_tokens: maxTokens }
+}
+
 async function generateJsonWithOpenAI({
   prompt,
   integrations,
   temperature,
   maxTokens,
+  modelOverride,
 }: {
   prompt: string
   integrations: AiIntegrations
   temperature: number
   maxTokens: number
+  modelOverride?: string
 }) {
   const apiKey = integrations.openai.config.apiKey
-  const model = integrations.openai.config.model || process.env.OPENAI_MODEL || 'gpt-4o'
+  const model = modelOverride || integrations.openai.config.model || process.env.OPENAI_MODEL || 'gpt-4o'
   const headers: Record<string, string> = {
     Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
@@ -65,8 +75,7 @@ async function generateJsonWithOpenAI({
     headers,
     body: JSON.stringify({
       model,
-      temperature,
-      max_tokens: Math.min(maxTokens, integrations.openai.config.maxTokens || maxTokens),
+      ...openAiTokenParams(model, temperature, maxTokens),
       response_format: { type: 'json_object' },
       messages: [
         {
@@ -117,15 +126,17 @@ async function generateChatWithOpenAI({
   integrations,
   temperature,
   maxTokens,
+  modelOverride,
 }: {
   system: string
   messages: ChatMessage[]
   integrations: AiIntegrations
   temperature: number
   maxTokens: number
+  modelOverride?: string
 }) {
   const apiKey = integrations.openai.config.apiKey
-  const model = integrations.openai.config.model || process.env.OPENAI_MODEL || 'gpt-4o'
+  const model = modelOverride || integrations.openai.config.model || process.env.OPENAI_MODEL || 'gpt-4o'
   const headers: Record<string, string> = {
     Authorization: `Bearer ${apiKey}`,
     'Content-Type': 'application/json',
@@ -138,8 +149,7 @@ async function generateChatWithOpenAI({
     headers,
     body: JSON.stringify({
       model,
-      temperature,
-      max_tokens: Math.min(maxTokens, integrations.openai.config.maxTokens || maxTokens),
+      ...openAiTokenParams(model, temperature, maxTokens),
       messages: [{ role: 'system', content: system }, ...messages],
     }),
   })
@@ -184,12 +194,14 @@ export async function generateChatWithAI({
   provider = 'auto',
   temperature = 0.4,
   maxTokens = 700,
+  model,
 }: {
   system: string
   messages: ChatMessage[]
   provider?: AIProvider
   temperature?: number
   maxTokens?: number
+  model?: string
 }): Promise<{ providerUsed: 'openai' | 'gemini'; text: string }> {
   const integrations = await getServerIntegrations()
   const order = getProviderOrder(provider, integrations)
@@ -201,7 +213,7 @@ export async function generateChatWithAI({
   for (const selected of order) {
     try {
       if (selected === 'openai') {
-        const text = await generateChatWithOpenAI({ system, messages, integrations, temperature, maxTokens })
+        const text = await generateChatWithOpenAI({ system, messages, integrations, temperature, maxTokens, modelOverride: model })
         return { providerUsed: 'openai', text }
       }
       const text = await generateChatWithGemini({ system, messages, integrations, temperature })
@@ -227,11 +239,14 @@ export async function generateJsonWithAI({
   provider = 'auto',
   temperature = 0.3,
   maxTokens = 1200,
+  model,
 }: {
   prompt: string
   provider?: AIProvider
   temperature?: number
   maxTokens?: number
+  /** Override de modelo OpenAI para esta llamada (p. ej. el Cotizador usa gpt-5.5). */
+  model?: string
 }): Promise<{ providerUsed: 'openai' | 'gemini'; data: any }> {
   const integrations = await getServerIntegrations()
   const order = getProviderOrder(provider, integrations)
@@ -243,7 +258,7 @@ export async function generateJsonWithAI({
   for (const selected of order) {
     try {
       if (selected === 'openai') {
-        const data = await generateJsonWithOpenAI({ prompt, integrations, temperature, maxTokens })
+        const data = await generateJsonWithOpenAI({ prompt, integrations, temperature, maxTokens, modelOverride: model })
         return { providerUsed: 'openai', data }
       }
       const data = await generateJsonWithGemini({ prompt, integrations, temperature })
