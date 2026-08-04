@@ -16,6 +16,29 @@ const STATUS_STYLE: Record<string, string> = {
 }
 const STATUS_LABEL: Record<string, string> = { DRAFT: 'Borrador', PUBLISHED: 'Publicada', ARCHIVED: 'Archivada' }
 
+/** Espejo de QUOTE_TEMPLATES del servidor (api/_lib/quotes.ts). */
+const TEMPLATES: Array<[string, string]> = [
+  ['SOLUCIONES', 'Soluciones digitales'],
+  ['TRANSFORMACION', 'Transformación digital'],
+  ['CURSOS', 'Cursos virtuales'],
+  ['FORMACION', 'Formación docente'],
+  ['PROFETABLA', 'ProfeTabla'],
+  ['LMS', 'Plataforma LMS'],
+  ['ESTUDIO', 'Estudio de mercado'],
+  ['PROGRAMAS', 'Programas académicos'],
+]
+export const TEMPLATE_LABEL: Record<string, string> = Object.fromEntries(TEMPLATES)
+const TEMPLATE_DESC: Record<string, string> = {
+  SOLUCIONES: 'Plataformas y automatizaciones a la medida: núcleo + módulos con economía de escala.',
+  TRANSFORMACION: 'Diagnóstico de madurez, mapeo de procesos, soluciones digitales y mejora continua (USD).',
+  CURSOS: 'Cursos virtuales completos o por fases, y recursos educativos digitales por unidad.',
+  FORMACION: 'Programas de formación docente con talleres, acompañamiento y certificación.',
+  PROFETABLA: 'Experiencias de formación docente sobre ProfeTabla, por sesiones y rango de profesores.',
+  LMS: 'Licencia anual del LMS: usuarios ilimitados, infraestructura y soporte N1–N4.',
+  ESTUDIO: 'Estudios de mercado para nuevos programas: demanda, oferta, empleabilidad y pertinencia.',
+  PROGRAMAS: 'Documento maestro, PEP y syllabus para registro calificado, con precio por nivel.',
+}
+
 type KnowledgeDoc = {
   id: string
   title: string
@@ -184,7 +207,7 @@ export function CotizadorList() {
   const [creating, setCreating] = useState(false)
   const [clientName, setClientName] = useState('')
   const [sector, setSector] = useState('')
-  const [template, setTemplate] = useState<'PRODUCTO' | 'SERVICIO'>('PRODUCTO')
+  const [template, setTemplate] = useState('SOLUCIONES')
   const [copied, setCopied] = useState('')
 
   const load = useCallback(async () => {
@@ -253,21 +276,19 @@ export function CotizadorList() {
 
         {/* Crear */}
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex flex-wrap gap-2">
-            {([
-              ['PRODUCTO', 'Producto · Plataforma a la medida', 'Núcleo + módulos activables con economía de escala.'],
-              ['SERVICIO', 'Servicio · Proyectos y producción', 'Líneas por unidad (cursos, recursos, estudios) con cantidades.'],
-            ] as const).map(([key, label, desc]) => (
+          <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">Línea de servicio (plantilla)</div>
+          <div className="mb-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+            {TEMPLATES.map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setTemplate(key)}
-                className={`flex-1 min-w-[240px] rounded-xl border px-4 py-3 text-left transition ${template === key ? 'border-indigo-500 bg-indigo-50/60 ring-1 ring-indigo-500' : 'border-slate-200 hover:border-slate-300'}`}
+                className={`rounded-lg border px-3 py-2 text-left text-[12.5px] font-semibold transition ${template === key ? 'border-indigo-500 bg-indigo-50/70 text-indigo-700 ring-1 ring-indigo-500' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
               >
-                <div className={`text-[13px] font-bold ${template === key ? 'text-indigo-700' : 'text-slate-700'}`}>{label}</div>
-                <div className="mt-0.5 text-[12px] text-slate-500">{desc}</div>
+                {label}
               </button>
             ))}
           </div>
+          <p className="mb-3 text-[12px] text-slate-500">{TEMPLATE_DESC[template]}</p>
           <div className="flex flex-wrap items-center gap-2">
           <input
             value={clientName} onChange={(e) => setClientName(e.target.value)}
@@ -326,8 +347,10 @@ export function CotizadorList() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-800">
                         {quote.clientName}
-                        {quote.template === 'SERVICIO' && (
-                          <span className="rounded bg-cyan-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-700">Servicio</span>
+                        {quote.template && quote.template !== 'SOLUCIONES' && (
+                          <span className="rounded bg-cyan-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-700">
+                            {TEMPLATE_LABEL[quote.template] ?? quote.template}
+                          </span>
                         )}
                       </div>
                       <div className="max-w-[280px] truncate text-[12px] text-slate-400">

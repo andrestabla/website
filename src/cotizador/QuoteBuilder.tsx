@@ -12,6 +12,7 @@ import {
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
 import { ContentEditor } from './ContentEditor'
 import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type QuoteRecipient } from './api'
+import { TEMPLATE_LABEL } from './CotizadorList'
 
 type Tab = 'propuesta' | 'contenido' | 'destinatarios' | 'metricas'
 
@@ -241,8 +242,10 @@ export function QuoteBuilder() {
         <span className={`ml-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${published ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : quote.status === 'ARCHIVED' ? 'border-slate-200 bg-slate-100 text-slate-500' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
           {published ? 'Publicada' : quote.status === 'ARCHIVED' ? 'Archivada' : 'Borrador'}
         </span>
-        {quote.template === 'SERVICIO' && (
-          <span className="shrink-0 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-700">Servicio</span>
+        {quote.template && quote.template !== 'SOLUCIONES' && (
+          <span className="shrink-0 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-700">
+            {TEMPLATE_LABEL[quote.template] ?? quote.template}
+          </span>
         )}
         <div className="flex-1" />
         <button
