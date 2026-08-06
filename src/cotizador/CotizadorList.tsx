@@ -5,9 +5,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Plus, FileText, Eye, Copy, BookOpen, Trash2, UploadCloud, X, Loader2, CheckCircle2, CopyPlus,
+  ArrowLeft, Plus, FileText, Eye, Copy, BookOpen, Trash2, UploadCloud, X, Loader2, CheckCircle2, CopyPlus, ExternalLink,
 } from 'lucide-react'
 import { quotesApi, money, timeAgo, type QuoteListItem } from './api'
+
+/**
+ * Cotizaciones independientes: documentos diagramados fuera del builder,
+ * hospedados como estáticos en /public/cotizaciones/<id>/.
+ */
+const STANDALONE_QUOTES = [
+  {
+    id: 'upc-2026',
+    clientName: 'Universidad Popular del Cesar',
+    title: 'Plataforma de Gestión de la Transformación Digital con Enfoque Territorial',
+    total: 760_200_000,
+    currency: 'COP',
+    url: '/cotizaciones/upc-2026/Propuesta-UPC-2026.html',
+    note: '23 págs · descarga PDF y Word',
+  },
+]
 
 const STATUS_STYLE: Record<string, string> = {
   DRAFT: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -311,6 +327,53 @@ export function CotizadorList() {
           </div>
         </div>
         {error && <p className="mt-3 text-sm text-rose-600">{error}</p>}
+
+        {/* Cotizaciones independientes (documentos estáticos con URL propia) */}
+        <div className="mt-6 overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
+          <div className="border-b border-indigo-100 bg-indigo-50/60 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-indigo-500">
+            Cotizaciones independientes
+          </div>
+          <table className="w-full text-sm">
+            <tbody className="divide-y divide-slate-100">
+              {STANDALONE_QUOTES.map((d) => (
+                <tr key={d.id} className="transition hover:bg-indigo-50/40">
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-slate-800">{d.clientName}</div>
+                    <div className="max-w-[440px] truncate text-[12px] text-slate-400">{d.title}</div>
+                  </td>
+                  <td className="hidden px-4 py-3 text-[12px] text-slate-400 sm:table-cell">{d.note}</td>
+                  <td className="px-4 py-3 text-right font-mono text-[13px] font-semibold text-slate-800">
+                    {money(d.total, d.currency)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end">
+                      <a
+                        href={d.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Abrir documento"
+                        className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                      >
+                        <ExternalLink size={15} />
+                      </a>
+                      <button
+                        onClick={() => {
+                          void navigator.clipboard.writeText(`${window.location.origin}${d.url}`)
+                          setCopied(d.id)
+                          window.setTimeout(() => setCopied(''), 1600)
+                        }}
+                        title="Copiar enlace"
+                        className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                      >
+                        {copied === d.id ? <CheckCircle2 size={15} className="text-emerald-600" /> : <Copy size={15} />}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Lista */}
         {loading ? (

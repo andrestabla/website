@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/cotizaciones/upc-2026",
+      "destination": "/cotizaciones/upc-2026/Propuesta-UPC-2026.html"
+    },
+    {
       "source": "/robots.txt",
       "destination": "/api/robots"
     },
