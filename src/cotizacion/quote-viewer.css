@@ -392,7 +392,13 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
 .qv-note b { color: var(--ink-soft); }
 
 /* ---------- cierre ---------- */
-.qv-back { background: var(--navy); color: #d4dcec; margin-top: clamp(36px, 6vw, 60px); padding: clamp(36px, 6vw, 56px) 0; }
+.qv-back {
+  background: var(--navy); color: #d4dcec;
+  max-width: 900px; margin: 0 auto clamp(24px, 4vw, 44px);
+  padding: clamp(36px, 6vw, 56px) 0;
+  border-radius: 4px; counter-increment: qvsheet;
+  box-shadow: 0 1px 2px rgba(27, 32, 38, 0.05), 0 20px 46px -30px rgba(27, 32, 38, 0.5);
+}
 .qv-back .bk-q {
   font-family: var(--sans); font-size: clamp(22px, 3.6vw, 30px); line-height: 1.26;
   color: #fff; max-width: 24ch; font-weight: 700; letter-spacing: -0.025em;
@@ -698,4 +704,29 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
     display: flex; align-items: stretch; padding: 18mm 0;
   }
   .qv-back .qv-page { display: flex; flex-direction: column; justify-content: center; width: 100%; }
+}
+
+
+/* ============================================================
+   Impresión: las hojas de pantalla vuelven al flujo de documento.
+   La paginación la gobierna el bloque print original (portada de
+   hoja completa, secciones en hoja nueva, piezas atómicas); aquí
+   solo se neutraliza la escenografía de escritorio y se suma la
+   contraportada como hoja completa.
+   ============================================================ */
+@media print {
+  .qv { background: #fff; }
+  .qv-cover, .qv-section, .qv-back {
+    max-width: none; margin: 0; border-radius: 0; box-shadow: none;
+  }
+  .qv-section { background: transparent; }
+  .qv-section::before, .qv-section::after { content: none; }
+  main.qv-page { max-width: none; padding: 0 16mm; }
+
+  /* contraportada: hoja completa al cierre, como la portada */
+  .qv-back {
+    break-before: page;
+    height: 296mm; box-sizing: border-box; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center;
+  }
 }
