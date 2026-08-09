@@ -39,6 +39,103 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
+// ── componentes estables (fuera del render: si se definen adentro, React los
+//    remonta en cada tecla y el campo pierde el foco) ─────────────────────────
+type ListOps = {
+  list: any[]
+  add: () => void
+  remove: (i: number) => void
+  move: (i: number, dir: -1 | 1) => void
+  set: (i: number, field: string | null, value: unknown) => void
+}
+
+function StrListEditor({ ops, placeholder }: { ops: ListOps; placeholder: string }) {
+  return (
+    <div className="space-y-2">
+      {ops.list.map((text, i) => (
+        <div className="flex items-start gap-1.5" key={i}>
+          <textarea rows={2} value={text} onChange={(e) => ops.set(i, null, e.target.value)} className={inputCls} />
+          <div className="flex flex-col">
+            <button onClick={() => ops.move(i, -1)} className={miniBtn}><ArrowUp size={12} /></button>
+            <button onClick={() => ops.remove(i)} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={12} /></button>
+          </div>
+        </div>
+      ))}
+      <button onClick={ops.add} className="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-600 hover:underline">
+        <Plus size={13} /> {placeholder}
+      </button>
+    </div>
+  )
+}
+
+function ObjListEditor({
+  ops,
+  fields,
+  itemLabel,
+}: {
+  ops: ListOps
+  fields: Array<{ key: string; label: string; area?: boolean; rows?: number }>
+  itemLabel: string
+}) {
+  return (
+    <div className="space-y-3">
+      {ops.list.map((item, i) => (
+        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3" key={i}>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{itemLabel} {i + 1}</span>
+            <div className="flex">
+              <button onClick={() => ops.move(i, -1)} className={miniBtn}><ArrowUp size={12} /></button>
+              <button onClick={() => ops.move(i, 1)} className={miniBtn}><ArrowDown size={12} /></button>
+              <button onClick={() => ops.remove(i)} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={12} /></button>
+            </div>
+          </div>
+          {fields.map((field) => (
+            <div key={field.key} className="mt-1.5">
+              <label className="mb-0.5 block text-[10.5px] font-semibold text-slate-400">{field.label}</label>
+              {field.area ? (
+                <textarea rows={field.rows ?? 2} value={item?.[field.key] ?? ''} onChange={(e) => ops.set(i, field.key, e.target.value)} className={inputCls} />
+              ) : (
+                <input value={item?.[field.key] ?? ''} onChange={(e) => ops.set(i, field.key, e.target.value)} className={inputCls} />
+              )}
+            </div>
+          ))}
+        </div>
+      ))}
+      <button onClick={ops.add} className="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-600 hover:underline">
+        <Plus size={13} /> Agregar {itemLabel.toLowerCase()}
+      </button>
+    </div>
+  )
+}
+
+function Section({
+  id,
+  title,
+  open,
+  setOpen,
+  children,
+}: {
+  id: string
+  title: string
+  open: Record<string, boolean>
+  setOpen: React.Dispatch<React.SetStateAction<Record<string, boolean>>>
+  children: ReactNode
+}) {
+  const isOpen = open[id] === true
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white">
+      <button
+        onClick={() => setOpen((prev) => ({ ...prev, [id]: !isOpen }))}
+        className="flex w-full items-center gap-2 px-4 py-3 text-left text-[13px] font-bold text-slate-700"
+      >
+        {isOpen ? <ChevronDown size={15} className="text-indigo-500" /> : <ChevronRight size={15} className="text-slate-300" />}
+        {title}
+      </button>
+      {isOpen && <div className="border-t border-slate-100 px-4 pb-4">{children}</div>}
+    </div>
+  )
+}
+
 // ── editor ──────────────────────────────────────────────────────────────────
 export function ContentEditor({
   quoteId,
@@ -123,69 +220,6 @@ export function ContentEditor({
     }
   }
 
-  function StrListEditor({ path, placeholder }: { path: string; placeholder: string }) {
-    const ops = listOps(path, '')
-    return (
-      <div className="space-y-2">
-        {ops.list.map((text, i) => (
-          <div className="flex items-start gap-1.5" key={i}>
-            <textarea rows={2} value={text} onChange={(e) => ops.set(i, null, e.target.value)} className={inputCls} />
-            <div className="flex flex-col">
-              <button onClick={() => ops.move(i, -1)} className={miniBtn}><ArrowUp size={12} /></button>
-              <button onClick={() => ops.remove(i)} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={12} /></button>
-            </div>
-          </div>
-        ))}
-        <button onClick={ops.add} className="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-600 hover:underline">
-          <Plus size={13} /> {placeholder}
-        </button>
-      </div>
-    )
-  }
-
-  function ObjListEditor({
-    path,
-    empty,
-    fields,
-    itemLabel,
-  }: {
-    path: string
-    empty: Record<string, unknown>
-    fields: Array<{ key: string; label: string; area?: boolean; rows?: number }>
-    itemLabel: string
-  }) {
-    const ops = listOps(path, empty)
-    return (
-      <div className="space-y-3">
-        {ops.list.map((item, i) => (
-          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3" key={i}>
-            <div className="mb-1 flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{itemLabel} {i + 1}</span>
-              <div className="flex">
-                <button onClick={() => ops.move(i, -1)} className={miniBtn}><ArrowUp size={12} /></button>
-                <button onClick={() => ops.move(i, 1)} className={miniBtn}><ArrowDown size={12} /></button>
-                <button onClick={() => ops.remove(i)} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={12} /></button>
-              </div>
-            </div>
-            {fields.map((field) => (
-              <div key={field.key} className="mt-1.5">
-                <label className="mb-0.5 block text-[10.5px] font-semibold text-slate-400">{field.label}</label>
-                {field.area ? (
-                  <textarea rows={field.rows ?? 2} value={item?.[field.key] ?? ''} onChange={(e) => ops.set(i, field.key, e.target.value)} className={inputCls} />
-                ) : (
-                  <input value={item?.[field.key] ?? ''} onChange={(e) => ops.set(i, field.key, e.target.value)} className={inputCls} />
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
-        <button onClick={ops.add} className="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-600 hover:underline">
-          <Plus size={13} /> Agregar {itemLabel.toLowerCase()}
-        </button>
-      </div>
-    )
-  }
-
   // ── capturas (R2) ──
   const uploadShot = async (file: File, index: number | null) => {
     setUploadingShot(index ?? -1)
@@ -215,22 +249,6 @@ export function ContentEditor({
     }
   }
 
-  function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-    const isOpen = open[id] === true
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white">
-        <button
-          onClick={() => setOpen((prev) => ({ ...prev, [id]: !isOpen }))}
-          className="flex w-full items-center gap-2 px-4 py-3 text-left text-[13px] font-bold text-slate-700"
-        >
-          {isOpen ? <ChevronDown size={15} className="text-indigo-500" /> : <ChevronRight size={15} className="text-slate-300" />}
-          {title}
-        </button>
-        {isOpen && <div className="border-t border-slate-100 px-4 pb-4">{children}</div>}
-      </div>
-    )
-  }
-
   const shots: any[] = Array.isArray(val('screens.items', [])) ? val('screens.items', []) : []
 
   return (
@@ -251,7 +269,7 @@ export function ContentEditor({
         </button>
       </div>
 
-      <Section id="portada" title="Portada y datos del cliente">
+      <Section open={open} setOpen={setOpen} id="portada" title="Portada y datos del cliente">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Cliente *"><input value={meta.clientName} onChange={(e) => setMetaField('clientName', e.target.value)} className={inputCls} /></Field>
           <Field label="Sector"><input value={meta.sector} onChange={(e) => setMetaField('sector', e.target.value)} className={inputCls} /></Field>
@@ -269,7 +287,7 @@ export function ContentEditor({
         </Field>
       </Section>
 
-      <Section id="presentacion" title="01 · Presentación (carta)">
+      <Section open={open} setOpen={setOpen} id="presentacion" title="01 · Presentación (carta)">
         <Field label="Fecha — p. ej. «Bogotá D.C., 5 de agosto de 2026» (vacío = no se muestra)">
           <input value={val('letterhead.date')} onChange={(e) => patch('letterhead.date', e.target.value)} className={inputCls} />
         </Field>
@@ -287,12 +305,11 @@ export function ContentEditor({
         </Field>
       </Section>
 
-      <Section id="diagnostico" title="02 · Diagnóstico y frentes">
+      <Section open={open} setOpen={setOpen} id="diagnostico" title="02 · Diagnóstico y frentes">
         <Field label="Entradilla"><textarea rows={3} value={val('diagnosis.lede')} onChange={(e) => patch('diagnosis.lede', e.target.value)} className={inputCls} /></Field>
         <label className={labelCls}>Frentes</label>
         <ObjListEditor
-          path="diagnosis.fronts"
-          empty={{ title: '', body: '', needs: '' }}
+          ops={listOps('diagnosis.fronts', { title: '', body: '', needs: '' })}
           itemLabel="Frente"
           fields={[
             { key: 'title', label: 'Título' },
@@ -304,12 +321,11 @@ export function ContentEditor({
         <Field label="Caja — texto"><textarea rows={4} value={val('diagnosis.note.body')} onChange={(e) => patch('diagnosis.note.body', e.target.value)} className={inputCls} /></Field>
       </Section>
 
-      <Section id="arquitectura" title="03 · Arquitectura y base tecnológica">
+      <Section open={open} setOpen={setOpen} id="arquitectura" title="03 · Arquitectura y base tecnológica">
         <Field label="Entradilla"><textarea rows={3} value={val('architecture.lede')} onChange={(e) => patch('architecture.lede', e.target.value)} className={inputCls} /></Field>
         <label className={labelCls}>Capas</label>
         <ObjListEditor
-          path="architecture.layers"
-          empty={{ name: 'Capa', title: '', desc: '' }}
+          ops={listOps('architecture.layers', { name: 'Capa', title: '', desc: '' })}
           itemLabel="Capa"
           fields={[
             { key: 'name', label: 'Etiqueta (Capa 01…)' },
@@ -320,8 +336,7 @@ export function ContentEditor({
         <Field label="Nota previa a la tabla"><textarea rows={2} value={val('architecture.stackNote')} onChange={(e) => patch('architecture.stackNote', e.target.value)} className={inputCls} /></Field>
         <label className={labelCls}>Base tecnológica</label>
         <ObjListEditor
-          path="architecture.stack"
-          empty={{ component: '', tech: '', what: '' }}
+          ops={listOps('architecture.stack', { component: '', tech: '', what: '' })}
           itemLabel="Componente"
           fields={[
             { key: 'component', label: 'Componente' },
@@ -333,7 +348,7 @@ export function ContentEditor({
         <Field label="Caja — texto"><textarea rows={4} value={val('architecture.ownership.body')} onChange={(e) => patch('architecture.ownership.body', e.target.value)} className={inputCls} /></Field>
       </Section>
 
-      <Section id="pantallas" title="04 · La plataforma en pantalla (capturas)">
+      <Section open={open} setOpen={setOpen} id="pantallas" title="04 · La plataforma en pantalla (capturas)">
         <Field label="Introducción"><textarea rows={3} value={val('screens.intro')} onChange={(e) => patch('screens.intro', e.target.value)} className={inputCls} /></Field>
         <label className={labelCls}>Capturas (se suben a R2)</label>
         <div className="space-y-3">
@@ -389,14 +404,14 @@ export function ContentEditor({
         <Field label="Nota al pie de la sección"><textarea rows={2} value={val('screens.note')} onChange={(e) => patch('screens.note', e.target.value)} className={inputCls} /></Field>
       </Section>
 
-      <Section id="nucleo" title="05 · Núcleo y notas de alcance">
+      <Section open={open} setOpen={setOpen} id="nucleo" title="05 · Núcleo y notas de alcance">
         <Field label="Caja «Lectura de la cifra» — título"><input value={val('coreNote.title')} onChange={(e) => patch('coreNote.title', e.target.value)} className={inputCls} /></Field>
         <Field label="Caja — texto"><textarea rows={4} value={val('coreNote.body')} onChange={(e) => patch('coreNote.body', e.target.value)} className={inputCls} /></Field>
         <Field label="Nota de alcance (scopeNote)"><textarea rows={3} value={val('scopeNote')} onChange={(e) => patch('scopeNote', e.target.value)} className={inputCls} /></Field>
         <Field label="Cómo leer el plazo (timelineNote)"><textarea rows={3} value={val('timelineNote')} onChange={(e) => patch('timelineNote', e.target.value)} className={inputCls} /></Field>
       </Section>
 
-      <Section id="cronograma" title="06 · Cronograma (semana a semana)">
+      <Section open={open} setOpen={setOpen} id="cronograma" title="06 · Cronograma (semana a semana)">
         <Field label="Introducción"><textarea rows={3} value={val('schedule.intro')} onChange={(e) => patch('schedule.intro', e.target.value)} className={inputCls} /></Field>
         <p className="mt-2 text-[11.5px] text-slate-400">
           Las semanas se escriben como números separados por coma (p. ej. «3,4»). «Hito» marca la semana de entrega en dorado.
@@ -454,12 +469,11 @@ export function ContentEditor({
         <Field label="Leyenda adicional"><input value={val('schedule.legend')} onChange={(e) => patch('schedule.legend', e.target.value)} className={inputCls} /></Field>
       </Section>
 
-      <Section id="inversion" title="07 · Inversión, hitos y plan de pagos">
+      <Section open={open} setOpen={setOpen} id="inversion" title="07 · Inversión, hitos y plan de pagos">
         <Field label="Nota bajo la tabla de inversión"><textarea rows={3} value={val('investmentNote')} onChange={(e) => patch('investmentNote', e.target.value)} className={inputCls} /></Field>
         <label className={labelCls}>Qué se aprueba en cada hito</label>
         <ObjListEditor
-          path="milestones"
-          empty={{ name: 'Hito', week: '', criterion: '' }}
+          ops={listOps('milestones', { name: 'Hito', week: '', criterion: '' })}
           itemLabel="Hito"
           fields={[
             { key: 'name', label: 'Nombre (Hito 01…)' },
@@ -470,7 +484,7 @@ export function ContentEditor({
         <Field label="Nota del plan de pagos"><textarea rows={2} value={val('paymentsNote')} onChange={(e) => patch('paymentsNote', e.target.value)} className={inputCls} /></Field>
       </Section>
 
-      <Section id="servicio" title="08 · Servicio, soporte y renovación">
+      <Section open={open} setOpen={setOpen} id="servicio" title="08 · Servicio, soporte y renovación">
         <div className="grid grid-cols-3 gap-3">
           <Field label="Meses incluidos"><input type="number" value={val('service.includedMonths', 12)} onChange={(e) => patch('service.includedMonths', parseInt(e.target.value, 10) || 0)} className={inputCls} /></Field>
           <Field label="Renovación anual"><input type="number" value={val('service.renewalPrice', 0)} onChange={(e) => patch('service.renewalPrice', parseInt(e.target.value, 10) || 0)} className={inputCls} /></Field>
@@ -479,8 +493,7 @@ export function ContentEditor({
         <Field label="Intro de niveles de soporte"><textarea rows={2} value={val('service.levelsIntro')} onChange={(e) => patch('service.levelsIntro', e.target.value)} className={inputCls} /></Field>
         <label className={labelCls}>Niveles de soporte</label>
         <ObjListEditor
-          path="service.levels"
-          empty={{ name: '', desc: '' }}
+          ops={listOps('service.levels', { name: '', desc: '' })}
           itemLabel="Nivel"
           fields={[
             { key: 'name', label: 'Nombre (Nivel 2 · Atención funcional)' },
@@ -492,7 +505,7 @@ export function ContentEditor({
         <Field label="Nota final de servicio"><textarea rows={2} value={val('service.note')} onChange={(e) => patch('service.note', e.target.value)} className={inputCls} /></Field>
       </Section>
 
-      <Section id="equipo" title="09 · Equipo y forma de trabajo">
+      <Section open={open} setOpen={setOpen} id="equipo" title="09 · Equipo y forma de trabajo">
         <Field label="Entradilla"><textarea rows={2} value={val('teamIntro')} onChange={(e) => patch('teamIntro', e.target.value)} className={inputCls} /></Field>
         <label className={labelCls}>Roles (funciones: una por línea)</label>
         <div className="space-y-3">
@@ -532,15 +545,14 @@ export function ContentEditor({
         <Field label="Caja — texto"><textarea rows={3} value={val('workRhythm.body')} onChange={(e) => patch('workRhythm.body', e.target.value)} className={inputCls} /></Field>
       </Section>
 
-      <Section id="condiciones" title="10 · Supuestos, exclusiones y garantías">
+      <Section open={open} setOpen={setOpen} id="condiciones" title="10 · Supuestos, exclusiones y garantías">
         <label className={labelCls}>Lo que asumimos</label>
-        <StrListEditor path="assumptions" placeholder="Agregar supuesto" />
+        <StrListEditor ops={listOps('assumptions', '')} placeholder="Agregar supuesto" />
         <label className={labelCls}>Lo que queda fuera</label>
-        <StrListEditor path="exclusions" placeholder="Agregar exclusión" />
+        <StrListEditor ops={listOps('exclusions', '')} placeholder="Agregar exclusión" />
         <label className={labelCls}>Garantía, propiedad y ampliación</label>
         <ObjListEditor
-          path="guarantees"
-          empty={{ concept: '', text: '' }}
+          ops={listOps('guarantees', { concept: '', text: '' })}
           itemLabel="Concepto"
           fields={[
             { key: 'concept', label: 'Concepto (Garantía, Propiedad…)' },
@@ -550,7 +562,7 @@ export function ContentEditor({
         <Field label="Nota final (validez, alcance contractual)"><textarea rows={2} value={val('finalNote')} onChange={(e) => patch('finalNote', e.target.value)} className={inputCls} /></Field>
       </Section>
 
-      <Section id="cierre" title="11 · Contraportada y firma">
+      <Section open={open} setOpen={setOpen} id="cierre" title="11 · Contraportada y firma">
         <Field label="Frase de cierre"><textarea rows={2} value={val('backQuote')} onChange={(e) => patch('backQuote', e.target.value)} className={inputCls} /></Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Nombre"><input value={val('signature.name')} onChange={(e) => patch('signature.name', e.target.value)} className={inputCls} /></Field>
