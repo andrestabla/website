@@ -375,7 +375,7 @@ export default function QuoteViewer() {
       <div className="qv-bar">
         <span className="b-brand"><img src="/assets/algoritmot-mark.svg" alt="" />Algoritmo&nbsp;T</span>
         <div className="b-total">
-          <div className="t-l">Inversión · {totals.moduleCount} módulos</div>
+          <div className="t-l">Inversión{totals.moduleCount > 0 ? ` · ${totals.moduleCount} ${itemsNoun.toLowerCase()}` : ""}</div>
           <div className="t-v">{money(totals.total)}</div>
         </div>
         <button className="qv-pdfbtn" onClick={() => { void printPdf() }} disabled={printing}>
@@ -401,7 +401,7 @@ export default function QuoteViewer() {
           <div className="meta">
             <div className="m"><div className="ml">Cliente</div><div className="mv">{quote.clientName}</div></div>
             <div className="m"><div className="ml">Duración</div><div className="mv">{totals.weeks} semanas desde el kickoff</div></div>
-            <div className="m"><div className="ml">Alcance</div><div className="mv">{isService ? `${totals.moduleCount} ${totals.moduleCount === 1 ? 'línea' : 'líneas'} de servicio · ${totals.deliverables} entregables` : `Núcleo + ${totals.moduleCount} módulos · ${totals.deliverables} entregables`}</div></div>
+            <div className="m"><div className="ml">Alcance</div><div className="mv">{isService ? `${totals.moduleCount} ${totals.moduleCount === 1 ? 'línea' : 'líneas'} de servicio · ${totals.deliverables} entregables` : totals.moduleCount > 0 ? `Núcleo + ${totals.moduleCount} ${itemsNoun.toLowerCase()} · ${totals.deliverables} entregables` : `${items.filter((i) => i.kind === 'CORE').length} componentes · ${totals.deliverables} entregables`}</div></div>
             <div className="m"><div className="ml">Inversión</div><div className="mv">{money(totals.total)} {currency}</div></div>
           </div>
           <div className="tagline">Soluciones digitales con <b>sentido humano</b></div>
