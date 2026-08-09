@@ -1,0 +1,275 @@
+/**
+ * Documento por páginas: modelo libre de contenido para cotizaciones que deben
+ * replicar exactamente una propuesta diagramada. Cada página del documento es
+ * una hoja del visor, y su contenido son bloques tipados que el builder edita.
+ *
+ * Si la cotización trae `content.pages`, el visor renderiza estas páginas en
+ * lugar del esquema fijo de secciones. Convive con las cotizaciones que usan
+ * el esquema clásico.
+ */
+import type { QuoteItem, QuoteTotals } from './pricing'
+
+export type DocBlock =
+  | { type: 'lede'; text: string }
+  | { type: 'p'; text: string }
+  | { type: 'h3'; text: string }
+  | { type: 'list'; items: string[] }
+  | { type: 'box'; title?: string; body: string }
+  | { type: 'note'; text: string }
+  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain' }
+  | { type: 'cards'; cols?: 2 | 3; items: Array<{ tag?: string; title: string; body: string; foot?: string }> }
+  | { type: 'phase'; id: string; name: string; when?: string; defs: Array<{ term: string; desc: string; strong?: boolean }> }
+  | { type: 'img'; url: string; caption?: string; wide?: boolean }
+  | { type: 'invoice'; note?: string }
+  | { type: 'payments'; items: Array<{ pct: string; label: string }> }
+  | { type: 'toc'; note?: string }
+  | { type: 'team'; items: Array<{ role: string; dedication?: string; functions: string[] }> }
+  | { type: 'letterhead'; date?: string; addressee?: string; subject?: string; salutation?: string }
+
+export type DocPage = {
+  id: string
+  num?: string
+  kicker?: string
+  title?: string
+  blocks: DocBlock[]
+}
+
+/** Divide en párrafos por línea en blanco, como el editor. */
+const paras = (text: string) => String(text || '').split(/\n{2,}/).filter(Boolean)
+
+export function DocBlockView({
+  block,
+  items,
+  totals,
+  money,
+  pages = [],
+}: {
+  block: DocBlock
+  items: QuoteItem[]
+  totals: QuoteTotals
+  money: (n: number) => string
+  pages?: DocPage[]
+}) {
+  switch (block.type) {
+    case 'lede':
+      return <>{paras(block.text).map((t, i) => <p className="qv-lede" key={i}>{t}</p>)}</>
+
+    case 'p':
+      return <>{paras(block.text).map((t, i) => <p key={i}>{t}</p>)}</>
+
+    case 'h3':
+      return <h3 className="qv-subtitle">{block.text}</h3>
+
+    case 'list':
+      return (
+        <ul className="qv-deliv one">
+          {block.items.filter(Boolean).map((it, i) => <li key={i}>{it}</li>)}
+        </ul>
+      )
+
+    case 'box':
+      return (
+        <div className="qv-scopebox">
+          {block.title && <div className="sb-h">{block.title}</div>}
+          {paras(block.body).map((t, i) => <p key={i}>{t}</p>)}
+        </div>
+      )
+
+    case 'note':
+      return <p className="qv-note">{block.text}</p>
+
+    case 'table':
+      return (
+        <div className="qv-tablewrap">
+          <table className="qv-table">
+            {block.headers?.length ? (
+              <thead><tr>{block.headers.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+            ) : null}
+            <tbody>
+              {block.rows.map((row, ri) => (
+                <tr key={ri}>
+                  {row.map((cell, ci) => (
+                    <td key={ci} className={ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : undefined}>{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+
+    case 'cards':
+      return (
+        <div className={`qv-fronts${block.cols === 3 ? ' three' : ''}`}>
+          {block.items.map((card, i) => (
+            <div className="qv-front" key={i}>
+              {card.tag && <div className="f-n">{card.tag}</div>}
+              <h3>{card.title}</h3>
+              {paras(card.body).map((t, k) => <p key={k}>{t}</p>)}
+              {card.foot && <div className="f-o">{card.foot}</div>}
+            </div>
+          ))}
+        </div>
+      )
+
+    case 'phase':
+      return (
+        <div className="qv-fase">
+          <div className="h">
+            <span className="id">{block.id}</span>
+            <b>{block.name}</b>
+            {block.when && <span className="when">{block.when}</span>}
+          </div>
+          <dl>
+            {block.defs.map((d, i) => (
+              <div className="dpair" key={i}>
+                <dt>{d.term}</dt>
+                <dd className={d.strong ? 'pf' : undefined}>{d.desc}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      )
+
+    case 'img':
+      return (
+        <figure className={`qv-shot${block.wide ? ' wide' : ''}`}>
+          <img src={block.url} alt={block.caption || ''} loading="lazy" />
+          {block.caption && <figcaption>{block.caption}</figcaption>}
+        </figure>
+      )
+
+    case 'invoice': {
+      const gravados = items.filter((i) => i.on !== false)
+      return (
+        <>
+          <div className="qv-tablewrap">
+            <table className="qv-inv">
+              <thead><tr><th>Concepto</th><th style={{ textAlign: 'right' }}>Valor {totals ? '' : ''}COP</th></tr></thead>
+              <tbody>
+                {gravados.map((item) => (
+                  <tr key={item.code}>
+                    <td className="c">
+                      {item.name}
+                      {item.summary && <span className="sub">{item.summary}</span>}
+                    </td>
+                    <td className="r">{money(item.price)}</td>
+                  </tr>
+                ))}
+                <tr className="tot">
+                  <td className="lab">Valor total de la propuesta</td>
+                  <td className="r"><span className="big">{money(totals.total)}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {block.note && <p className="qv-note">{block.note}</p>}
+        </>
+      )
+    }
+
+    case 'payments':
+      return (
+        <div className="qv-pay">
+          {block.items.map((p, i) => (
+            <div className="p" key={i}>
+              <div className="pc">{p.pct}</div>
+              <div className="pl">{p.label}</div>
+            </div>
+          ))}
+        </div>
+      )
+
+    case 'toc': {
+      // Índice automático: se arma con las páginas que tienen título.
+      const entries = pages.filter((p) => p.title)
+      return (
+        <>
+          <ul className="qv-toc">
+            {entries.map((p) => (
+              <li key={p.id}>
+                <a href={`#${p.id}`}>
+                  <span className="n">{p.num || '·'}</span>
+                  <span className="t">{p.title}</span>
+                  <span className="d" />
+                  {p.kicker && <span className="k">{p.kicker}</span>}
+                </a>
+              </li>
+            ))}
+          </ul>
+          {block.note && <p className="qv-note">{block.note}</p>}
+        </>
+      )
+    }
+
+    case 'team':
+      return (
+        <ul className="qv-team">
+          {block.items.map((member, i) => (
+            <li key={i}>
+              <div className="tm-head">
+                <span className="tm-n">{String(i + 1).padStart(2, '0')}</span>
+                <div>
+                  <h4>{member.role}</h4>
+                  {member.dedication && <div className="tm-resp">{member.dedication}</div>}
+                </div>
+              </div>
+              <ul className="tm-fns">
+                {member.functions.filter(Boolean).map((f, k) => <li key={k}>{f}</li>)}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )
+
+    case 'letterhead':
+      return (
+        <div className="qv-letterhead">
+          {block.date && <p className="lh-date">{block.date}</p>}
+          {block.addressee && <p className="lh-addr">{block.addressee}</p>}
+          {block.subject && <p className="lh-subject"><b>Asunto:</b> {block.subject}</p>}
+          {block.salutation && <p className="lh-salutation">{block.salutation}</p>}
+        </div>
+      )
+
+    default:
+      return null
+  }
+}
+
+export function DocPageView({
+  page,
+  client,
+  items,
+  totals,
+  money,
+  pages = [],
+}: {
+  page: DocPage
+  client: string
+  items: QuoteItem[]
+  totals: QuoteTotals
+  money: (n: number) => string
+  pages?: DocPage[]
+}) {
+  return (
+    <section className="qv-section" id={page.id} data-qsec={page.id}>
+      <div className="qv-rhead">
+        <span className="r-l">Propuesta · {client}</span>
+        <span className="r-r">Algoritmo&nbsp;T</span>
+      </div>
+      {(page.title || page.kicker) && (
+        <div className="qv-sechead">
+          <div className="sn">{page.num || '—'}</div>
+          <div>
+            {page.kicker && <div className="kicker">{page.kicker}</div>}
+            {page.title && <h2>{page.title}</h2>}
+          </div>
+        </div>
+      )}
+      {page.blocks.map((block, i) => (
+        <DocBlockView key={i} block={block} items={items} totals={totals} money={money} pages={pages} />
+      ))}
+    </section>
+  )
+}

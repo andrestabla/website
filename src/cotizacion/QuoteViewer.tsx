@@ -16,6 +16,7 @@ import {
   type DiscountTier,
   type QuoteItem,
 } from './pricing'
+import { DocPageView, type DocPage } from './DocPages'
 import './quote-viewer.css'
 
 type PublicQuote = {
@@ -332,6 +333,7 @@ export default function QuoteViewer() {
   if (state === 'error' || !quote) return <div className="qv-status">Hubo un problema al cargar. Intenta de nuevo.</div>
 
   const content = quote.content || {}
+  const docPages: DocPage[] = Array.isArray(content.pages) ? content.pages : []
   const selectable = content.modulesSelectable !== false
   const itemsNoun: string = content.itemsNoun || 'Módulos'
   const canMove = (i: QuoteItem) => selectable && i.kind !== 'CORE' && i.selectable !== false
@@ -409,6 +411,13 @@ export default function QuoteViewer() {
       </header>
 
       <main className="qv-page">
+        {docPages.length > 0 ? (
+          docPages.map((page) => (
+            <DocPageView key={page.id} page={page} client={quote.clientName}
+              items={items} totals={totals} money={money} pages={docPages} />
+          ))
+        ) : (
+        <>
         {/* Presentación */}
         {(content.intro || content.letterhead) && (
           <section className="qv-section" data-qsec="presentacion">
@@ -925,6 +934,8 @@ export default function QuoteViewer() {
             </p>
           </section>
         ) : null}
+        </>
+        )}
       </main>
 
       {/* Cierre */}

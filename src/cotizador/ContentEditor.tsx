@@ -9,6 +9,7 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { ChevronDown, ChevronRight, Plus, Trash2, UploadCloud, Loader2, Save, ArrowUp, ArrowDown } from 'lucide-react'
 import { quotesApi } from './api'
+import { PagesEditor, type Page } from './PagesEditor'
 
 // ── helpers de ruta (a.b.c) ─────────────────────────────────────────────────
 function getPath(obj: any, path: string) {
@@ -163,7 +164,9 @@ export function ContentEditor({
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [open, setOpen] = useState<Record<string, boolean>>({ portada: true })
+  const [open, setOpen] = useState<Record<string, boolean>>(
+    Array.isArray(quote.content?.pages) && quote.content.pages.length ? { paginas: true } : { portada: true },
+  )
   const fileRef = useRef<HTMLInputElement>(null)
   const pendingShotIndex = useRef<number | null>(null)
   const [uploadingShot, setUploadingShot] = useState<number | null>(null)
@@ -173,6 +176,7 @@ export function ContentEditor({
     setDirty(true)
   }
   const val = (path: string, fallback: any = '') => getPath(content, path) ?? fallback
+  const pages: Page[] = Array.isArray(content?.pages) ? content.pages : []
 
   const save = async () => {
     setSaving(true)
@@ -268,6 +272,18 @@ export function ContentEditor({
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Guardar contenido
         </button>
       </div>
+
+      <Section open={open} setOpen={setOpen} id="paginas"
+        title={`Páginas del documento${pages.length ? ` · ${pages.length}` : ''}`}>
+        {pages.length === 0 && (
+          <p className="mb-2 mt-2 text-[12px] text-slate-500">
+            Esta cotización usa el esquema clásico de secciones (abajo). Si la propuesta debe
+            replicar un documento propio, compón sus páginas aquí: al agregar la primera, la
+            vista pública pasa a renderizar estas páginas.
+          </p>
+        )}
+        <PagesEditor pages={pages} onChange={(next) => patch('pages', next)} />
+      </Section>
 
       <Section open={open} setOpen={setOpen} id="portada" title="Portada y datos del cliente">
         <div className="grid grid-cols-2 gap-3">

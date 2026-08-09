@@ -730,3 +730,62 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
     display: flex; flex-direction: column; justify-content: center;
   }
 }
+
+/* ============================================================
+   Documento por páginas (content.pages): bloques libres con la
+   misma forma del sistema editorial de las propuestas.
+   ============================================================ */
+.qv .qv-fase {
+  border: 1px solid var(--line); border-radius: 9px;
+  padding: 12px 15px; margin-bottom: 10px; background: var(--paper);
+}
+.qv .qv-fase .h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.qv .qv-fase .id {
+  font-family: var(--mono); font-size: 10px; font-weight: 700; color: #fff;
+  background: var(--cyan-deep); padding: 3px 8px; border-radius: 3px;
+}
+.qv .qv-fase .h b { font-size: 14.5px; color: var(--ink); }
+.qv .qv-fase .when {
+  margin-left: auto; font-family: var(--mono); font-size: 10px;
+  color: var(--gold); letter-spacing: 0.08em; text-transform: uppercase;
+}
+.qv .qv-fase dl { margin: 0; font-size: 12.6px; }
+.qv .qv-fase .dpair { display: grid; grid-template-columns: 92px 1fr; gap: 3px 12px; margin-bottom: 4px; }
+.qv .qv-fase dt {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--faint); padding-top: 3px;
+}
+.qv .qv-fase dd { margin: 0; line-height: 1.5; }
+.qv .qv-fase dd.pf { color: var(--cyan-deep); }
+@media (max-width: 560px) {
+  .qv .qv-fase .dpair { grid-template-columns: 1fr; gap: 1px; }
+}
+
+.qv .qv-fronts.three { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 720px) { .qv .qv-fronts.three { grid-template-columns: 1fr; } }
+
+.qv .qv-table .tb-k { font-weight: 650; color: var(--ink); width: 26%; }
+
+.qv .qv-pay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0 6px; }
+.qv .qv-pay .p { border: 1px solid var(--line); border-radius: 9px; padding: 14px 16px; background: var(--paper); }
+.qv .qv-pay .p .pc { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--cyan-deep); }
+.qv .qv-pay .p .pl { font-size: 12.5px; color: var(--muted); line-height: 1.45; margin-top: 4px; }
+@media (max-width: 640px) { .qv .qv-pay { grid-template-columns: 1fr; } }
+
+@media print {
+  .qv .qv-fase, .qv .qv-front, .qv .qv-pay .p { break-inside: avoid; }
+  .qv .qv-fronts.three { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* índice automático */
+.qv .qv-toc { list-style: none; margin: 6px 0 0; padding: 0; }
+.qv .qv-toc li { border-bottom: 1px solid var(--line); }
+.qv .qv-toc a {
+  display: flex; align-items: baseline; gap: 10px; padding: 9px 2px;
+  color: inherit; text-decoration: none; font-size: 14px;
+}
+.qv .qv-toc a:hover .t { color: var(--cyan-deep); }
+.qv .qv-toc .n { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--cyan-deep); width: 26px; flex: 0 0 26px; }
+.qv .qv-toc .t { color: var(--ink); font-weight: 600; }
+.qv .qv-toc .d { flex: 1; border-bottom: 1px dotted var(--line-strong); transform: translateY(-3px); }
+.qv .qv-toc .k { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); }
