@@ -202,6 +202,16 @@ export function QuoteBuilder() {
     } catch (e: any) { setError(e.message) }
   }
 
+  const toggleSelectable = (code: string) =>
+    saveItems(items.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, selectable: i.selectable === false } : i)))
+
+  const saveNoun = async (noun: string) => {
+    try {
+      const payload = await quotesApi.update(quoteId, { content: { itemsNoun: noun.trim() || 'Módulos' } })
+      setQuote(payload.quote)
+    } catch (e: any) { setError(e.message) }
+  }
+
   const toggleItem = (code: string) =>
     saveItems(items.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i)))
 
@@ -291,6 +301,7 @@ export function QuoteBuilder() {
   const content = quote.content || {}
   const isDoc = content.documentUrl !== undefined
   const selectable = content.modulesSelectable !== false
+  const itemsNoun: string = content.itemsNoun || 'Módulos'
   const narrative: Array<[string, boolean]> = [
     ['Carta', !!content.intro],
     ['Diagnóstico', !!(content.diagnosis?.lede || content.diagnosis?.fronts?.length)],
@@ -552,8 +563,22 @@ export function QuoteBuilder() {
                 <div className="rounded-2xl border border-slate-200 bg-white">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
                     <span className="text-[12px] font-bold uppercase tracking-wide text-slate-400">
-                      {selectable ? 'Módulos · el cliente también podrá moverlos' : 'Módulos · alcance fijo (el cliente no los mueve)'}
+                      {selectable ? `${itemsNoun} · el cliente mueve los marcados como libres` : `${itemsNoun} · alcance fijo (el cliente no los mueve)`}
                     </span>
+                    <div className="flex flex-wrap items-center gap-3">
+                    {selectable && (
+                      <label className="flex items-center gap-1.5 text-[11.5px] font-semibold text-slate-500">
+                        Qué elige
+                        <input
+                          key={`noun-${quote.updatedAt}`}
+                          defaultValue={itemsNoun}
+                          onBlur={(e) => { if (e.target.value.trim() && e.target.value.trim() !== itemsNoun) void saveNoun(e.target.value) }}
+                          placeholder="Módulos, Etapas, Fases…"
+                          className="w-28 rounded-lg border border-slate-300 px-2 py-1 text-[12px] font-normal"
+                          title="Cómo se llaman las piezas que el cliente elige: módulos de un sistema, etapas de un proceso, fases, servicios…"
+                        />
+                      </label>
+                    )}
                     <label className="flex cursor-pointer items-center gap-2 text-[11.5px] font-semibold text-slate-500">
                       Selección del cliente
                       <button
@@ -564,6 +589,7 @@ export function QuoteBuilder() {
                         <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${selectable ? 'left-6' : 'left-0.5'}`} />
                       </button>
                     </label>
+                    </div>
                   </div>
                   <ul className="divide-y divide-slate-100">
                     {items.map((item) => (
@@ -585,6 +611,21 @@ export function QuoteBuilder() {
                         <span className="shrink-0 font-mono text-[12px] text-slate-500">
                           {(item.qty ?? 1) > 1 ? `${item.qty} × ` : ''}{money(item.price, currency)}{item.unit ? `/${item.unit}` : ''}
                         </span>
+                        {selectable && item.kind !== 'CORE' && (
+                          <button
+                            onClick={() => toggleSelectable(item.code)}
+                            title={item.selectable === false
+                              ? 'Fijo: el cliente no puede moverlo en la vista pública'
+                              : 'Libre: el cliente puede prenderlo o apagarlo en la vista pública'}
+                            className={`w-12 shrink-0 rounded-md border px-1 py-0.5 text-[9.5px] font-bold uppercase tracking-wide transition ${
+                              item.selectable === false
+                                ? 'border-slate-300 bg-slate-100 text-slate-500'
+                                : 'border-indigo-200 bg-indigo-50 text-indigo-600'
+                            }`}
+                          >
+                            {item.selectable === false ? 'Fijo' : 'Libre'}
+                          </button>
+                        )}
                         {item.kind === 'CORE' ? (
                           <span className="w-11 shrink-0 text-center text-[10px] font-bold uppercase text-slate-400">Fijo</span>
                         ) : (

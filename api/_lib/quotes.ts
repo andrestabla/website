@@ -61,6 +61,8 @@ export type QuoteItem = {
   weeks?: number
   deliverables?: number
   on: boolean
+  /** Con selección del cliente activa: false = fijo, el cliente no lo mueve. */
+  selectable?: boolean
   detail?: unknown
 }
 
@@ -278,6 +280,7 @@ export function normalizeItems(raw: unknown, catalogByCode: Map<string, any>): Q
       weeks: Number(source.weeks) || 0,
       deliverables: asInt(source.deliverables),
       on: source.kind === 'CORE' ? true : (entry as any)?.on !== false,
+      selectable: source.kind === 'CORE' ? false : (entry as any)?.selectable !== false,
       detail: source.detail ?? null,
     })
   }
@@ -310,6 +313,7 @@ export function itemsFromCatalog(rows: any[]): QuoteItem[] {
     weeks: Number(r.weeks) || 0,
     deliverables: r.deliverables,
     on: r.kind === 'CORE' ? true : r.defaultOn !== false,
+    selectable: r.kind !== 'CORE',
     detail: r.detail ?? null,
   }))
 }

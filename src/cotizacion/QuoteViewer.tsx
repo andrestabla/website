@@ -254,9 +254,13 @@ export default function QuoteViewer() {
     : quote?.template === 'SERVICIO' // cotizaciones anteriores al registro de plantillas
   const scale = quote?.discountScale?.length ? quote.discountScale : DEFAULT_DISCOUNT_SCALE
   const flatScale = scale.every((tier: DiscountTier) => tier.pct === 0)
+  const paymentSplit: number[] | undefined =
+    Array.isArray(quote?.content?.paymentSplit) && quote.content.paymentSplit.length
+      ? quote.content.paymentSplit
+      : undefined
   const totals = useMemo(
-    () => computeTotals(items, { scale, minWeeks: isService ? 2 : 4 }),
-    [items, scale, isService]
+    () => computeTotals(items, { scale, minWeeks: isService ? 2 : 4, paymentSplit }),
+    [items, scale, isService, paymentSplit]
   )
   const currency = quote?.currency || 'COP'
   const money = useCallback((n: number) => formatMoney(n, currency), [currency])
@@ -266,7 +270,7 @@ export default function QuoteViewer() {
     // (StrictMode) y duplicaría el evento.
     if ((quote?.content?.modulesSelectable ?? true) === false) return
     const current = items.find((i) => i.code === code)
-    if (!current || current.kind === 'CORE') return
+    if (!current || current.kind === 'CORE' || current.selectable === false) return
     track({ type: 'toggle', moduleCode: code, value: current.on ? 'off' : 'on' })
     setItems((prev) => prev.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i)))
   }
@@ -283,7 +287,7 @@ export default function QuoteViewer() {
     track({ type: 'preset', value: name })
     setItems((prev) =>
       prev.map((i) => {
-        if (i.kind === 'CORE') return i
+        if (i.kind === 'CORE' || i.selectable === false) return i
         if (name === 'completa') return { ...i, on: true }
         if (name === 'nucleo') return { ...i, on: false }
         return { ...i, on: initialOn.current.get(i.code) ?? i.on }
@@ -329,6 +333,8 @@ export default function QuoteViewer() {
 
   const content = quote.content || {}
   const selectable = content.modulesSelectable !== false
+  const itemsNoun: string = content.itemsNoun || 'Módulos'
+  const canMove = (i: QuoteItem) => selectable && i.kind !== 'CORE' && i.selectable !== false
 
   // Cotización-documento: la pieza vive en su propio HTML; aquí solo se
   // enmarca a pantalla completa para conservar la URL /c/:id y sus métricas.
@@ -354,7 +360,7 @@ export default function QuoteViewer() {
   const milestones: Array<{ name: string; week: string; criterion: string }> = content.milestones || []
   const team: Array<{ role: string; dedication: string; functions: string[] }> = content.team || []
   const guarantees: Array<{ concept: string; text: string }> = content.guarantees || []
-  const categories = [...new Set(items.filter((i) => i.kind !== 'CORE' && (selectable || i.on)).map((i) => i.category || 'Módulos'))]
+  const categories = [...new Set(items.filter((i) => i.kind !== 'CORE' && (canMove(i) || i.on)).map((i) => i.category || 'Módulos'))]
   const core = items.filter((i) => i.kind === 'CORE')
   const active = items.filter((i) => i.kind !== 'CORE' && i.on)
   const offCodes = new Set(items.filter((i) => i.kind !== 'CORE' && !i.on).map((i) => i.code))
@@ -540,15 +546,15 @@ export default function QuoteViewer() {
 
           {categories.map((category) => (
             <div key={category}>
-              <div className="qv-cat-label">Módulos · {category}</div>
+              <div className="qv-cat-label">{itemsNoun} · {category}</div>
               <div className="qv-mods">
                 {items
-                  .filter((i) => i.kind !== 'CORE' && (i.category || 'Módulos') === category && (selectable || i.on))
+                  .filter((i) => i.kind !== 'CORE' && (i.category || 'Módulos') === category && (canMove(i) || i.on))
                   .map((item) => (
                     <article className={`qv-mod${item.on ? '' : ' is-off'}`} key={item.code}>
                       <div className="md-top">
                         <span className="md-c">{item.code}</span>
-                        {selectable ? (
+                        {canMove(item) ? (
                           <label className="qv-sw">
                             <input type="checkbox" checked={item.on} onChange={() => toggle(item.code)} />
                             <span className="tr" />
@@ -560,7 +566,7 @@ export default function QuoteViewer() {
                       </div>
                       <h3>{item.name}</h3>
                       <p>{item.summary}</p>
-                      {selectable && item.unit && item.on && (
+                      {canMove(item) && item.unit && item.on && (
                         <div className="qv-qty">
                           <span className="q-l">Cantidad de {item.unit}s</span>
                           <button onClick={() => setQty(item.code, (item.qty ?? 1) - 1)} aria-label="Menos">−</button>

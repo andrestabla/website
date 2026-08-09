@@ -17,6 +17,8 @@ export type QuoteItem = {
   weeks?: number
   deliverables?: number
   on: boolean
+  /** Con selección del cliente activa: false = fijo, el cliente no lo mueve. */
+  selectable?: boolean
   detail?: { entregables?: string[] } | null
 }
 
