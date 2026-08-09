@@ -471,7 +471,7 @@ export default function QuoteViewer() {
                 {architecture.stackNote && <p className="qv-compact">{architecture.stackNote}</p>}
                 <div className="qv-tablewrap">
                   <table className="qv-stack">
-                    <thead><tr><th>Componente</th><th>Tecnología</th><th>Qué aporta</th></tr></thead>
+                    <thead><tr>{(architecture.stackHeaders?.length === 3 ? architecture.stackHeaders : ['Componente', 'Tecnología', 'Qué aporta']).map((h: string) => <th key={h}>{h}</th>)}</tr></thead>
                     <tbody>
                       {architecture.stack.map((row: any, index: number) => (
                         <tr key={index}>
@@ -489,10 +489,12 @@ export default function QuoteViewer() {
           </section>
         )}
 
-        {/* Enfoque (texto libre, si no hay arquitectura estructurada) */}
-        {content.approach && !architecture.lede && (
+        {/* Enfoque y alcance en palabras (complementa la arquitectura) */}
+        {content.approach && (
           <section className="qv-section" data-qsec="enfoque">
-            <SectionHead client={quote.clientName} num={nextNum()} kicker="Solución" title="Cómo lo resolvemos" />
+            <SectionHead client={quote.clientName} num={nextNum()}
+              kicker={architecture.lede ? 'Alcance y método' : 'Solución'}
+              title={architecture.lede ? 'Qué comprende el trabajo' : 'Cómo lo resolvemos'} />
             <p className="qv-letter">{content.approach}</p>
             {content.scopeNote && <ScopeBox title="Nota de alcance" body={content.scopeNote} />}
           </section>
