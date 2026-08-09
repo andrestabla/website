@@ -264,6 +264,7 @@ export default function QuoteViewer() {
   const toggle = (code: string) => {
     // El track va FUERA del updater: React puede ejecutar el updater dos veces
     // (StrictMode) y duplicaría el evento.
+    if ((quote?.content?.modulesSelectable ?? true) === false) return
     const current = items.find((i) => i.code === code)
     if (!current || current.kind === 'CORE') return
     track({ type: 'toggle', moduleCode: code, value: current.on ? 'off' : 'on' })
@@ -290,8 +291,35 @@ export default function QuoteViewer() {
     )
   }
 
-  const printPdf = () => {
+  // Antes de imprimir, toda imagen del documento debe estar descargada y
+  // decodificada: si el visitante pide el PDF sin haber hecho scroll, las
+  // capturas aún no cargadas saldrían en blanco. Tope de espera por si
+  // alguna imagen remota no responde.
+  const [printing, setPrinting] = useState(false)
+  const printPdf = async () => {
+    if (printing) return
     track({ type: 'pdf' })
+    setPrinting(true)
+    try {
+      // Se espera la DESCARGA (evento load), no img.decode(): en Chromium el
+      // decode() de PNG grandes ya pintados puede no resolver nunca.
+      const images = Array.from(document.querySelectorAll<HTMLImageElement>('.qv img'))
+      await Promise.race([
+        Promise.all(
+          images.map((img) => {
+            img.loading = 'eager'
+            if (img.complete && img.naturalWidth > 0) return Promise.resolve()
+            return new Promise<void>((resolve) => {
+              img.addEventListener('load', () => resolve(), { once: true })
+              img.addEventListener('error', () => resolve(), { once: true })
+            })
+          })
+        ),
+        new Promise((resolve) => setTimeout(resolve, 8000)),
+      ])
+    } finally {
+      setPrinting(false)
+    }
     window.print()
   }
 
@@ -300,6 +328,19 @@ export default function QuoteViewer() {
   if (state === 'error' || !quote) return <div className="qv-status">Hubo un problema al cargar. Intenta de nuevo.</div>
 
   const content = quote.content || {}
+  const selectable = content.modulesSelectable !== false
+
+  // Cotización-documento: la pieza vive en su propio HTML; aquí solo se
+  // enmarca a pantalla completa para conservar la URL /c/:id y sus métricas.
+  if (content.documentUrl) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: '#fff' }}>
+        {preview && <span className="qv-preview-flag" style={{ position: 'absolute', top: 10, right: 12, zIndex: 2 }}>Vista previa · sin publicar</span>}
+        <iframe src={content.documentUrl} title={quote.title} style={{ width: '100%', height: '100%', border: 0 }} />
+      </div>
+    )
+  }
+
   const fronts: Array<{ title: string; body: string; needs: string }> = content.diagnosis?.fronts || []
   const architecture = content.architecture || {}
   const screens = content.screens || {}
@@ -313,7 +354,7 @@ export default function QuoteViewer() {
   const milestones: Array<{ name: string; week: string; criterion: string }> = content.milestones || []
   const team: Array<{ role: string; dedication: string; functions: string[] }> = content.team || []
   const guarantees: Array<{ concept: string; text: string }> = content.guarantees || []
-  const categories = [...new Set(items.filter((i) => i.kind !== 'CORE').map((i) => i.category || 'Módulos'))]
+  const categories = [...new Set(items.filter((i) => i.kind !== 'CORE' && (selectable || i.on)).map((i) => i.category || 'Módulos'))]
   const core = items.filter((i) => i.kind === 'CORE')
   const active = items.filter((i) => i.kind !== 'CORE' && i.on)
   const offCodes = new Set(items.filter((i) => i.kind !== 'CORE' && !i.on).map((i) => i.code))
@@ -331,7 +372,9 @@ export default function QuoteViewer() {
           <div className="t-l">Inversión · {totals.moduleCount} módulos</div>
           <div className="t-v">{money(totals.total)}</div>
         </div>
-        <button className="qv-pdfbtn" onClick={printPdf}>↓ PDF</button>
+        <button className="qv-pdfbtn" onClick={() => { void printPdf() }} disabled={printing}>
+          {printing ? 'Preparando…' : '↓ PDF'}
+        </button>
       </div>
 
       {/* Portada */}
@@ -449,7 +492,9 @@ export default function QuoteViewer() {
             <div className="qv-shots">
               {screenItems.map((shot, index) => (
                 <figure className={`qv-shot${shot.wide ? ' wide' : ''}`} key={index}>
-                  <img src={shot.url} alt={shot.caption || `Captura ${index + 1}`} loading="lazy" />
+                  {/* Carga ansiosa: las capturas forman parte del documento y deben
+                      estar listas aunque se imprima sin recorrer la página. */}
+                  <img src={shot.url} alt={shot.caption || `Captura ${index + 1}`} loading="eager" decoding="async" />
                   {shot.caption && (
                     <figcaption><b>Fig. {String(index + 1).padStart(2, '0')}</b> {shot.caption}</figcaption>
                   )}
@@ -498,20 +543,24 @@ export default function QuoteViewer() {
               <div className="qv-cat-label">Módulos · {category}</div>
               <div className="qv-mods">
                 {items
-                  .filter((i) => i.kind !== 'CORE' && (i.category || 'Módulos') === category)
+                  .filter((i) => i.kind !== 'CORE' && (i.category || 'Módulos') === category && (selectable || i.on))
                   .map((item) => (
                     <article className={`qv-mod${item.on ? '' : ' is-off'}`} key={item.code}>
                       <div className="md-top">
                         <span className="md-c">{item.code}</span>
-                        <label className="qv-sw">
-                          <input type="checkbox" checked={item.on} onChange={() => toggle(item.code)} />
-                          <span className="tr" />
-                          <span className="lb">{item.on ? 'Incluido' : 'Excluido'}</span>
-                        </label>
+                        {selectable ? (
+                          <label className="qv-sw">
+                            <input type="checkbox" checked={item.on} onChange={() => toggle(item.code)} />
+                            <span className="tr" />
+                            <span className="lb">{item.on ? 'Incluido' : 'Excluido'}</span>
+                          </label>
+                        ) : (
+                          <span className="qv-sw"><span className="lb">Incluido</span></span>
+                        )}
                       </div>
                       <h3>{item.name}</h3>
                       <p>{item.summary}</p>
-                      {item.unit && item.on && (
+                      {selectable && item.unit && item.on && (
                         <div className="qv-qty">
                           <span className="q-l">Cantidad de {item.unit}s</span>
                           <button onClick={() => setQty(item.code, (item.qty ?? 1) - 1)} aria-label="Menos">−</button>
@@ -534,12 +583,14 @@ export default function QuoteViewer() {
             </div>
           ))}
 
+          {selectable && (
           <div className="qv-presets">
             <span className="pr-l">Escenarios</span>
             <button onClick={() => applyPreset('sugerida')}>Configuración sugerida</button>
             <button onClick={() => applyPreset('completa')}>Plataforma completa</button>
             <button onClick={() => applyPreset('nucleo')}>Solo núcleo</button>
           </div>
+          )}
         </section>
 
         {/* Configurador */}

@@ -185,6 +185,23 @@ export function QuoteBuilder() {
     }
   }
 
+  const saveSelectable = async (next: boolean) => {
+    try {
+      const payload = await quotesApi.update(quoteId, { content: { modulesSelectable: next } })
+      setQuote(payload.quote)
+    } catch (e: any) { setError(e.message) }
+  }
+
+  const saveDocument = async (patch: { documentUrl?: string; documentTotal?: number }) => {
+    try {
+      const body: Record<string, unknown> = {}
+      if (patch.documentUrl !== undefined) body.content = { documentUrl: patch.documentUrl.trim() }
+      if (patch.documentTotal !== undefined) body.documentTotal = patch.documentTotal
+      const payload = await quotesApi.update(quoteId, body)
+      setQuote(payload.quote)
+    } catch (e: any) { setError(e.message) }
+  }
+
   const toggleItem = (code: string) =>
     saveItems(items.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i)))
 
@@ -272,6 +289,8 @@ export function QuoteBuilder() {
 
   const published = quote.status === 'PUBLISHED'
   const content = quote.content || {}
+  const isDoc = content.documentUrl !== undefined
+  const selectable = content.modulesSelectable !== false
   const narrative: Array<[string, boolean]> = [
     ['Carta', !!content.intro],
     ['Diagnóstico', !!(content.diagnosis?.lede || content.diagnosis?.fronts?.length)],
@@ -456,18 +475,24 @@ export function QuoteBuilder() {
                 {/* Totales */}
                 <div className="rounded-2xl bg-slate-900 p-5 text-white">
                   <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">Inversión total · {currency}</div>
-                  <div className="mt-1 font-mono text-3xl font-black tracking-tight">{money(totals.total, currency)}</div>
+                  <div className="mt-1 font-mono text-3xl font-black tracking-tight">{money(isDoc ? quote.totalFinal : totals.total, currency)}</div>
+                  {!isDoc && (
                   <div className="mt-3 grid grid-cols-3 gap-3 border-t border-white/15 pt-3 text-center">
                     <div><div className="font-mono text-lg font-bold">{totals.moduleCount}</div><div className="text-[10.5px] uppercase tracking-wide text-slate-400">Módulos</div></div>
                     <div><div className="font-mono text-lg font-bold">{totals.deliverables}</div><div className="text-[10.5px] uppercase tracking-wide text-slate-400">Entregables</div></div>
                     <div><div className="font-mono text-lg font-bold">{totals.weeks}</div><div className="text-[10.5px] uppercase tracking-wide text-slate-400">Semanas</div></div>
                   </div>
-                  {totals.discount > 0 && (
+                  )}
+                  {!isDoc && totals.discount > 0 && (
                     <div className="mt-2 text-[12px] text-sky-300">Economía de escala {totals.discountPct}%: −{money(totals.discount, currency)}</div>
+                  )}
+                  {isDoc && (
+                    <div className="mt-2 text-[12px] text-slate-400">Cotización-documento · la pieza vive en su propio HTML</div>
                   )}
                 </div>
 
                 {/* Narrativa */}
+                {!isDoc && (
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <div className="text-[12px] font-bold uppercase tracking-wide text-slate-400">Narrativa redactada</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -479,11 +504,66 @@ export function QuoteBuilder() {
                   </div>
                   <p className="mt-2 text-[12px] text-slate-400">Pídele a la IA las secciones pendientes; la vista pública omite lo que falte.</p>
                 </div>
+                )}
 
-                {/* Módulos */}
+                {/* Documento independiente */}
+                {isDoc && (
                 <div className="rounded-2xl border border-slate-200 bg-white">
                   <div className="border-b border-slate-100 px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-400">
-                    Módulos · el cliente también podrá moverlos
+                    Documento independiente
+                  </div>
+                  <div className="space-y-3 p-4" key={quote.updatedAt}>
+                    <p className="text-[12.5px] leading-relaxed text-slate-500">
+                      Esta cotización es una pieza diagramada aparte. Su URL pública la muestra
+                      con métricas de lectura; aquí editas la ruta del documento y la inversión
+                      que aparece en la lista y la portada.
+                    </p>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      URL del documento
+                      <input
+                        defaultValue={content.documentUrl}
+                        onBlur={(e) => { if (e.target.value.trim() !== content.documentUrl) void saveDocument({ documentUrl: e.target.value }) }}
+                        placeholder="/cotizaciones/upc-2026/Propuesta-UPC-2026.html"
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]"
+                      />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Inversión total ({currency})
+                      <input
+                        type="number" min={0}
+                        defaultValue={quote.totalFinal}
+                        onBlur={(e) => { const v = Math.round(Number(e.target.value) || 0); if (v !== quote.totalFinal) void saveDocument({ documentTotal: v }) }}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]"
+                      />
+                    </label>
+                    {content.documentUrl ? (
+                      <a href={content.documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] font-bold text-indigo-600 hover:underline">
+                        Abrir el documento ↗
+                      </a>
+                    ) : (
+                      <p className="text-[12px] text-amber-600">Falta la URL del documento: la vista pública saldrá vacía hasta que la pongas.</p>
+                    )}
+                  </div>
+                </div>
+                )}
+
+                {/* Módulos */}
+                {!isDoc && (
+                <div className="rounded-2xl border border-slate-200 bg-white">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
+                    <span className="text-[12px] font-bold uppercase tracking-wide text-slate-400">
+                      {selectable ? 'Módulos · el cliente también podrá moverlos' : 'Módulos · alcance fijo (el cliente no los mueve)'}
+                    </span>
+                    <label className="flex cursor-pointer items-center gap-2 text-[11.5px] font-semibold text-slate-500">
+                      Selección del cliente
+                      <button
+                        onClick={() => void saveSelectable(!selectable)}
+                        className={`relative h-5 w-11 shrink-0 rounded-full transition ${selectable ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                        aria-label={selectable ? 'Bloquear la selección de módulos' : 'Permitir la selección de módulos'}
+                      >
+                        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${selectable ? 'left-6' : 'left-0.5'}`} />
+                      </button>
+                    </label>
                   </div>
                   <ul className="divide-y divide-slate-100">
                     {items.map((item) => (
@@ -520,6 +600,7 @@ export function QuoteBuilder() {
                     ))}
                   </ul>
                 </div>
+                )}
               </div>
             )}
 

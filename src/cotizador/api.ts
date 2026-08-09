@@ -53,7 +53,7 @@ async function post(path: string, body: Record<string, unknown>) {
 export const quotesApi = {
   list: () => post('/api/quotes/manage', { op: 'list' }),
   get: (quoteId: string) => post('/api/quotes/manage', { op: 'get', quoteId }),
-  create: (data: { clientName: string; sector?: string; template?: string; clientContact?: string; clientEmail?: string }) =>
+  create: (data: { clientName: string; sector?: string; template?: string; clientContact?: string; clientEmail?: string; documentUrl?: string; title?: string; total?: number }) =>
     post('/api/quotes/manage', { op: 'create', ...data }),
   update: (quoteId: string, data: Record<string, unknown>) =>
     post('/api/quotes/manage', { op: 'update', quoteId, ...data }),

@@ -363,83 +363,6 @@
   font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; padding: 24px;
 }
 
-/* ============================================================
-   IMPRESIÓN / PDF — diagramación por hojas A4.
-   Portada y contraportada ocupan su hoja completa; cada sección
-   arranca en hoja nueva; las piezas (tarjetas, figuras, filas de
-   tabla, roles) no se parten entre hojas.
-   ============================================================ */
-@page { size: A4; margin: 0; }
-
-@media print {
-  html, body { background: #fff !important; margin: 0; padding: 0; }
-  .qv { background: #fff; font-size: 12.5px; line-height: 1.55; }
-  .qv * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .qv-bar, .qv-presets, .qv-livehint { display: none !important; }
-  .qv a { color: inherit; text-decoration: none; }
-
-  /* margen de hoja: lo aporta el contenedor, no @page (evita el
-     encabezado/pie del navegador) */
-  .qv-page { max-width: none; padding: 0 16mm; }
-
-  /* ── portada: hoja completa ── */
-  .qv-cover {
-    height: 296mm; box-sizing: border-box; overflow: hidden;
-    display: flex; align-items: stretch;
-    padding: 18mm 0; break-after: page;
-  }
-  .qv-cover .qv-page { display: flex; flex-direction: column; justify-content: center; width: 100%; }
-  .qv-cover h1 { font-size: 34pt; }
-  .qv-cover .sub { font-size: 11.5pt; }
-  .qv-cover .meta { margin-top: 12mm; }
-  .qv-cover .tagline { margin-top: 12mm; }
-
-  /* ── cada sección en hoja nueva ── */
-  .qv-section {
-    break-before: page;
-    padding: 14mm 0 0;
-  }
-  .qv-sechead { break-inside: avoid; break-after: avoid; }
-  .qv-subtitle { break-after: avoid; }
-
-  /* piezas atómicas: nunca partidas entre hojas */
-  .qv-mod, .qv-front, .qv-shot, .qv-scopebox, .qv-cfg-tot, .qv-cfg-sum,
-  .qv-cfg-meta, .qv-team > li, .qv-arch .ar, .qv-escala, .qv-tcbox,
-  .qv-deliv li, .qv-crono tr, .qv-inv tr, .qv-table tr, .qv-stack tr {
-    break-inside: avoid;
-  }
-  thead { display: table-header-group; }
-
-  /* módulos apagados: legibles en papel */
-  .qv-mod.is-off { opacity: 1; background: #fff; }
-  .qv-mod.is-off h3, .qv-mod.is-off .md-p { color: var(--faint); }
-  .qv-mod.is-off .md-p { text-decoration: line-through; }
-  .qv-crono tr.off td, .qv-inv tr.off { opacity: 0.45; }
-
-  /* capturas: cada figura entera; altura acotada para no desbordar la hoja */
-  .qv-shots { display: block; }
-  .qv-shot { margin: 0 0 6mm; }
-  .qv-shot img { max-height: 118mm; width: auto; max-width: 100%; margin: 0 auto; }
-
-  /* rejillas que en pantalla dependen del viewport */
-  .qv-fronts { grid-template-columns: 1fr 1fr; }
-  .qv-arch { grid-template-columns: repeat(4, 1fr); }
-  .qv-mods { grid-template-columns: 1fr 1fr; }
-  .qv-cfg { grid-template-columns: 1.15fr 1fr; }
-  .qv-twocol { grid-template-columns: 1fr 1fr; }
-  .qv-deliv { grid-template-columns: 1fr 1fr; }
-  .qv-tablewrap { overflow: visible; }
-  .qv-crono { min-width: 0; width: 100%; }
-
-  /* ── contraportada: hoja completa ── */
-  .qv-back {
-    break-before: page; margin-top: 0;
-    height: 296mm; box-sizing: border-box; overflow: hidden;
-    display: flex; align-items: stretch; padding: 18mm 0;
-  }
-  .qv-back .qv-page { display: flex; flex-direction: column; justify-content: center; width: 100%; }
-}
-
 /* ---------- subtítulos y texto compacto ---------- */
 .qv-subtitle {
   font-family: var(--sans); font-weight: 700; font-size: 17px; color: var(--navy);
@@ -586,11 +509,6 @@
 }
 .qv-qty input::-webkit-outer-spin-button, .qv-qty input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-@media print {
-  .qv-qty button { display: none; }
-  .qv-qty input { border: 0; background: transparent; padding: 0; width: auto; }
-}
-
 /* ---------- marca Algoritmo T ---------- */
 .qv-bar .b-brand { display: inline-flex; align-items: center; gap: 8px; }
 .qv-bar .b-brand img { height: 18px; width: 18px; }
@@ -615,19 +533,120 @@
   letter-spacing: 0.15em; text-transform: uppercase; color: #fff;
 }
 
-/* cabecera corrida (solo impresión, como la propuesta editorial) */
+/* cabecera corrida (solo impresión, como la propuesta editorial;
+   sus reglas de impresión viven en el bloque final) */
 .qv-rhead { display: none; }
+
+/* ============================================================
+   IMPRESIÓN / PDF — diagramación por hojas A4.
+   Portada y contraportada ocupan su hoja completa; cada sección
+   arranca en hoja nueva; las piezas (tarjetas, figuras, filas de
+   tabla, roles) no se parten entre hojas.
+   IMPORTANTE: este bloque debe ser el ÚLTIMO del archivo — las
+   reglas de pantalla comparten especificidad y, si se definieran
+   después, anularían la diagramación de impresión.
+   ============================================================ */
+@page { size: A4; margin: 0; }
+
 @media print {
+  html, body { background: #fff !important; margin: 0; padding: 0; }
+  .qv { background: #fff; font-size: 12.5px; line-height: 1.55; }
+  .qv * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  .qv-bar, .qv-presets, .qv-livehint { display: none !important; }
+  .qv a { color: inherit; text-decoration: none; }
+
+  /* margen de hoja: lo aporta el contenedor, no @page (evita el
+     encabezado/pie del navegador) */
+  .qv-page { max-width: none; padding: 0 16mm; }
+
+  /* ── portada: hoja completa ── */
+  .qv-cover {
+    height: 296mm; box-sizing: border-box; overflow: hidden;
+    display: flex; align-items: stretch;
+    padding: 18mm 0; break-after: page;
+  }
+  .qv-cover .qv-page { display: flex; flex-direction: column; justify-content: center; width: 100%; }
+  .qv-cover h1 { font-size: 34pt; }
+  .qv-cover .sub { font-size: 11.5pt; }
+  .qv-cover .meta { margin-top: 12mm; }
+  .qv-cover .tagline { margin-top: 12mm; }
+
+  /* ── cada sección en hoja nueva ── */
+  .qv-section {
+    break-before: page;
+    padding: 14mm 0 0;
+  }
+  .qv-sechead { break-inside: avoid; break-after: avoid; }
+  .qv-subtitle { break-after: avoid; }
+
+  /* los rótulos de categoría nunca quedan huérfanos al pie de hoja */
+  .qv-cat-label { break-inside: avoid; break-after: avoid; }
+
+  /* piezas atómicas: nunca partidas entre hojas */
+  .qv-mod, .qv-front, .qv-shot, .qv-scopebox, .qv-cfg-tot, .qv-cfg-sum,
+  .qv-cfg-meta, .qv-team > li, .qv-arch .ar, .qv-escala, .qv-tcbox,
+  .qv-deliv li, .qv-crono tr, .qv-inv tr, .qv-table tr, .qv-stack tr {
+    break-inside: avoid;
+  }
+  thead { display: table-header-group; }
+
+  /* módulos apagados: legibles en papel */
+  .qv-mod.is-off { opacity: 1; background: #fff; }
+  .qv-mod.is-off h3, .qv-mod.is-off .md-p { color: var(--faint); }
+  .qv-mod.is-off .md-p { text-decoration: line-through; }
+  .qv-crono tr.off td, .qv-inv tr.off { opacity: 0.45; }
+
+  /* capturas: cada figura entera, a lo ancho de la hoja; altura
+     acotada para no desbordar (la figura completa cabe en una hoja).
+     El respiro superior va como padding —no margin— porque los
+     márgenes se truncan en el corte de hoja y la figura que abre una
+     hoja de continuación quedaría pegada al borde físico; el marco
+     pasa de la figura a imagen + pie para que ese respiro sea
+     transparente. */
+  .qv-shots { display: block; }
+  .qv-shot { border: 0; background: transparent; padding-top: 6mm; margin: 0 0 6mm; }
+  .qv-shot img { border: 1px solid var(--line-strong); background: var(--card); box-sizing: border-box; }
+  .qv-shot figcaption { border: 1px solid var(--line-strong); }
+  .qv-shot img {
+    display: block; width: auto; max-width: 100%;
+    height: auto; max-height: 118mm; margin: 0 auto;
+  }
+
+  /* rejillas que en pantalla dependen del viewport */
+  .qv-fronts { grid-template-columns: 1fr 1fr; }
+  .qv-arch { grid-template-columns: repeat(4, 1fr); }
+  .qv-mods { grid-template-columns: 1fr 1fr; }
+  .qv-cfg { grid-template-columns: 1.15fr 1fr; }
+  .qv-twocol { grid-template-columns: 1fr 1fr; }
+  .qv-deliv { grid-template-columns: 1fr 1fr; }
+  .qv-tablewrap { overflow: visible; }
+  .qv-crono { min-width: 0; width: 100%; }
+
+  /* cantidades (plantilla de servicios): solo el valor, sin botones */
+  .qv-qty button { display: none; }
+  .qv-qty input { border: 0; background: transparent; padding: 0; width: auto; }
+
   /* overlays del sitio (consentimiento, popups): nada posicionado fijo entra al PDF */
   .fixed, .no-print { display: none !important; }
+
+  /* cabecera corrida, como la propuesta editorial */
   .qv-rhead {
     display: flex; justify-content: space-between; align-items: center;
     font-family: var(--mono); font-size: 8pt; letter-spacing: 0.2em; text-transform: uppercase;
     color: var(--faint); padding-bottom: 3mm; margin-bottom: 6mm; border-bottom: 1px solid var(--line);
   }
   .qv-rhead .r-r { color: var(--gold); }
+
   /* hojas crema como la versión editorial */
   .qv { background: var(--paper) !important; }
   html, body { background: var(--paper) !important; }
   .qv-cover .cv-top { padding-bottom: 6mm; margin-bottom: 10mm; }
+
+  /* ── contraportada: hoja completa ── */
+  .qv-back {
+    break-before: page; margin-top: 0;
+    height: 296mm; box-sizing: border-box; overflow: hidden;
+    display: flex; align-items: stretch; padding: 18mm 0;
+  }
+  .qv-back .qv-page { display: flex; flex-direction: column; justify-content: center; width: 100%; }
 }

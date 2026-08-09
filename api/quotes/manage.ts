@@ -143,6 +143,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (op === 'create') {
       const clientName = str(body.clientName, 160)
       if (!clientName) return res.status(400).json({ ok: false, error: 'Falta el nombre del cliente' })
+
+      // Cotización-documento: una pieza diagramada aparte (HTML propio) que
+      // igual vive en el sistema — URL pública con métricas, destinatarios,
+      // estados. No usa catálogo ni módulos.
+      if (body.documentUrl !== undefined) {
+        const total = Math.max(0, Math.round(Number(body.total) || 0))
+        const content = { ...emptyContent(), documentUrl: str(body.documentUrl, 500), modulesSelectable: false }
+        const quote = await db().create({
+          data: {
+            publicId: newPublicId(),
+            ownerId: userId,
+            template: 'SOLUCIONES',
+            clientName,
+            clientContact: str(body.clientContact, 160) || null,
+            clientEmail: str(body.clientEmail, 200) || null,
+            sector: str(body.sector, 120) || null,
+            title: str(body.title, 200) || `Propuesta para ${clientName}`,
+            subtitle: str(body.subtitle, 400) || null,
+            currency: 'COP',
+            content,
+            discountScale: FLAT_DISCOUNT_SCALE,
+            pricing: { items: [], totals: null },
+            totalBase: total,
+            totalFinal: total,
+            weeks: 0,
+            moduleCount: 0,
+          },
+        })
+        return res.status(200).json({ ok: true, quote })
+      }
+
       const template = normalizeTemplate(body.template)
       const catalog = await loadCatalog(template)
       if (!catalog.length) {
@@ -192,6 +223,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (body.validDays !== undefined) {
         data.validDays = Math.min(365, Math.max(1, Math.round(Number(body.validDays) || 45)))
+      }
+      // Cotizaciones-documento: la inversión se fija a mano (no hay ítems).
+      if (body.documentTotal !== undefined) {
+        const total = Math.max(0, Math.round(Number(body.documentTotal) || 0))
+        data.totalBase = total
+        data.totalFinal = total
       }
       if (body.content !== undefined && body.content && typeof body.content === 'object') {
         data.content = { ...(quote.content as object), ...(body.content as object) }
