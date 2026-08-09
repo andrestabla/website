@@ -24,8 +24,10 @@
   --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  background: var(--paper);
+  --desk: #e7e1d4;
+  background: var(--desk);
   color: var(--ink-soft);
+  counter-reset: qvsheet;
   font-family: var(--sans);
   font-size: 15px;
   line-height: 1.62;
@@ -72,10 +74,15 @@
 
 /* ---------- contenedor ---------- */
 .qv-page { max-width: 860px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 28px); }
+main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5vw, 24px) 48px; }
 
 /* ---------- portada ---------- */
 .qv-cover {
-  background: var(--navy); color: #d4dcec; padding: clamp(40px, 7vw, 72px) 0 clamp(32px, 5vw, 52px);
+  background: var(--navy); color: #d4dcec;
+  max-width: 900px; margin: clamp(18px, 3vw, 34px) auto 0;
+  padding: clamp(40px, 6vw, 64px) clamp(20px, 4.5vw, 58px) clamp(32px, 5vw, 52px);
+  border-radius: 4px; counter-increment: qvsheet;
+  box-shadow: 0 1px 2px rgba(27, 32, 38, 0.05), 0 20px 46px -30px rgba(27, 32, 38, 0.5);
 }
 .qv-cover .qv-page { max-width: 860px; }
 .qv-cover .kick {
@@ -111,7 +118,43 @@
 }
 
 /* ---------- secciones ---------- */
-.qv-section { padding: clamp(34px, 5.5vw, 56px) 0 6px; }
+.qv-section {
+  position: relative;
+  background: var(--card);
+  max-width: 900px;
+  margin: 0 auto clamp(20px, 3vw, 34px);
+  padding: clamp(30px, 4.5vw, 48px) clamp(20px, 4.5vw, 58px) clamp(58px, 7vw, 78px);
+  border-radius: 4px;
+  counter-increment: qvsheet;
+  box-shadow: 0 1px 2px rgba(27, 32, 38, 0.05), 0 20px 46px -30px rgba(27, 32, 38, 0.5);
+}
+.qv-section::before {
+  content: 'Propuesta técnica y económica · Algoritmo T';
+  display: block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding-bottom: 10px;
+  margin-bottom: clamp(18px, 3vw, 28px);
+  border-bottom: 1px solid var(--line);
+}
+.qv-section::after {
+  content: 'Algoritmo T · Documento interactivo — pág. ' counter(qvsheet);
+  position: absolute;
+  left: clamp(20px, 4.5vw, 58px);
+  right: clamp(20px, 4.5vw, 58px);
+  bottom: 18px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+  border-top: 1px solid var(--line);
+  padding-top: 9px;
+  text-align: right;
+}
 .qv-sechead {
   display: grid; grid-template-columns: auto 1fr; column-gap: 22px; align-items: start;
   margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--line);
