@@ -70,12 +70,13 @@ const content = {
 
   intro: [
     'Conforme a los lineamientos definidos por la Universidad Popular del Cesar en sus documentos contractuales, presentamos la propuesta técnica y económica formulada por Algoritmo T S.A.S. para implementar la Plataforma de Gestión de la Transformación Digital con Enfoque Territorial de la Universidad. La plataforma se construye y se carga mediante una consultoría de seis meses: cada fase del trabajo entrega su salida en un módulo de la plataforma.',
-    'El resultado no es únicamente un informe. La Universidad recibe un entorno en operación desde el primer mes, donde el diagnóstico queda cargado como una medición repetible, la hoja de ruta como iniciativas con responsable y presupuesto, y el avance como información consultable. El acceso cubre los seis meses de ejecución y los dieciocho meses siguientes a la entrega final, con renovación anual posterior.',
-    'El propósito final es entregar a la UPC un diagnóstico honesto, técnico y estratégico que sirva como punto de partida para construir una transformación digital sólida, escalable y centrada en el valor público de la CTeI como motor de desarrollo de la institución, el país y la región.',
+    'El resultado es una visión integral, accionable y priorizada — y el instrumento permanente para administrarla. El trabajo propuesto contempla: levantar y evaluar el estado actual de personas, procesos, datos y tecnología asociados a las funciones misionales de la Universidad · determinar el nivel de madurez tecnológica e identificar las principales brechas y riesgos en gobierno de datos, interoperabilidad, analítica, seguridad y experiencia de usuario · definir una hoja de ruta estratégica y medible, con iniciativas, responsables, métricas e hitos por fases · y alinear las decisiones institucionales con los objetivos misionales y las políticas nacionales de CTeI.',
+    'Una diferencia respecto de una consultoría convencional: el resultado de este trabajo no es únicamente un informe. La Universidad recibe, además, la Plataforma de Gestión de la Transformación Digital: un entorno en operación desde el primer mes, donde el diagnóstico queda cargado como una medición repetible, la hoja de ruta como iniciativas con responsable y presupuesto, y el avance como información consultable. La Universidad dispone de acceso a la plataforma durante los seis meses de ejecución y los dieciocho meses siguientes a la entrega final, con renovación anual posterior.',
+    'El propósito final es entregar a la UPC un diagnóstico honesto, técnico y estratégico que sirva como punto de partida para construir una transformación digital sólida, escalable y centrada en el valor público de la CTeI como motor de desarrollo de la institución, el país y la región. Agradecemos la confianza y la apertura al permitirnos presentar esta propuesta; quedamos atentos para socializar el alcance y resolver cualquier inquietud.',
   ].join('\n\n'),
 
   diagnosis: {
-    lede: 'La Universidad Popular del Cesar enfrenta un momento decisivo en su modernización institucional: las dinámicas de la CTeI, la formación académica y la proyección social exigen ecosistemas integrados, basados en datos y orientados a resultados. Los análisis y espacios de diálogo con las dependencias evidencian brechas estructurales en procesos, plataformas y flujos de información. El trabajo se organiza en cuatro líneas misionales, que son también los cuatro ejes del instrumento de medición.',
+    lede: 'La Universidad Popular del Cesar enfrenta hoy un momento decisivo en su proceso de modernización y fortalecimiento institucional. Los avances y desafíos globales en transformación digital universitaria, sumados a las nuevas dinámicas en la gestión de la CTeI, la formación académica y la proyección social, exigen ecosistemas integrados, basados en datos y orientados a resultados, que fortalezcan las tres funciones misionales: docencia, investigación y extensión. A partir de los análisis realizados y de los espacios de diálogo con las dependencias universitarias, se evidencian brechas estructurales en los procesos, plataformas y flujos de información que limitan la articulación, la eficiencia y el impacto de la gestión institucional. El trabajo se organiza en cuatro líneas misionales, que son también los cuatro ejes del instrumento de medición: lo que se diagnostica es exactamente lo que después se mide, se compara y se sigue.',
     fronts: [
       {
         title: '4.1 · Academia y Virtualidad',
@@ -104,8 +105,12 @@ const content = {
     },
   },
 
-  approach:
-    'La metodología es participativa, basada en evidencia y contrastada: instrumentos aplicados a directivos, docentes, investigadores, estudiantes y actores de extensión; cada calificación de madurez soportada en un documento, un dato o un registro verificable, cargado y trazable en la plataforma; y hallazgos comparados contra referentes nacionales e internacionales y contra el contexto territorial del Cesar. Se estructura en seis fases iterativas (0 a 5) durante seis meses calendario, que constituyen el marco de referencia de los hitos de pago. Cada fase entrega su documento en el formato tradicional y, simultáneamente, deja su contenido cargado en la plataforma: la Universidad no espera al mes 6 para ver resultados — desde el mes 1 dispone de su radar de madurez publicado.',
+  approach: [
+    'Objeto: implementar la Plataforma de Gestión de la Transformación Digital con Enfoque Territorial como instrumento institucional permanente de la Universidad Popular del Cesar. La consultoría de seis meses —que diagnostica el ecosistema digital y formula la hoja de ruta institucional— la construye y la carga: cada fase tiene su salida en un módulo de la plataforma, desde los niveles de madurez del diagnóstico hasta el portafolio de iniciativas y los roadmaps específicos.',
+    'El enfoque integra análisis técnico y comprensión organizacional —personas, procesos, información, aplicaciones y tecnología—, con una Ruta de Arquitectura Empresarial desarrollada sobre referentes de TOGAF® y DAMA, para que la UPC pase del reconocimiento de brechas a la ejecución de soluciones concretas, medibles y sostenibles.',
+    'La metodología es participativa, basada en evidencia y contrastada: instrumentos aplicados a directivos, docentes, investigadores, estudiantes y actores de extensión; cada calificación soportada en un documento, un dato o un registro verificable, cargado y trazable en la plataforma; y hallazgos comparados contra referentes nacionales e internacionales y contra el contexto territorial del Cesar. Se estructura en seis fases iterativas (0 a 5) durante seis meses calendario, marco de referencia de los hitos de pago. Cada fase entrega su documento en el formato tradicional y, simultáneamente, deja su contenido cargado en la plataforma: desde el mes 1 la Universidad dispone de su radar de madurez publicado.',
+    'El instrumento (metodología Algoritmo T): la madurez se evalúa sobre una matriz de cuatro líneas misionales × cuatro dimensiones —organizacional, pedagógica, comunicativa y tecnológica—, que produce 16 puntos de medición desagregados en 52 variables. Cada variable tiene protocolo de indagación, evidencia por tres vías —Documental (D), Indagación (I) y Constatación (K)— con criterios de aceptación, y rúbrica anclada de cinco niveles. Cada punto de medición es el promedio de sus variables; publicar una medición exige las 52 variables calificadas y queda versionada con fecha, repetible y comparable en el tiempo.',
+  ].join('\n\n'),
 
   scopeNote:
     'La consultoría comprende las fases de diagnóstico, diseño y planificación estratégica, e incluye la implementación de la Plataforma de Gestión de la Transformación Digital. No contempla la implementación, adquisición, desarrollo o integración de otros sistemas de información de la Universidad, ni la ejecución de los proyectos derivados de la hoja de ruta, los cuales serán objeto de contrataciones independientes.',
@@ -212,11 +217,13 @@ const content = {
   ],
 
   assumptions: [
-    'Acceso irrestricto a la información documental, de recursos y servicios institucionales disponibles.',
-    'La Universidad facilitará acceso a los sistemas o repositorios relevantes —investigación, biblioteca, datos institucionales— para análisis y contrastación.',
-    'Participación activa de los actores misionales —académicos, investigadores y gestores de extensión— y de las dependencias de apoyo.',
-    'La UPC designará un responsable institucional que coordine la entrega de información y la logística de las sesiones.',
-    'La UPC designará un responsable por cada una de las cuatro líneas, quien cargará evidencia y reportará avances en la plataforma.',
+    'Metodología: el diagnóstico se basa en variables y criterios de análisis contrastados con buenas prácticas internacionales en transformación digital universitaria, alineadas a la gestión de la docencia, la investigación y la extensión.',
+    'Fuentes: acceso irrestricto a la información documental, de recursos y servicios institucionales disponibles.',
+    'Acceso a sistemas: la Universidad facilitará acceso a los sistemas o repositorios relevantes —investigación, biblioteca, datos institucionales— para análisis y contrastación.',
+    'Actores: participación activa de los actores misionales —académicos, investigadores y gestores de extensión— y de las dependencias de apoyo.',
+    'Interlocutor: la UPC designará un responsable institucional que coordine la entrega de información, el acceso a fuentes y la logística de las sesiones presenciales o virtuales.',
+    'Responsables de línea: la UPC designará un responsable por cada una de las cuatro líneas, quien cargará evidencia y reportará avances en la plataforma.',
+    'Equipo consultor: profesionales especializados en transformación digital, gobernanza de datos, educación digital, analítica institucional y arquitectura empresarial.',
   ],
   exclusions: [
     'Implementación, adquisición, desarrollo o integración de otros sistemas de información de la Universidad.',
@@ -228,7 +235,9 @@ const content = {
     { concept: 'Licencia', text: '18 meses desde la entrega final, con uso ilimitado por usuarios institucionales dentro de los perfiles definidos; periodo efectivo de uso de 24 meses.' },
     { concept: 'Portabilidad', text: 'Exportación de la totalidad de la información institucional en formatos abiertos, en cualquier momento y también al vencimiento del periodo licenciado.' },
     { concept: 'Renovación', text: 'Suscripción anual de tarifa plana: $ 80.000.000 COP/año (valor 2026), ajustable únicamente por IPC. Sin renegociación.' },
-    { concept: 'Propiedad intelectual', text: 'Los productos y la información institucional son de la Universidad, sin restricción de tiempo. La plataforma, el instrumento de medición y el know-how metodológico son de Algoritmo T S.A.S., bajo licencia de uso.' },
+    { concept: 'Propiedad intelectual', text: 'Los informes, diagnósticos, modelos, hojas de ruta y la totalidad de la información institucional cargada son propiedad de la Universidad, sin restricción de tiempo ni de reproducción interna, y exportables en formatos abiertos. El software de la plataforma, el instrumento de medición, los observatorios y el know-how metodológico son propiedad de Algoritmo T S.A.S., entregados bajo licencia de uso.' },
+    { concept: 'Confidencialidad', text: 'La información que Algoritmo T obtenga de la Universidad se usará exclusivamente para el desarrollo de los servicios contratados y no será divulgada a terceros sin autorización expresa, conforme a la Ley 1581 de 2012 y el Decreto 1377 de 2013 sobre protección de datos personales.' },
+    { concept: 'Validez', text: 'Se mantendrán el valor y los términos de esta propuesta durante treinta (30) días calendario contados desde su envío.' },
   ],
 
   workRhythm: {
@@ -236,8 +245,11 @@ const content = {
     body: 'La plataforma entra en producción en el mes 1 y acompaña toda la ejecución. Cada fase produce sus entregables dos veces: el documento tradicional y su salida cargada en el módulo correspondiente.',
   },
 
-  finalNote:
-    'Agradecemos la confianza y la apertura al permitirnos presentar esta propuesta. Quedamos atentos para socializar el alcance y resolver cualquier inquietud.',
+  finalNote: [
+    'Correspondencia con conceptos de gasto: implementación de la plataforma → recursos tecnológicos (1 plataforma) · licencia de uso — 18 meses → recursos tecnológicos (1 suscripción) · renovación anual → recursos tecnológicos (1 suscripción/año) · levantamiento, diagnóstico y acompañamiento → talento humano / soporte especializado (N.º de profesionales). La correspondencia definitiva se ajustará a la estructura presupuestal que defina la Universidad.',
+    'Medio de pago: Banco Caja Social · cuenta de ahorros 2410491798 · titular Algoritmo T S.A.S. · NIT 901.449.696-2. Facturas pagaderas a quince (15) días calendario.',
+    'La versión diagramada completa de esta propuesta (23 páginas, con descarga en PDF y Word) está disponible en https://www.algoritmot.com/cotizaciones/upc-2026 — es el documento de referencia; esta vista interactiva la refleja y permite su lectura con métricas.',
+  ].join('\n\n'),
   backQuote: 'Que la Universidad mida, administre y sostenga su transformación digital — con evidencia y en su territorio.',
 
   signature: {
