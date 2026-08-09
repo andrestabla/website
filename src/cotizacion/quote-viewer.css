@@ -134,6 +134,12 @@
 
 /* carta */
 .qv-letter { white-space: pre-line; }
+.qv-letterhead { margin: 0 0 26px; }
+.qv-letterhead p { margin: 0 0 16px; white-space: pre-line; }
+.qv-letterhead .lh-date { font-family: var(--mono, ui-monospace, monospace); font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted, #6f7680); }
+.qv-letterhead .lh-addr { line-height: 1.5; }
+.qv-letterhead .lh-addr::first-line { font-weight: 400; }
+.qv-letterhead .lh-subject b { font-weight: 700; }
 .qv-drop::first-letter {
   float: left; font-family: var(--sans); font-weight: 800; font-size: 58px; line-height: 0.82;
   color: var(--navy); margin: 6px 12px 0 0; letter-spacing: -0.03em;

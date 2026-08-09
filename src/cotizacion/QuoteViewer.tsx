@@ -410,10 +410,18 @@ export default function QuoteViewer() {
 
       <main className="qv-page">
         {/* Presentación */}
-        {content.intro && (
+        {(content.intro || content.letterhead) && (
           <section className="qv-section" data-qsec="presentacion">
             <SectionHead client={quote.clientName} num={nextNum()} kicker="Presentación" title="Una propuesta que se lee y se configura" />
-            <p className="qv-letter qv-drop">{content.intro}</p>
+            {content.letterhead && (
+              <div className="qv-letterhead">
+                {content.letterhead.date && <p className="lh-date">{content.letterhead.date}</p>}
+                {content.letterhead.addressee && <p className="lh-addr">{content.letterhead.addressee}</p>}
+                {content.letterhead.subject && <p className="lh-subject"><b>Asunto:</b> {content.letterhead.subject}</p>}
+                {content.letterhead.salutation && <p className="lh-salutation">{content.letterhead.salutation}</p>}
+              </div>
+            )}
+            {content.intro && <p className="qv-letter qv-drop">{content.intro}</p>}
           </section>
         )}
 

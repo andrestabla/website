@@ -61,6 +61,13 @@ const content = {
   itemsNoun: 'Componentes',
   paymentSplit: [30, 30, 40],
 
+  letterhead: {
+    date: 'Bogotá D.C., 5 de agosto de 2026',
+    addressee: 'Señores\nUniversidad Popular del Cesar\nVicerrectoría Académica\nValledupar',
+    subject: 'Propuesta técnica y económica — Implementación de la Plataforma de Gestión de la Transformación Digital con Enfoque Territorial de la Universidad Popular del Cesar.',
+    salutation: 'Reciban un cordial saludo,',
+  },
+
   intro: [
     'Conforme a los lineamientos definidos por la Universidad Popular del Cesar en sus documentos contractuales, presentamos la propuesta técnica y económica formulada por Algoritmo T S.A.S. para implementar la Plataforma de Gestión de la Transformación Digital con Enfoque Territorial de la Universidad. La plataforma se construye y se carga mediante una consultoría de seis meses: cada fase del trabajo entrega su salida en un módulo de la plataforma.',
     'El resultado no es únicamente un informe. La Universidad recibe un entorno en operación desde el primer mes, donde el diagnóstico queda cargado como una medición repetible, la hoja de ruta como iniciativas con responsable y presupuesto, y el avance como información consultable. El acceso cubre los seis meses de ejecución y los dieciocho meses siguientes a la entrega final, con renovación anual posterior.',

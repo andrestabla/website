@@ -270,6 +270,18 @@ export function ContentEditor({
       </Section>
 
       <Section id="presentacion" title="01 · Presentación (carta)">
+        <Field label="Fecha — p. ej. «Bogotá D.C., 5 de agosto de 2026» (vacío = no se muestra)">
+          <input value={val('letterhead.date')} onChange={(e) => patch('letterhead.date', e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Destinatario — una línea por renglón (incluye «Señores» si aplica)">
+          <textarea rows={4} value={val('letterhead.addressee')} onChange={(e) => patch('letterhead.addressee', e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Asunto — sin el prefijo «Asunto:», se agrega solo">
+          <textarea rows={2} value={val('letterhead.subject')} onChange={(e) => patch('letterhead.subject', e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Saludo — p. ej. «Reciban un cordial saludo,»">
+          <input value={val('letterhead.salutation')} onChange={(e) => patch('letterhead.salutation', e.target.value)} className={inputCls} />
+        </Field>
         <Field label="Carta — párrafos separados por línea en blanco">
           <textarea rows={10} value={val('intro')} onChange={(e) => patch('intro', e.target.value)} className={inputCls} />
         </Field>
