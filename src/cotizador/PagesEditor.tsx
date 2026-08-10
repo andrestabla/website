@@ -36,6 +36,7 @@ const BLOCK_TYPES: Array<[string, string]> = [
   ['team', 'Equipo'],
   ['letterhead', 'Encabezado de carta'],
   ['gantt', 'Cronograma de barras'],
+  ['timeline', 'Banda de periodos'],
 ]
 const BLOCK_LABEL: Record<string, string> = Object.fromEntries(BLOCK_TYPES)
 
@@ -55,6 +56,12 @@ const EMPTY: Record<string, Block> = {
   toc: { type: 'toc', note: '' },
   team: { type: 'team', items: [{ role: '', dedication: '', functions: [''] }] },
   letterhead: { type: 'letterhead', date: '', addressee: '', subject: '', salutation: 'Reciban un cordial saludo,' },
+  timeline: {
+    type: 'timeline',
+    segments: [{ label: 'Etapa 1', weight: 1, tone: 'cyan' }, { label: 'Etapa 2', weight: 2, tone: 'gold' }],
+    marks: ['Inicio', 'Cambio de etapa', 'Fin'],
+    note: '',
+  },
   gantt: {
     type: 'gantt',
     cols: ['Mes 1', 'Mes 2', 'Mes 3'],
@@ -610,6 +617,42 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
             </div>
           ))}
           <button onClick={() => set('items', [...pays, { pct: '', label: '' }])} className="text-[11px] font-semibold text-indigo-600 hover:underline">+ pago</button>
+        </>
+      )
+    }
+
+    case 'timeline': {
+      const segs: any[] = Array.isArray(block.segments) ? block.segments : []
+      const marks: string[] = Array.isArray(block.marks) ? block.marks : []
+      const setSeg = (i: number, key: string, v: unknown) =>
+        set('segments', segs.map((sg, k) => (k === i ? { ...sg, [key]: v } : sg)))
+      return (
+        <>
+          <label className={labelCls}>Segmentos — el peso define el ancho proporcional</label>
+          {segs.map((sg, i) => (
+            <div key={i} className="mb-1 flex flex-wrap items-center gap-1">
+              <input placeholder="Rótulo" value={sg.label || ''} onChange={(e) => setSeg(i, 'label', e.target.value)} className={`${inputCls} min-w-[160px] flex-1`} />
+              <input type="number" min={1} value={sg.weight ?? 1} onChange={(e) => setSeg(i, 'weight', Number(e.target.value))} className={`${inputCls} w-20`} title="Peso" />
+              <select value={sg.tone || 'cyan'} onChange={(e) => setSeg(i, 'tone', e.target.value)} className={`${inputCls} w-28`}>
+                <option value="cyan">Cian</option>
+                <option value="deep">Cian profundo</option>
+                <option value="gold">Dorado</option>
+              </select>
+              <button onClick={() => set('segments', segs.filter((_, k) => k !== i))} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={11} /></button>
+            </div>
+          ))}
+          <button onClick={() => set('segments', [...segs, { label: '', weight: 1, tone: 'cyan' }])}
+            className="text-[11px] font-semibold text-indigo-600 hover:underline">+ segmento</button>
+          <label className={labelCls}>Hitos bajo la banda — uno por límite; el último se alinea a la derecha</label>
+          {marks.map((m, i) => (
+            <div key={i} className="mb-1 flex items-start gap-1">
+              <input value={m} onChange={(e) => set('marks', marks.map((x, k) => (k === i ? e.target.value : x)))} className={inputCls} />
+              <button onClick={() => set('marks', marks.filter((_, k) => k !== i))} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={11} /></button>
+            </div>
+          ))}
+          <button onClick={() => set('marks', [...marks, ''])} className="text-[11px] font-semibold text-indigo-600 hover:underline">+ hito</button>
+          <label className={labelCls}>Nota</label>
+          <RichArea rows={2} value={block.note || ''} onChange={(v) => set('note', v)} />
         </>
       )
     }

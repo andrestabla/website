@@ -827,3 +827,32 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
   .qv .qv-gantt .g-col { font-size: 8px; padding-left: 3px; }
 }
 @media print { .qv .qv-gantt { break-inside: avoid; } }
+
+/* banda de periodos con hitos (vigencia, licencia, etapas) */
+.qv .qv-timeline { margin: 16px 0 8px; }
+.qv .qv-timeline .tl-row { display: grid; align-items: end; }
+.qv .qv-timeline .tl-lab {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em;
+  text-transform: uppercase; padding-bottom: 6px; padding-left: 2px;
+}
+.qv .qv-timeline .tl-lab.is-cyan, .qv .qv-timeline .tl-lab.is-deep { color: var(--cyan-deep); }
+.qv .qv-timeline .tl-lab.is-gold { color: var(--gold); }
+.qv .qv-timeline .tl-bars { gap: 4px; }
+.qv .qv-timeline .tl-bar { height: 20px; border-radius: 4px; }
+.qv .qv-timeline .tl-bar.is-cyan { background: var(--cyan); }
+.qv .qv-timeline .tl-bar.is-deep { background: var(--cyan-deep); }
+.qv .qv-timeline .tl-bar.is-gold { background: var(--gold-fill); }
+.qv .qv-timeline .tl-marks { margin-top: 7px; }
+.qv .qv-timeline .tl-mark {
+  font-size: 11.5px; color: var(--muted); padding-left: 2px;
+  border-left: 1px solid var(--line-strong); padding-top: 4px; line-height: 1.3;
+}
+.qv .qv-timeline .tl-mark.is-end {
+  border-left: 0; border-right: 1px solid var(--line-strong);
+  text-align: right; padding-right: 2px; white-space: nowrap; justify-self: end;
+}
+@media (max-width: 560px) {
+  .qv .qv-timeline .tl-mark { font-size: 10px; }
+  .qv .qv-timeline .tl-lab { font-size: 8px; letter-spacing: 0.06em; }
+}
+@media print { .qv .qv-timeline { break-inside: avoid; } }

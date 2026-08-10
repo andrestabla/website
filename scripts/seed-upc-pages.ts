@@ -341,7 +341,14 @@ const pages = [
     id: 'licencia', num: '06', kicker: 'Vigencia y condiciones', title: 'Licencia, soporte y continuidad',
     blocks: [
       { type: 'h3', text: 'Periodo de acceso' },
-      { type: 'p', text: 'La Universidad Popular del Cesar dispondrá de acceso a la Plataforma de Gestión de la Transformación Digital durante los seis (6) meses de ejecución del contrato y durante dieciocho (18) meses adicionales contados a partir de la entrega final de la Fase 5, para un periodo efectivo de uso de veinticuatro (24) meses.' },
+      { type: 'p', text: 'La Universidad Popular del Cesar dispondrá de acceso a la Plataforma de Gestión de la Transformación Digital durante los **seis (6) meses de ejecución del contrato** y durante **dieciocho (18) meses adicionales contados a partir de la entrega final de la Fase 5**, para un periodo efectivo de uso de veinticuatro (24) meses.' },
+      { type: 'timeline',
+        segments: [
+          { label: 'Ejecución · 6 meses', weight: 6, tone: 'cyan' },
+          { label: 'Licencia de uso · 18 meses desde la entrega final', weight: 18, tone: 'gold' },
+        ],
+        marks: ['Puesta en producción', 'Entrega final y transferencia', 'Fin del periodo licenciado'],
+      },
       { type: 'h3', text: 'Qué comprende la licencia' },
       { type: 'list', items: [
         'Uso ilimitado por usuarios de la Universidad dentro de los perfiles definidos, sin cargo por usuario adicional.',

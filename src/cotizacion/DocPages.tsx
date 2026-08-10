@@ -28,6 +28,12 @@ export type DocBlock =
   | { type: 'team'; items: Array<{ role: string; dedication?: string; functions: string[] }> }
   | { type: 'letterhead'; date?: string; addressee?: string; subject?: string; salutation?: string }
   | {
+      type: 'timeline'
+      segments: Array<{ label?: string; weight: number; tone?: 'cyan' | 'deep' | 'gold' }>
+      marks?: string[]
+      note?: string
+    }
+  | {
       type: 'gantt'
       cols: string[]
       rows: Array<{ label: string; from: number; to: number; tone?: 'cyan' | 'deep' | 'gold'; bold?: boolean }>
@@ -292,6 +298,34 @@ export function DocBlockView({
           ))}
         </ul>
       )
+
+    case 'timeline': {
+      // Banda de periodos proporcionales con hitos debajo (el último a la derecha).
+      const segs = block.segments || []
+      const tone = (t?: string) => (t === 'gold' ? 'is-gold' : t === 'deep' ? 'is-deep' : 'is-cyan')
+      const cols = segs.map((x) => `${Math.max(0.001, x.weight)}fr`).join(' ')
+      const marks = block.marks || []
+      return (
+        <>
+          <div className="qv-timeline">
+            <div className="tl-row" style={{ gridTemplateColumns: cols }}>
+              {segs.map((sg, i) => (
+                <span className={`tl-lab ${tone(sg.tone)}`} key={i}>{sg.label}</span>
+              ))}
+            </div>
+            <div className="tl-row tl-bars" style={{ gridTemplateColumns: cols }}>
+              {segs.map((sg, i) => <span className={`tl-bar ${tone(sg.tone)}`} key={i} />)}
+            </div>
+            <div className="tl-row tl-marks" style={{ gridTemplateColumns: `${cols} 0` }}>
+              {marks.map((m, i) => (
+                <span className={`tl-mark${i === marks.length - 1 && marks.length > segs.length ? ' is-end' : ''}`} key={i}>{m}</span>
+              ))}
+            </div>
+          </div>
+          {block.note && <p className="qv-note">{rich(block.note)}</p>}
+        </>
+      )
+    }
 
     case 'gantt': {
       const n = block.cols.length || 1
