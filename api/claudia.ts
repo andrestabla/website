@@ -56,10 +56,50 @@ async function deviceState() {
   return { online, lastSeen: dev?.lastSeen ?? null, projects: dev?.projects ?? [] }
 }
 
+/** Voz de Claudia en la web: Azure Speech (es-CO Salomé). */
+async function azureTts(text: string): Promise<Buffer> {
+  const key = process.env.AZURE_SPEECH_KEY
+  const region = process.env.AZURE_SPEECH_REGION || 'eastus'
+  const voice = process.env.AZURE_SPEECH_VOICE || 'es-CO-SalomeNeural'
+  if (!key) throw Object.assign(new Error('TTS no configurado'), { code: 503 })
+
+  const esc = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const ssml = `<speak version="1.0" xml:lang="es-CO"><voice name="${voice}">${esc}</voice></speak>`
+  const r = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
+    method: 'POST',
+    headers: {
+      'Ocp-Apim-Subscription-Key': key,
+      'Content-Type': 'application/ssml+xml',
+      'X-Microsoft-OutputFormat': 'audio-24khz-96kbitrate-mono-mp3',
+      'User-Agent': 'claudia-web',
+    },
+    body: ssml,
+  })
+  if (!r.ok) throw new Error(`Azure ${r.status}: ${(await r.text()).slice(0, 160)}`)
+  return Buffer.from(await r.arrayBuffer())
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = String(req.query?.action ?? readBody(req).action ?? '').trim()
 
   try {
+    // Voz para la interfaz web (solo el propietario).
+    if (action === 'tts') {
+      const session = requireOwner(req, res)
+      if (!session) return
+      const text = String(readBody(req).text ?? '').trim().slice(0, 1200)
+      if (!text) return res.status(400).json({ ok: false, error: 'Texto vacío' })
+      try {
+        const audio = await azureTts(text)
+        res.setHeader('Content-Type', 'audio/mpeg')
+        res.setHeader('Cache-Control', 'no-store')
+        return res.status(200).send(audio)
+      } catch (e: any) {
+        // El cliente cae a la voz del navegador si esto falla.
+        return res.status(e?.code === 503 ? 503 : 502).json({ ok: false, error: e?.message || 'TTS no disponible' })
+      }
+    }
+
     // ───────────────────────── lado EQUIPO (Claudia local) ─────────────────────────
 
     // Latido + toma del siguiente trabajo pendiente.

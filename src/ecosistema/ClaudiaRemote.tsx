@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Send, Loader2, CheckCircle2, XCircle, Clock, Ban, Monitor, MonitorOff } from 'lucide-react'
+import { ArrowLeft, Send, Loader2, CheckCircle2, XCircle, Clock, Ban, Monitor, MonitorOff, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
+import { useClaudiaAvatar } from './claudia/useClaudiaAvatar'
+import { useDictation } from './claudia/useDictation'
 
 type Job = {
   id: string
@@ -40,6 +42,16 @@ export function ClaudiaRemote() {
   const [error, setError] = useState('')
   const timer = useRef<number | null>(null)
 
+  // Avatar 3D + voz (misma experiencia que la interfaz local)
+  const stageRef = useRef<HTMLDivElement | null>(null)
+  const avatar = useClaudiaAvatar(stageRef)
+  const [muted, setMuted] = useState(false)
+  const mutedRef = useRef(muted)
+  mutedRef.current = muted
+  const spokenRef = useRef<Set<string>>(new Set())
+  const promptRef = useRef(prompt)
+  promptRef.current = prompt
+
   const load = useCallback(async () => {
     try {
       const res = await fetch('/api/claudia?action=status')
@@ -62,10 +74,9 @@ export function ClaudiaRemote() {
     return () => { if (timer.current) window.clearInterval(timer.current) }
   }, [load])
 
-  const send = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const text = prompt.trim()
-    if (!text || sending) return
+  const submit = useCallback(async (raw: string) => {
+    const text = raw.trim()
+    if (!text) return
     setSending(true)
     try {
       const res = await fetch('/api/claudia?action=enqueue', {
@@ -78,6 +89,7 @@ export function ClaudiaRemote() {
         setError(payload?.error || 'No se pudo enviar la tarea.')
       } else {
         setPrompt('')
+        if (!mutedRef.current) void avatar.speak('Listo, se la mando a tu equipo.')
         void load()
       }
     } catch {
@@ -85,7 +97,38 @@ export function ClaudiaRemote() {
     } finally {
       setSending(false)
     }
+  }, [avatar, load, project])
+
+  const send = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!sending) void submit(prompt)
   }
+
+  const dictation = useDictation({
+    onDraft: (t) => setPrompt(t),
+    onSubmit: (t) => void submit(t),
+    getDraft: () => promptRef.current,
+  })
+
+  // Claudia narra el resultado de cada tarea apenas llega (una sola vez).
+  // Al abrir la página no lee el historial: solo lo que ocurra de ahí en adelante.
+  const seededRef = useRef(false)
+  const speakFn = avatar.speak
+  useEffect(() => {
+    if (!jobs.length) return
+    if (!seededRef.current) {
+      seededRef.current = true
+      jobs.forEach((j) => spokenRef.current.add(j.id))
+      return
+    }
+    if (muted) return
+    const finished = jobs.find(
+      (j) => (j.status === 'DONE' || j.status === 'ERROR') && j.result && !spokenRef.current.has(j.id),
+    )
+    if (!finished?.result) return
+    spokenRef.current.add(finished.id)
+    void speakFn(finished.result.slice(0, 900))
+  }, [jobs, muted, speakFn])
 
   const cancel = async (id: string) => {
     await fetch('/api/claudia?action=cancel', {
@@ -128,6 +171,33 @@ export function ClaudiaRemote() {
           <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-[13px] text-rose-700">{error}</div>
         )}
 
+        {/* Escenario de Claudia: su cara 3D, igual que en la Mac */}
+        {!avatar.failed && (
+          <div className="mb-5 flex flex-col items-center">
+            <div className="relative">
+              <div
+                ref={stageRef}
+                className="h-[240px] w-[240px] overflow-hidden rounded-2xl bg-gradient-to-b from-slate-100 to-slate-200 sm:h-[280px] sm:w-[280px]"
+              />
+              {!avatar.ready && (
+                <div className="absolute inset-0 grid place-items-center text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  <Loader2 size={18} className="animate-spin" />
+                </div>
+              )}
+              <button
+                onClick={() => { setMuted((m) => !m); if (!muted) avatar.stop() }}
+                title={muted ? 'Activar la voz' : 'Silenciar a Claudia'}
+                className="absolute -right-2 bottom-2 grid h-9 w-9 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:text-indigo-600"
+              >
+                {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              </button>
+            </div>
+            <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+              {avatar.speaking ? 'hablando…' : dictation.listening ? 'escuchando…' : 'Claudia'}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={send} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Nueva tarea</label>
           <textarea
@@ -137,7 +207,26 @@ export function ClaudiaRemote() {
             placeholder="Ej.: revisa el proyecto website y dime cómo quedó el último despliegue"
             className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-3 py-2 text-[14px] outline-none focus:border-indigo-500"
           />
+          {dictation.listening && (
+            <p className="mt-1 text-[12px] italic text-indigo-500">
+              {dictation.partial || 'Te escucho… di «adelante» para enviar.'}
+            </p>
+          )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            {dictation.supported && (
+              <button
+                type="button"
+                onClick={dictation.toggle}
+                title={dictation.denied ? 'Permiso de micrófono denegado' : 'Dictar por voz'}
+                className={`grid h-9 w-9 place-items-center rounded-full border transition ${
+                  dictation.listening
+                    ? 'border-rose-300 bg-rose-500 text-white shadow-[0_0_0_4px_rgba(244,63,94,.15)]'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
+                }`}
+              >
+                {dictation.denied ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
+            )}
             <select
               value={project}
               onChange={(e) => setProject(e.target.value)}

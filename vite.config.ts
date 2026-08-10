@@ -8,4 +8,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      // 'talkinghead' (avatar 3D de Claudia) lo resuelve el navegador con el
+      // importmap de index.html, desde CDN. No debe entrar al bundle.
+      external: ['talkinghead'],
+    },
+  },
 })
