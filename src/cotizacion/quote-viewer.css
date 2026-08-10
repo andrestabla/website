@@ -918,3 +918,26 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
 }
 .qv .qv-docxbtn:hover { border-color: var(--navy); background: var(--paper-2); }
 @media print { .qv .qv-docxbtn { display: none !important; } }
+
+/* ── Barra superior en pantallas pequeñas ──────────────────────────────
+   El logotipo se reduce a la marca, la cifra pierde su rótulo y los
+   botones se compactan: todo cabe sin que la inversión se monte sobre
+   el logo ni el botón de Word se salga de la pantalla. */
+@media screen and (max-width: 720px) {
+  .qv .qv-bar { gap: 8px; padding: 0 12px; height: 50px; }
+  .qv .qv-bar .b-brand { font-size: 10.5px; letter-spacing: 0.1em; min-width: 0; overflow: hidden; }
+  .qv .qv-bar .b-brand img { flex: none; }
+  .qv .qv-bar .b-total { margin-left: auto; min-width: 0; }
+  .qv .qv-bar .b-total .t-v { font-size: 12.5px; white-space: nowrap; }
+  .qv .qv-bar .qv-pdfbtn, .qv .qv-bar .qv-docxbtn {
+    padding: 7px 9px; font-size: 10px; letter-spacing: 0.02em;
+  }
+}
+@media screen and (max-width: 560px) {
+  /* solo el ícono de marca y la cifra: los rótulos sobran en este ancho */
+  .qv .qv-bar .b-brand { font-size: 0; gap: 0; }
+  .qv .qv-bar .b-brand img { width: 20px; height: 20px; }
+  .qv .qv-bar .b-total .t-l { display: none; }
+  .qv .qv-bar .b-total .t-v { font-size: 12px; }
+  .qv .qv-bar .qv-pdfbtn, .qv .qv-bar .qv-docxbtn { padding: 7px 8px; font-size: 9.5px; }
+}
