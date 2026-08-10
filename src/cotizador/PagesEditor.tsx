@@ -9,7 +9,7 @@
 import { useRef, useState } from 'react'
 import {
   ChevronDown, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown,
-  Bold, Italic, Code, Link2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  Bold, Italic, Code, Link2, List, AlignLeft, AlignCenter, AlignRight, AlignJustify,
 } from 'lucide-react'
 
 export type Block = Record<string, any> & { type: string }
@@ -178,6 +178,27 @@ function RichArea({
     })
   }
 
+  /** Convierte en viñetas las líneas de la selección (o la línea del cursor). */
+  const toggleBullets = () => {
+    const el = ref.current
+    if (!el) return
+    const { selectionStart: a, selectionEnd: b } = el
+    const start = value.lastIndexOf('\n', a - 1) + 1
+    const endRaw = value.indexOf('\n', b)
+    const end = endRaw === -1 ? value.length : endRaw
+    const lines = value.slice(start, end).split('\n')
+    const yaSonVinetas = lines.every((l) => /^\s*[-·•]\s+/.test(l) || !l.trim())
+    const next = lines
+      .map((l) => (yaSonVinetas ? l.replace(/^\s*[-·•]\s+/, '') : l.trim() ? `- ${l.replace(/^\s*[-·•]\s+/, '')}` : l))
+      .join('\n')
+    onChange(value.slice(0, start) + next + value.slice(end))
+    requestAnimationFrame(() => {
+      el.focus()
+      el.setSelectionRange(start, start + next.length)
+      syncSel()
+    })
+  }
+
   const addLink = () => {
     const el = ref.current
     if (!el) return
@@ -203,6 +224,7 @@ function RichArea({
           <button className={fmtBtn} disabled={!hasSel} onClick={() => wrap('*')} title="Cursiva"><Italic size={12} /></button>
           <button className={fmtBtn} disabled={!hasSel} onClick={() => wrap('`')} title="Monoespaciada"><Code size={12} /></button>
           <button className={fmtBtn} onClick={addLink} title="Enlace"><Link2 size={12} /></button>
+          <button className={fmtBtn} onClick={toggleBullets} title="Viñetas"><List size={12} /></button>
           {onAlign && (
             <>
               <span className="mx-1 h-4 w-px bg-slate-200" />

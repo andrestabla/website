@@ -62,6 +62,36 @@ export function rich(text: string): React.ReactNode {
 /** Estilo de alineación del bloque (si el autor la definió). */
 const al = (a?: Align) => (a ? { textAlign: a } as React.CSSProperties : undefined)
 
+/**
+ * Un párrafo puede contener viñetas: las líneas que empiezan con «- » se
+ * agrupan en una lista y el resto sigue como texto corrido.
+ */
+function Prose({ text, align }: { text: string; align?: Align }) {
+  const out: React.ReactNode[] = []
+  let bullets: string[] = []
+  const flush = (key: string) => {
+    if (!bullets.length) return
+    out.push(
+      <ul className="qv-deliv one" style={al(align)} key={`ul-${key}`}>
+        {bullets.map((b, i) => <li key={i}>{rich(b)}</li>)}
+      </ul>,
+    )
+    bullets = []
+  }
+  paras(text).forEach((block, bi) => {
+    const lines = block.split('\n')
+    const allBullets = lines.every((l) => /^\s*[-·•]\s+/.test(l))
+    if (allBullets) {
+      bullets.push(...lines.map((l) => l.replace(/^\s*[-·•]\s+/, '')))
+      return
+    }
+    flush(String(bi))
+    out.push(<p style={al(align)} key={bi}>{rich(block)}</p>)
+  })
+  flush('end')
+  return <>{out}</>
+}
+
 export function DocBlockView({
   block,
   items,
@@ -80,7 +110,7 @@ export function DocBlockView({
       return <>{paras(block.text).map((t, i) => <p className="qv-lede" style={al(block.align)} key={i}>{rich(t)}</p>)}</>
 
     case 'p':
-      return <>{paras(block.text).map((t, i) => <p style={al(block.align)} key={i}>{rich(t)}</p>)}</>
+      return <Prose text={block.text} align={block.align} />
 
     case 'h3':
       return <h3 className="qv-subtitle" style={al(block.align)}>{rich(block.text)}</h3>
@@ -96,7 +126,7 @@ export function DocBlockView({
       return (
         <div className="qv-scopebox" style={al(block.align)}>
           {block.title && <div className="sb-h">{rich(block.title)}</div>}
-          {paras(block.body).map((t, i) => <p key={i}>{rich(t)}</p>)}
+          <Prose text={block.body} />
         </div>
       )
 
@@ -133,7 +163,7 @@ export function DocBlockView({
             <div className="qv-front" key={i}>
               {card.tag && <div className="f-n">{card.tag}</div>}
               <h3>{rich(card.title)}</h3>
-              {paras(card.body).map((t, k) => <p key={k}>{rich(t)}</p>)}
+              <Prose text={card.body} />
               {card.foot && <div className="f-o">{rich(card.foot)}</div>}
             </div>
           ))}
