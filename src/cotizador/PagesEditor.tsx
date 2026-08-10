@@ -219,8 +219,13 @@ function RichArea({
     if (!el) return
     const { selectionStart: a, selectionEnd: b } = el
     const sel = value.slice(a, b) || 'texto'
-    const url = prompt('URL del enlace', 'https://')
-    if (!url) return
+    const raw = prompt('URL del enlace', 'https://')
+    if (!raw) return
+    const t = raw.trim()
+    // se guarda con esquema: sin él, el navegador lo tomaría como ruta relativa
+    const url = /^(https?:|mailto:|tel:)/i.test(t)
+      ? t
+      : /^[\w.+-]+@[\w-]+\.[\w.]+$/.test(t) ? `mailto:${t}` : `https://${t.replace(/^\/+/, '')}`
     const next = `${value.slice(0, a)}[${sel}](${url})${value.slice(b)}`
     onChange(next)
     requestAnimationFrame(() => el.focus())

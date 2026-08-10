@@ -791,7 +791,7 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
 .qv .qv-toc .n { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--cyan-deep); width: 26px; flex: 0 0 26px; }
 .qv .qv-toc .t { color: var(--ink); font-weight: 600; }
 .qv .qv-toc .d { flex: 1; border-bottom: 1px dotted var(--line-strong); transform: translateY(-3px); }
-.qv .qv-toc .k { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); }
+.qv .qv-toc .p { font-family: var(--mono); font-size: 11px; color: var(--muted); }
 
 
 /* marcas de texto del compositor */

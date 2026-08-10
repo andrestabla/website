@@ -7,7 +7,7 @@
  * lugar del esquema fijo de secciones. Convive con las cotizaciones que usan
  * el esquema clásico.
  */
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import type { QuoteItem, QuoteTotals } from './pricing'
 
 /** Hoja del documento: 900 × 1273 px = proporción A4 exacta (210 × 297 mm). */
@@ -93,7 +93,15 @@ const paras = (text: string) => String(text || '').split(/\n{2,}/).filter(Boolea
  *   **negrita** · *cursiva* · `monoespaciada` · [texto](url)
  * Se resuelven a nodos de React (nunca a HTML crudo).
  */
-const RICH = /(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g
+const RICH = /(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\)|[\w.+-]+@[\w-]+\.[\w.]+|(?:https?:\/\/|www\.)[^\s,;)\]\[]+)/g
+
+/** Destino seguro: correo → mailto, dominio suelto → https, nunca ruta relativa. */
+function href(url: string): string {
+  const u = url.trim()
+  if (/^(https?:|mailto:|tel:)/i.test(u)) return u
+  if (/^[\w.+-]+@[\w-]+\.[\w.]+$/.test(u)) return `mailto:${u}`
+  return `https://${u.replace(/^\/+/, '')}`
+}
 
 export function rich(text: string): React.ReactNode {
   const parts = String(text || '').split(RICH)
@@ -103,9 +111,24 @@ export function rich(text: string): React.ReactNode {
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) return <em key={i}>{part.slice(1, -1)}</em>
     if (part.startsWith('`') && part.endsWith('`')) return <code key={i}>{part.slice(1, -1)}</code>
     const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part)
-    if (link) return <a key={i} href={link[2]} target="_blank" rel="noreferrer">{link[1]}</a>
+    if (link) return <a key={i} href={href(link[2])} target="_blank" rel="noreferrer">{link[1]}</a>
+    // correo o URL escrita directamente en el texto
+    if (/^[\w.+-]+@[\w-]+\.[\w.]+$/.test(part) || /^(https?:\/\/|www\.)/i.test(part)) {
+      return <a key={i} href={href(part)} target="_blank" rel="noreferrer">{part}</a>
+    }
     return <span key={i}>{part}</span>
   })
+}
+
+/** Dentro de un párrafo, cada salto de línea se respeta como tal. */
+function lines(text: string): React.ReactNode {
+  const ls = String(text || '').split('\n')
+  return ls.map((l, i) => (
+    <React.Fragment key={i}>
+      {i > 0 && <br />}
+      {rich(l)}
+    </React.Fragment>
+  ))
 }
 
 /** Estilo de alineación del bloque (si el autor la definió). */
@@ -128,14 +151,14 @@ function Prose({ text, align }: { text: string; align?: Align }) {
     bullets = []
   }
   paras(text).forEach((block, bi) => {
-    const lines = block.split('\n')
-    const allBullets = lines.every((l) => /^\s*[-·•]\s+/.test(l))
+    const rows = block.split('\n')
+    const allBullets = rows.every((l) => /^\s*[-·•]\s+/.test(l))
     if (allBullets) {
-      bullets.push(...lines.map((l) => l.replace(/^\s*[-·•]\s+/, '')))
+      bullets.push(...rows.map((l) => l.replace(/^\s*[-·•]\s+/, '')))
       return
     }
     flush(String(bi))
-    out.push(<p style={al(align)} key={bi}>{rich(block)}</p>)
+    out.push(<p style={al(align)} key={bi}>{lines(block)}</p>)
   })
   flush('end')
   return <>{out}</>
@@ -156,7 +179,7 @@ export function DocBlockView({
 }) {
   switch (block.type) {
     case 'lede':
-      return <>{paras(block.text).map((t, i) => <p className="qv-lede" style={al(block.align)} key={i}>{rich(t)}</p>)}</>
+      return <>{paras(block.text).map((t, i) => <p className="qv-lede" style={al(block.align)} key={i}>{lines(t)}</p>)}</>
 
     case 'p':
       return <Prose text={block.text} align={block.align} />
@@ -304,7 +327,8 @@ export function DocBlockView({
                   <span className="n">{p.num || '·'}</span>
                   <span className="t">{p.title}</span>
                   <span className="d" />
-                  {p.kicker && <span className="k">{p.kicker}</span>}
+                  {/* número de hoja: la portada es la 1 */}
+                  <span className="p">{String(pages.indexOf(p) + 2).padStart(2, '0')}</span>
                 </a>
               </li>
             ))}
