@@ -16,7 +16,7 @@ import {
   type DiscountTier,
   type QuoteItem,
 } from './pricing'
-import { DocPageView, type DocPage } from './DocPages'
+import { DocPageView, useFitPages, type DocPage } from './DocPages'
 import './quote-viewer.css'
 
 type PublicQuote = {
@@ -255,6 +255,8 @@ export default function QuoteViewer() {
     : quote?.template === 'SERVICIO' // cotizaciones anteriores al registro de plantillas
   const scale = quote?.discountScale?.length ? quote.discountScale : DEFAULT_DISCOUNT_SCALE
   const flatScale = scale.every((tier: DiscountTier) => tier.pct === 0)
+  useFitPages([state, items.length])
+
   const paymentSplit: number[] | undefined =
     Array.isArray(quote?.content?.paymentSplit) && quote.content.paymentSplit.length
       ? quote.content.paymentSplit
@@ -373,7 +375,7 @@ export default function QuoteViewer() {
   const nextNum = () => String(++sectionNumber).padStart(2, '0')
 
   return (
-    <div className="qv">
+    <div className={`qv${docPages.length ? ' is-paged' : ''}`}>
       <div className="qv-bar">
         <span className="b-brand"><img src="/assets/algoritmot-mark.svg" alt="" />Algoritmo&nbsp;T</span>
         <div className="b-total">

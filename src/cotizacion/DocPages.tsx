@@ -7,7 +7,42 @@
  * lugar del esquema fijo de secciones. Convive con las cotizaciones que usan
  * el esquema clásico.
  */
+import { useEffect } from 'react'
 import type { QuoteItem, QuoteTotals } from './pricing'
+
+/** Hoja del documento: 900 × 1273 px = proporción A4 exacta (210 × 297 mm). */
+export const SHEET_W = 900
+export const SHEET_H = 1273
+
+/**
+ * Ajusta el contenido de cada hoja para que quepa en su alto: si una página
+ * excede la caja, se reduce proporcionalmente (con un piso, para no volverla
+ * ilegible). Así lo que se ve en pantalla es lo que sale impreso.
+ */
+export function useFitPages(deps: unknown[] = []) {
+  useEffect(() => {
+    const fit = () => {
+      document.querySelectorAll<HTMLElement>('.qv-sheet-in').forEach((el) => {
+        el.style.setProperty('--fit', '1')
+        const avail = el.parentElement ? el.parentElement.clientHeight : 0
+        if (!avail) return
+        const h = el.scrollHeight
+        if (h > avail) el.style.setProperty('--fit', String(Math.max(0.62, avail / h)))
+      })
+    }
+    fit()
+    const t = window.setTimeout(fit, 400)
+    window.addEventListener('resize', fit)
+    const imgs = Array.from(document.querySelectorAll('.qv-sheet-in img'))
+    imgs.forEach((i) => i.addEventListener('load', fit))
+    return () => {
+      window.clearTimeout(t)
+      window.removeEventListener('resize', fit)
+      imgs.forEach((i) => i.removeEventListener('load', fit))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps)
+}
 
 export type Align = 'left' | 'center' | 'right' | 'justify'
 
@@ -308,7 +343,7 @@ export function DocBlockView({
       return (
         <>
           <div className="qv-timeline">
-            <div className="tl-row" style={{ gridTemplateColumns: cols }}>
+            <div className="tl-row tl-labels" style={{ gridTemplateColumns: cols }}>
               {segs.map((sg, i) => (
                 <span className={`tl-lab ${tone(sg.tone)}`} key={i}>{sg.label}</span>
               ))}
@@ -385,6 +420,7 @@ export function DocPageView({
 }) {
   return (
     <section className="qv-section" id={page.id} data-qsec={page.id}>
+      <div className="qv-sheet-in">
       <div className="qv-rhead">
         <span className="r-l">Propuesta · {client}</span>
         <span className="r-r">Algoritmo&nbsp;T</span>
@@ -401,6 +437,7 @@ export function DocPageView({
       {page.blocks.map((block, i) => (
         <DocBlockView key={i} block={block} items={items} totals={totals} money={money} pages={pages} />
       ))}
+      </div>
     </section>
   )
 }
