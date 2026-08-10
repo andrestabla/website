@@ -22,17 +22,47 @@ export const SHEET_H = 1273
 export function useFitPages(deps: unknown[] = []) {
   useEffect(() => {
     const fit = () => {
-      document.querySelectorAll<HTMLElement>('.qv-sheet-in').forEach((el) => {
-        el.style.setProperty('--fit', '1')
+      const sheets = Array.from(document.querySelectorAll<HTMLElement>('.qv-sheet-in'))
+
+      /**
+       * Cuánto sobresale el contenido por debajo del límite útil de la hoja.
+       * Se mide con la geometría real de los bloques: scrollHeight no delata
+       * el desborde cuando la caja tiene alto fijo, y los márgenes del último
+       * bloque tampoco entran en esa cuenta.
+       */
+      const excess = (el: HTMLElement) => {
         const sheet = el.parentElement
-        if (!sheet) return
-        // alto realmente disponible: la caja de la hoja menos sus márgenes
-        // internos — el inferior es el que reserva el pie de página.
+        if (!sheet) return { over: 0, avail: 0, content: 0 }
         const cs = getComputedStyle(sheet)
-        const avail = sheet.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-        if (avail <= 0) return
-        const h = el.scrollHeight
-        if (h > avail) el.style.setProperty('--fit', String(Math.max(0.62, (avail / h) - 0.005)))
+        const rect = sheet.getBoundingClientRect()
+        const top = rect.top + parseFloat(cs.paddingTop)
+        const limit = rect.bottom - parseFloat(cs.paddingBottom)
+        let bottom = top
+        el.querySelectorAll<HTMLElement>(':scope > *').forEach((child) => {
+          const r = child.getBoundingClientRect()
+          if (r.height > 0 && r.bottom > bottom) bottom = r.bottom
+        })
+        return { over: bottom - limit, avail: limit - top, content: bottom - top }
+      }
+
+      // primera pasada: escala según el desborde medido
+      sheets.forEach((el) => {
+        el.style.setProperty('--fit', '1')
+        const { over, avail, content } = excess(el)
+        if (over > 0 && content > 0) {
+          el.style.setProperty('--fit', String(Math.max(0.62, (avail / content) - 0.01)))
+        }
+      })
+
+      // segunda pasada: al reducir, el texto vuelve a componerse y las alturas
+      // cambian; se corrige lo que aún sobresalga.
+      sheets.forEach((el) => {
+        const current = parseFloat(el.style.getPropertyValue('--fit') || '1')
+        const { over, avail, content } = excess(el)
+        if (over > 0 && content > 0) {
+          const next = current * ((avail / content) - 0.012)
+          el.style.setProperty('--fit', String(Math.max(0.62, next)))
+        }
       })
     }
     fit()
