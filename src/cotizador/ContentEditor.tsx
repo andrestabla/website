@@ -6,7 +6,7 @@
  * Trabaja sobre una copia local y guarda con un solo botón; las capturas se
  * suben a R2 mediante /api/quotes/upload.
  */
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ChevronDown, ChevronRight, Plus, Trash2, UploadCloud, Loader2, Save, ArrowUp, ArrowDown } from 'lucide-react'
 import { quotesApi } from './api'
 import { PagesEditor, type Page } from './PagesEditor'
@@ -162,6 +162,11 @@ export function ContentEditor({
   }
   const [content, setContent] = useState<any>(() => structuredClone(quote.content ?? {}))
   const [dirty, setDirty] = useState(false)
+  const [showLegacy, setShowLegacy] = useState(false)
+  // sello del contenido con el que se abrió el editor: si el servidor tiene uno
+  // más nuevo, guardar pisaría cambios hechos en otra pestaña o por un script.
+  const loadedAt = useRef<string>(quote.updatedAt)
+  const [stale, setStale] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [open, setOpen] = useState<Record<string, boolean>>(
@@ -178,7 +183,19 @@ export function ContentEditor({
   const val = (path: string, fallback: any = '') => getPath(content, path) ?? fallback
   const pages: Page[] = Array.isArray(content?.pages) ? content.pages : []
 
+  // vigila si la cotización cambió en el servidor mientras se edita
+  useEffect(() => {
+    const id = window.setInterval(async () => {
+      try {
+        const payload = await quotesApi.get(quoteId)
+        if (payload?.quote?.updatedAt && payload.quote.updatedAt !== loadedAt.current) setStale(true)
+      } catch { /* sin red: se reintenta en el siguiente ciclo */ }
+    }, 20000)
+    return () => window.clearInterval(id)
+  }, [quoteId])
+
   const save = async () => {
+    if (stale && !confirm('La cotización cambió en otro lugar desde que abriste el editor. Si guardas, tus cambios reemplazan los del servidor. ¿Continuar?')) return
     setSaving(true)
     setError('')
     try {
@@ -194,6 +211,8 @@ export function ContentEditor({
         content,
       })
       onSaved(payload.quote)
+      loadedAt.current = payload.quote.updatedAt
+      setStale(false)
       setDirty(false)
     } catch (e: any) {
       setError(e.message)
@@ -285,6 +304,30 @@ export function ContentEditor({
         <PagesEditor pages={pages} onChange={(next) => patch('pages', next)} />
       </Section>
 
+      {stale && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] text-rose-700">
+          <b>La cotización cambió en otro lugar</b> desde que abriste el editor. Si guardas ahora,
+          tus cambios reemplazan los del servidor; recarga la página si prefieres conservar los otros.
+        </div>
+      )}
+
+      {pages.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2.5">
+          <div className="text-[12px] font-semibold text-amber-800">
+            Este documento se compone por páginas (arriba).
+          </div>
+          <p className="mt-0.5 text-[11.5px] leading-relaxed text-amber-700">
+            Las secciones del esquema clásico quedan ocultas porque no se muestran en la vista
+            pública de este documento.{' '}
+            <button onClick={() => setShowLegacy((v) => !v)} className="font-semibold underline">
+              {showLegacy ? 'Ocultarlas de nuevo' : 'Mostrarlas de todos modos'}
+            </button>
+          </p>
+        </div>
+      )}
+
+      {(pages.length === 0 || showLegacy) && (
+      <>
       <Section open={open} setOpen={setOpen} id="portada" title="Portada y datos del cliente">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Cliente *"><input value={meta.clientName} onChange={(e) => setMetaField('clientName', e.target.value)} className={inputCls} /></Field>
@@ -595,6 +638,8 @@ export function ContentEditor({
           <Field label="Teléfono"><input value={val('signature.phone')} onChange={(e) => patch('signature.phone', e.target.value)} className={inputCls} /></Field>
         </div>
       </Section>
+      </>
+      )}
     </div>
   )
 }
