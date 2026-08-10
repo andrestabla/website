@@ -723,7 +723,10 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
     max-width: none; margin: 0; border-radius: 0; box-shadow: none;
   }
   .qv-section { background: transparent; }
-  .qv-section::before, .qv-section::after { content: none; }
+  /* solo los documentos sin páginas pierden la cabecera y el pie de hoja:
+     en los paginados son parte de la diagramación impresa */
+  .qv:not(.is-paged) .qv-section::before,
+  .qv:not(.is-paged) .qv-section::after { content: none; }
   main.qv-page { max-width: none; padding: 0 16mm; }
 
   /* contraportada: hoja completa al cierre, como la portada */
