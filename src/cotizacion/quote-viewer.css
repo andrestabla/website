@@ -141,7 +141,7 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
   border-bottom: 1px solid var(--line);
 }
 .qv-section::after {
-  content: 'Algoritmo T · Documento interactivo — pág. ' counter(qvsheet);
+  content: 'Algoritmo T — pág. ' counter(qvsheet);
   position: absolute;
   left: clamp(20px, 4.5vw, 58px);
   right: clamp(20px, 4.5vw, 58px);

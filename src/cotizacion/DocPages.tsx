@@ -24,10 +24,15 @@ export function useFitPages(deps: unknown[] = []) {
     const fit = () => {
       document.querySelectorAll<HTMLElement>('.qv-sheet-in').forEach((el) => {
         el.style.setProperty('--fit', '1')
-        const avail = el.parentElement ? el.parentElement.clientHeight : 0
-        if (!avail) return
+        const sheet = el.parentElement
+        if (!sheet) return
+        // alto realmente disponible: la caja de la hoja menos sus márgenes
+        // internos — el inferior es el que reserva el pie de página.
+        const cs = getComputedStyle(sheet)
+        const avail = sheet.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+        if (avail <= 0) return
         const h = el.scrollHeight
-        if (h > avail) el.style.setProperty('--fit', String(Math.max(0.62, avail / h)))
+        if (h > avail) el.style.setProperty('--fit', String(Math.max(0.62, (avail / h) - 0.005)))
       })
     }
     fit()
