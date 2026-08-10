@@ -54,16 +54,21 @@ export function useFitPages(deps: unknown[] = []) {
         }
       })
 
-      // segunda pasada: al reducir, el texto vuelve a componerse y las alturas
-      // cambian; se corrige lo que aún sobresalga.
-      sheets.forEach((el) => {
-        const current = parseFloat(el.style.getPropertyValue('--fit') || '1')
-        const { over, avail, content } = excess(el)
-        if (over > 0 && content > 0) {
-          const next = current * ((avail / content) - 0.012)
-          el.style.setProperty('--fit', String(Math.max(0.62, next)))
-        }
-      })
+      // pasadas siguientes: al reducir, el texto vuelve a componerse y las
+      // alturas cambian; se corrige hasta que ninguna hoja sobresalga.
+      for (let pass = 0; pass < 3; pass++) {
+        let ajustada = false
+        sheets.forEach((el) => {
+          const current = parseFloat(el.style.getPropertyValue('--fit') || '1')
+          const { over, avail, content } = excess(el)
+          if (over > 0.5 && content > 0) {
+            const next = current * ((avail / content) - 0.012)
+            el.style.setProperty('--fit', String(Math.max(0.55, next)))
+            ajustada = true
+          }
+        })
+        if (!ajustada) break
+      }
     }
     fit()
     const t = window.setTimeout(fit, 400)

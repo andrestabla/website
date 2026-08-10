@@ -304,17 +304,26 @@ const pages = [
     ],
   },
 
-  /* ── Pág. 15 · Vistas: indicadores, ruta e iniciativas ── */
+  /* ── Pág. 15 · Vistas: indicadores y ruta ── */
   {
     id: 'vistas-kpi', num: '06', kicker: 'Vistas de la plataforma', title: 'Indicadores, ruta y seguimiento de iniciativas',
     blocks: [
       { type: 'img', url: `${IMG}/fig-m4-kpi.png`, caption: '/panel/kpi — batería de indicadores con serie histórica, variación y meta.', wide: true },
       { type: 'img', url: `${IMG}/fig-m5-ruta.png`, caption: '/panel/ruta — roadmap por horizontes y matriz de priorización impacto × factibilidad.', wide: true },
-      { type: 'img', url: `${IMG}/fig-m6-iniciativas.png`, caption: '/panel/iniciativas — ejecución presupuestal y factores críticos de éxito en semáforo. Cuando un factor acumula dos revisiones en rojo, la conversación se puede tener a tiempo: es el mecanismo que permite detectar que una iniciativa va a fracasar antes de que fracase.', wide: true },
-      { type: 'cards', cols: 3, items: [
+      { type: 'cards', cols: 2, items: [
         { title: 'Del indicador al responsable', body: 'Cada KPI declara quién produce el dato y con qué periodicidad: deja de ser una cifra que se reconstruye a mano y pasa a ser una responsabilidad asignada.' },
         { title: 'De la ruta a la decisión', body: 'La matriz de impacto por factibilidad es el insumo con el que se sustenta ante el Consejo qué se ejecuta primero y por qué.' },
-        { title: 'Del avance a la madurez', body: 'La ejecución registrada alimenta la siguiente medición: ejecutar iniciativas es lo que hace subir el nivel, y aquí queda demostrado con datos.' },
+      ]},
+    ],
+  },
+
+  /* ── Pág. 15b · Vistas: seguimiento de iniciativas ── */
+  {
+    id: 'vistas-iniciativas', num: '06', kicker: 'Vistas de la plataforma', title: 'Indicadores, ruta y seguimiento de iniciativas', tocHidden: true,
+    blocks: [
+      { type: 'img', url: `${IMG}/fig-m6-iniciativas.png`, caption: '/panel/iniciativas — ejecución presupuestal y factores críticos de éxito en semáforo. Cuando un factor acumula dos revisiones en rojo, la conversación se puede tener a tiempo: es el mecanismo que permite detectar que una iniciativa va a fracasar antes de que fracase.', wide: true },
+      { type: 'cards', cols: 1 as any, items: [
+        { title: 'Del avance a la madurez', body: 'La ejecución registrada alimenta la siguiente medición: ejecutar iniciativas es lo que hace subir el nivel, y aquí queda demostrado con datos. La trazabilidad va del nivel de madurez a la brecha, de la brecha a la iniciativa y de la iniciativa a su presupuesto y sus factores críticos.' },
       ]},
       { type: 'note', text: 'Vistas ilustrativas de la interfaz. Las iniciativas, montos y estados corresponden a un ejemplo de configuración y no a datos de la Universidad.' },
     ],
