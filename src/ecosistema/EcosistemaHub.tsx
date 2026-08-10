@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink, FileSignature } from 'lucide-react'
+import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink, FileSignature, Bot } from 'lucide-react'
 import { canAccessModule, hasAdminBridge, type AdminModuleKey } from '../admin/lib/permissions'
 import { ecoLogout, type EcoUser } from './lib/session'
 
@@ -77,6 +77,22 @@ export function EcosistemaHub({ user, onLogout }: { user: EcoUser; onLogout: () 
                 <Link key={m.module} to={m.to} className={cls}>{inner}</Link>
               )
             })}
+
+            {user?.role === 'SUPERADMIN' && (
+              <Link
+                to="/ecosistema/claudia"
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-lg"
+              >
+                <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-500 text-white"><Bot size={22} /></div>
+                <h3 className="mt-3 text-[17px] font-bold tracking-tight">Claudia remoto</h3>
+                <p className="mt-1 text-[13px] leading-relaxed text-slate-600">Envía tareas a tu asistente en la Mac desde cualquier lugar y consulta los resultados.</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10.5px] text-slate-500">Asistente</span>
+                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[10.5px] text-violet-600">Solo propietario</span>
+                </div>
+                <div className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-indigo-600">Abrir <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></div>
+              </Link>
+            )}
 
             {admin && (
               <Link

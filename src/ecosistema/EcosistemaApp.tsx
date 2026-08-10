@@ -6,6 +6,7 @@ import { EcosistemaLogin } from './EcosistemaLogin'
 import { EcosistemaHub } from './EcosistemaHub'
 import { CotizadorList } from '../cotizador/CotizadorList'
 import { QuoteBuilder } from '../cotizador/QuoteBuilder'
+import { ClaudiaRemote } from './ClaudiaRemote'
 
 function Centered({ children }: { children: ReactNode }) {
   return (
@@ -37,6 +38,11 @@ export default function EcosistemaApp() {
       <Route
         path="cotizador/:quoteId"
         element={cotizadorAllowed ? <QuoteBuilder /> : <Navigate to="/ecosistema" replace />}
+      />
+      {/* Control remoto del equipo del profe: solo el propietario (el API lo revalida). */}
+      <Route
+        path="claudia"
+        element={user?.role === 'SUPERADMIN' ? <ClaudiaRemote /> : <Navigate to="/ecosistema" replace />}
       />
       <Route path="*" element={<Navigate to="/ecosistema" replace />} />
     </Routes>

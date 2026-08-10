@@ -744,3 +744,29 @@ model QuoteMessage {
 
   @@index([quoteId, createdAt])
 }
+
+/// Puente remoto con "Claudia" (agente local en la Mac del profe Andrés).
+/// El equipo local NO expone puertos: consulta esta cola hacia afuera.
+model ClaudiaJob {
+  id        String    @id @default(cuid())
+  status    String    @default("PENDING") // PENDING | TAKEN | DONE | ERROR | CANCELLED
+  prompt    String
+  project   String? // nombre/ruta del proyecto destino (vacío = Mi Mac)
+  result    String?
+  events    Json? // traza de herramientas ejecutadas
+  createdBy String // correo de quien la pidió
+  createdAt DateTime  @default(now())
+  takenAt   DateTime?
+  doneAt    DateTime?
+
+  @@index([status, createdAt])
+  @@index([createdAt(sort: Desc)])
+}
+
+/// Latido del equipo local: para saber si Claudia está en línea.
+model ClaudiaDevice {
+  id       String   @id @default("default")
+  lastSeen DateTime @updatedAt
+  version  String?
+  projects Json? // lista de proyectos disponibles
+}
