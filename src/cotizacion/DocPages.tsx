@@ -27,12 +27,20 @@ export type DocBlock =
   | { type: 'toc'; note?: string }
   | { type: 'team'; items: Array<{ role: string; dedication?: string; functions: string[] }> }
   | { type: 'letterhead'; date?: string; addressee?: string; subject?: string; salutation?: string }
+  | {
+      type: 'gantt'
+      cols: string[]
+      rows: Array<{ label: string; from: number; to: number; tone?: 'cyan' | 'deep' | 'gold'; bold?: boolean }>
+      note?: string
+    }
 
 export type DocPage = {
   id: string
   num?: string
   kicker?: string
   title?: string
+  /** Excluye la página del índice automático (p. ej. la continuación de un capítulo). */
+  tocHidden?: boolean
   blocks: DocBlock[]
 }
 
@@ -239,8 +247,13 @@ export function DocBlockView({
       )
 
     case 'toc': {
-      // Índice automático: se arma con las páginas que tienen título.
-      const entries = pages.filter((p) => p.title)
+      // Índice automático: páginas con título, sin las ocultas y sin repetir
+      // el mismo capítulo cuando continúa en varias páginas.
+      const entries = pages.filter((p, i, all) => {
+        if (!p.title || p.tocHidden) return false
+        const prev = all.slice(0, i).filter((x) => x.title && !x.tocHidden).pop()
+        return !(prev && prev.title === p.title && prev.num === p.num)
+      })
       return (
         <>
           <ul className="qv-toc">
@@ -279,6 +292,32 @@ export function DocBlockView({
           ))}
         </ul>
       )
+
+    case 'gantt': {
+      const n = block.cols.length || 1
+      const tone = (t?: string) => (t === 'gold' ? 'is-gold' : t === 'deep' ? 'is-deep' : 'is-cyan')
+      return (
+        <>
+          <div className="qv-gantt" style={{ ['--n' as string]: n }}>
+            <div className="g-row g-head">
+              <span className="g-lab" />
+              {block.cols.map((c, i) => <span className="g-col" key={i}>{c}</span>)}
+            </div>
+            {block.rows.map((r, i) => (
+              <div className="g-row" key={i}>
+                <span className={`g-lab${r.bold ? ' is-bold' : ''}`}>{r.label}</span>
+                {block.cols.map((_, c) => <span className="g-col" key={c} />)}
+                <span
+                  className={`g-bar ${tone(r.tone)}`}
+                  style={{ gridColumn: `${Math.max(1, r.from) + 1} / ${Math.max(r.from, r.to) + 2}` }}
+                />
+              </div>
+            ))}
+          </div>
+          {block.note && <p className="qv-note">{rich(block.note)}</p>}
+        </>
+      )
+    }
 
     case 'letterhead':
       return (

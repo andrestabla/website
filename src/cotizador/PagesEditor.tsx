@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 
 export type Block = Record<string, any> & { type: string }
-export type Page = { id: string; num?: string; kicker?: string; title?: string; blocks: Block[] }
+export type Page = { id: string; num?: string; kicker?: string; title?: string; tocHidden?: boolean; blocks: Block[] }
 
 const inputCls = 'w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[12.5px] outline-none focus:border-indigo-500'
 const labelCls = 'mb-1 mt-2 block text-[10px] font-bold uppercase tracking-wide text-slate-400'
@@ -35,6 +35,7 @@ const BLOCK_TYPES: Array<[string, string]> = [
   ['toc', 'Tabla de contenido'],
   ['team', 'Equipo'],
   ['letterhead', 'Encabezado de carta'],
+  ['gantt', 'Cronograma de barras'],
 ]
 const BLOCK_LABEL: Record<string, string> = Object.fromEntries(BLOCK_TYPES)
 
@@ -54,6 +55,12 @@ const EMPTY: Record<string, Block> = {
   toc: { type: 'toc', note: '' },
   team: { type: 'team', items: [{ role: '', dedication: '', functions: [''] }] },
   letterhead: { type: 'letterhead', date: '', addressee: '', subject: '', salutation: 'Reciban un cordial saludo,' },
+  gantt: {
+    type: 'gantt',
+    cols: ['Mes 1', 'Mes 2', 'Mes 3'],
+    rows: [{ label: '', from: 1, to: 2, tone: 'cyan' }],
+    note: '',
+  },
 }
 
 /**
@@ -86,6 +93,7 @@ const TEMPLATES: Array<{ id: string; label: string; make: (n: number) => Page }>
       id: `plan-${n}`, num: String(n).padStart(2, '0'), kicker: 'Cómo se ejecuta', title: 'Plan de trabajo',
       blocks: [
         { type: 'p', text: '' },
+        { type: 'gantt', cols: ['Mes 1', 'Mes 2', 'Mes 3'], rows: [{ label: 'Fase 1', from: 1, to: 2, tone: 'cyan' }], note: '' },
         { type: 'phase', id: 'FASE 1', name: '', when: '', defs: [{ term: 'Objetivo', desc: '' }, { term: 'Actividades', desc: '' }, { term: 'Entregables', desc: '' }] },
       ],
     }),
@@ -348,6 +356,10 @@ export function PagesEditor({ pages, onChange }: { pages: Page[]; onChange: (nex
                 </div>
                 <label className={labelCls}>Título de la página</label>
                 <input value={page.title || ''} onChange={(e) => setPage(pi, { title: e.target.value })} className={inputCls} />
+                <label className="mt-2 flex items-center gap-2 text-[11.5px] font-semibold text-slate-500">
+                  <input type="checkbox" checked={!!page.tocHidden} onChange={(e) => setPage(pi, { tocHidden: e.target.checked })} />
+                  Ocultar del índice (continuación de un capítulo)
+                </label>
 
                 <div className="mt-3 space-y-1.5">
                   {page.blocks.map((block, bi) => {
@@ -598,6 +610,49 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
             </div>
           ))}
           <button onClick={() => set('items', [...pays, { pct: '', label: '' }])} className="text-[11px] font-semibold text-indigo-600 hover:underline">+ pago</button>
+        </>
+      )
+    }
+
+    case 'gantt': {
+      const cols: string[] = Array.isArray(block.cols) ? block.cols : []
+      const rows: any[] = Array.isArray(block.rows) ? block.rows : []
+      const setRow = (i: number, key: string, v: unknown) =>
+        set('rows', rows.map((r, k) => (k === i ? { ...r, [key]: v } : r)))
+      return (
+        <>
+          <label className={labelCls}>Periodos (columnas)</label>
+          <div className="flex flex-wrap gap-1">
+            {cols.map((c, i) => (
+              <input key={i} value={c} onChange={(e) => set('cols', cols.map((x, k) => (k === i ? e.target.value : x)))}
+                className={`${inputCls} w-24`} />
+            ))}
+            <button onClick={() => set('cols', [...cols, `Mes ${cols.length + 1}`])} className="text-[11px] font-semibold text-indigo-600 hover:underline">+ periodo</button>
+            {cols.length > 1 && (
+              <button onClick={() => set('cols', cols.slice(0, -1))} className="text-[11px] font-semibold text-slate-400 hover:text-rose-600">− último</button>
+            )}
+          </div>
+          <label className={labelCls}>Barras — desde / hasta en número de periodo</label>
+          {rows.map((r, i) => (
+            <div key={i} className="mb-1 flex flex-wrap items-center gap-1">
+              <input placeholder="Etiqueta" value={r.label || ''} onChange={(e) => setRow(i, 'label', e.target.value)} className={`${inputCls} min-w-[150px] flex-1`} />
+              <input type="number" min={1} max={cols.length} value={r.from ?? 1} onChange={(e) => setRow(i, 'from', Number(e.target.value))} className={`${inputCls} w-16`} title="Desde" />
+              <input type="number" min={1} max={cols.length} value={r.to ?? 1} onChange={(e) => setRow(i, 'to', Number(e.target.value))} className={`${inputCls} w-16`} title="Hasta" />
+              <select value={r.tone || 'cyan'} onChange={(e) => setRow(i, 'tone', e.target.value)} className={`${inputCls} w-28`}>
+                <option value="cyan">Cian</option>
+                <option value="deep">Cian profundo</option>
+                <option value="gold">Dorado</option>
+              </select>
+              <label className="flex items-center gap-1 text-[10.5px] text-slate-400" title="Destacar la etiqueta">
+                <input type="checkbox" checked={!!r.bold} onChange={(e) => setRow(i, 'bold', e.target.checked)} /> destacar
+              </label>
+              <button onClick={() => set('rows', rows.filter((_, k) => k !== i))} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={11} /></button>
+            </div>
+          ))}
+          <button onClick={() => set('rows', [...rows, { label: '', from: 1, to: cols.length || 1, tone: 'cyan' }])}
+            className="text-[11px] font-semibold text-indigo-600 hover:underline">+ barra</button>
+          <label className={labelCls}>Nota bajo el cronograma</label>
+          <RichArea rows={2} value={block.note || ''} onChange={(v) => set('note', v)} />
         </>
       )
     }

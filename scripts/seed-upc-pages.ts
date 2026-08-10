@@ -145,7 +145,19 @@ const pages = [
     id: 'metodologia', num: '04', kicker: 'Cómo se ejecuta', title: 'Metodología',
     blocks: [
       { type: 'lede', text: 'La metodología se desarrollará mediante un enfoque participativo, basado en la recopilación, contraste y análisis de información institucional, y en la aplicación de referentes nacionales e internacionales de buenas prácticas en transformación digital universitaria. Se estructura en seis fases iterativas, numeradas de 0 a 5, que constituyen el único esquema de fases de esta propuesta y el marco de referencia de los hitos de pago.' },
-      { type: 'note', text: 'La plataforma entra en producción en el mes 1 y acompaña toda la ejecución. La licencia continúa 18 meses después del cierre, renovable anualmente.' },
+      { type: 'gantt',
+        cols: ['Mes 1', 'Mes 2', 'Mes 3', 'Mes 4', 'Mes 5', 'Mes 6'],
+        rows: [
+          { label: 'Fase 0 · Línea base y madurez', from: 1, to: 1, tone: 'cyan' },
+          { label: 'Fase 1 · Diagnóstico institucional', from: 1, to: 2, tone: 'cyan' },
+          { label: 'Fase 2 · Posicionamiento y rankings', from: 2, to: 3, tone: 'cyan' },
+          { label: 'Fase 3 · Modelo de Universidad Digital', from: 3, to: 4, tone: 'deep' },
+          { label: 'Fase 4 · Hoja de ruta e IMV', from: 4, to: 5, tone: 'deep' },
+          { label: 'Fase 5 · Validación y socialización', from: 5, to: 6, tone: 'deep' },
+          { label: 'Plataforma en operación', from: 1, to: 6, tone: 'gold', bold: true },
+        ],
+        note: 'La plataforma entra en producción en el mes 1 y acompaña toda la ejecución. La licencia continúa 18 meses después del cierre, renovable anualmente.',
+      },
       { type: 'h3', text: 'Principios metodológicos' },
       { type: 'cards', cols: 3, items: [
         { title: 'Participativo', body: 'Instrumentos aplicados a directivos, docentes, investigadores, estudiantes y actores de extensión; talleres de cocreación en la fase de validación.' },
@@ -184,7 +196,7 @@ const pages = [
 
   /* ── Pág. 10 · Plan de trabajo, fases 3 a 5 ── */
   {
-    id: 'plan-2', num: '05', kicker: 'Fases 3 a 5', title: 'Plan de trabajo',
+    id: 'plan-2', num: '05', kicker: 'Fases 3 a 5', title: 'Plan de trabajo', tocHidden: true,
     blocks: [
       { type: 'phase', id: 'FASE 3', name: 'Planificación y diseño estratégico — Modelo de Universidad Digital', when: 'Meses 3–4', defs: [
         { term: 'Objetivo', desc: 'Definir el Modelo de Universidad Digital y la arquitectura empresarial que sustentará la transformación.' },
