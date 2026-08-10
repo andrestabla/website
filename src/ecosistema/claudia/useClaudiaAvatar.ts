@@ -43,6 +43,8 @@ export function useClaudiaAvatar(container: React.RefObject<HTMLDivElement | nul
   const [ready, setReady] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const [failed, setFailed] = useState(false)
+  /** Qué voz se usó la última vez: la de Azure (Salomé) o la del navegador. */
+  const [voiceSource, setVoiceSource] = useState<'salome' | 'navegador' | null>(null)
 
   // ── carga del avatar ───────────────────────────────────────────────
   useEffect(() => {
@@ -135,6 +137,7 @@ export function useClaudiaAvatar(container: React.RefObject<HTMLDivElement | nul
       })
       if (!res.ok) throw new Error(String(res.status))
       const buf = await res.arrayBuffer()
+      setVoiceSource('salome')
 
       const head = headRef.current
       if (head) {
@@ -156,6 +159,7 @@ export function useClaudiaAvatar(container: React.RefObject<HTMLDivElement | nul
         })
       }
     } catch {
+      setVoiceSource('navegador')
       await speakLocal(clean) // Azure no disponible → voz del navegador
     } finally {
       setSpeaking(false)
@@ -163,5 +167,5 @@ export function useClaudiaAvatar(container: React.RefObject<HTMLDivElement | nul
     }
   }, [setMood, speakLocal, stop])
 
-  return { ready, failed, speaking, speak, stop, setMood }
+  return { ready, failed, speaking, speak, stop, setMood, voiceSource }
 }

@@ -226,6 +226,13 @@ export function ClaudiaRemote() {
                 {camOn ? 'Gestos on' : 'Gestos'}
               </button>
             </div>
+            {avatar.voiceSource && (
+              <p className={`mt-1 text-[11px] ${avatar.voiceSource === 'salome' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                {avatar.voiceSource === 'salome'
+                  ? '🔊 voz Salomé (Azure)'
+                  : '🔊 voz del navegador — falta AZURE_SPEECH_KEY en Vercel'}
+              </p>
+            )}
             {vision.error && <p className="mt-1 text-[11px] text-rose-500">{vision.error}</p>}
             {camOn && vision.running && (
               <p className="mt-1 text-[11px] text-slate-400">👍 enviar · 👎 borrar · ✋ callar</p>
