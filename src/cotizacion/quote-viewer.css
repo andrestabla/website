@@ -364,7 +364,10 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
   text-transform: uppercase; color: var(--muted); text-align: left;
   padding: 0 8px 9px; border-bottom: 1px solid var(--ink);
 }
-.qv-table th:last-child, .qv-table td:last-child { text-align: right; }
+.qv-table:not(.doc) th:last-child, .qv-table:not(.doc) td:last-child { text-align: right; }
+/* tablas del compositor: alineación natural a la izquierda salvo que el autor
+   defina otra por columna desde el builder */
+.qv-table.doc th, .qv-table.doc td { text-align: left; }
 .qv-table td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.42; }
 .qv-table .t-m { font-family: var(--mono); font-size: 11px; color: var(--gold); white-space: nowrap; }
 .qv-table .t-h { color: var(--navy); font-weight: 600; }
@@ -789,3 +792,11 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
 .qv .qv-toc .t { color: var(--ink); font-weight: 600; }
 .qv .qv-toc .d { flex: 1; border-bottom: 1px dotted var(--line-strong); transform: translateY(-3px); }
 .qv .qv-toc .k { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); }
+
+
+/* marcas de texto del compositor */
+.qv .qv-section code {
+  font-family: var(--mono); font-size: 0.92em; background: var(--paper-2);
+  padding: 1px 5px; border-radius: 4px; color: var(--cyan-deep);
+}
+.qv .qv-section a { color: var(--cyan-deep); text-decoration: underline; text-underline-offset: 2px; }

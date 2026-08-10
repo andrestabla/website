@@ -9,14 +9,16 @@
  */
 import type { QuoteItem, QuoteTotals } from './pricing'
 
+export type Align = 'left' | 'center' | 'right' | 'justify'
+
 export type DocBlock =
-  | { type: 'lede'; text: string }
-  | { type: 'p'; text: string }
-  | { type: 'h3'; text: string }
-  | { type: 'list'; items: string[] }
-  | { type: 'box'; title?: string; body: string }
-  | { type: 'note'; text: string }
-  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain' }
+  | { type: 'lede'; text: string; align?: Align }
+  | { type: 'p'; text: string; align?: Align }
+  | { type: 'h3'; text: string; align?: Align }
+  | { type: 'list'; items: string[]; align?: Align }
+  | { type: 'box'; title?: string; body: string; align?: Align }
+  | { type: 'note'; text: string; align?: Align }
+  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[] }
   | { type: 'cards'; cols?: 2 | 3; items: Array<{ tag?: string; title: string; body: string; foot?: string }> }
   | { type: 'phase'; id: string; name: string; when?: string; defs: Array<{ term: string; desc: string; strong?: boolean }> }
   | { type: 'img'; url: string; caption?: string; wide?: boolean }
@@ -37,6 +39,29 @@ export type DocPage = {
 /** Divide en párrafos por línea en blanco, como el editor. */
 const paras = (text: string) => String(text || '').split(/\n{2,}/).filter(Boolean)
 
+/**
+ * Marcas de texto que el builder inserta al dar formato sobre la selección:
+ *   **negrita** · *cursiva* · `monoespaciada` · [texto](url)
+ * Se resuelven a nodos de React (nunca a HTML crudo).
+ */
+const RICH = /(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\))/g
+
+export function rich(text: string): React.ReactNode {
+  const parts = String(text || '').split(RICH)
+  return parts.map((part, i) => {
+    if (!part) return null
+    if (part.startsWith('**') && part.endsWith('**')) return <b key={i}>{part.slice(2, -2)}</b>
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) return <em key={i}>{part.slice(1, -1)}</em>
+    if (part.startsWith('`') && part.endsWith('`')) return <code key={i}>{part.slice(1, -1)}</code>
+    const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part)
+    if (link) return <a key={i} href={link[2]} target="_blank" rel="noreferrer">{link[1]}</a>
+    return <span key={i}>{part}</span>
+  })
+}
+
+/** Estilo de alineación del bloque (si el autor la definió). */
+const al = (a?: Align) => (a ? { textAlign: a } as React.CSSProperties : undefined)
+
 export function DocBlockView({
   block,
   items,
@@ -52,44 +77,47 @@ export function DocBlockView({
 }) {
   switch (block.type) {
     case 'lede':
-      return <>{paras(block.text).map((t, i) => <p className="qv-lede" key={i}>{t}</p>)}</>
+      return <>{paras(block.text).map((t, i) => <p className="qv-lede" style={al(block.align)} key={i}>{rich(t)}</p>)}</>
 
     case 'p':
-      return <>{paras(block.text).map((t, i) => <p key={i}>{t}</p>)}</>
+      return <>{paras(block.text).map((t, i) => <p style={al(block.align)} key={i}>{rich(t)}</p>)}</>
 
     case 'h3':
-      return <h3 className="qv-subtitle">{block.text}</h3>
+      return <h3 className="qv-subtitle" style={al(block.align)}>{rich(block.text)}</h3>
 
     case 'list':
       return (
-        <ul className="qv-deliv one">
-          {block.items.filter(Boolean).map((it, i) => <li key={i}>{it}</li>)}
+        <ul className="qv-deliv one" style={al(block.align)}>
+          {block.items.filter(Boolean).map((it, i) => <li key={i}>{rich(it)}</li>)}
         </ul>
       )
 
     case 'box':
       return (
-        <div className="qv-scopebox">
-          {block.title && <div className="sb-h">{block.title}</div>}
-          {paras(block.body).map((t, i) => <p key={i}>{t}</p>)}
+        <div className="qv-scopebox" style={al(block.align)}>
+          {block.title && <div className="sb-h">{rich(block.title)}</div>}
+          {paras(block.body).map((t, i) => <p key={i}>{rich(t)}</p>)}
         </div>
       )
 
     case 'note':
-      return <p className="qv-note">{block.text}</p>
+      return <p className="qv-note" style={al(block.align)}>{rich(block.text)}</p>
 
     case 'table':
       return (
         <div className="qv-tablewrap">
-          <table className="qv-table">
+          <table className="qv-table doc">
             {block.headers?.length ? (
-              <thead><tr>{block.headers.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+              <thead><tr>{block.headers.map((h, i) => (
+                <th key={i} style={al(block.colAlign?.[i])}>{h}</th>
+              ))}</tr></thead>
             ) : null}
             <tbody>
               {block.rows.map((row, ri) => (
                 <tr key={ri}>
                   {row.map((cell, ci) => (
-                    <td key={ci} className={ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : undefined}>{cell}</td>
+                    <td key={ci} style={al(block.colAlign?.[ci])}
+                      className={ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : undefined}>{rich(cell)}</td>
                   ))}
                 </tr>
               ))}
@@ -104,9 +132,9 @@ export function DocBlockView({
           {block.items.map((card, i) => (
             <div className="qv-front" key={i}>
               {card.tag && <div className="f-n">{card.tag}</div>}
-              <h3>{card.title}</h3>
-              {paras(card.body).map((t, k) => <p key={k}>{t}</p>)}
-              {card.foot && <div className="f-o">{card.foot}</div>}
+              <h3>{rich(card.title)}</h3>
+              {paras(card.body).map((t, k) => <p key={k}>{rich(t)}</p>)}
+              {card.foot && <div className="f-o">{rich(card.foot)}</div>}
             </div>
           ))}
         </div>
@@ -124,7 +152,7 @@ export function DocBlockView({
             {block.defs.map((d, i) => (
               <div className="dpair" key={i}>
                 <dt>{d.term}</dt>
-                <dd className={d.strong ? 'pf' : undefined}>{d.desc}</dd>
+                <dd className={d.strong ? 'pf' : undefined}>{rich(d.desc)}</dd>
               </div>
             ))}
           </dl>
@@ -163,7 +191,7 @@ export function DocBlockView({
               </tbody>
             </table>
           </div>
-          {block.note && <p className="qv-note">{block.note}</p>}
+          {block.note && <p className="qv-note">{rich(block.note)}</p>}
         </>
       )
     }
@@ -174,7 +202,7 @@ export function DocBlockView({
           {block.items.map((p, i) => (
             <div className="p" key={i}>
               <div className="pc">{p.pct}</div>
-              <div className="pl">{p.label}</div>
+              <div className="pl">{rich(p.label)}</div>
             </div>
           ))}
         </div>
@@ -215,7 +243,7 @@ export function DocBlockView({
                 </div>
               </div>
               <ul className="tm-fns">
-                {member.functions.filter(Boolean).map((f, k) => <li key={k}>{f}</li>)}
+                {member.functions.filter(Boolean).map((f, k) => <li key={k}>{rich(f)}</li>)}
               </ul>
             </li>
           ))}

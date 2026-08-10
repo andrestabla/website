@@ -6,8 +6,11 @@
  * Vive dentro del editor de contenido y trabaja sobre la misma copia local:
  * recibe el arreglo y devuelve el nuevo arreglo en cada cambio.
  */
-import { useState } from 'react'
-import { ChevronDown, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react'
+import { useRef, useState } from 'react'
+import {
+  ChevronDown, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown,
+  Bold, Italic, Code, Link2, AlignLeft, AlignCenter, AlignRight, AlignJustify,
+} from 'lucide-react'
 
 export type Block = Record<string, any> & { type: string }
 export type Page = { id: string; num?: string; kicker?: string; title?: string; blocks: Block[] }
@@ -127,6 +130,107 @@ const TEMPLATES: Array<{ id: string; label: string; make: (n: number) => Page }>
     }),
   },
 ]
+
+/**
+ * Campo de texto con formato: al seleccionar texto aparece la barra con
+ * negrita, cursiva, monoespaciada y enlace; la alineación aplica al bloque.
+ * El formato se guarda como marcas en el propio texto (**·**, *·*, `·`,
+ * [texto](url)), de modo que el contenido sigue siendo texto plano portable.
+ */
+function RichArea({
+  value,
+  onChange,
+  rows = 3,
+  placeholder,
+  align,
+  onAlign,
+  mono,
+}: {
+  value: string
+  onChange: (v: string) => void
+  rows?: number
+  placeholder?: string
+  align?: string
+  onAlign?: (a: string) => void
+  mono?: boolean
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  const [focused, setFocused] = useState(false)
+  const [hasSel, setHasSel] = useState(false)
+
+  const syncSel = () => {
+    const el = ref.current
+    setHasSel(!!el && el.selectionEnd > el.selectionStart)
+  }
+
+  /** Envuelve la selección (o inserta las marcas en el cursor). */
+  const wrap = (before: string, after = before) => {
+    const el = ref.current
+    if (!el) return
+    const { selectionStart: a, selectionEnd: b } = el
+    const sel = value.slice(a, b)
+    const next = value.slice(0, a) + before + sel + after + value.slice(b)
+    onChange(next)
+    requestAnimationFrame(() => {
+      el.focus()
+      el.setSelectionRange(a + before.length, a + before.length + sel.length)
+      syncSel()
+    })
+  }
+
+  const addLink = () => {
+    const el = ref.current
+    if (!el) return
+    const { selectionStart: a, selectionEnd: b } = el
+    const sel = value.slice(a, b) || 'texto'
+    const url = prompt('URL del enlace', 'https://')
+    if (!url) return
+    const next = `${value.slice(0, a)}[${sel}](${url})${value.slice(b)}`
+    onChange(next)
+    requestAnimationFrame(() => el.focus())
+  }
+
+  const fmtBtn = 'grid h-6 w-6 place-items-center rounded text-slate-500 hover:bg-white hover:text-indigo-600 disabled:opacity-30'
+  const alignBtn = (a: string) =>
+    `grid h-6 w-6 place-items-center rounded ${align === a ? 'bg-white text-indigo-600' : 'text-slate-400 hover:bg-white hover:text-slate-600'}`
+
+  return (
+    <div className="relative">
+      {focused && (
+        <div className="mb-1 flex items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 px-1 py-0.5"
+          onMouseDown={(e) => e.preventDefault()}>
+          <button className={fmtBtn} disabled={!hasSel} onClick={() => wrap('**')} title="Negrita"><Bold size={12} /></button>
+          <button className={fmtBtn} disabled={!hasSel} onClick={() => wrap('*')} title="Cursiva"><Italic size={12} /></button>
+          <button className={fmtBtn} disabled={!hasSel} onClick={() => wrap('`')} title="Monoespaciada"><Code size={12} /></button>
+          <button className={fmtBtn} onClick={addLink} title="Enlace"><Link2 size={12} /></button>
+          {onAlign && (
+            <>
+              <span className="mx-1 h-4 w-px bg-slate-200" />
+              <button className={alignBtn('left')} onClick={() => onAlign('left')} title="Izquierda"><AlignLeft size={12} /></button>
+              <button className={alignBtn('center')} onClick={() => onAlign('center')} title="Centrado"><AlignCenter size={12} /></button>
+              <button className={alignBtn('right')} onClick={() => onAlign('right')} title="Derecha"><AlignRight size={12} /></button>
+              <button className={alignBtn('justify')} onClick={() => onAlign('justify')} title="Justificado"><AlignJustify size={12} /></button>
+            </>
+          )}
+          {hasSel ? null : <span className="ml-1 text-[10px] text-slate-400">selecciona texto para dar formato</span>}
+        </div>
+      )}
+      <textarea
+        ref={ref}
+        rows={rows}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => window.setTimeout(() => setFocused(false), 150)}
+        onSelect={syncSel}
+        onKeyUp={syncSel}
+        onMouseUp={syncSel}
+        className={`${inputCls}${mono ? ' font-mono text-[11.5px]' : ''}`}
+      />
+    </div>
+  )
+}
 
 /** Resumen de una línea para el encabezado plegado del bloque. */
 function preview(block: Block): string {
@@ -292,9 +396,8 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
       <div className="space-y-1.5">
         {list.map((v, i) => (
           <div className="flex items-start gap-1" key={i}>
-            <textarea rows={2} value={v}
-              onChange={(e) => set(field, list.map((x, k) => (k === i ? e.target.value : x)))}
-              className={inputCls} />
+            <RichArea rows={2} value={v}
+              onChange={(nv) => set(field, list.map((x, k) => (k === i ? nv : x)))} />
             <button onClick={() => set(field, list.filter((_, k) => k !== i))} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={11} /></button>
           </div>
         ))}
@@ -309,7 +412,7 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
       return (
         <>
           <label className={labelCls}>Texto — línea en blanco separa párrafos</label>
-          <textarea rows={5} value={block.text || ''} onChange={(e) => set('text', e.target.value)} className={inputCls} />
+          <RichArea rows={5} value={block.text || ''} onChange={(v) => set('text', v)} align={block.align} onAlign={(a) => set('align', a)} />
         </>
       )
 
@@ -318,7 +421,7 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
       return (
         <>
           <label className={labelCls}>{block.type === 'h3' ? 'Subtítulo' : 'Nota'}</label>
-          <textarea rows={2} value={block.text || ''} onChange={(e) => set('text', e.target.value)} className={inputCls} />
+          <RichArea rows={2} value={block.text || ''} onChange={(v) => set('text', v)} align={block.align} onAlign={(a) => set('align', a)} />
         </>
       )
 
@@ -331,7 +434,7 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
           <label className={labelCls}>Título de la caja</label>
           <input value={block.title || ''} onChange={(e) => set('title', e.target.value)} className={inputCls} />
           <label className={labelCls}>Texto</label>
-          <textarea rows={4} value={block.body || ''} onChange={(e) => set('body', e.target.value)} className={inputCls} />
+          <RichArea rows={4} value={block.body || ''} onChange={(v) => set('body', v)} align={block.align} onAlign={(a) => set('align', a)} />
         </>
       )
 
@@ -353,7 +456,7 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
         <>
           <p className="mt-2 text-[11.5px] text-slate-400">Se arma con los conceptos de la pestaña Propuesta.</p>
           <label className={labelCls}>Nota bajo la tabla</label>
-          <textarea rows={3} value={block.note || ''} onChange={(e) => set('note', e.target.value)} className={inputCls} />
+          <RichArea rows={3} value={block.note || ''} onChange={(v) => set('note', v)} />
         </>
       )
 
@@ -365,6 +468,18 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
         set('rows', rows.map((r, i) => (i === ri ? r.map((c, k) => (k === ci ? v : c)) : r)))
       return (
         <>
+          <label className={labelCls}>Alineación por columna</label>
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: cols }, (_, ci) => (
+              <select key={ci} value={(block.colAlign || [])[ci] || 'left'}
+                onChange={(e) => set('colAlign', Array.from({ length: cols }, (_, k) => (k === ci ? e.target.value : (block.colAlign || [])[k] || 'left')))}
+                className={`${inputCls} w-32`}>
+                <option value="left">Col. {ci + 1} · izquierda</option>
+                <option value="center">Col. {ci + 1} · centro</option>
+                <option value="right">Col. {ci + 1} · derecha</option>
+              </select>
+            ))}
+          </div>
           <label className={labelCls}>Encabezados</label>
           <div className="flex flex-wrap gap-1">
             {headers.map((h, i) => (
@@ -378,7 +493,9 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
             {rows.map((row, ri) => (
               <div key={ri} className="flex flex-wrap items-start gap-1">
                 {Array.from({ length: cols }, (_, ci) => (
-                  <textarea key={ci} rows={2} value={row[ci] ?? ''} onChange={(e) => setCell(ri, ci, e.target.value)} className={`${inputCls} w-40`} />
+                  <div key={ci} className="w-40">
+                    <RichArea rows={2} value={row[ci] ?? ''} onChange={(v) => setCell(ri, ci, v)} />
+                  </div>
                 ))}
                 <button onClick={() => set('rows', rows.filter((_, k) => k !== ri))} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={11} /></button>
               </div>
@@ -408,7 +525,7 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
               </div>
               <input placeholder="Etiqueta" value={card.tag || ''} onChange={(e) => setCard(i, 'tag', e.target.value)} className={`${inputCls} mb-1`} />
               <input placeholder="Título" value={card.title || ''} onChange={(e) => setCard(i, 'title', e.target.value)} className={`${inputCls} mb-1`} />
-              <textarea rows={3} placeholder="Texto" value={card.body || ''} onChange={(e) => setCard(i, 'body', e.target.value)} className={`${inputCls} mb-1`} />
+              <div className="mb-1"><RichArea rows={3} placeholder="Texto" value={card.body || ''} onChange={(v) => setCard(i, 'body', v)} /></div>
               <input placeholder="Pie (opcional)" value={card.foot || ''} onChange={(e) => setCard(i, 'foot', e.target.value)} className={inputCls} />
             </div>
           ))}
@@ -433,7 +550,7 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
           {defs.map((d, i) => (
             <div key={i} className="mb-1 flex items-start gap-1">
               <input value={d.term || ''} onChange={(e) => setDef(i, 'term', e.target.value)} className={`${inputCls} w-36 shrink-0`} />
-              <textarea rows={2} value={d.desc || ''} onChange={(e) => setDef(i, 'desc', e.target.value)} className={inputCls} />
+              <div className="flex-1"><RichArea rows={2} value={d.desc || ''} onChange={(v) => setDef(i, 'desc', v)} /></div>
               <label className="flex shrink-0 items-center gap-1 pt-1.5 text-[10px] text-slate-400" title="Destacar en color">
                 <input type="checkbox" checked={!!d.strong} onChange={(e) => setDef(i, 'strong', e.target.checked)} />
               </label>
@@ -454,7 +571,7 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
           {pays.map((p, i) => (
             <div key={i} className="mb-1 flex items-start gap-1">
               <input value={p.pct || ''} onChange={(e) => setPay(i, 'pct', e.target.value)} className={`${inputCls} w-20 shrink-0`} />
-              <textarea rows={2} value={p.label || ''} onChange={(e) => setPay(i, 'label', e.target.value)} className={inputCls} />
+              <div className="flex-1"><RichArea rows={2} value={p.label || ''} onChange={(v) => setPay(i, 'label', v)} /></div>
               <button onClick={() => set('items', pays.filter((_, k) => k !== i))} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={11} /></button>
             </div>
           ))}
@@ -502,9 +619,8 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
               <input placeholder="Dedicación / fases" value={m.dedication || ''} onChange={(e) => setMember(i, 'dedication', e.target.value)} className={`${inputCls} mb-1`} />
               {(m.functions || []).map((f: string, k: number) => (
                 <div key={k} className="mb-1 flex items-start gap-1">
-                  <textarea rows={2} value={f}
-                    onChange={(e) => setMember(i, 'functions', (m.functions || []).map((x: string, j: number) => (j === k ? e.target.value : x)))}
-                    className={inputCls} />
+                  <div className="flex-1"><RichArea rows={2} value={f}
+                    onChange={(v) => setMember(i, 'functions', (m.functions || []).map((x: string, j: number) => (j === k ? v : x)))} /></div>
                   <button onClick={() => setMember(i, 'functions', (m.functions || []).filter((_: string, j: number) => j !== k))} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={11} /></button>
                 </div>
               ))}
