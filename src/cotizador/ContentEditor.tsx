@@ -317,6 +317,42 @@ export function ContentEditor({
     patch('paymentLabels', null)
   }
 
+  // ── tabla de servicio personalizada (content.service.rows) ──────────────
+  // Sin filas propias, el visor arma la tabla con los tres números (meses
+  // incluidos, renovación y salida) y sus textos estándar.
+  const serviceRows: any[] = Array.isArray(val('service.rows', [])) ? val('service.rows', []) : []
+  const fmtMoney = (n: number) => {
+    const grouped = String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    return quote.currency === 'USD' ? `USD ${grouped}` : `$ ${grouped}`
+  }
+  const seedServiceRows = () => {
+    const months = Number(val('service.includedMonths', 12)) || 12
+    const renewal = Number(val('service.renewalPrice', 0)) || 0
+    const exit = Number(val('service.exitPrice', 0)) || 0
+    const rows = [
+      {
+        period: `Meses 1–${months}`,
+        title: 'Infraestructura y soporte 2, 3 y 4',
+        desc: 'Aplicación, base de datos, almacenamiento y servicios de IA, con monitoreo, respaldos y atención de incidentes.',
+        value: 'Incluido',
+      },
+      ...(renewal ? [{
+        period: `Mes ${months + 1} en adelante`,
+        title: 'Renovación anual del servicio',
+        desc: 'Mismo alcance del primer año, con mantenimiento evolutivo menor y ajuste anual por IPC.',
+        value: `${fmtMoney(renewal)} / año`,
+      }] : []),
+      ...(exit ? [{
+        period: 'Salida del servicio',
+        title: 'Traslado de la operación al cliente o a un tercero',
+        desc: 'Entrega de infraestructura, credenciales y documentación, con acompañamiento durante la migración.',
+        value: `${fmtMoney(exit)} por una vez`,
+      }] : []),
+    ]
+    patch('service.rows', rows)
+  }
+  const clearServiceRows = () => patch('service.rows', null)
+
   return (
     <div className="space-y-3">
       {/* barra de guardado */}
@@ -655,6 +691,41 @@ export function ContentEditor({
           <Field label="Renovación anual"><input type="number" value={val('service.renewalPrice', 0)} onChange={(e) => patch('service.renewalPrice', parseInt(e.target.value, 10) || 0)} className={inputCls} /></Field>
           <Field label="Salida del servicio"><input type="number" value={val('service.exitPrice', 0)} onChange={(e) => patch('service.exitPrice', parseInt(e.target.value, 10) || 0)} className={inputCls} /></Field>
         </div>
+
+        <label className={labelCls}>Tabla «Periodo · Qué cubre · Valor»</label>
+        {serviceRows.length === 0 ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-[12px] text-slate-500">
+            La tabla se arma sola con los tres números de arriba y los textos estándar
+            (infraestructura y soporte, renovación anual y salida del servicio).
+            <button
+              onClick={seedServiceRows}
+              className="mt-2 flex items-center gap-1 text-[12px] font-semibold text-indigo-600 hover:underline"
+            >
+              <Plus size={13} /> Personalizar filas de la tabla
+            </button>
+          </div>
+        ) : (
+          <>
+            <ObjListEditor
+              ops={listOps('service.rows', { period: '', title: '', desc: '', value: '' })}
+              itemLabel="Fila"
+              fields={[
+                { key: 'period', label: 'Periodo (Meses 1–12, Salida del servicio…)' },
+                { key: 'title', label: 'Qué cubre — título' },
+                { key: 'desc', label: 'Qué cubre — detalle', area: true },
+                { key: 'value', label: 'Valor (Incluido, USD 1.700 / año…)' },
+              ]}
+            />
+            <p className="mt-2 text-[12px] text-slate-400">
+              Con filas propias, los tres números de arriba dejan de dibujar la tabla
+              (siguen alimentando otros textos del documento).{' '}
+              <button onClick={clearServiceRows} className="font-semibold text-slate-400 underline hover:text-rose-600">
+                Volver a la tabla automática
+              </button>
+            </p>
+          </>
+        )}
+
         <Field label="Intro de niveles de soporte"><textarea rows={2} value={val('service.levelsIntro')} onChange={(e) => patch('service.levelsIntro', e.target.value)} className={inputCls} /></Field>
         <label className={labelCls}>Niveles de soporte</label>
         <ObjListEditor

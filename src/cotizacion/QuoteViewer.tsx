@@ -370,6 +370,10 @@ export default function QuoteViewer() {
   const offCodes = new Set(items.filter((i) => i.kind !== 'CORE' && !i.on).map((i) => i.code))
   const service = content.service || {}
   const serviceLevels: Array<{ name: string; desc: string }> = service.levels || []
+  // Filas propias de la tabla de servicio (editables en el builder); sin ellas,
+  // la tabla se arma con includedMonths / renewalPrice / exitPrice.
+  const serviceRows: Array<{ period: string; title: string; desc?: string; value: string }> | null =
+    Array.isArray(service.rows) && service.rows.length ? service.rows : null
   const signature = content.signature || {}
   let sectionNumber = 0
   const nextNum = () => String(++sectionNumber).padStart(2, '0')
@@ -836,32 +840,46 @@ export default function QuoteViewer() {
         </section>
 
         {/* Servicio */}
-        {service.includedMonths ? (
+        {(service.includedMonths || serviceRows) ? (
           <section className="qv-section" data-qsec="servicio">
             <SectionHead client={quote.clientName} num={nextNum()} kicker="Después de la entrega" title="Servicio, soporte y renovación" />
             <div className="qv-tablewrap">
               <table className="qv-table">
                 <thead><tr><th>Periodo</th><th>Qué cubre</th><th>Valor</th></tr></thead>
                 <tbody>
-                  <tr>
-                    <td className="t-m">Meses 1–{service.includedMonths}</td>
-                    <td className="t-h">Infraestructura y soporte 2, 3 y 4<span>Aplicación, base de datos, almacenamiento y servicios de IA, con monitoreo, respaldos y atención de incidentes.</span></td>
-                    <td className="t-v" style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>Incluido</td>
-                  </tr>
-                  {service.renewalPrice ? (
-                    <tr>
-                      <td className="t-m">Mes {service.includedMonths + 1} en adelante</td>
-                      <td className="t-h">Renovación anual del servicio<span>Mismo alcance del primer año, con mantenimiento evolutivo menor y ajuste anual por IPC.</span></td>
-                      <td className="t-v">{money(service.renewalPrice)} / año</td>
-                    </tr>
-                  ) : null}
-                  {service.exitPrice ? (
-                    <tr>
-                      <td className="t-m">Salida del servicio</td>
-                      <td className="t-h">Traslado de la operación al cliente o a un tercero<span>Entrega de infraestructura, credenciales y documentación, con acompañamiento durante la migración.</span></td>
-                      <td className="t-v">{money(service.exitPrice)} por una vez</td>
-                    </tr>
-                  ) : null}
+                  {serviceRows ? (
+                    serviceRows.map((row, i) => (
+                      <tr key={i}>
+                        <td className="t-m">{row.period}</td>
+                        <td className="t-h">{row.title}{row.desc ? <span>{row.desc}</span> : null}</td>
+                        <td className="t-v" style={/^incluido$/i.test(row.value.trim()) ? { fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' } : undefined}>
+                          {row.value}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <>
+                      <tr>
+                        <td className="t-m">Meses 1–{service.includedMonths}</td>
+                        <td className="t-h">Infraestructura y soporte 2, 3 y 4<span>Aplicación, base de datos, almacenamiento y servicios de IA, con monitoreo, respaldos y atención de incidentes.</span></td>
+                        <td className="t-v" style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>Incluido</td>
+                      </tr>
+                      {service.renewalPrice ? (
+                        <tr>
+                          <td className="t-m">Mes {service.includedMonths + 1} en adelante</td>
+                          <td className="t-h">Renovación anual del servicio<span>Mismo alcance del primer año, con mantenimiento evolutivo menor y ajuste anual por IPC.</span></td>
+                          <td className="t-v">{money(service.renewalPrice)} / año</td>
+                        </tr>
+                      ) : null}
+                      {service.exitPrice ? (
+                        <tr>
+                          <td className="t-m">Salida del servicio</td>
+                          <td className="t-h">Traslado de la operación al cliente o a un tercero<span>Entrega de infraestructura, credenciales y documentación, con acompañamiento durante la migración.</span></td>
+                          <td className="t-v">{money(service.exitPrice)} por una vez</td>
+                        </tr>
+                      ) : null}
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>
