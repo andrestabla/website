@@ -385,6 +385,9 @@ export default function QuoteViewer() {
         <button className="qv-pdfbtn" onClick={() => { void printPdf() }} disabled={printing}>
           {printing ? 'Preparando…' : '↓ PDF'}
         </button>
+        {content.docxUrl && (
+          <a className="qv-docxbtn" href={content.docxUrl} download>↓ Word</a>
+        )}
       </div>
 
       {/* Portada */}

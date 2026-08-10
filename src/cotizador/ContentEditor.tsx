@@ -294,6 +294,14 @@ export function ContentEditor({
         </div>
         <Field label="Título"><textarea rows={2} value={meta.title} onChange={(e) => setMetaField('title', e.target.value)} className={inputCls} /></Field>
         <Field label="Bajada (subtítulo)"><textarea rows={3} value={meta.subtitle} onChange={(e) => setMetaField('subtitle', e.target.value)} className={inputCls} /></Field>
+        <Field label="Documento Word para descarga (URL, opcional)">
+          <input
+            value={val('docxUrl')}
+            onChange={(e) => patch('docxUrl', e.target.value)}
+            placeholder="/cotizaciones/…/propuesta.docx"
+            className={`${inputCls} font-mono text-[12px]`}
+          />
+        </Field>
         <Field label="Validez de la propuesta (días)">
           <input
             type="number" min={1} max={365} value={meta.validDays}
