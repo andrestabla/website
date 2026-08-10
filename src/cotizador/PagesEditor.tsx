@@ -497,14 +497,46 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
         </>
       )
 
-    case 'invoice':
+    case 'invoice': {
+      const rows: any[] = Array.isArray(block.rows) ? block.rows : []
+      const setRow = (i: number, key: string, v: string) =>
+        set('rows', rows.map((r, k) => (k === i ? { ...r, [key]: v } : r)))
       return (
         <>
-          <p className="mt-2 text-[11.5px] text-slate-400">Se arma con los conceptos de la pestaña Propuesta.</p>
+          {rows.length === 0 && (
+            <p className="mt-2 text-[11.5px] text-slate-400">
+              Sin filas propias, la tabla se arma con los conceptos de la pestaña Propuesta.
+              Agrega filas aquí para escribirla a mano.
+            </p>
+          )}
+          {rows.map((r, i) => (
+            <div key={i} className="mt-2 rounded-lg border border-slate-200 bg-white p-2">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Concepto {i + 1}</span>
+                <button onClick={() => set('rows', rows.filter((_, k) => k !== i))} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={11} /></button>
+              </div>
+              <input placeholder="Concepto" value={r.concept || ''} onChange={(e) => setRow(i, 'concept', e.target.value)} className={`${inputCls} mb-1`} />
+              <div className="mb-1"><RichArea rows={2} placeholder="Detalle" value={r.detail || ''} onChange={(v) => setRow(i, 'detail', v)} /></div>
+              <input placeholder="$ 0" value={r.amount || ''} onChange={(e) => setRow(i, 'amount', e.target.value)} className={`${inputCls} w-44 font-mono text-[12px]`} />
+            </div>
+          ))}
+          <button onClick={() => set('rows', [...rows, { concept: '', detail: '', amount: '' }])}
+            className="mt-1 text-[11px] font-semibold text-indigo-600 hover:underline">+ concepto</button>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div>
+              <label className={labelCls}>Rótulo del total</label>
+              <input value={block.totalLabel || ''} placeholder="Valor total de la propuesta" onChange={(e) => set('totalLabel', e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Total (vacío = suma de la cotización)</label>
+              <input value={block.total || ''} placeholder="$ 760.200.000" onChange={(e) => set('total', e.target.value)} className={`${inputCls} font-mono text-[12px]`} />
+            </div>
+          </div>
           <label className={labelCls}>Nota bajo la tabla</label>
           <RichArea rows={3} value={block.note || ''} onChange={(v) => set('note', v)} />
         </>
       )
+    }
 
     case 'table': {
       const headers: string[] = Array.isArray(block.headers) ? block.headers : []

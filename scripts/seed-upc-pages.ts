@@ -395,7 +395,18 @@ const pages = [
   {
     id: 'inversion', num: '08', kicker: 'Propuesta económica', title: 'Inversión',
     blocks: [
-      { type: 'invoice', note: 'Valores expresados en pesos colombianos. Duración: seis (6) meses calendario de ejecución, más dieciocho (18) meses de licencia de uso contados desde la entrega final. Renovación anual de la licencia al vencimiento: $ 80.000.000 COP por año, bajo el régimen de la licencia (SaaS excluido de IVA).' },
+      { type: 'invoice',
+        rows: [
+          { concept: 'Implementación y parametrización de la plataforma', detail: 'Puesta en producción, configuración del instrumento de medición, perfiles y permisos, y carga de los productos de la consultoría. Gravado con IVA 19 %.', amount: '$ 95.000.000' },
+          { concept: 'Licencia de uso de la plataforma — 18 meses', detail: 'Alojamiento, operación, respaldo, actualizaciones funcionales, soporte y acceso a observatorios. Computación en la nube (SaaS): excluida de IVA — art. 476, num. 21, E.T.', amount: '$ 70.000.000' },
+          { concept: 'Levantamiento, diagnóstico y formulación de la hoja de ruta', detail: 'Fases 0 a 4: línea base y madurez, diagnóstico institucional y tecnológico, posicionamiento y rankings, Modelo de Universidad Digital y hoja de ruta. Gravado con IVA 19 %.', amount: '$ 390.000.000' },
+          { concept: 'Acompañamiento, formación y transferencia', detail: 'Fase 5: talleres de validación, socialización institucional, formación del equipo administrador y transferencia de la plataforma. Gravado con IVA 19 %.', amount: '$ 95.000.000' },
+          { concept: 'Subtotal', detail: '', amount: '$ 650.000.000' },
+          { concept: 'IVA 19 % sobre conceptos gravados ($ 580.000.000)', detail: 'La licencia SaaS está excluida; los servicios de implementación, consultoría, formación y transferencia se gravan a la tarifa general.', amount: '$ 110.200.000' },
+        ],
+        totalLabel: 'Valor total de la propuesta',
+        total: '$ 760.200.000',
+        note: 'Valores expresados en pesos colombianos. Duración: seis (6) meses calendario de ejecución, más dieciocho (18) meses de licencia de uso contados desde la entrega final. Renovación anual de la licencia al vencimiento: $ 80.000.000 COP por año, bajo el régimen de la licencia (SaaS excluido de IVA).' },
       { type: 'box', title: 'Concepto técnico — liquidación del IVA', body: 'En aplicación del principio de independencia de los servicios (DIAN, Oficio 001444 de 2017), cada concepto conserva su naturaleza tributaria: la licencia de uso —servicio de computación en la nube (SaaS)— está excluida de IVA conforme al numeral 21 del artículo 476 del Estatuto Tributario, mientras que los servicios de implementación, consultoría, formación y transferencia no cumplen las características intrínsecas del cloud computing y se gravan de forma independiente a la tarifa general del 19 %. Por ello el IVA se liquida únicamente sobre los conceptos gravados ($ 580.000.000).' },
       { type: 'h3', text: 'Correspondencia con conceptos de gasto' },
       { type: 'p', text: 'Para efectos de imputación presupuestal, los conceptos se corresponden con estos rubros:' },

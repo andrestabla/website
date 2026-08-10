@@ -941,3 +941,15 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
   .qv .qv-bar .b-total .t-v { font-size: 12px; }
   .qv .qv-bar .qv-pdfbtn, .qv .qv-bar .qv-docxbtn { padding: 7px 8px; font-size: 9.5px; }
 }
+
+
+/* detalle del concepto en la tabla de inversión: línea propia bajo el título */
+.qv .qv-inv td.c { font-weight: 650; color: var(--ink); }
+.qv .qv-inv td.c .sub {
+  display: block; margin-top: 3px; font-weight: 400; font-size: 11.5px;
+  color: var(--muted); line-height: 1.45;
+}
+.qv .qv-inv td { padding: 11px 8px; }
+.qv .qv-inv tr.tot td { border-bottom: 0; border-top: 2px solid var(--navy); padding-top: 13px; }
+.qv .qv-inv tr.tot .lab { font-weight: 800; color: var(--ink); font-size: 15px; }
+.qv .qv-inv tr.tot .big { font-family: var(--mono); font-size: 21px; font-weight: 700; color: var(--navy); }

@@ -97,7 +97,14 @@ export type DocBlock =
   | { type: 'cards'; cols?: 2 | 3; items: Array<{ tag?: string; title: string; body: string; foot?: string }> }
   | { type: 'phase'; id: string; name: string; when?: string; defs: Array<{ term: string; desc: string; strong?: boolean }> }
   | { type: 'img'; url: string; caption?: string; wide?: boolean }
-  | { type: 'invoice'; note?: string }
+  | {
+      type: 'invoice'
+      note?: string
+      /** Filas propias; si no hay, se arma con los conceptos de la cotización. */
+      rows?: Array<{ concept: string; detail?: string; amount: string }>
+      totalLabel?: string
+      total?: string
+    }
   | { type: 'payments'; items: Array<{ pct: string; label: string }> }
   | { type: 'toc'; note?: string }
   | { type: 'team'; items: Array<{ role: string; dedication?: string; functions: string[] }> }
@@ -310,25 +317,30 @@ export function DocBlockView({
       )
 
     case 'invoice': {
-      const gravados = items.filter((i) => i.on !== false)
+      // Filas propias del bloque (editables) o, si no hay, los conceptos de la cotización.
+      const rows = block.rows?.length
+        ? block.rows
+        : items.filter((i) => i.on !== false).map((i) => ({
+            concept: i.name, detail: i.summary, amount: money(i.price),
+          }))
       return (
         <>
           <div className="qv-tablewrap">
             <table className="qv-inv">
-              <thead><tr><th>Concepto</th><th style={{ textAlign: 'right' }}>Valor {totals ? '' : ''}COP</th></tr></thead>
+              <thead><tr><th>Concepto</th><th style={{ textAlign: 'right' }}>Valor COP</th></tr></thead>
               <tbody>
-                {gravados.map((item) => (
-                  <tr key={item.code}>
+                {rows.map((row: any, i: number) => (
+                  <tr key={i}>
                     <td className="c">
-                      {item.name}
-                      {item.summary && <span className="sub">{item.summary}</span>}
+                      {rich(row.concept)}
+                      {row.detail && <span className="sub">{rich(row.detail)}</span>}
                     </td>
-                    <td className="r">{money(item.price)}</td>
+                    <td className="r">{row.amount}</td>
                   </tr>
                 ))}
                 <tr className="tot">
-                  <td className="lab">Valor total de la propuesta</td>
-                  <td className="r"><span className="big">{money(totals.total)}</span></td>
+                  <td className="lab">{block.totalLabel || 'Valor total de la propuesta'}</td>
+                  <td className="r"><span className="big">{block.total || money(totals.total)}</span></td>
                 </tr>
               </tbody>
             </table>
