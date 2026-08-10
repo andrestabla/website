@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Send, Loader2, CheckCircle2, XCircle, Clock, Ban, Monitor, MonitorOff, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
+import { ArrowLeft, Send, Loader2, CheckCircle2, XCircle, Clock, Ban, Monitor, MonitorOff, Mic, MicOff, Volume2, VolumeX, Video, VideoOff } from 'lucide-react'
 import { useClaudiaAvatar } from './claudia/useClaudiaAvatar'
 import { useDictation } from './claudia/useDictation'
+import { useVision, type Gesture } from './claudia/useVision'
 
 type Job = {
   id: string
@@ -110,6 +111,17 @@ export function ClaudiaRemote() {
     getDraft: () => promptRef.current,
   })
 
+  // Cámara: gestos de mano (misma correspondencia que en la Mac)
+  const [camOn, setCamOn] = useState(false)
+  const dictationRef = useRef(dictation)
+  dictationRef.current = dictation
+  const onGesture = useCallback((g: Gesture) => {
+    if (g === 'Thumb_Up') { const d = promptRef.current.trim(); if (d) void submit(d) }
+    else if (g === 'Thumb_Down') setPrompt('')
+    else if (g === 'Open_Palm') avatar.stop()
+  }, [avatar, submit])
+  const vision = useVision({ onGesture, enabled: camOn })
+
   // Claudia narra el resultado de cada tarea apenas llega (una sola vez).
   // Al abrir la página no lee el historial: solo lo que ocurra de ahí en adelante.
   const seededRef = useRef(false)
@@ -191,10 +203,33 @@ export function ClaudiaRemote() {
               >
                 {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
               </button>
+              {/* Mini-vista de la cámara (espejo), solo si está activa */}
+              <video
+                ref={vision.videoRef}
+                playsInline
+                muted
+                className={`absolute -left-2 bottom-2 w-[72px] -scale-x-100 rounded-lg border border-slate-200 shadow-sm ${vision.running ? 'block' : 'hidden'}`}
+              />
             </div>
-            <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-              {avatar.speaking ? 'hablando…' : dictation.listening ? 'escuchando…' : 'Claudia'}
+            <div className="mt-2 flex items-center gap-3">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                {avatar.speaking ? 'hablando…' : dictation.listening ? 'escuchando…' : vision.running ? (vision.present ? 'te veo' : 'busco tu cara…') : 'Claudia'}
+              </span>
+              <button
+                onClick={() => setCamOn((v) => !v)}
+                title={vision.error || (camOn ? 'Apagar cámara' : 'Activar cámara y gestos')}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+                  camOn ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-400 hover:text-indigo-600'
+                }`}
+              >
+                {camOn ? <Video size={13} /> : <VideoOff size={13} />}
+                {camOn ? 'Gestos on' : 'Gestos'}
+              </button>
             </div>
+            {vision.error && <p className="mt-1 text-[11px] text-rose-500">{vision.error}</p>}
+            {camOn && vision.running && (
+              <p className="mt-1 text-[11px] text-slate-400">👍 enviar · 👎 borrar · ✋ callar</p>
+            )}
           </div>
         )}
 
