@@ -270,11 +270,13 @@ const pages = [
       { type: 'p', text: 'La Universidad Popular del Cesar es una institución con presencia y vocación regional: su área de influencia directa cubre los veinticinco municipios del departamento, con realidades muy distintas entre el norte, el centro y el sur. La plataforma incorpora esa dimensión territorial, de modo que las decisiones de oferta y virtualización se tomen contra la geografía real de la demanda y no contra un promedio departamental.' },
       { type: 'img', url: `${IMG}/fig-m3-territorio.png`, caption: '/panel/benchmark/territorio — posición nacional y cobertura municipal: matrícula y oferta en los 25 municipios del Cesar.', wide: true },
       { type: 'h3', text: 'Lectura territorial de la oferta' },
-      { type: 'cards', cols: 3, items: [
-        { title: 'Dónde está la demanda', body: 'Municipios con población en edad de ingresar y sin oferta cercana: el argumento para priorizar programas virtuales.' },
-        { title: 'Dónde hay saturación', body: 'Zonas con oferta concentrada frente a demanda estable, donde crecer significa competir en lugar de ampliar cobertura.' },
-        { title: 'Qué programa en qué sede', body: 'La decisión de abrir, virtualizar o cerrar un programa se apoya en la lectura del territorio, no en la inercia del portafolio.' },
+      { type: 'table', firstCol: 'key', headers: ['Subregión', 'Municipios', 'Lectura para la transformación digital'], rows: [
+        ['Norte', 'Valledupar, La Paz, Manaure, San Diego, Agustín Codazzi, Pueblo Bello, El Copey, Becerril', 'Concentra la matrícula y la sede principal; la virtualización libera capacidad instalada.'],
+        ['Centro', 'Bosconia, El Paso, La Jagua de Ibirico, Astrea, Chiriguaná, Chimichagua, Curumaní, Pailitas', 'Corredor minero-agroindustrial con demanda técnica y tecnológica desatendida.'],
+        ['Sur', 'Aguachica, San Alberto, San Martín, Río de Oro, González, Gamarra, La Gloria, Pelaya, Tamalameque', 'Mayor distancia a la sede principal: es donde la modalidad virtual e híbrida más aumenta la cobertura.'],
       ]},
+      { type: 'box', title: 'Por qué esto importa para la hoja de ruta', body: 'El módulo territorial cruza la oferta vigente de la Universidad con la demanda potencial por cohortes y los vacíos de programa de cada subregión. El resultado no es un mapa decorativo: es el criterio con el que se decide **qué programa se virtualiza primero y para qué territorio**, y el sustento de esa decisión ante el Consejo Superior o ante una convocatoria de financiación.' },
+      { type: 'note', text: 'Mapas construidos sobre la geometría oficial del departamento. Los niveles de cobertura y los tamaños de punto son ilustrativos: se parametrizan con los datos reales de la Universidad en las Fases 0 y 2.' },
     ],
   },
 
