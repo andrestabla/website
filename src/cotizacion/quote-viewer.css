@@ -883,8 +883,10 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
 .qv.is-paged .qv-cover { min-height: 1273px; display: flex; flex-direction: column; justify-content: center; }
 .qv.is-paged .qv-back { min-height: 1273px; display: flex; flex-direction: column; justify-content: center; }
 
-/* en pantallas angostas la hoja deja de ser rígida: prima leer */
-@media (max-width: 940px) {
+/* en pantallas angostas la hoja deja de ser rígida: prima leer.
+   Solo pantalla: al imprimir, el papel mide 794 px y esta regla
+   anularía el ajuste de página. */
+@media screen and (max-width: 940px) {
   .qv.is-paged .qv-section { height: auto; min-height: 0; overflow: visible; }
   .qv.is-paged .qv-sheet-in { zoom: 1 !important; height: auto; }
   .qv.is-paged .qv-cover, .qv.is-paged .qv-back { min-height: 0; }
