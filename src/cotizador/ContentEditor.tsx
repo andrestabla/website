@@ -274,6 +274,49 @@ export function ContentEditor({
 
   const shots: any[] = Array.isArray(val('screens.items', [])) ? val('screens.items', []) : []
 
+  // ── plan de pagos personalizado (content.paymentSplit + content.paymentLabels) ──
+  // Sin estos campos, el visor usa el esquema estándar 30/25/25/20 con sus
+  // etiquetas de hitos; aquí se editan como una sola lista de pagos.
+  const paymentRows: Array<{ pct: number | string; moment: string; milestone: string }> = (() => {
+    const split: any[] = Array.isArray(val('paymentSplit', [])) ? val('paymentSplit', []) : []
+    const labels: any[] = Array.isArray(val('paymentLabels', [])) ? val('paymentLabels', []) : []
+    return Array.from({ length: Math.max(split.length, labels.length) }, (_, i) => ({
+      pct: split[i] ?? '',
+      moment: labels[i]?.moment ?? '',
+      milestone: labels[i]?.milestone ?? '',
+    }))
+  })()
+  const paymentPctSum = paymentRows.reduce((sum, r) => sum + (Number(r.pct) || 0), 0)
+  const writePayments = (rows: typeof paymentRows) => {
+    patch('paymentSplit', rows.map((r) => Number(r.pct) || 0))
+    patch('paymentLabels', rows.map((r) => ({ moment: r.moment, milestone: r.milestone })))
+  }
+  const setPayment = (i: number, field: 'pct' | 'moment' | 'milestone', value: string) => {
+    const rows = [...paymentRows]
+    rows[i] = { ...rows[i], [field]: field === 'pct' ? (value === '' ? '' : Number(value)) : value }
+    writePayments(rows)
+  }
+  const addPayment = () => writePayments([...paymentRows, { pct: '', moment: '', milestone: '' }])
+  const removePayment = (i: number) => {
+    const rows = paymentRows.filter((_, idx) => idx !== i)
+    if (rows.length === 0) return clearPayments()
+    writePayments(rows)
+  }
+  const seedPayments = () =>
+    writePayments([
+      { pct: 30, moment: 'A la firma', milestone: 'Kickoff y arranque: contrato firmado, accesos entregados e infraestructura provisionada' },
+      { pct: 25, moment: 'Hito 01', milestone: 'Núcleo en producción: el equipo del cliente ya entra y navega con sus usuarios' },
+      { pct: 25, moment: 'Hito 02', milestone: 'Módulos de operación entregados y probados con datos reales' },
+      { pct: 20, moment: 'Hito 03', milestone: 'Puesta en marcha: datos migrados, pruebas aprobadas y equipo capacitado' },
+    ])
+  const clearPayments = () => {
+    // null (no undefined): undefined se pierde al serializar y el merge del
+    // servidor conservaría el plan anterior. null sí viaja y el visor lo trata
+    // como "sin plan personalizado" = esquema estándar.
+    patch('paymentSplit', null)
+    patch('paymentLabels', null)
+  }
+
   return (
     <div className="space-y-3">
       {/* barra de guardado */}
@@ -538,6 +581,61 @@ export function ContentEditor({
 
       <Section open={open} setOpen={setOpen} id="inversion" title="07 · Inversión, hitos y plan de pagos">
         <Field label="Nota bajo la tabla de inversión"><textarea rows={3} value={val('investmentNote')} onChange={(e) => patch('investmentNote', e.target.value)} className={inputCls} /></Field>
+
+        <label className={labelCls}>Plan de pagos (momentos y porcentajes)</label>
+        {paymentRows.length === 0 ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 text-[12px] text-slate-500">
+            Esta cotización usa el esquema estándar: A la firma 30% + Hito 01 25% + Hito 02 25% + Hito 03 20%.
+            <button
+              onClick={seedPayments}
+              className="mt-2 flex items-center gap-1 text-[12px] font-semibold text-indigo-600 hover:underline"
+            >
+              <Plus size={13} /> Personalizar plan de pagos
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {paymentRows.map((row, i) => (
+              <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3" key={i}>
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Pago {i + 1}</span>
+                  <button onClick={() => removePayment(i)} className={`${miniBtn} hover:text-rose-600`}><Trash2 size={12} /></button>
+                </div>
+                <div className="grid grid-cols-[80px_1fr] gap-2">
+                  <div>
+                    <label className="mb-0.5 block text-[10.5px] font-semibold text-slate-400">%</label>
+                    <input
+                      type="number" min={1} max={100} value={row.pct}
+                      onChange={(e) => setPayment(i, 'pct', e.target.value)} className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-0.5 block text-[10.5px] font-semibold text-slate-400">Momento (Al inicio, Contra entrega…)</label>
+                    <input value={row.moment} onChange={(e) => setPayment(i, 'moment', e.target.value)} className={inputCls} />
+                  </div>
+                </div>
+                <div className="mt-1.5">
+                  <label className="mb-0.5 block text-[10.5px] font-semibold text-slate-400">Hito habilitante</label>
+                  <textarea rows={2} value={row.milestone} onChange={(e) => setPayment(i, 'milestone', e.target.value)} className={inputCls} />
+                </div>
+              </div>
+            ))}
+            {paymentPctSum !== 100 && (
+              <p className="text-[12px] font-semibold text-amber-600">
+                Los porcentajes suman {paymentPctSum}%: el último pago absorbe la diferencia para cerrar en el total.
+              </p>
+            )}
+            <div className="flex items-center gap-4">
+              <button onClick={addPayment} className="inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-600 hover:underline">
+                <Plus size={13} /> Agregar pago
+              </button>
+              <button onClick={clearPayments} className="text-[12px] font-semibold text-slate-400 hover:text-rose-600 hover:underline">
+                Volver al esquema estándar
+              </button>
+            </div>
+          </div>
+        )}
+
         <label className={labelCls}>Qué se aprueba en cada hito</label>
         <ObjListEditor
           ops={listOps('milestones', { name: 'Hito', week: '', criterion: '' })}

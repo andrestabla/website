@@ -358,7 +358,7 @@ export default function QuoteViewer() {
   const schedule = content.schedule || {}
   const scheduleGroups: Array<{ name: string; rows: Array<{ label: string; on: number[]; hito: number[] }> }> = schedule.groups || []
   const scheduleWeeks = Math.max(
-    8,
+    6,
     ...scheduleGroups.flatMap((g) => g.rows.flatMap((r) => [...(r.on || []), ...(r.hito || [])]))
   )
   const milestones: Array<{ name: string; week: string; criterion: string }> = content.milestones || []
@@ -409,7 +409,8 @@ export default function QuoteViewer() {
             <div className="m"><div className="ml">Cliente</div><div className="mv">{quote.clientName}</div></div>
             <div className="m"><div className="ml">Duración</div><div className="mv">{totals.weeks} semanas desde el kickoff</div></div>
             <div className="m"><div className="ml">Alcance</div><div className="mv">{isService ? `${totals.moduleCount} ${totals.moduleCount === 1 ? 'línea' : 'líneas'} de servicio · ${totals.deliverables} entregables` : totals.moduleCount > 0 ? `Núcleo + ${totals.moduleCount} ${itemsNoun.toLowerCase()} · ${totals.deliverables} entregables` : `${items.filter((i) => i.kind === 'CORE').length} componentes · ${totals.deliverables} entregables`}</div></div>
-            <div className="m"><div className="ml">Inversión</div><div className="mv">{money(totals.total)} {currency}</div></div>
+            {/* formatMoney ya antepone "USD" en dólares; solo COP necesita el sufijo */}
+            <div className="m"><div className="ml">Inversión</div><div className="mv">{money(totals.total)}{currency === 'USD' ? '' : ` ${currency}`}</div></div>
           </div>
           <div className="tagline">Soluciones digitales con <b>sentido humano</b></div>
         </div>
@@ -785,13 +786,20 @@ export default function QuoteViewer() {
               <thead><tr><th>Momento</th><th>Hito habilitante</th><th>%</th><th>Valor ({currency})</th></tr></thead>
               <tbody>
                 {totals.payments.map((payment, index) => {
+                  // content.paymentLabels acompaña a content.paymentSplit: una
+                  // entrada { moment, milestone } por pago, en el mismo orden.
+                  const custom: Array<{ moment?: string; milestone?: string }> = Array.isArray(content.paymentLabels)
+                    ? content.paymentLabels
+                    : []
                   const labels = [
                     ['A la firma', 'Kickoff y arranque: contrato firmado, accesos entregados e infraestructura provisionada'],
                     ['Hito 01', 'Núcleo en producción: el equipo del cliente ya entra y navega con sus usuarios'],
                     ['Hito 02', 'Módulos de operación entregados y probados con datos reales'],
                     ['Hito 03', 'Puesta en marcha: datos migrados, pruebas aprobadas y equipo capacitado'],
                   ]
-                  const [moment, description] = labels[index] || [`Pago ${index + 1}`, '']
+                  const fallback = labels[index] || [`Pago ${index + 1}`, '']
+                  const moment = custom[index]?.moment || fallback[0]
+                  const description = custom[index]?.milestone || fallback[1]
                   return (
                     <tr key={index}>
                       <td className="t-m">{moment}</td>
