@@ -2,8 +2,9 @@
  * Cotizador — lógica compartida.
  *
  * Reglas de la casa:
- *  - Las cifras salen SIEMPRE del catálogo (QuoteCatalogItem). La IA redacta
- *    narrativa y elige módulos, pero nunca inventa un precio.
+ *  - El catálogo (QuoteCatalogItem) fija los valores por defecto. Quien edita la
+ *    cotización puede ajustarlos línea por línea; la IA redacta narrativa y
+ *    elige módulos, pero nunca inventa un precio (toma los del catálogo).
  *  - El total se recalcula en el servidor a partir de los ítems activos; lo que
  *    llegue del cliente en `total` se ignora.
  *  - La escala de descuento premia el alcance: la arquitectura, los accesos y el
@@ -256,32 +257,50 @@ const asInt = (v: unknown) => {
   return Number.isFinite(n) ? n : 0
 }
 
-/** Deja los ítems en forma canónica y descarta lo que no venga del catálogo. */
+/**
+ * Deja los ítems en forma canónica.
+ *
+ * El catálogo (QuoteCatalogItem) es el valor por defecto, no una camisa de
+ * fuerza: cada cotización puede ajustar nombre, precio, unidad, esfuerzo y
+ * entregables de sus propias líneas, e incluso llevar líneas que no existen en
+ * el catálogo (así nacieron UPC-01…UPC-05). Lo que el editor no manda se
+ * hereda del catálogo. La IA no pasa por aquí: sus cambios se aplican con
+ * `applyModulePatch`, que sigue tomando las cifras del catálogo.
+ */
 export function normalizeItems(raw: unknown, catalogByCode: Map<string, any>): QuoteItem[] {
   if (!Array.isArray(raw)) return []
   const seen = new Set<string>()
   const items: QuoteItem[] = []
   for (const entry of raw) {
-    const code = asString((entry as any)?.code, 40)
+    const e = (entry ?? {}) as Record<string, unknown>
+    const code = asString(e.code, 40).toUpperCase()
     if (!code || seen.has(code)) continue
-    const source = catalogByCode.get(code)
-    if (!source) continue // el precio debe existir en el catálogo
+    const source = catalogByCode.get(code) ?? catalogByCode.get(asString(e.code, 40))
+    const name = asString(e.name, 160) || asString(source?.name, 160)
+    if (!name) continue // una línea sin nombre no es una línea
     seen.add(code)
-    const qtyRaw = Math.round(Number((entry as any)?.qty))
+
+    // `undefined` = «no lo edité, usa el catálogo»; un valor = manda el editor.
+    const pick = <T>(value: unknown, fallback: T, parse: (v: unknown) => T): T =>
+      value === undefined || value === null || value === '' ? fallback : parse(value)
+
+    const kind = pick(e.kind, source?.kind === 'CORE' ? 'CORE' : 'MODULE', (v) => (v === 'CORE' ? 'CORE' : 'MODULE'))
+    const qtyRaw = Math.round(Number(e.qty))
+
     items.push({
       code,
-      name: asString((entry as any)?.name, 160) || source.name,
-      summary: asString((entry as any)?.summary, 900) || source.summary,
-      category: source.category,
-      kind: source.kind === 'CORE' ? 'CORE' : 'MODULE',
-      price: asInt(source.price), // ← precio del catálogo, no del cliente
+      name,
+      summary: asString(e.summary, 900) || asString(source?.summary, 900),
+      category: asString(e.category, 120) || asString(source?.category, 120) || undefined,
+      kind,
+      price: Math.max(0, pick(e.price, asInt(source?.price), asInt)),
       qty: Number.isFinite(qtyRaw) ? Math.min(999, Math.max(1, qtyRaw)) : 1,
-      unit: source.unit ?? null,
-      weeks: Number(source.weeks) || 0,
-      deliverables: asInt(source.deliverables),
-      on: source.kind === 'CORE' ? true : (entry as any)?.on !== false,
-      selectable: source.kind === 'CORE' ? false : (entry as any)?.selectable !== false,
-      detail: source.detail ?? null,
+      unit: pick(e.unit, source?.unit ?? null, (v) => asString(v, 40) || null),
+      weeks: Math.max(0, pick(e.weeks, Number(source?.weeks) || 0, (v) => Number(v) || 0)),
+      deliverables: Math.max(0, pick(e.deliverables, asInt(source?.deliverables), asInt)),
+      on: kind === 'CORE' ? true : e.on !== false,
+      selectable: kind === 'CORE' ? false : e.selectable !== false,
+      detail: e.detail !== undefined ? (e.detail as unknown) : (source?.detail ?? null),
     })
   }
   return items

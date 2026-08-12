@@ -239,7 +239,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (body.items !== undefined) {
         const catalog = await loadCatalog(normalizeTemplate(quote.template))
         const items = normalizeItems(body.items, catalogMap(catalog))
-        if (!items.length) return res.status(400).json({ ok: false, error: 'La cotización necesita al menos un ítem del catálogo' })
+        if (!items.length) return res.status(400).json({ ok: false, error: 'La cotización necesita al menos una línea con nombre' })
         Object.assign(data, await priced(items, data.discountScale ?? quote.discountScale, normalizeTemplate(quote.template)))
       }
 

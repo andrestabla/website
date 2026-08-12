@@ -222,6 +222,37 @@ export function QuoteBuilder() {
     void saveItems(items.map((i) => (i.code === code ? { ...i, qty: clamped } : i)))
   }
 
+  /** Edita una línea de la cotización (nombre, precio, unidad…). El catálogo es
+   *  el valor de partida; a partir de aquí manda lo que se escriba acá. */
+  const patchItem = (code: string, patch: Partial<QuoteItem>) => {
+    const current = items.find((i) => i.code === code)
+    if (!current) return
+    if (Object.entries(patch).every(([k, v]) => (current as any)[k] === v)) return
+    void saveItems(items.map((i) => (i.code === code ? { ...i, ...patch } : i)))
+  }
+
+  const renameItemCode = (code: string, next: string) => {
+    const clean = next.trim().toUpperCase().slice(0, 40)
+    if (!clean || clean === code || items.some((i) => i.code === clean)) return
+    void saveItems(items.map((i) => (i.code === code ? { ...i, code: clean } : i)))
+  }
+
+  const addItem = () => {
+    let n = items.length + 1
+    while (items.some((i) => i.code === `L${String(n).padStart(2, '0')}`)) n += 1
+    void saveItems([
+      ...items,
+      { code: `L${String(n).padStart(2, '0')}`, name: 'Nueva línea', price: 0, qty: 1, kind: 'CORE', on: true },
+    ])
+  }
+
+  const removeItem = (code: string) => {
+    if (items.length <= 1) { setError('La cotización necesita al menos una línea'); return }
+    const target = items.find((i) => i.code === code)
+    if (!window.confirm(`¿Eliminar la línea «${target?.name ?? code}» de la cotización?`)) return
+    void saveItems(items.filter((i) => i.code !== code))
+  }
+
   const duplicateQuote = async () => {
     setMenuOpen(false)
     try {
@@ -486,7 +517,7 @@ export function QuoteBuilder() {
                 {/* Totales */}
                 <div className="rounded-2xl bg-slate-900 p-5 text-white">
                   <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">Inversión total · {currency}</div>
-                  <div className="mt-1 font-mono text-3xl font-black tracking-tight">{money(isDoc ? quote.totalFinal : totals.total, currency)}</div>
+                  <div className="mt-1 font-mono text-3xl font-black tracking-tight">{money(isDoc && !items.length ? quote.totalFinal : totals.total, currency)}</div>
                   {!isDoc && (
                   <div className="mt-3 grid grid-cols-3 gap-3 border-t border-white/15 pt-3 text-center">
                     <div><div className="font-mono text-lg font-bold">{totals.moduleCount}</div><div className="text-[10.5px] uppercase tracking-wide text-slate-400">Módulos</div></div>
@@ -538,15 +569,23 @@ export function QuoteBuilder() {
                         className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]"
                       />
                     </label>
-                    <label className="block text-[12px] font-semibold text-slate-500">
-                      Inversión total ({currency})
-                      <input
-                        type="number" min={0}
-                        defaultValue={quote.totalFinal}
-                        onBlur={(e) => { const v = Math.round(Number(e.target.value) || 0); if (v !== quote.totalFinal) void saveDocument({ documentTotal: v }) }}
-                        className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]"
-                      />
-                    </label>
+                    {items.length ? (
+                      <p className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[12px] leading-relaxed text-slate-500">
+                        La inversión total sale de las líneas de abajo:{' '}
+                        <span className="font-mono font-bold text-slate-700">{money(totals.total, currency)}</span>.
+                        Edítalas ahí y el total se recalcula solo.
+                      </p>
+                    ) : (
+                      <label className="block text-[12px] font-semibold text-slate-500">
+                        Inversión total ({currency})
+                        <input
+                          type="number" min={0}
+                          defaultValue={quote.totalFinal}
+                          onBlur={(e) => { const v = Math.round(Number(e.target.value) || 0); if (v !== quote.totalFinal) void saveDocument({ documentTotal: v }) }}
+                          className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]"
+                        />
+                      </label>
+                    )}
                     {content.documentUrl ? (
                       <a href={content.documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] font-bold text-indigo-600 hover:underline">
                         Abrir el documento ↗
@@ -558,12 +597,11 @@ export function QuoteBuilder() {
                 </div>
                 )}
 
-                {/* Módulos */}
-                {!isDoc && (
+                {/* Módulos y valores */}
                 <div className="rounded-2xl border border-slate-200 bg-white">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
                     <span className="text-[12px] font-bold uppercase tracking-wide text-slate-400">
-                      {selectable ? `${itemsNoun} · el cliente mueve los marcados como libres` : `${itemsNoun} · alcance fijo (el cliente no los mueve)`}
+                      {selectable ? `${itemsNoun} · el cliente mueve los marcados como libres` : `${itemsNoun} y valores · alcance fijo`}
                     </span>
                     <div className="flex flex-wrap items-center gap-3">
                     {selectable && (
@@ -591,13 +629,21 @@ export function QuoteBuilder() {
                     </label>
                     </div>
                   </div>
-                  <ul className="divide-y divide-slate-100">
+                  <ul className="divide-y divide-slate-100" key={`items-${quote.updatedAt}`}>
                     {items.map((item) => (
-                      <li key={item.code} className="flex items-center gap-3 px-4 py-2.5">
-                        <span className="w-14 shrink-0 font-mono text-[11px] font-bold text-amber-600">{item.code}</span>
-                        <span className={`min-w-0 flex-1 truncate text-[13px] ${item.kind === 'CORE' ? 'font-bold text-slate-900' : item.on ? 'text-slate-700' : 'text-slate-400 line-through'}`}>
-                          {item.name}
-                        </span>
+                      <li key={item.code} className="flex items-center gap-2 px-4 py-2.5">
+                        <input
+                          defaultValue={item.code}
+                          onBlur={(e) => renameItemCode(item.code, e.target.value)}
+                          className="w-16 shrink-0 rounded-md border border-transparent bg-transparent px-1 py-0.5 font-mono text-[11px] font-bold uppercase text-amber-600 hover:border-slate-200 focus:border-indigo-400 focus:bg-white"
+                          title="Código de la línea"
+                        />
+                        <input
+                          defaultValue={item.name}
+                          onBlur={(e) => { const v = e.target.value.trim(); if (v) patchItem(item.code, { name: v }); else e.target.value = item.name }}
+                          className={`min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-0.5 text-[13px] hover:border-slate-200 focus:border-indigo-400 focus:bg-white ${item.kind === 'CORE' ? 'font-bold text-slate-900' : item.on ? 'text-slate-700' : 'text-slate-400 line-through'}`}
+                          title="Nombre de la línea"
+                        />
                         {item.unit && item.kind !== 'CORE' && (
                           <input
                             type="number" min={1} max={999}
@@ -608,8 +654,15 @@ export function QuoteBuilder() {
                             title={`Cantidad de ${item.unit}s`}
                           />
                         )}
-                        <span className="shrink-0 font-mono text-[12px] text-slate-500">
-                          {(item.qty ?? 1) > 1 ? `${item.qty} × ` : ''}{money(item.price, currency)}{item.unit ? `/${item.unit}` : ''}
+                        <input
+                          type="number" min={0} step={1000}
+                          defaultValue={item.price}
+                          onBlur={(e) => patchItem(item.code, { price: Math.max(0, Math.round(Number(e.target.value) || 0)) })}
+                          className="w-32 shrink-0 rounded-lg border border-slate-300 px-2 py-0.5 text-right font-mono text-[12px] text-slate-700 focus:border-indigo-400"
+                          title={`Valor unitario en ${currency}${item.unit ? ` por ${item.unit}` : ''}`}
+                        />
+                        <span className="w-28 shrink-0 text-right font-mono text-[11.5px] text-slate-400" title="Valor de la línea">
+                          {(item.qty ?? 1) > 1 ? `${item.qty} × ` : ''}{money(item.price * (item.qty ?? 1), currency)}
                         </span>
                         {selectable && item.kind !== 'CORE' && (
                           <button
@@ -627,21 +680,49 @@ export function QuoteBuilder() {
                           </button>
                         )}
                         {item.kind === 'CORE' ? (
-                          <span className="w-11 shrink-0 text-center text-[10px] font-bold uppercase text-slate-400">Fijo</span>
+                          <button
+                            onClick={() => patchItem(item.code, { kind: 'MODULE', on: true })}
+                            className="w-11 shrink-0 text-center text-[10px] font-bold uppercase text-slate-400 hover:text-indigo-600"
+                            title="Línea fija: siempre suma. Clic para volverla opcional."
+                          >
+                            Fijo
+                          </button>
                         ) : (
                           <button
                             onClick={() => toggleItem(item.code)}
                             className={`relative h-5 w-11 shrink-0 rounded-full transition ${item.on ? 'bg-indigo-600' : 'bg-slate-300'}`}
                             aria-label={`${item.on ? 'Apagar' : 'Encender'} ${item.name}`}
+                            title="Línea opcional. Doble clic sobre «Fijo» la vuelve obligatoria."
                           >
                             <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all ${item.on ? 'left-6' : 'left-0.5'}`} />
                           </button>
                         )}
+                        <button
+                          onClick={() => removeItem(item.code)}
+                          className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-slate-300 hover:bg-rose-50 hover:text-rose-600"
+                          title="Eliminar la línea"
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </li>
                     ))}
                   </ul>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-4 py-2.5">
+                    <button
+                      onClick={addItem}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-2.5 py-1 text-[12px] font-semibold text-slate-500 hover:border-indigo-400 hover:text-indigo-600"
+                    >
+                      <Plus size={13} /> Añadir línea
+                    </button>
+                    <span className="font-mono text-[12px] font-bold text-slate-600">
+                      Suma de las líneas · {money(totals.total, currency)}
+                    </span>
+                  </div>
+                  <p className="border-t border-slate-100 px-4 py-2 text-[11.5px] leading-relaxed text-slate-400">
+                    Los valores parten del catálogo y quedan guardados en esta cotización: editarlos aquí
+                    no toca el catálogo ni las demás propuestas. El total se recalcula en el servidor.
+                  </p>
                 </div>
-                )}
               </div>
             )}
 
