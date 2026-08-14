@@ -423,7 +423,7 @@ export default function QuoteViewer() {
           {hasCobrand && cobrand.role && <div className="cv-cobrand-role">{cobrand.role}</div>}
           {preview && <span className="qv-preview-flag">Vista previa · sin publicar</span>}
           <div className="kick">
-            Propuesta técnica y económica · documento interactivo
+            Propuesta técnica y económica
             {recipientName ? ` · preparada para ${recipientName}` : ''}
           </div>
           <h1>{quote.title}</h1>
