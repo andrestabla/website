@@ -367,15 +367,36 @@ export async function buildQuoteDocx(quote: DocxQuote, baseUrl: string): Promise
   const pages: any[] = content.pages || []
   const items: any[] = quote.pricing?.items || []
 
+  // Cobranding: la marca del aliado acompaña a la de Algoritmo T en el lockup
+  // y en la cabecera. Word no tiene fondos oscuros aquí, así que se usa
+  // siempre la versión para fondo claro.
+  const cobrand = content.cobrand || {}
+  const cobrandLogo: string = cobrand.logoDark || cobrand.logoLight || ''
+  const cobrandName: string = cobrand.name || ''
+
   const imgUrls = pages.flatMap((p: any) => (p.blocks || []).filter((b: any) => b.type === 'img').map((b: any) => String(b.url)))
-  const assets = await loadAssets([...new Set([...imgUrls, MARK_URL])], baseUrl)
+  const assets = await loadAssets([...new Set([...imgUrls, MARK_URL, ...(cobrandLogo ? [cobrandLogo] : [])])], baseUrl)
   const markPng = assets.get(MARK_URL) || null
+  const cobrandPng = cobrandLogo ? assets.get(cobrandLogo) || null : null
+
+  /** Marca del aliado a la derecha del lockup, con su filete separador. */
+  const cobrandRun = (size: number) => {
+    if (!cobrandPng && !cobrandName) return []
+    const sep = new TextRun({ text: '   |   ', size, color: LINE, font: 'JetBrains Mono' })
+    if (cobrandPng) {
+      // el PNG es 608×128: se conserva esa proporción (4,75:1)
+      const h = size / 1.9
+      return [sep, new ImageRun({ data: cobrandPng, transformation: { width: h * 4.75, height: h } } as any)]
+    }
+    return [sep, new TextRun({ text: cobrandName.toUpperCase(), bold: true, size, color: NAVY, font: 'JetBrains Mono' })]
+  }
 
   const brandRun = (size: number) => ([
     new TextRun({ text: 'ALGORITMO', bold: true, size, color: NAVY, font: 'JetBrains Mono' }),
     ...(markPng
       ? [new ImageRun({ data: markPng, transformation: { width: size / 1.6, height: size / 1.6 } } as any)]
       : [new TextRun({ text: '  T', bold: true, size, color: GOLD, font: 'JetBrains Mono' })]),
+    ...cobrandRun(size),
   ])
 
   const body: (Paragraph | Table)[] = []
@@ -498,7 +519,10 @@ export async function buildQuoteDocx(quote: DocxQuote, baseUrl: string): Promise
           children: [new Paragraph({
             children: [
               new TextRun({ text: `Propuesta · ${quote.clientName}`, size: 15, color: MUTED, font: 'JetBrains Mono' }),
-              new TextRun({ text: '\tALGORITMO T', size: 15, color: NAVY, font: 'JetBrains Mono', bold: true }),
+              new TextRun({
+                text: `\tALGORITMO T${cobrandName ? ` · ${cobrandName.toUpperCase()}` : ''}`,
+                size: 15, color: NAVY, font: 'JetBrains Mono', bold: true,
+              }),
             ],
             tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
             border: { bottom: { style: BorderStyle.SINGLE, size: 3, color: LINE, space: 6 } },

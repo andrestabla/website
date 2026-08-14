@@ -383,6 +383,47 @@ export function ContentEditor({
         <PagesEditor pages={pages} onChange={(next) => patch('pages', next)} />
       </Section>
 
+      <Section open={open} setOpen={setOpen} id="cobranding"
+        title={`Cobranding${val('cobrand.name') ? ` · ${val('cobrand.name')}` : ''}`}>
+        <p className="mb-2 mt-2 text-[12px] leading-relaxed text-slate-500">
+          Con un aliado, la propuesta lleva las dos marcas: en la portada, en la cabecera de
+          cada página y en el cierre. Deja el nombre vacío para presentarla solo con la marca
+          de Algoritmo T.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Nombre del aliado">
+            <input value={val('cobrand.name')} onChange={(e) => patch('cobrand.name', e.target.value)}
+              placeholder="Internnova Solutions" className={inputCls} />
+          </Field>
+          <Field label="Rótulo bajo el lockup (opcional)">
+            <input value={val('cobrand.role')} onChange={(e) => patch('cobrand.role', e.target.value)}
+              placeholder="Presentada en alianza con Internnova Solutions" className={inputCls} />
+          </Field>
+        </div>
+        <Field label="Logo para fondos oscuros — portada y cierre (versión blanca)">
+          <input value={val('cobrand.logoLight')} onChange={(e) => patch('cobrand.logoLight', e.target.value)}
+            placeholder="/assets/internnova-white.png" className={`${inputCls} font-mono text-[12px]`} />
+        </Field>
+        <Field label="Logo para fondos claros — cabecera de página (versión oscura)">
+          <input value={val('cobrand.logoDark')} onChange={(e) => patch('cobrand.logoDark', e.target.value)}
+            placeholder="/assets/internnova-dark.png" className={`${inputCls} font-mono text-[12px]`} />
+        </Field>
+        {(val('cobrand.logoLight') || val('cobrand.logoDark')) && (
+          <div className="mt-2 flex flex-wrap gap-3">
+            {val('cobrand.logoLight') && (
+              <div className="rounded-lg bg-[#1a2d5a] px-4 py-3">
+                <img src={val('cobrand.logoLight')} alt="Vista previa sobre fondo oscuro" className="h-5 w-auto" />
+              </div>
+            )}
+            {val('cobrand.logoDark') && (
+              <div className="rounded-lg border border-slate-200 bg-[#f7f4ee] px-4 py-3">
+                <img src={val('cobrand.logoDark')} alt="Vista previa sobre fondo claro" className="h-5 w-auto" />
+              </div>
+            )}
+          </div>
+        )}
+      </Section>
+
       {stale && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-[12px] text-rose-700">
           <b>La cotización cambió en otro lugar</b> desde que abriste el editor. Si guardas ahora,

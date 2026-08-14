@@ -486,6 +486,8 @@ export function DocPageView({
   totals,
   money,
   pages = [],
+  head,
+  cobrand,
 }: {
   page: DocPage
   client: string
@@ -493,13 +495,27 @@ export function DocPageView({
   totals: QuoteTotals
   money: (n: number) => string
   pages?: DocPage[]
+  /** Línea superior de la hoja. Con cobranding lleva las dos marcas. */
+  head?: string
+  /** Marca del aliado en la cabecera corrida (versión para fondo claro). */
+  cobrand?: { name?: string; logoDark?: string }
 }) {
   return (
-    <section className="qv-section" id={page.id} data-qsec={page.id}>
+    <section className="qv-section" id={page.id} data-qsec={page.id} data-head={head || undefined}>
       <div className="qv-sheet-in">
       <div className="qv-rhead">
         <span className="r-l">Propuesta · {client}</span>
-        <span className="r-r">Algoritmo&nbsp;T</span>
+        <span className="r-r">
+          Algoritmo&nbsp;T
+          {cobrand && (cobrand.logoDark || cobrand.name) && (
+            <>
+              <i className="cb-sep" aria-hidden="true" />
+              {cobrand.logoDark
+                ? <img className="cb-logo" src={cobrand.logoDark} alt={cobrand.name || 'Aliado'} />
+                : <span>{cobrand.name}</span>}
+            </>
+          )}
+        </span>
       </div>
       {(page.title || page.kicker) && (
         <div className="qv-sechead">

@@ -375,6 +375,15 @@ export default function QuoteViewer() {
   const serviceRows: Array<{ period: string; title: string; desc?: string; value: string }> | null =
     Array.isArray(service.rows) && service.rows.length ? service.rows : null
   const signature = content.signature || {}
+  // Cobranding: una propuesta presentada con un aliado lleva las dos marcas en
+  // portada, cabecera corrida y contraportada. `logoLight` es la versión para
+  // fondos oscuros (portada y cierre); `logoDark`, la de fondos claros.
+  const cobrand: { name?: string; logoLight?: string; logoDark?: string; role?: string; url?: string } =
+    content.cobrand && (content.cobrand.name || content.cobrand.logoDark || content.cobrand.logoLight)
+      ? content.cobrand
+      : {}
+  const hasCobrand = !!(cobrand.name || cobrand.logoDark || cobrand.logoLight)
+  const headLine = `Propuesta técnica y económica · Algoritmo T${hasCobrand && cobrand.name ? ` · ${cobrand.name}` : ''}`
   let sectionNumber = 0
   const nextNum = () => String(++sectionNumber).padStart(2, '0')
 
@@ -398,9 +407,20 @@ export default function QuoteViewer() {
       <header className="qv-cover" data-qsec="portada">
         <div className="qv-page">
           <div className="cv-top">
-            <span className="brandmark"><b>Algoritmo</b><img src="/assets/algoritmot-mark.svg" alt="Algoritmo T" /></span>
+            <span className="brandmark">
+              <b>Algoritmo</b><img src="/assets/algoritmot-mark.svg" alt="Algoritmo T" />
+              {hasCobrand && (
+                <>
+                  <i className="cb-sep" aria-hidden="true" />
+                  {cobrand.logoLight
+                    ? <img className="cb-logo" src={cobrand.logoLight} alt={cobrand.name || 'Aliado'} />
+                    : <b className="cb-name">{cobrand.name}</b>}
+                </>
+              )}
+            </span>
             <span className="cv-idx">PROPUESTA · {new Date(quote.publishedAt || Date.now()).getFullYear()}</span>
           </div>
+          {hasCobrand && cobrand.role && <div className="cv-cobrand-role">{cobrand.role}</div>}
           {preview && <span className="qv-preview-flag">Vista previa · sin publicar</span>}
           <div className="kick">
             Propuesta técnica y económica · documento interactivo
@@ -424,7 +444,8 @@ export default function QuoteViewer() {
         {docPages.length > 0 ? (
           docPages.map((page) => (
             <DocPageView key={page.id} page={page} client={quote.clientName}
-              items={items} totals={totals} money={money} pages={docPages} />
+              items={items} totals={totals} money={money} pages={docPages}
+              head={headLine} cobrand={hasCobrand ? { name: cobrand.name, logoDark: cobrand.logoDark } : undefined} />
           ))
         ) : (
         <>
@@ -972,7 +993,17 @@ export default function QuoteViewer() {
       {/* Cierre */}
       <footer className="qv-back" data-qsec="cierre">
         <div className="qv-page">
-          <div className="bk-top"><b>Algoritmo</b><img src="/assets/algoritmot-mark.svg" alt="Algoritmo T" /></div>
+          <div className="bk-top">
+            <b>Algoritmo</b><img src="/assets/algoritmot-mark.svg" alt="Algoritmo T" />
+            {hasCobrand && (
+              <>
+                <i className="cb-sep" aria-hidden="true" />
+                {cobrand.logoLight
+                  ? <img className="cb-logo" src={cobrand.logoLight} alt={cobrand.name || 'Aliado'} />
+                  : <b className="cb-name">{cobrand.name}</b>}
+              </>
+            )}
+          </div>
           <div className="bk-q">
             {content.backQuote || <>Toda la operación de <em>{quote.clientName}</em> en un solo lugar.</>}
           </div>

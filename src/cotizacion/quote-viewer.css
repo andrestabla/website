@@ -140,6 +140,8 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
   margin-bottom: clamp(18px, 3vw, 28px);
   border-bottom: 1px solid var(--line);
 }
+/* Con cobranding la escribe el visor: lleva también el nombre del aliado. */
+.qv-section[data-head]::before { content: attr(data-head); }
 .qv-section::after {
   content: 'Algoritmo T — pág. ' counter(qvsheet);
   position: absolute;
@@ -591,6 +593,26 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
   letter-spacing: 0.15em; text-transform: uppercase; color: #fff;
 }
 
+/* ---------- cobranding ----------
+   Dos marcas en una misma línea: la de Algoritmo T y la del aliado,
+   separadas por un filete. El logo del aliado se alinea por altura de x,
+   no por caja, para que las dos marcas pesen lo mismo a la vista. */
+.cb-sep {
+  display: inline-block; width: 1px; height: 20px; flex: none;
+  background: currentColor; opacity: 0.32; margin: 0 4px;
+}
+.cb-logo { display: block; width: auto; object-fit: contain; }
+.cb-name {
+  font-family: var(--mono); font-weight: 600; font-size: 13px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+}
+.qv-cover .brandmark .cb-logo,
+.qv-back .bk-top .cb-logo { height: 17px; }
+.qv-cover .cv-cobrand-role {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--gold-fill); margin: -14px 0 20px;
+}
+
 /* cabecera corrida (solo impresión, como la propuesta editorial;
    sus reglas de impresión viven en el bloque final) */
 .qv-rhead { display: none; }
@@ -693,7 +715,10 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
     font-family: var(--mono); font-size: 8pt; letter-spacing: 0.2em; text-transform: uppercase;
     color: var(--faint); padding-bottom: 3mm; margin-bottom: 6mm; border-bottom: 1px solid var(--line);
   }
-  .qv-rhead .r-r { color: var(--gold); }
+  .qv-rhead .r-r { color: var(--gold); display: inline-flex; align-items: center; gap: 5px; }
+  .qv-rhead .r-r .cb-sep { height: 9pt; margin: 0 1px; opacity: 0.4; }
+  /* el logo del aliado se atenúa para pesar como el texto de la cabecera */
+  .qv-rhead .r-r .cb-logo { height: 7.5pt; opacity: 0.55; }
 
   /* hojas crema como la versión editorial */
   .qv { background: var(--paper) !important; }
