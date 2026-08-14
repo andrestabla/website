@@ -606,8 +606,10 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
   font-family: var(--mono); font-weight: 600; font-size: 13px;
   letter-spacing: 0.15em; text-transform: uppercase;
 }
-.qv-cover .brandmark .cb-logo,
-.qv-back .bk-top .cb-logo { height: 17px; }
+/* gana en especificidad a `.qv-cover .brandmark img { width: 32px }`, que si no
+   aplasta el logo del aliado a caja cuadrada */
+.qv-cover .brandmark img.cb-logo,
+.qv-back .bk-top img.cb-logo { height: 17px; width: auto; }
 .qv-cover .cv-cobrand-role {
   font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--gold-fill); margin: -14px 0 20px;
