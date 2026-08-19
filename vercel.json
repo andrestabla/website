@@ -5,6 +5,10 @@
       "destination": "/cotizaciones/upc-2026/Propuesta-UPC-2026.html"
     },
     {
+      "source": "/cotizaciones/unisinu-2026",
+      "destination": "/cotizaciones/unisinu-2026/index.html"
+    },
+    {
       "source": "/robots.txt",
       "destination": "/api/robots"
     },

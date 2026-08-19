@@ -1,0 +1,26 @@
+/* ===== Print / PDF — fiel a la diagramación web =====
+   La página web (840×1188px) ya tiene la proporción A4 (0.7071).
+   En lugar de re-maquetar (lo que cambiaba el ancho de columna y
+   desbordaba el pie), conservamos su geometría EXACTA —mismos anchos,
+   paddings y saltos de línea— y la escalamos de forma uniforme para que
+   cada página ocupe exactamente una hoja A4.
+   840px → 210mm  ·  1188px → 297mm  ·  factor = 793.70/840 ≈ 0.9449 */
+@page{ size:A4; margin:0; }
+
+@media print{
+  *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  html,body{ background:#fff !important; margin:0; padding:0; }
+  .bar, .no-print{ display:none !important; }
+
+  /* Conserva tamaño y padding nativos de la web; solo reinicia el marco y escala */
+  .page{
+    margin:0 !important;
+    box-shadow:none !important;
+    zoom:0.9449;               /* escala 840×1188px a 210×297mm (A4) */
+    page-break-after:always;
+    break-after:page;
+  }
+  .page:last-child{ page-break-after:auto; break-after:auto; }
+
+  a{ color:inherit !important; text-decoration:none; }
+}
