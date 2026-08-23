@@ -7,6 +7,7 @@ import { EcosistemaHub } from './EcosistemaHub'
 import { CotizadorList } from '../cotizador/CotizadorList'
 import { QuoteBuilder } from '../cotizador/QuoteBuilder'
 import { ClaudiaRemote } from './ClaudiaRemote'
+import { LicenciasPage } from './LicenciasPage'
 
 function Centered({ children }: { children: ReactNode }) {
   return (
@@ -38,6 +39,11 @@ export default function EcosistemaApp() {
       <Route
         path="cotizador/:quoteId"
         element={cotizadorAllowed ? <QuoteBuilder /> : <Navigate to="/ecosistema" replace />}
+      />
+      {/* Licencias del plugin de Moodle: el API revalida el permiso. */}
+      <Route
+        path="licencias"
+        element={canAccessModule(user, 'LICENCES') ? <LicenciasPage /> : <Navigate to="/ecosistema" replace />}
       />
       {/* Control remoto del equipo del profe: solo el propietario (el API lo revalida). */}
       <Route

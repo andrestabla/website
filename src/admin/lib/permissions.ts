@@ -18,6 +18,7 @@ export const ADMIN_MODULES = [
   'COTIZADOR',
   'PROFE_TABLA',
   'MIS_PROYECTOS',
+  'LICENCES',
   'ADMIN_BRIDGE',
 ] as const
 
@@ -26,6 +27,7 @@ export type AdminRoleKey = 'SUPERADMIN' | 'ADMIN' | 'EDITOR' | 'ANALYST'
 export type AdminPermissionMap = Record<AdminModuleKey, boolean>
 
 export const ADMIN_MODULE_LABELS: Record<AdminModuleKey, string> = {
+  LICENCES: 'Licencias del plugin',
   DASHBOARD: 'Dashboard',
   SITE_BUILDER: 'Site Builder',
   SERVICES: 'Servicios',
@@ -116,6 +118,7 @@ const ROUTE_MODULES: Array<{ prefix: string; module: AdminModuleKey }> = [
   { prefix: '/admin/bookings', module: 'BOOKINGS' },
   { prefix: '/admin/documentos', module: 'DOCUMENTS' },
   { prefix: '/ecosistema/cotizador', module: 'COTIZADOR' },
+  { prefix: '/ecosistema/licencias', module: 'LICENCES' },
 ]
 
 export function getAdminModuleForPath(pathname: string): AdminModuleKey | null {
@@ -134,7 +137,7 @@ export const ADMIN_ROLES: AdminRoleKey[] = ['SUPERADMIN', 'ADMIN']
  * permiso y son accesibles a usuarios no-admin desde el Ecosistema.
  */
 export const ADMIN_ONLY_MODULES: AdminModuleKey[] = [
-  'DASHBOARD', 'SITE_BUILDER', 'SERVICES', 'PRODUCTS', 'DESIGN', 'SEO', 'MARKETING', 'INTEGRATIONS', 'SETTINGS', 'USERS',
+  'DASHBOARD', 'SITE_BUILDER', 'SERVICES', 'PRODUCTS', 'DESIGN', 'SEO', 'MARKETING', 'INTEGRATIONS', 'SETTINGS', 'USERS', 'LICENCES',
 ]
 
 export function isAdminRole(role: string | null | undefined): boolean {

@@ -770,3 +770,57 @@ model ClaudiaDevice {
   version  String?
   projects Json? // lista de proyectos disponibles
 }
+
+/// Licencias del plugin Learning Analytics para Moodle.
+/// El código se firma con Ed25519 y se verifica en la plataforma del cliente,
+/// por lo que esta tabla no interviene en la activación: sirve para emitir,
+/// llevar registro y poder revocar.
+model PluginLicence {
+  id          String   @id @default(cuid())
+  /// Identificador legible que viaja dentro del código firmado (campo "i").
+  licenceId   String   @unique
+  customer    String
+  contactEmail String?
+  /// Huella del wwwroot del cliente, o "*" si el código vale en cualquier sitio.
+  siteHash    String
+  /// Funcionalidades habilitadas. ["*"] concede el catálogo completo.
+  features    Json
+  /// Código firmado entregado al cliente.
+  code        String
+  issuedAt    DateTime @default(now())
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  revokedNote String?
+  notes       String?
+  /// Última vez que la plataforma del cliente revalidó.
+  lastCheckAt DateTime?
+  /// Versión del plugin declarada en la última revalidación.
+  lastVersion String?
+  /// Número de revalidaciones recibidas: indicio de uso real.
+  checkCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  checks      PluginLicenceCheck[]
+
+  @@index([customer])
+  @@index([siteHash])
+  @@index([expiresAt])
+  @@index([createdAt(sort: Desc)])
+}
+
+/// Registro de cada revalidación recibida desde una plataforma cliente.
+model PluginLicenceCheck {
+  id         String   @id @default(cuid())
+  licence    PluginLicence @relation(fields: [licenceDbId], references: [id], onDelete: Cascade)
+  licenceDbId String
+  siteHash   String
+  version    String?
+  /// Respuesta que se devolvió: active | revoked | unknown.
+  outcome    String
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([licenceDbId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}

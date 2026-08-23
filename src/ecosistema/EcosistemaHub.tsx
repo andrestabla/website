@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink, FileSignature, Bot } from 'lucide-react'
+import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink, FileSignature, Bot, KeyRound } from 'lucide-react'
 import { canAccessModule, hasAdminBridge, type AdminModuleKey } from '../admin/lib/permissions'
 import { ecoLogout, type EcoUser } from './lib/session'
 
@@ -14,6 +14,7 @@ const MODULES: Mod[] = [
   { module: 'LEADS', name: 'Contactos', desc: 'Ver y atender los contactos y solicitudes recibidas.', to: '/admin/leads', accent: 'from-emerald-600 to-green-500', icon: Mail, tag: 'CRM' },
   { module: 'BOOKINGS', name: 'Citas', desc: 'Gestiona reservas, citas y disponibilidad.', to: '/admin/bookings', accent: 'from-amber-500 to-orange-500', icon: Calendar, tag: 'Agenda' },
   { module: 'DOCUMENTS', name: 'Gestor Documental', desc: 'Sube, organiza y comparte archivos con trazabilidad.', to: '/admin/documentos', accent: 'from-fuchsia-600 to-purple-500', icon: FolderOpen, tag: 'Documentos' },
+  { module: 'LICENCES', name: 'Licencias', desc: 'Emite y controla las licencias del plugin Learning Analytics para Moodle.', to: '/ecosistema/licencias', accent: 'from-violet-600 to-indigo-500', icon: KeyRound, tag: 'Producto' },
   { module: 'ANALYTICS', name: 'Analítica', desc: 'Consulta estadísticas de tráfico y comportamiento.', to: '/admin/analytics', accent: 'from-cyan-600 to-blue-500', icon: BarChart2, tag: 'Métricas' },
 ]
 
