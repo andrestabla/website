@@ -120,7 +120,13 @@ export function SiteSEO() {
       description = 'Genera casos y escenarios accionables por industria y proceso.'
       isKnownRoute = true
       breadcrumbs.push({ name: 'Generador de casos', path: normalizedPath })
-    } else if (normalizedPath === '/learning_analytics') {
+    } else if (normalizedPath === '/learning_analytics/descarga') {
+    title = `Descargar Learning Analytics para Moodle | ${siteName}`
+    description = 'Descarga gratuita del plugin Learning Analytics para Moodle 4.5 a 5.2: requisitos, instalación paso a paso, capturas reales y detalle de los planes.'
+    isKnownRoute = true
+    breadcrumbs.push({ name: 'Learning Analytics', path: '/learning_analytics' })
+    breadcrumbs.push({ name: 'Descarga', path: normalizedPath })
+  } else if (normalizedPath === '/learning_analytics') {
       title = `Learning Analytics para Moodle | ${siteName}`
       description = 'Plugin de analítica para Moodle 4.5 a 5.2: progreso, calificaciones, permanencia y contacto con tus estudiantes. Versión gratuita y licencias desde 100 USD.'
       isKnownRoute = true

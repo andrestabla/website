@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion'
 import {
   BarChart3, Users, Award, TrendingUp, Filter, Globe2, GraduationCap,
-  Mail, Download, Check, ArrowRight, ShieldCheck, Server, Sparkles,
+  Mail, Download, Check, ArrowRight, ShieldCheck, Server, Sparkles, MessageCircle,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Layout } from '../components/layout/Layout'
 
 /**
@@ -13,6 +14,10 @@ import { Layout } from '../components/layout/Layout'
  */
 
 const CONTACT_EMAIL = 'proyectos@algoritmot.com'
+const WHATSAPP = '573044544525'
+
+/** La descarga vive en nuestro propio sitio, no en un tercero. */
+const DOWNLOAD_PATH = '/learning_analytics/descarga'
 
 /** Fondo del hero. Optimizado a 2400 px: 236 KB frente a los 2,5 MB del original. */
 const HERO_IMAGE = '/images/learning-analytics-hero.jpg'
@@ -73,14 +78,28 @@ const TRUST = [
   { icon: Sparkles, title: 'Respeta los permisos de Moodle', text: 'Quién ve cada tablero se define con capacidades reales de Moodle. Un profesor solo ve los datos de sus cursos, comprobado en el servidor y no solo en pantalla.' },
 ]
 
+/** Mismo aspecto para el botón del plan, sea enlace interno o de WhatsApp. */
+const ctaClass = (highlight: boolean) =>
+  `mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+    highlight
+      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+      : 'border border-slate-300 text-slate-900 hover:bg-slate-50'
+  }`
+
 export function LearningAnalyticsLanding() {
 
-  const mailto = (plan: string) =>
-    `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`Licencia Learning Analytics — plan ${plan}`)}` +
-    `&body=${encodeURIComponent(
-      'Hola,\n\nQuiero solicitar una licencia del plugin Learning Analytics.\n\n' +
-      `Plan: ${plan}\nInstitución: \nURL de nuestro Moodle: \n` +
-      'Identificador del sitio (aparece en Ajustes → Licencia del plugin): \n\nGracias.'
+  /**
+   * Contacto por WhatsApp con el mensaje ya redactado. Pedimos de entrada el
+   * identificador del sitio porque es lo único que necesitamos para emitir
+   * la licencia, y así se evita un ida y vuelta.
+   */
+  const whatsapp = (plan: string) =>
+    `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
+      'Hola, quiero una licencia del plugin Learning Analytics para Moodle.\n\n' +
+      `Plan: ${plan}\n` +
+      'Institución: \n' +
+      'URL de nuestro Moodle: \n' +
+      'Identificador del sitio (aparece en los ajustes del plugin): '
     )}`
 
   return (
@@ -115,9 +134,9 @@ export function LearningAnalyticsLanding() {
               <a href="#planes" className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100">
                 Ver planes <ArrowRight size={16} />
               </a>
-              <a href="#gratis" className="inline-flex items-center gap-2 rounded-xl border border-white/25 px-6 py-3 text-sm font-bold transition hover:bg-white/10">
-                Empezar gratis
-              </a>
+              <Link to={DOWNLOAD_PATH} className="inline-flex items-center gap-2 rounded-xl border border-white/25 px-6 py-3 text-sm font-bold transition hover:bg-white/10">
+                <Download size={16} /> Descargar gratis
+              </Link>
             </div>
             <p className="mt-5 text-sm text-slate-400">
               Compatible con Moodle 4.5 a 5.2 · MariaDB o PostgreSQL · Sin coste para empezar
@@ -207,24 +226,25 @@ export function LearningAnalyticsLanding() {
                     </li>
                   ))}
                 </ul>
-                <a
-                  href={plan.plan === 'free' ? 'https://moodle.org/plugins' : mailto(plan.name)}
-                  target={plan.plan === 'free' ? '_blank' : undefined}
-                  rel={plan.plan === 'free' ? 'noopener noreferrer' : undefined}
-                  className={`mt-6 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
-                    plan.highlight
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'border border-slate-300 text-slate-900 hover:bg-slate-50'
-                  }`}>
-                  {plan.cta}
-                </a>
+                {plan.plan === 'free' ? (
+                  <Link to={DOWNLOAD_PATH} className={ctaClass(plan.highlight)}>
+                    {plan.cta}
+                  </Link>
+                ) : (
+                  <a href={whatsapp(plan.name)} target="_blank" rel="noopener noreferrer"
+                    className={ctaClass(plan.highlight)}>
+                    <MessageCircle size={15} /> {plan.cta}
+                  </a>
+                )}
               </div>
             ))}
           </div>
 
           <p className="mt-6 text-xs text-slate-500">
-            ¿Varias plataformas o una institución grande? Escríbenos a{' '}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-indigo-600">{CONTACT_EMAIL}</a> y lo ajustamos.
+            ¿Varias plataformas o una institución grande?{' '}
+            <a href={whatsapp('a definir')} target="_blank" rel="noopener noreferrer"
+              className="font-semibold text-indigo-600">Escríbenos por WhatsApp</a>{' '}
+            o a <a href={`mailto:${CONTACT_EMAIL}`} className="font-semibold text-indigo-600">{CONTACT_EMAIL}</a> y lo ajustamos.
           </p>
         </div>
       </section>
@@ -270,13 +290,13 @@ export function LearningAnalyticsLanding() {
             que el plugin te muestra y te enviamos el código.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <a href="https://moodle.org/plugins" target="_blank" rel="noopener noreferrer"
+            <Link to={DOWNLOAD_PATH}
               className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-slate-900 hover:bg-slate-100">
               Descargar gratis <ArrowRight size={16} />
-            </a>
-            <a href={mailto('a definir')}
+            </Link>
+            <a href={whatsapp('a definir')} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-white/25 px-6 py-3 text-sm font-bold hover:bg-white/10">
-              Hablar con nosotros
+              <MessageCircle size={17} /> Hablar con nosotros
             </a>
           </div>
         </div>

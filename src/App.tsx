@@ -29,6 +29,7 @@ const PlanificoMiProyecto = lazyWithRetry(() => import('./pages/PlanificoMiProye
 const HazloTuMismo = lazyWithRetry(() => import('./pages/HazloTuMismo'))
 const EscalarNegocioLanding = lazyWithRetry(() => import('./pages/EscalarNegocioLanding').then((module) => ({ default: module.EscalarNegocioLanding })))
 const LearningAnalyticsLanding = lazyWithRetry(() => import('./pages/LearningAnalyticsLanding').then((module) => ({ default: module.LearningAnalyticsLanding })))
+const LearningAnalyticsDownload = lazyWithRetry(() => import('./pages/LearningAnalyticsDownload').then((module) => ({ default: module.LearningAnalyticsDownload })))
 const SimuladorEmpresas = lazyWithRetry(() => import('./pages/SimuladorEmpresas').then((module) => ({ default: module.SimuladorEmpresas })))
 
 const NavigationSelector = lazyWithRetry(() => import('./pages/NavigationSelector').then((module) => ({ default: module.NavigationSelector })))
@@ -330,6 +331,7 @@ function App() {
               <Route path="/planifico-mi-proyecto" element={<PlanificoMiProyecto />} />
               <Route path="/hazlo-tu-mismo" element={<HazloTuMismo />} />
               <Route path="/learning_analytics" element={<LearningAnalyticsLanding />} />
+            <Route path="/learning_analytics/descarga" element={<LearningAnalyticsDownload />} />
               <Route path="/empresas/simulador" element={<SimuladorEmpresas />} />
 
 
