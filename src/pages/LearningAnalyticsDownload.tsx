@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import {
-  Download, Check, ShieldCheck, Server, Database, Boxes, KeyRound,
+  Download, Check, ShieldCheck, Server, Database, Boxes, KeyRound, Sparkles,
   MessageCircle, FileArchive, Terminal, MousePointerClick, ArrowLeft, Info,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -16,14 +16,21 @@ import { Layout } from '../components/layout/Layout'
 
 const WHATSAPP = '573044544525'
 
+/**
+ * La analítica conversacional todavía no está en el plugin. Cuando lo esté,
+ * esto pasa a true y aparece lo que se envía y lo que no. Anunciarla antes
+ * sería prometer una función que el cliente no encontraría al instalar.
+ */
+const AI_DISPONIBLE = false
+
 /** Ficha del paquete. Cambiar al publicar una versión nueva. */
 const RELEASE = {
-  version: '3.8.3',
-  file: 'local_learninganalytics-3.8.3.zip',
-  size: '201 KB',
+  version: '3.9.1',
+  file: 'local_learninganalytics-3.9.1.zip',
+  size: '208 KB',
   date: '24 de agosto de 2026',
   // Permite a quien instala comprobar que el archivo no se alteró en el camino.
-  sha256: '480e70d8389a2093f774555fe19dd8975eae371dcc731e23c66151fb277f06cf',
+  sha256: '15937bec6caa4dabbd1e22772a02e5c0754d9c10c3989773c03076be2017079c',
 }
 
 const DOWNLOAD_URL = `/downloads/${RELEASE.file}`
@@ -352,14 +359,17 @@ export function LearningAnalyticsDownload() {
       <section className="bg-slate-50 px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-3xl font-black tracking-tight">Qué sale de tu servidor</h2>
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <p className="mt-3 max-w-2xl text-slate-600">
+            La lista completa, sin letra pequeña.
+          </p>
+          <div className={`mt-8 grid gap-6 ${AI_DISPONIBLE ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
             <div className="rounded-2xl border border-slate-200 bg-white p-6">
               <ShieldCheck size={20} className="text-emerald-600" />
-              <h3 className="mt-3 font-black">Los datos de tus estudiantes: nada</h3>
+              <h3 className="mt-3 font-black">De tus estudiantes, nada</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                Ni usuarios, ni cursos, ni notas, ni métricas. El plugin lee tu base de datos y dibuja
-                los tableros en tu propia plataforma. No hay analítica de terceros ni librerías
-                cargadas desde servidores ajenos.
+                Ni nombres, ni correos, ni identificadores, ni notas. El plugin lee tu base de datos
+                y dibuja los tableros dentro de tu propia plataforma. No hay analítica de terceros ni
+                librerías cargadas desde servidores ajenos.
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -371,7 +381,34 @@ export function LearningAnalyticsDownload() {
                 consulta falla, el plugin continúa funcionando con normalidad.
               </p>
             </div>
+            {AI_DISPONIBLE && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-6">
+                <Sparkles size={20} className="text-amber-600" />
+                <h3 className="mt-3 font-black">La IA: solo si tú la enciendes</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Viene apagada. Si la activas, cada pregunta viaja con las cifras que ya ves en
+                  pantalla — «Módulo 3: 24 %», «Más de 90 días: 18»— hasta nuestro servidor y de ahí
+                  a OpenAI. Nunca personas: si una etiqueta parece un correo, el envío se rechaza.
+                  No guardamos la pregunta ni las cifras; solo contamos cuántas consultas hiciste.
+                </p>
+              </div>
+            )}
           </div>
+
+          {AI_DISPONIBLE && (
+            <div className="mt-6 flex gap-3 rounded-2xl border border-slate-200 bg-white p-5">
+              <Info size={18} className="mt-0.5 shrink-0 text-slate-400" />
+              <p className="text-sm leading-relaxed text-slate-600">
+                <strong className="font-semibold text-slate-900">Sobre el cifrado, sin adornos.</strong>{' '}
+                Todo el tránsito va cifrado, y en nuestro servidor no queda contenido que cifrar
+                porque no lo almacenamos. Pero un modelo de lenguaje necesita leer los datos para
+                responder: quien procesa la consulta la ve en claro. Por eso la protección real no
+                es el cifrado, sino que lo único que sale son cifras agregadas, sin ninguna persona
+                detrás. Si tu institución no quiere ni eso, deja la función apagada y el plugin
+                sigue completo en todo lo demás.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

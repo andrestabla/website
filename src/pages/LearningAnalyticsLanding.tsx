@@ -73,7 +73,9 @@ const STEPS = [
 ]
 
 const TRUST = [
-  { icon: ShieldCheck, title: 'Tus datos no salen de tu servidor', text: 'El plugin no envía usuarios, cursos ni métricas a ningún sitio. La revalidación diaria de la licencia transmite solo tres campos: identificador de licencia, huella del sitio y versión instalada.' },
+  // Redactado para seguir siendo cierto el día que exista la analítica
+  // conversacional: esa función enviará cifras agregadas, nunca personas.
+  { icon: ShieldCheck, title: 'De tus estudiantes no sale nada', text: 'Ni nombres, ni correos, ni notas. El plugin lee tu base de datos y dibuja los tableros dentro de tu propia plataforma. La revalidación diaria de la licencia transmite solo tres campos: identificador de licencia, huella del sitio y versión instalada.' },
   { icon: Server, title: 'Sin dependencias externas', text: 'Nada de librerías cargadas desde CDN. Las gráficas usan Chart.js del propio núcleo de Moodle, y los informes se generan con las librerías que Moodle ya trae.' },
   { icon: Sparkles, title: 'Respeta los permisos de Moodle', text: 'Quién ve cada tablero se define con capacidades reales de Moodle. Un profesor solo ve los datos de sus cursos, comprobado en el servidor y no solo en pantalla.' },
 ]
