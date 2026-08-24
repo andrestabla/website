@@ -108,10 +108,18 @@ const PLAN_ROWS = [
   { feature: 'Descarga en Excel, PDF y JPG', free: false },
 ]
 
+/** Consultas de IA incluidas en cada plan, para toda su vigencia. */
+const PAQUETES_IA = [
+  { credits: 10, usd: 10 },
+  { credits: 20, usd: 18 },
+  { credits: 50, usd: 40 },
+  { credits: 100, usd: 80 },
+]
+
 const PRICES = [
-  { name: 'Trimestral', price: '100', period: '3 meses', note: '' },
-  { name: 'Semestral', price: '180', period: '6 meses', note: 'Ahorras un 10 %' },
-  { name: 'Anual', price: '320', period: '12 meses', note: 'Ahorras un 20 %' },
+  { name: 'Trimestral', price: '100', period: '3 meses', note: '', ia: 10 },
+  { name: 'Semestral', price: '180', period: '6 meses', note: 'Ahorras un 10 %', ia: 25 },
+  { name: 'Anual', price: '320', period: '12 meses', note: 'Ahorras un 20 %', ia: 50 },
 ]
 
 export function LearningAnalyticsDownload() {
@@ -297,7 +305,7 @@ export function LearningAnalyticsDownload() {
           </div>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {PRICES.map(({ name, price, period, note }) => (
+            {PRICES.map(({ name, price, period, note, ia }) => (
               <div key={name} className="rounded-2xl border border-slate-200 bg-white p-6">
                 <div className="font-black">{name}</div>
                 <div className="mt-3 flex items-end gap-1">
@@ -305,12 +313,37 @@ export function LearningAnalyticsDownload() {
                   <span className="mb-1 text-xs text-slate-500">USD / {period}</span>
                 </div>
                 {note && <div className="mt-2 text-xs font-bold text-emerald-700">{note}</div>}
+                {AI_DISPONIBLE && (
+                  <div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-600">
+                    <span className="font-bold text-slate-900">{ia} consultas de IA</span> incluidas
+                    para toda la vigencia
+                  </div>
+                )}
               </div>
             ))}
           </div>
           <p className="mt-4 text-xs text-slate-500">
             Precio por plataforma, sin límite de usuarios ni de cursos.
           </p>
+
+          {AI_DISPONIBLE && (
+            <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-black">Si se acaban las consultas de IA</h3>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+                Se recargan en paquetes, y lo que compres dura lo que dure tu licencia: no caduca
+                a fin de mes. Todo lo demás del plugin sigue funcionando aunque la bolsa esté a cero.
+              </p>
+              <div className="mt-5 grid gap-3 sm:grid-cols-4">
+                {PAQUETES_IA.map(({ credits, usd }) => (
+                  <div key={credits} className="rounded-xl border border-slate-200 p-4 text-center">
+                    <div className="text-2xl font-black tabular-nums">{credits}</div>
+                    <div className="text-[11px] uppercase tracking-wider text-slate-500">consultas</div>
+                    <div className="mt-2 font-bold text-indigo-700">${usd} USD</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
