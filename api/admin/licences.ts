@@ -15,6 +15,20 @@ type VercelResponse = any
  * La clave privada solo vive aquí, en LICENCE_PRIVATE_KEY. El código firmado se
  * guarda para poder reenviárselo al cliente sin volver a firmarlo.
  */
+/**
+ * Consultas de IA que incluye cada plan, para toda su vigencia. No son por
+ * mes: es una bolsa que se consume y que el cliente puede recargar.
+ */
+const CREDITOS_POR_PLAN: Record<number, number> = { 3: 10, 6: 25, 12: 50 }
+
+/** Paquetes de recarga: consultas y precio en dólares. */
+export const PAQUETES = [
+  { credits: 10, usd: 10 },
+  { credits: 20, usd: 18 },
+  { credits: 50, usd: 40 },
+  { credits: 100, usd: 80 },
+]
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const session = requireAdminSession(req, res)
   if (!session) return
@@ -52,9 +66,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           lastVersion: l.lastVersion,
           checkCount: l.checkCount,
           aiEnabled: l.aiEnabled,
-          aiMonthlyQuota: l.aiMonthlyQuota,
+          aiCredits: l.aiCredits,
+          aiUsedTotal: l.aiUsedTotal,
           aiModel: l.aiModel,
-          aiUsed: usageBy.get(l.id)?.calls ?? 0,
+          // El consumo del mes en curso sigue interesando para ver el ritmo,
+          // aunque la bolsa se cuente sobre toda la vigencia.
+          aiUsedMonth: usageBy.get(l.id)?.calls ?? 0,
           aiChars: usageBy.get(l.id)?.chars ?? 0,
           status: l.revokedAt
             ? 'revoked'
@@ -77,6 +94,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const contactEmail = trimmed(body?.contactEmail, 160)
       const notes = trimmed(body?.notes, 2000)
       const months = Number.isFinite(Number(body?.months)) ? Math.max(0, Number(body.months)) : 12
+      // La IA nace apagada, pero con la bolsa que le corresponde al plan ya
+      // cargada: encenderla es entonces un solo clic, sin recordar cifras.
+      const creditos = CREDITOS_POR_PLAN[months] ?? 0
 
       const features: string[] = Array.isArray(body?.features) && body.features.length
         ? body.features.map((f: unknown) => String(f).slice(0, 40))
@@ -114,7 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const licence = await prisma.pluginLicence.create({
-        data: { licenceId, customer, contactEmail, siteHash, features, code, expiresAt, notes },
+        data: { licenceId, customer, contactEmail, siteHash, features, code, expiresAt, notes, aiCredits: creditos },
       })
 
       return res.status(201).json({ ok: true, licence, code })
@@ -145,22 +165,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ ok: true, licence })
       }
 
-      // Parametrización: la analítica conversacional corre con nuestra clave,
-      // así que el cupo mensual es el freno de gasto y se fija aquí.
+      // La analítica conversacional corre con nuestra clave, así que la bolsa
+      // de consultas es el freno de gasto y se fija aquí.
       if (action === 'ai') {
         const enabled = body?.aiEnabled === true
-        const rawQuota = Number(body?.aiMonthlyQuota)
-        const quota = Number.isFinite(rawQuota) ? Math.min(10000, Math.max(0, Math.round(rawQuota))) : 0
+        const raw = Number(body?.aiCredits)
+        const credits = Number.isFinite(raw) ? Math.min(100000, Math.max(0, Math.round(raw))) : 0
         const licence = await prisma.pluginLicence.update({
           where: { id },
           data: {
             aiEnabled: enabled,
-            // Habilitar sin cupo dejaría la función muerta y confundiría al
-            // cliente: si se activa sin número, se asume un cupo de partida.
-            aiMonthlyQuota: enabled && quota === 0 ? 100 : quota,
+            aiCredits: credits,
             aiModel: trimmed(body?.aiModel, 60) || null,
           },
         })
+        return res.status(200).json({ ok: true, licence })
+      }
+
+      // Recarga: suma consultas a la bolsa y deja constancia de lo cobrado.
+      // Sin ese rastro, el saldo de una licencia sería un número sin origen.
+      if (action === 'credits') {
+        const raw = Number(body?.credits)
+        const credits = Number.isFinite(raw) ? Math.round(raw) : 0
+        if (credits === 0) {
+          return res.status(400).json({ ok: false, error: 'Indica cuántas consultas añadir' })
+        }
+
+        const paquete = PAQUETES.find((p) => p.credits === credits)
+        const rawUsd = Number(body?.amountUsd)
+        const amountUsd = Number.isFinite(rawUsd)
+          ? Math.max(0, Math.round(rawUsd))
+          : (paquete ? paquete.usd : 0)
+
+        const [licence] = await prisma.$transaction([
+          prisma.pluginLicence.update({
+            where: { id },
+            data: { aiCredits: { increment: credits } },
+          }),
+          prisma.pluginAiCredit.create({
+            data: { licenceDbId: id, credits, amountUsd, note: trimmed(body?.note, 300) || null },
+          }),
+        ])
         return res.status(200).json({ ok: true, licence })
       }
 

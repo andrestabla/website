@@ -77,22 +77,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // recoge sin publicar una versión nueva.
     const now = new Date()
     const period = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
-    const usage = licence.aiEnabled
-      ? await prisma.pluginAiUsage.findUnique({
-          where: { licenceDbId_period: { licenceDbId: licence.id, period } },
-        })
-      : null
-    const used = usage?.calls ?? 0
-
+    // Se conservan los nombres quota/used/remaining aunque el significado pase
+    // de mensual a bolsa: el plugin ya instalado los lee y no hay motivo para
+    // obligar a actualizarlo por un cambio de contabilidad nuestro.
     return res.status(200).json({
       status: outcome,
       expired,
       expires: licence.expiresAt ? Math.floor(licence.expiresAt.getTime() / 1000) : 0,
       ai: {
-        enabled: Boolean(licence.aiEnabled && licence.aiMonthlyQuota > 0 && !revoked && !expired),
-        quota: licence.aiMonthlyQuota,
-        used,
-        remaining: Math.max(0, licence.aiMonthlyQuota - used),
+        enabled: Boolean(licence.aiEnabled && licence.aiCredits > 0 && !revoked && !expired),
+        quota: licence.aiCredits,
+        used: licence.aiUsedTotal,
+        remaining: Math.max(0, licence.aiCredits - licence.aiUsedTotal),
         period,
       },
       config: licence.config ?? {},

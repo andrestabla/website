@@ -26,10 +26,13 @@ type Licence = {
   checkCount: number
   /** La analítica conversacional corre con nuestra clave: se habilita una a una. */
   aiEnabled: boolean
-  aiMonthlyQuota: number
+  /** Bolsa de consultas para toda la vigencia: plan más recargas. */
+  aiCredits: number
+  /** Consultas gastadas desde que se emitió. */
+  aiUsedTotal: number
   aiModel: string | null
-  /** Consultas gastadas en el mes en curso. */
-  aiUsed: number
+  /** Consumo del mes en curso, para ver el ritmo. */
+  aiUsedMonth: number
   aiChars: number
   status: 'active' | 'revoked' | 'expired'
 }
@@ -39,6 +42,14 @@ const STATUS_STYLE: Record<Licence['status'], string> = {
   revoked: 'bg-rose-50 text-rose-700 ring-rose-200',
   expired: 'bg-amber-50 text-amber-700 ring-amber-200',
 }
+
+/** Paquetes de recarga, iguales a los que declara el servidor. */
+const PAQUETES = [
+  { credits: 10, usd: 10 },
+  { credits: 20, usd: 18 },
+  { credits: 50, usd: 40 },
+  { credits: 100, usd: 80 },
+]
 
 const STATUS_LABEL: Record<Licence['status'], string> = {
   active: 'Activa',
@@ -124,7 +135,7 @@ export function LicenciasPage() {
    * Habilita o corta la analítica conversacional de una licencia y fija su
    * cupo mensual. Es el único freno de gasto: cada consulta la paga Algoritmo T.
    */
-  const setAi = async (licence: Licence, enabled: boolean, quota?: number) => {
+  const setAi = async (licence: Licence, enabled: boolean, credits?: number) => {
     setError(null)
     const res = await fetch('/api/admin/licences', {
       method: 'PATCH',
@@ -134,12 +145,33 @@ export function LicenciasPage() {
         id: licence.id,
         action: 'ai',
         aiEnabled: enabled,
-        aiMonthlyQuota: quota ?? licence.aiMonthlyQuota,
+        aiCredits: credits ?? licence.aiCredits,
         aiModel: licence.aiModel || '',
       }),
     })
     if (!res.ok) {
       setError('No se pudo guardar la configuración de IA')
+      return
+    }
+    await load()
+  }
+
+  /** Suma un paquete a la bolsa y deja constancia de lo cobrado. */
+  const addCredits = async (licence: Licence, credits: number, usd: number) => {
+    if (!confirm(
+      `Añadir ${credits} consultas a ${licence.customer} por ${usd} USD.\n\n` +
+      `La bolsa pasaría de ${licence.aiCredits} a ${licence.aiCredits + credits}.`
+    )) return
+
+    setError(null)
+    const res = await fetch('/api/admin/licences', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: licence.id, action: 'credits', credits, amountUsd: usd }),
+    })
+    if (!res.ok) {
+      setError('No se pudo añadir el paquete')
       return
     }
     await load()
@@ -251,7 +283,7 @@ export function LicenciasPage() {
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Vence</th>
                 <th className="px-4 py-3">Última señal</th>
-                <th className="px-4 py-3">IA · consultas</th>
+                <th className="px-4 py-3">IA · bolsa</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -288,41 +320,44 @@ export function LicenciasPage() {
                   </td>
                   <td className="px-4 py-3 text-xs">
                     {l.aiEnabled ? (
-                      <div className="flex items-center gap-2">
-                        <div className="min-w-[74px]">
-                          <div className="font-mono font-bold tabular-nums text-slate-700">
-                            {l.aiUsed} / {l.aiMonthlyQuota}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="min-w-[78px]">
+                            <div className="font-mono font-bold tabular-nums text-slate-700">
+                              {l.aiUsedTotal} / {l.aiCredits}
+                            </div>
+                            <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-200">
+                              <div
+                                className={`h-full rounded-full ${
+                                  l.aiUsedTotal >= l.aiCredits ? 'bg-rose-500' : 'bg-indigo-500'
+                                }`}
+                                style={{ width: `${Math.min(100, (l.aiUsedTotal / Math.max(1, l.aiCredits)) * 100)}%` }}
+                              />
+                            </div>
                           </div>
-                          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-200">
-                            <div
-                              className={`h-full rounded-full ${
-                                l.aiUsed >= l.aiMonthlyQuota ? 'bg-rose-500' : 'bg-indigo-500'
-                              }`}
-                              style={{ width: `${Math.min(100, (l.aiUsed / Math.max(1, l.aiMonthlyQuota)) * 100)}%` }}
-                            />
-                          </div>
+                          <button onClick={() => setAi(l, false)} title="Desactivar IA"
+                            className="rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-rose-600">
+                            off
+                          </button>
                         </div>
-                        <button
-                          onClick={() => {
-                            const n = prompt(
-                              `Consultas al mes para ${l.customer}.\n\nCada consulta la pagamos nosotros a OpenAI.`,
-                              String(l.aiMonthlyQuota)
-                            )
-                            if (n !== null) setAi(l, true, Math.max(0, Number(n) || 0))
-                          }}
-                          title="Cambiar cupo mensual"
-                          className="rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-indigo-600">
-                          cupo
-                        </button>
-                        <button onClick={() => setAi(l, false)} title="Desactivar IA"
-                          className="rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-rose-600">
-                          off
-                        </button>
+                        {/* Recargas: el precio va en el botón para no tener que
+                            recordar la tabla de paquetes al vender. */}
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {PAQUETES.map((p) => (
+                            <button key={p.credits} onClick={() => addCredits(l, p.credits, p.usd)}
+                              title={`Añadir ${p.credits} consultas por ${p.usd} USD`}
+                              className="rounded border border-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 hover:border-emerald-400 hover:text-emerald-700">
+                              +{p.credits}
+                              <span className="ml-1 font-normal text-slate-400">${p.usd}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     ) : (
-                      <button onClick={() => setAi(l, true, 100)}
+                      <button onClick={() => setAi(l, true)}
+                        title={l.aiCredits > 0 ? `Activar con ${l.aiCredits} consultas` : 'Activar'}
                         className="rounded-lg border border-slate-300 px-2 py-1 text-[11px] font-bold text-slate-500 hover:border-indigo-400 hover:text-indigo-600">
-                        Activar
+                        Activar{l.aiCredits > 0 ? ` (${l.aiCredits})` : ''}
                       </button>
                     )}
                   </td>

@@ -10,13 +10,13 @@ type VercelResponse = any
  *
  * La IA corre de nuestro lado, con nuestra clave, así que este endpoint gasta
  * nuestro dinero cada vez que responde. Todo lo que sigue existe para que ese
- * gasto sea acotado y atribuible: licencia vigente, sitio que coincide, cupo
- * mensual y un intervalo mínimo entre consultas.
+ * gasto sea acotado y atribuible: licencia vigente, sitio que coincide, bolsa
+ * de consultas con saldo y un intervalo mínimo entre peticiones.
  *
  * Contrato:
  *   POST { licence, site, version?, question, scope?, kpis?, series[] }
  *     -> 200 { answer, remaining, period }
- *     -> 402 { error, code: "quota" }      cupo agotado
+ *     -> 402 { error, code: "quota" }      bolsa agotada
  *     -> 403 { error, code: "disabled" }   licencia sin IA, revocada o vencida
  *
  * Lo que NO viaja hasta aquí, por diseño: nombres, correos ni identificadores
@@ -144,7 +144,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (licence.expiresAt && licence.expiresAt.getTime() < Date.now()) {
       return res.status(403).json({ error: 'Licencia vencida', code: 'disabled' })
     }
-    if (!licence.aiEnabled || licence.aiMonthlyQuota <= 0) {
+    if (!licence.aiEnabled || licence.aiCredits <= 0) {
       return res.status(403).json({ error: 'Esta licencia no incluye analítica conversacional', code: 'disabled' })
     }
 
@@ -162,9 +162,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       where: { licenceDbId_period: { licenceDbId: licence.id, period } },
     })
 
-    if (usage && usage.calls >= licence.aiMonthlyQuota) {
+    // La bolsa es de toda la vigencia, no del mes: se compara contra el
+    // consumo acumulado desde que se emitió la licencia.
+    if (licence.aiUsedTotal >= licence.aiCredits) {
       return res.status(402).json({
-        error: `Se agotaron las ${licence.aiMonthlyQuota} consultas de este mes`,
+        error: `Se agotaron las ${licence.aiCredits} consultas de esta licencia. Se pueden añadir más en paquetes.`,
         code: 'quota',
         remaining: 0,
         period,
@@ -203,15 +205,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // El consumo se anota después de responder bien: un fallo del proveedor no
     // debe descontarle una consulta a quien no obtuvo nada.
     const chars = datos.length + question.length + answer.length
-    const saved = await prisma.pluginAiUsage.upsert({
-      where: { licenceDbId_period: { licenceDbId: licence.id, period } },
-      create: { licenceDbId: licence.id, period, calls: 1, chars, lastCallAt: new Date() },
-      update: { calls: { increment: 1 }, chars: { increment: chars }, lastCallAt: new Date() },
-    })
+    const [, gastada] = await prisma.$transaction([
+      // El detalle por mes se conserva para saber cuánto consume cada cliente
+      // y en qué época del curso; el cupo, en cambio, sale del acumulado.
+      prisma.pluginAiUsage.upsert({
+        where: { licenceDbId_period: { licenceDbId: licence.id, period } },
+        create: { licenceDbId: licence.id, period, calls: 1, chars, lastCallAt: new Date() },
+        update: { calls: { increment: 1 }, chars: { increment: chars }, lastCallAt: new Date() },
+      }),
+      prisma.pluginLicence.update({
+        where: { id: licence.id },
+        data: { aiUsedTotal: { increment: 1 } },
+      }),
+    ])
 
     return res.status(200).json({
       answer,
-      remaining: Math.max(0, licence.aiMonthlyQuota - saved.calls),
+      remaining: Math.max(0, gastada.aiCredits - gastada.aiUsedTotal),
       period,
     })
   } catch (error) {

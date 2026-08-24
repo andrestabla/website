@@ -802,9 +802,13 @@ model PluginLicence {
   /// Analítica conversacional. Corre con nuestra clave de OpenAI, no con la
   /// del cliente, así que se habilita licencia por licencia.
   aiEnabled   Boolean  @default(false)
-  /// Consultas permitidas al mes. El cupo se cuenta en consultas y no en
-  /// tokens porque es lo único que el cliente puede prever.
-  aiMonthlyQuota Int   @default(0)
+  /// Consultas incluidas para TODA la vigencia, no por mes: es una bolsa que
+  /// se consume. Suma lo que trae el plan y lo que el cliente compre en
+  /// paquetes. Se cuenta en consultas y no en tokens porque es lo único que
+  /// el cliente puede prever y a lo que se le puede poner precio.
+  aiCredits   Int      @default(0)
+  /// Consultas gastadas desde que se emitió la licencia.
+  aiUsedTotal Int      @default(0)
   /// Modelo concreto para esta licencia. Vacío usa el de las integraciones.
   aiModel     String?
   /// Parametrización remota que viaja en la revalidación diaria. Permite
@@ -816,6 +820,7 @@ model PluginLicence {
 
   checks      PluginLicenceCheck[]
   aiUsage     PluginAiUsage[]
+  aiPurchases PluginAiCredit[]
 
   @@index([customer])
   @@index([siteHash])
@@ -824,6 +829,22 @@ model PluginLicence {
 }
 
 /// Registro de cada revalidación recibida desde una plataforma cliente.
+/// Compras de créditos de IA. Es el rastro de lo facturado: sin esto, la
+/// bolsa de una licencia sería un número sin explicación.
+model PluginAiCredit {
+  id          String   @id @default(cuid())
+  licence     PluginLicence @relation(fields: [licenceDbId], references: [id], onDelete: Cascade)
+  licenceDbId String
+  /// Consultas añadidas. Negativo para corregir una carga equivocada.
+  credits     Int
+  /// Importe cobrado en dólares enteros. 0 para una cortesía o un ajuste.
+  amountUsd   Int      @default(0)
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@index([licenceDbId, createdAt(sort: Desc)])
+}
+
 /// Consumo mensual de analítica conversacional, una fila por licencia y mes.
 /// Se lleva agregado y no consulta a consulta: el cupo se comprueba en cada
 /// petición y una cuenta acumulada se resuelve con una sola lectura.
