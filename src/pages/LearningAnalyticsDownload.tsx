@@ -72,12 +72,7 @@ const SCREENS: { src: string; title: string; text: string }[] = [
   {
     src: '/images/la-progreso-seccion.png',
     title: 'Progreso por sección',
-    text: 'Dentro de un curso, en qué módulo avanza el grupo y en cuál se queda atascado.',
-  },
-  {
-    src: '/images/la-vista-actividades.jpg',
-    title: 'Progreso por actividad',
-    text: 'El detalle recurso a recurso. Esta imagen es la exportación en JPG que genera el propio plugin con un clic.',
+    text: 'Dentro de un curso, en qué módulo avanza el grupo y en cuál se queda atascado. El mismo bloque baja al detalle de cada actividad.',
   },
 ]
 
