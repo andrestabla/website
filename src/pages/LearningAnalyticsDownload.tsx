@@ -25,12 +25,12 @@ const AI_DISPONIBLE = true
 
 /** Ficha del paquete. Cambiar al publicar una versión nueva. */
 const RELEASE = {
-  version: '3.11.1',
-  file: 'local_learninganalytics-3.11.1.zip',
+  version: '3.12.0',
+  file: 'local_learninganalytics-3.12.0.zip',
   size: '220 KB',
   date: '24 de agosto de 2026',
   // Permite a quien instala comprobar que el archivo no se alteró en el camino.
-  sha256: 'cb028a2fd7f754daecec6f6a5bfbf4e03825c1e0fe8fea284bc9136a3352e0bc',
+  sha256: '64e86764f75112d8b136bed4f660c6fc59cbda62f493209c7eb5ab5b6b572862',
 }
 
 const DOWNLOAD_URL = `/downloads/${RELEASE.file}`
@@ -106,7 +106,7 @@ const PLAN_ROWS = [
   { feature: 'Correo a un estudiante con su progreso', free: false },
   { feature: 'Mensaje masivo por correo o por Moodle', free: false },
   { feature: 'Descarga en Excel, PDF y JPG', free: false },
-  { feature: 'Pregunta en lenguaje natural y explicación por gráfica', free: false },
+  { feature: 'Pregunta en lenguaje natural, explicación por gráfica e informes detallados', free: false },
 ]
 
 /** Consultas de IA incluidas en cada plan, para toda su vigencia. */
