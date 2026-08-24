@@ -55,9 +55,29 @@ const INSTALL_MANUAL = [
  */
 const SCREENS: { src: string; title: string; text: string }[] = [
   {
+    src: '/images/la-mapa.png',
+    title: 'Distribución geográfica',
+    text: 'De dónde son tus usuarios, sobre fronteras reales. El mapa se dibuja dentro de tu plataforma: no se pide ni un solo mosaico a servidores externos.',
+  },
+  {
+    src: '/images/la-ultimo-acceso.png',
+    title: 'Actividad por último acceso',
+    text: 'Cuántos entraron esta semana y cuántos llevan meses sin aparecer. Suele ser el bloque que decide a quién hay que escribir hoy.',
+  },
+  {
+    src: '/images/la-cursos.png',
+    title: 'Cursos con más matriculaciones',
+    text: 'Qué se está llevando la demanda. Este bloque está también en la versión gratuita.',
+  },
+  {
+    src: '/images/la-progreso-seccion.png',
+    title: 'Progreso por sección',
+    text: 'Dentro de un curso, en qué módulo avanza el grupo y en cuál se queda atascado.',
+  },
+  {
     src: '/images/la-vista-actividades.jpg',
     title: 'Progreso por actividad',
-    text: 'Cuántos estudiantes completaron cada recurso del curso, sección por sección. Exportado en JPG desde el propio tablero.',
+    text: 'El detalle recurso a recurso. Esta imagen es la exportación en JPG que genera el propio plugin con un clic.',
   },
 ]
 
@@ -220,8 +240,8 @@ export function LearningAnalyticsDownload() {
           <div className="mx-auto max-w-5xl">
             <h2 className="text-3xl font-black tracking-tight">Cómo se ve</h2>
             <p className="mt-3 max-w-2xl text-slate-600">
-              Vistas tomadas de una plataforma en funcionamiento. Los nombres de las personas se
-              omiten: lo que ves son datos reales de uso, no una maqueta.
+              Capturas de una plataforma en funcionamiento, no una maqueta: las cifras son las que
+              había el día que se tomaron. Ninguna incluye datos personales de estudiantes.
             </p>
             <div className="mt-8 grid gap-6 md:grid-cols-2">
               {SCREENS.map(({ src, title, text }) => (
