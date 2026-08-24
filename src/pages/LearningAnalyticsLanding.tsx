@@ -35,6 +35,7 @@ const PRO_FEATURES = [
   { icon: GraduationCap, title: 'Analítica por curso', text: 'Progreso total, por sección y por actividad; calificación promedio y por actividad; permanencia estimada de cada estudiante.' },
   { icon: Users, title: 'Tablas de personas', text: 'Padrón con progreso, calificación, último acceso y permanencia. Filtrable por rango de progreso y de nota.' },
   { icon: Mail, title: 'Contacto directo', text: 'Escribe a un estudiante con su progreso ya redactado en el correo, o a todos los que devuelve un filtro, con confirmación previa.' },
+  { icon: Sparkles, title: 'Pregunta en lenguaje natural', text: 'Escribe una pregunta sobre lo que hay en pantalla y recibe una lectura de las cifras. Solo viajan las series agregadas: ni nombres, ni correos, ni notas.' },
   { icon: Download, title: 'Descargas completas', text: 'Cualquier gráfica, bloque o el informe entero en PDF con las gráficas incrustadas, Excel, CSV o JPG.' },
 ]
 
@@ -48,19 +49,19 @@ const PLANS = [
   {
     name: 'Trimestral', price: '100', period: '3 meses',
     tagline: 'Para evaluarlo con datos reales.',
-    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
+    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '10 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
     cta: 'Solicitar licencia', highlight: false, plan: 'trimestral',
   },
   {
     name: 'Semestral', price: '180', period: '6 meses',
     tagline: 'Ahorra un 10 % frente al trimestral.',
-    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
+    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '25 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
     cta: 'Solicitar licencia', highlight: true, plan: 'semestral',
   },
   {
     name: 'Anual', price: '320', period: '12 meses',
     tagline: 'Ahorra un 20 % frente al trimestral.',
-    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', 'Actualizaciones durante la vigencia', 'Soporte prioritario'],
+    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '50 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte prioritario'],
     cta: 'Solicitar licencia', highlight: false, plan: 'anual',
   },
 ]
@@ -243,6 +244,11 @@ export function LearningAnalyticsLanding() {
           </div>
 
           <p className="mt-6 text-xs text-slate-500">
+            Las consultas de IA se pueden recargar en paquetes desde 10 USD y duran lo que dure la
+            licencia. Agotarlas no desactiva nada más: el resto del plugin sigue completo.
+          </p>
+
+          <p className="mt-3 text-xs text-slate-500">
             ¿Varias plataformas o una institución grande?{' '}
             <a href={whatsapp('a definir')} target="_blank" rel="noopener noreferrer"
               className="font-semibold text-indigo-600">Escríbenos por WhatsApp</a>{' '}

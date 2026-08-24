@@ -17,20 +17,20 @@ import { Layout } from '../components/layout/Layout'
 const WHATSAPP = '573044544525'
 
 /**
- * La analítica conversacional todavía no está en el plugin. Cuando lo esté,
- * esto pasa a true y aparece lo que se envía y lo que no. Anunciarla antes
- * sería prometer una función que el cliente no encontraría al instalar.
+ * Interruptor del contenido sobre analítica conversacional. Solo debe estar
+ * en true mientras el ZIP que se sirve arriba incluya la función: anunciar
+ * lo que el cliente no encontraría al instalar sería vender humo.
  */
-const AI_DISPONIBLE = false
+const AI_DISPONIBLE = true
 
 /** Ficha del paquete. Cambiar al publicar una versión nueva. */
 const RELEASE = {
-  version: '3.9.1',
-  file: 'local_learninganalytics-3.9.1.zip',
-  size: '208 KB',
+  version: '3.11.1',
+  file: 'local_learninganalytics-3.11.1.zip',
+  size: '220 KB',
   date: '24 de agosto de 2026',
   // Permite a quien instala comprobar que el archivo no se alteró en el camino.
-  sha256: '15937bec6caa4dabbd1e22772a02e5c0754d9c10c3989773c03076be2017079c',
+  sha256: 'cb028a2fd7f754daecec6f6a5bfbf4e03825c1e0fe8fea284bc9136a3352e0bc',
 }
 
 const DOWNLOAD_URL = `/downloads/${RELEASE.file}`
@@ -106,6 +106,7 @@ const PLAN_ROWS = [
   { feature: 'Correo a un estudiante con su progreso', free: false },
   { feature: 'Mensaje masivo por correo o por Moodle', free: false },
   { feature: 'Descarga en Excel, PDF y JPG', free: false },
+  { feature: 'Pregunta en lenguaje natural y explicación por gráfica', free: false },
 ]
 
 /** Consultas de IA incluidas en cada plan, para toda su vigencia. */
