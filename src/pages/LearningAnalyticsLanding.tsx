@@ -14,7 +14,7 @@ import { Layout } from '../components/layout/Layout'
 
 const CONTACT_EMAIL = 'proyectos@algoritmot.com'
 
-/** Fondo del hero. Optimizado a 2400 px: 203 KB frente a los 4,3 MB del original. */
+/** Fondo del hero. Optimizado a 2400 px: 236 KB frente a los 2,5 MB del original. */
 const HERO_IMAGE = '/images/learning-analytics-hero.jpg'
 
 const FREE_FEATURES = [
@@ -95,7 +95,7 @@ export function LearningAnalyticsLanding() {
           aria-hidden="true"
         />
         <div
-          className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-slate-900/85 to-indigo-950/80"
+          className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-indigo-950/60"
           aria-hidden="true"
         />
 
