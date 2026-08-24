@@ -335,6 +335,21 @@ export function LicenciasPage() {
                               />
                             </div>
                           </div>
+                          <button
+                            onClick={() => {
+                              const n = prompt(
+                                `Asignación base de ${l.customer}.\n\n` +
+                                'Trimestral 10 · Semestral 25 · Anual 50.\n' +
+                                'Esto FIJA el total; para vender una recarga use los paquetes de abajo, ' +
+                                'que sí quedan registrados como cobro.',
+                                String(l.aiCredits)
+                              )
+                              if (n !== null) setAi(l, true, Math.max(0, Number(n) || 0))
+                            }}
+                            title="Fijar la asignación del plan (no es una venta)"
+                            className="rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-indigo-600">
+                            fijar
+                          </button>
                           <button onClick={() => setAi(l, false)} title="Desactivar IA"
                             className="rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-rose-600">
                             off
