@@ -19,7 +19,7 @@ type VercelResponse = any
  * Consultas de IA que incluye cada plan, para toda su vigencia. No son por
  * mes: es una bolsa que se consume y que el cliente puede recargar.
  */
-const CREDITOS_POR_PLAN: Record<number, number> = { 3: 10, 6: 25, 12: 50 }
+const CREDITOS_POR_PLAN: Record<number, number> = { 3: 20, 6: 50, 12: 100 }
 
 /** Paquetes de recarga: consultas y precio en dólares. */
 export const PAQUETES = [

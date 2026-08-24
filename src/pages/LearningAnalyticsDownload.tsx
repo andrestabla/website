@@ -118,9 +118,9 @@ const PAQUETES_IA = [
 ]
 
 const PRICES = [
-  { name: 'Trimestral', price: '100', period: '3 meses', note: '', ia: 10 },
-  { name: 'Semestral', price: '180', period: '6 meses', note: 'Ahorras un 10 %', ia: 25 },
-  { name: 'Anual', price: '320', period: '12 meses', note: 'Ahorras un 20 %', ia: 50 },
+  { name: 'Trimestral', price: '100', period: '3 meses', note: '', ia: 20 },
+  { name: 'Semestral', price: '180', period: '6 meses', note: 'Ahorras un 10 %', ia: 50 },
+  { name: 'Anual', price: '320', period: '12 meses', note: 'Ahorras un 20 %', ia: 100 },
 ]
 
 export function LearningAnalyticsDownload() {

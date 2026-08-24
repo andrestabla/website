@@ -49,19 +49,19 @@ const PLANS = [
   {
     name: 'Trimestral', price: '100', period: '3 meses',
     tagline: 'Para evaluarlo con datos reales.',
-    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '10 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
+    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '20 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
     cta: 'Solicitar licencia', highlight: false, plan: 'trimestral',
   },
   {
     name: 'Semestral', price: '180', period: '6 meses',
     tagline: 'Ahorra un 10 % frente al trimestral.',
-    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '25 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
+    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '50 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
     cta: 'Solicitar licencia', highlight: true, plan: 'semestral',
   },
   {
     name: 'Anual', price: '320', period: '12 meses',
     tagline: 'Ahorra un 20 % frente al trimestral.',
-    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '50 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte prioritario'],
+    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '100 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte prioritario'],
     cta: 'Solicitar licencia', highlight: false, plan: 'anual',
   },
 ]
