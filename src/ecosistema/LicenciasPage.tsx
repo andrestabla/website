@@ -24,6 +24,13 @@ type Licence = {
   lastCheckAt: string | null
   lastVersion: string | null
   checkCount: number
+  /** La analítica conversacional corre con nuestra clave: se habilita una a una. */
+  aiEnabled: boolean
+  aiMonthlyQuota: number
+  aiModel: string | null
+  /** Consultas gastadas en el mes en curso. */
+  aiUsed: number
+  aiChars: number
   status: 'active' | 'revoked' | 'expired'
 }
 
@@ -110,6 +117,31 @@ export function LicenciasPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: licence.id, action }),
     })
+    await load()
+  }
+
+  /**
+   * Habilita o corta la analítica conversacional de una licencia y fija su
+   * cupo mensual. Es el único freno de gasto: cada consulta la paga Algoritmo T.
+   */
+  const setAi = async (licence: Licence, enabled: boolean, quota?: number) => {
+    setError(null)
+    const res = await fetch('/api/admin/licences', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: licence.id,
+        action: 'ai',
+        aiEnabled: enabled,
+        aiMonthlyQuota: quota ?? licence.aiMonthlyQuota,
+        aiModel: licence.aiModel || '',
+      }),
+    })
+    if (!res.ok) {
+      setError('No se pudo guardar la configuración de IA')
+      return
+    }
     await load()
   }
 
@@ -219,13 +251,14 @@ export function LicenciasPage() {
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Vence</th>
                 <th className="px-4 py-3">Última señal</th>
+                <th className="px-4 py-3">IA · consultas</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400">Cargando…</td></tr>}
+              {loading && <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">Cargando…</td></tr>}
               {!loading && !licences.length && (
-                <tr><td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-400">
                   Todavía no se ha emitido ninguna licencia.
                 </td></tr>
               )}
@@ -252,6 +285,46 @@ export function LicenciasPage() {
                         <div className="text-[11px] text-slate-400">{l.checkCount} comprobaciones</div>
                       </>
                     ) : <span className="text-slate-300">nunca</span>}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {l.aiEnabled ? (
+                      <div className="flex items-center gap-2">
+                        <div className="min-w-[74px]">
+                          <div className="font-mono font-bold tabular-nums text-slate-700">
+                            {l.aiUsed} / {l.aiMonthlyQuota}
+                          </div>
+                          <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-200">
+                            <div
+                              className={`h-full rounded-full ${
+                                l.aiUsed >= l.aiMonthlyQuota ? 'bg-rose-500' : 'bg-indigo-500'
+                              }`}
+                              style={{ width: `${Math.min(100, (l.aiUsed / Math.max(1, l.aiMonthlyQuota)) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            const n = prompt(
+                              `Consultas al mes para ${l.customer}.\n\nCada consulta la pagamos nosotros a OpenAI.`,
+                              String(l.aiMonthlyQuota)
+                            )
+                            if (n !== null) setAi(l, true, Math.max(0, Number(n) || 0))
+                          }}
+                          title="Cambiar cupo mensual"
+                          className="rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-indigo-600">
+                          cupo
+                        </button>
+                        <button onClick={() => setAi(l, false)} title="Desactivar IA"
+                          className="rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-400 hover:bg-slate-100 hover:text-rose-600">
+                          off
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setAi(l, true, 100)}
+                        className="rounded-lg border border-slate-300 px-2 py-1 text-[11px] font-bold text-slate-500 hover:border-indigo-400 hover:text-indigo-600">
+                        Activar
+                      </button>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">

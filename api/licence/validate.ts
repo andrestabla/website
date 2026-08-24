@@ -72,10 +72,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     ])
 
+    // La revalidación diaria es también el canal por el que se parametriza el
+    // plugin: el administrador cambia algo en el ecosistema y la plataforma lo
+    // recoge sin publicar una versión nueva.
+    const now = new Date()
+    const period = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
+    const usage = licence.aiEnabled
+      ? await prisma.pluginAiUsage.findUnique({
+          where: { licenceDbId_period: { licenceDbId: licence.id, period } },
+        })
+      : null
+    const used = usage?.calls ?? 0
+
     return res.status(200).json({
       status: outcome,
       expired,
       expires: licence.expiresAt ? Math.floor(licence.expiresAt.getTime() / 1000) : 0,
+      ai: {
+        enabled: Boolean(licence.aiEnabled && licence.aiMonthlyQuota > 0 && !revoked && !expired),
+        quota: licence.aiMonthlyQuota,
+        used,
+        remaining: Math.max(0, licence.aiMonthlyQuota - used),
+        period,
+      },
+      config: licence.config ?? {},
     })
   } catch (error) {
     console.error('licence/validate', error)

@@ -798,10 +798,24 @@ model PluginLicence {
   lastVersion String?
   /// Número de revalidaciones recibidas: indicio de uso real.
   checkCount  Int      @default(0)
+
+  /// Analítica conversacional. Corre con nuestra clave de OpenAI, no con la
+  /// del cliente, así que se habilita licencia por licencia.
+  aiEnabled   Boolean  @default(false)
+  /// Consultas permitidas al mes. El cupo se cuenta en consultas y no en
+  /// tokens porque es lo único que el cliente puede prever.
+  aiMonthlyQuota Int   @default(0)
+  /// Modelo concreto para esta licencia. Vacío usa el de las integraciones.
+  aiModel     String?
+  /// Parametrización remota que viaja en la revalidación diaria. Permite
+  /// cambiar el comportamiento del plugin sin publicar una versión nueva.
+  config      Json?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   checks      PluginLicenceCheck[]
+  aiUsage     PluginAiUsage[]
 
   @@index([customer])
   @@index([siteHash])
@@ -810,6 +824,27 @@ model PluginLicence {
 }
 
 /// Registro de cada revalidación recibida desde una plataforma cliente.
+/// Consumo mensual de analítica conversacional, una fila por licencia y mes.
+/// Se lleva agregado y no consulta a consulta: el cupo se comprueba en cada
+/// petición y una cuenta acumulada se resuelve con una sola lectura.
+model PluginAiUsage {
+  id          String   @id @default(cuid())
+  licence     PluginLicence @relation(fields: [licenceDbId], references: [id], onDelete: Cascade)
+  licenceDbId String
+  /// Mes natural en formato AAAA-MM, en horario del servidor.
+  period      String
+  calls       Int      @default(0)
+  /// Caracteres enviados y recibidos. Es una aproximación del coste, no una
+  /// medida de tokens: sirve para ver qué licencia consume de verdad.
+  chars       Int      @default(0)
+  lastCallAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([licenceDbId, period])
+  @@index([period])
+}
+
 model PluginLicenceCheck {
   id         String   @id @default(cuid())
   licence    PluginLicence @relation(fields: [licenceDbId], references: [id], onDelete: Cascade)

@@ -27,6 +27,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
 
       const now = Date.now()
+      // Consumo del mes en curso, para ver de un vistazo qué licencia gasta.
+      const period = new Date().toISOString().slice(0, 7)
+      const usages = await prisma.pluginAiUsage.findMany({
+        where: { period, licenceDbId: { in: licences.map((l) => l.id) } },
+      })
+      const usageBy = new Map(usages.map((u) => [u.licenceDbId, u]))
       return res.status(200).json({
         ok: true,
         publicKey: safePublicKey(),
@@ -45,6 +51,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           lastCheckAt: l.lastCheckAt,
           lastVersion: l.lastVersion,
           checkCount: l.checkCount,
+          aiEnabled: l.aiEnabled,
+          aiMonthlyQuota: l.aiMonthlyQuota,
+          aiModel: l.aiModel,
+          aiUsed: usageBy.get(l.id)?.calls ?? 0,
+          aiChars: usageBy.get(l.id)?.chars ?? 0,
           status: l.revokedAt
             ? 'revoked'
             : l.expiresAt && l.expiresAt.getTime() < now
@@ -130,6 +141,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const licence = await prisma.pluginLicence.update({
           where: { id },
           data: { revokedAt: null, revokedNote: null },
+        })
+        return res.status(200).json({ ok: true, licence })
+      }
+
+      // Parametrización: la analítica conversacional corre con nuestra clave,
+      // así que el cupo mensual es el freno de gasto y se fija aquí.
+      if (action === 'ai') {
+        const enabled = body?.aiEnabled === true
+        const rawQuota = Number(body?.aiMonthlyQuota)
+        const quota = Number.isFinite(rawQuota) ? Math.min(10000, Math.max(0, Math.round(rawQuota))) : 0
+        const licence = await prisma.pluginLicence.update({
+          where: { id },
+          data: {
+            aiEnabled: enabled,
+            // Habilitar sin cupo dejaría la función muerta y confundiría al
+            // cliente: si se activa sin número, se asume un cupo de partida.
+            aiMonthlyQuota: enabled && quota === 0 ? 100 : quota,
+            aiModel: trimmed(body?.aiModel, 60) || null,
+          },
         })
         return res.status(200).json({ ok: true, licence })
       }
