@@ -120,6 +120,11 @@ export function SiteSEO() {
       description = 'Genera casos y escenarios accionables por industria y proceso.'
       isKnownRoute = true
       breadcrumbs.push({ name: 'Generador de casos', path: normalizedPath })
+    } else if (normalizedPath === '/learning_analytics') {
+      title = `Learning Analytics para Moodle | ${siteName}`
+      description = 'Plugin de analítica para Moodle 4.5 a 5.2: progreso, calificaciones, permanencia y contacto con tus estudiantes. Versión gratuita y licencias desde 100 USD.'
+      isKnownRoute = true
+      breadcrumbs.push({ name: 'Learning Analytics', path: normalizedPath })
     } else if (normalizedPath === '/planifico-mi-proyecto') {
       title = `Planifico mi proyecto con IA | ${siteName}`
       description = 'Asistente IA para definir alcance, complejidad, metodología y presupuesto estimado de tu proyecto digital.'

@@ -1,11 +1,9 @@
-import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   BarChart3, Users, Award, TrendingUp, Filter, Globe2, GraduationCap,
   Mail, Download, Check, ArrowRight, ShieldCheck, Server, Sparkles,
 } from 'lucide-react'
 import { Layout } from '../components/layout/Layout'
-import { applySeoPayload, limitText } from '../lib/seo'
 
 /**
  * Página pública del plugin Learning Analytics para Moodle.
@@ -15,6 +13,9 @@ import { applySeoPayload, limitText } from '../lib/seo'
  */
 
 const CONTACT_EMAIL = 'proyectos@algoritmot.com'
+
+/** Fondo del hero. Optimizado a 2400 px: 203 KB frente a los 4,3 MB del original. */
+const HERO_IMAGE = '/images/learning-analytics-hero.jpg'
 
 const FREE_FEATURES = [
   'Total de usuarios y certificados emitidos',
@@ -73,20 +74,6 @@ const TRUST = [
 ]
 
 export function LearningAnalyticsLanding() {
-  useEffect(() => {
-    applySeoPayload({
-      title: limitText('Learning Analytics para Moodle · Algoritmo T', 70),
-      description: 'Plugin de analítica para Moodle 4.5 a 5.2: progreso, calificaciones, permanencia y contacto con tus estudiantes. Versión gratuita y licencias desde 100 USD.',
-      canonicalUrl: 'https://www.algoritmot.com/learning_analytics',
-      imageUrl: 'https://www.algoritmot.com/og-default.jpg',
-      robots: 'index,follow,max-image-preview:large',
-      lang: 'es',
-      siteName: 'AlgoritmoT',
-      ogType: 'website',
-      twitterCard: 'summary_large_image',
-      themeColor: '#09111d',
-    })
-  }, [])
 
   const mailto = (plan: string) =>
     `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`Licencia Learning Analytics — plan ${plan}`)}` +
@@ -99,8 +86,20 @@ export function LearningAnalyticsLanding() {
   return (
     <Layout>
       {/* ---------------------------------------------------------------- */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 px-6 py-24 text-white sm:py-32">
-        <div className="mx-auto max-w-5xl">
+      <section className="relative overflow-hidden bg-slate-900 px-6 py-24 text-white sm:py-32">
+        {/* Fondo: la imagen aporta textura y el degradado garantiza que el
+            texto se lea, sin depender del contraste de la foto. */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${HERO_IMAGE})` }}
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-slate-900/85 to-indigo-950/80"
+          aria-hidden="true"
+        />
+
+        <div className="relative mx-auto max-w-5xl">
           <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider">
               <BarChart3 size={13} /> Plugin para Moodle
