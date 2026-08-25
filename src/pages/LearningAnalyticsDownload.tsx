@@ -25,12 +25,12 @@ const AI_DISPONIBLE = true
 
 /** Ficha del paquete. Cambiar al publicar una versión nueva. */
 const RELEASE = {
-  version: '3.13.1',
-  file: 'local_learninganalytics-3.13.1.zip',
+  version: '3.13.2',
+  file: 'local_learninganalytics-3.13.2.zip',
   size: '228 KB',
   date: '24 de agosto de 2026',
   // Permite a quien instala comprobar que el archivo no se alteró en el camino.
-  sha256: '218a5d0d1ce757f833ed12afd5baff712f44b9b928fd2eea1f924ed9b32e2aca',
+  sha256: 'c7161325d7c111515b4b8aeb5f79a0267c6753860f8a2101748c1e5a54495236',
 }
 
 const DOWNLOAD_URL = `/downloads/${RELEASE.file}`
@@ -423,7 +423,10 @@ export function LearningAnalyticsDownload() {
                   Viene apagada. Si la activas, cada pregunta viaja con las cifras que ya ves en
                   pantalla — «Módulo 3: 24 %», «Más de 90 días: 18»— hasta nuestro servidor y de ahí
                   a OpenAI. Nunca personas: si una etiqueta parece un correo, el envío se rechaza.
-                  No guardamos la pregunta ni las cifras; solo contamos cuántas consultas hiciste.
+                  En nuestro servidor no se guarda la pregunta ni las cifras; solo se cuenta el
+                  consumo. Tu plataforma sí conserva el historial de cada usuario, declarado en el
+                  registro de privacidad de Moodle y exportable y borrable por persona, como exige
+                  el RGPD y la Ley 1581.
                 </p>
               </div>
             )}
