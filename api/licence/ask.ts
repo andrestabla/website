@@ -84,13 +84,24 @@ function readSeries(raw: unknown): { series: Serie[] } | { error: string } {
 function seriesToText(series: Serie[], kpis: { label: string; value: string }[]): string {
   const parts: string[] = []
   if (kpis.length) {
-    parts.push('INDICADORES:\n' + kpis.map((k) => `- ${k.label}: ${k.value}`).join('\n'))
+    parts.push(
+      'INDICADORES (fuente de verdad para los totales):\n'
+      + kpis.map((k) => `- ${k.label}: ${k.value}`).join('\n')
+    )
   }
   for (const s of series) {
     const filas = s.labels
       .map((l, i) => `  ${l}: ${s.values[i] ?? 0}`)
       .join('\n')
-    parts.push(`SERIE "${s.title}":\n${filas}`)
+    // La suma va calculada de antemano: cuando el modelo la hace por su
+    // cuenta, la confunde con el total de usuarios y aparecen cifras
+    // fantasma como "18 usuarios" que no existen en ningún indicador.
+    const esPorcentaje = /%|porcentaje|avance/i.test(s.title)
+    const suma = s.values.reduce((acc, v) => acc + v, 0)
+    const nota = esPorcentaje
+      ? '(valores en %, no sumables)'
+      : `(suma de esta serie: ${Math.round(suma * 10) / 10}; puede cubrir un subconjunto)`
+    parts.push(`SERIE "${s.title}" ${nota}:\n${filas}`)
   }
   return parts.join('\n\n')
 }
@@ -109,6 +120,15 @@ const REGLAS = [
   '   identificar a estudiantes concretos.',
   '6. Español claro y directo. Nada de preámbulos del tipo "según los datos',
   '   proporcionados": entra en materia.',
+  '7. Los totales salen SOLO de los INDICADORES. Nunca deduzcas un total',
+  '   sumando las barras de una serie: cada serie declara su propia suma y',
+  '   puede cubrir un subconjunto (el mapa, por ejemplo, solo incluye a quien',
+  '   declaró país). Si la suma de una serie no coincide con el indicador,',
+  '   dilo explícitamente ("de los 16 usuarios, 15 declararon país") en vez',
+  '   de tratar ambas cifras como totales distintos.',
+  '8. Antes de entregar, verifica que cada cifra que escribiste aparece tal',
+  '   cual en los DATOS o es una fracción de dos cifras que aparecen. Si una',
+  '   cifra no pasa esa prueba, quítala.',
 ].join('\n')
 
 const SYSTEM_ANSWER = [
