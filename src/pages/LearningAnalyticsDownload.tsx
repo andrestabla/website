@@ -25,12 +25,12 @@ const AI_DISPONIBLE = true
 
 /** Ficha del paquete. Cambiar al publicar una versión nueva. */
 const RELEASE = {
-  version: '3.14.0',
-  file: 'local_learninganalytics-3.14.0.zip',
-  size: '232 KB',
+  version: '3.15.0',
+  file: 'local_learninganalytics-3.15.0.zip',
+  size: '236 KB',
   date: '24 de agosto de 2026',
   // Permite a quien instala comprobar que el archivo no se alteró en el camino.
-  sha256: 'ecd0d7faaf04f856c908763dbc22c92abcd8f89ea153052418c7c8c650aec24b',
+  sha256: '8a8121a4ba0e32f434cd384afe2ffc240dd28fa69a1bc694d0619e4ef0f12020',
 }
 
 const DOWNLOAD_URL = `/downloads/${RELEASE.file}`
