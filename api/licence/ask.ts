@@ -96,10 +96,10 @@ function seriesToText(series: Serie[], kpis: { label: string; value: string }[])
     // La suma va calculada de antemano: cuando el modelo la hace por su
     // cuenta, la confunde con el total de usuarios y aparecen cifras
     // fantasma como "18 usuarios" que no existen en ningún indicador.
-    const esPorcentaje = /%|porcentaje|avance/i.test(s.title)
+    const esPorcentaje = /%|porcentaje|avance|ficha del curso/i.test(s.title)
     const suma = s.values.reduce((acc, v) => acc + v, 0)
     const nota = esPorcentaje
-      ? '(valores en %, no sumables)'
+      ? '(valores en % o heterogéneos, no sumables)'
       : `(suma de esta serie: ${Math.round(suma * 10) / 10}; puede cubrir un subconjunto)`
     parts.push(`SERIE "${s.title}" ${nota}:\n${filas}`)
   }
@@ -129,6 +129,10 @@ const REGLAS = [
   '8. Antes de entregar, verifica que cada cifra que escribiste aparece tal',
   '   cual en los DATOS o es una fracción de dos cifras que aparecen. Si una',
   '   cifra no pasa esa prueba, quítala.',
+  '9. Si la pregunta menciona un curso o categoría concretos, busca primero una',
+  '   serie titulada "Ficha del curso ..." con ese nombre y básate en ella. Si',
+  '   no existe, dilo en la primera frase y recomienda filtrar el tablero por',
+  '   ese curso; no respondas con las cifras globales como si fueran del curso.',
 ].join('\n')
 
 const SYSTEM_ANSWER = [
