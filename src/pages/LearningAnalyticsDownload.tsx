@@ -25,12 +25,12 @@ const AI_DISPONIBLE = true
 
 /** Ficha del paquete. Cambiar al publicar una versión nueva. */
 const RELEASE = {
-  version: '3.19.0',
-  file: 'local_learninganalytics-3.19.0.zip',
-  size: '272 KB',
+  version: '3.20.0',
+  file: 'local_learninganalytics-3.20.0.zip',
+  size: '284 KB',
   date: '3 de septiembre de 2026',
   // Permite a quien instala comprobar que el archivo no se alteró en el camino.
-  sha256: '3d3663718c2f3df59544a05353f9cd3d38a115cf0aa7d03b1db384411c0d487b',
+  sha256: 'db61d3f8be345daadbdcad49e1423d52fa5db7cd908d0770cf26e2657a3b2dfd',
 }
 
 const DOWNLOAD_URL = `/downloads/${RELEASE.file}`
@@ -87,6 +87,7 @@ const CAPABILITIES = [
   { cap: 'local/learninganalytics:view', text: 'Ver los tableros. Se otorga por rol y por contexto, así que un profesor solo alcanza sus propios cursos.' },
   { cap: 'local/learninganalytics:sendmessage', text: 'Escribir a un estudiante desde el tablero, con su progreso ya redactado.' },
   { cap: 'local/learninganalytics:sendbulkmessage', text: 'Escribir a todos los estudiantes que devuelve un filtro, con confirmación previa.' },
+  { cap: 'local/learninganalytics:viewteaching', text: 'Ver las cifras de acompañamiento docente. Se separa de las demás porque mide el trabajo de una persona identificable.' },
   { cap: 'local/learninganalytics:resendcredentials', text: 'Reenviar credenciales de acceso a quien no ha entrado nunca.' },
 ]
 
@@ -106,6 +107,8 @@ const PLAN_ROWS = [
   { feature: 'Permanencia y riesgo: activos, regulares, entrada temprana, vencidas pendientes y salida temprana', free: false },
   { feature: 'Filtro por actividad y reactivación tras mensaje', free: false },
   { feature: 'Evaluación y entregas: a tiempo, cuestionarios completados, aprobado, retroalimentación y su plazo, reentregas, libro al día', free: false },
+  { feature: 'Foros e interacción: participación, respuestas entre pares e hilos sin respuesta', free: false },
+  { feature: 'Presencia docente, con permiso aparte: intervención, tiempo de respuesta, anuncios y mediación', free: false },
   { feature: 'Correo a un estudiante con su progreso', free: false },
   { feature: 'Mensaje masivo por correo o por Moodle', free: false },
   { feature: 'Descarga en Excel, PDF y JPG', free: false },
@@ -263,7 +266,15 @@ export function LearningAnalyticsDownload() {
                 Nuevo en la {RELEASE.version}
               </div>
               <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                <strong className="font-semibold text-slate-900">Evaluación y entregas.</strong>{' '}
+                <strong className="font-semibold text-slate-900">Foros e interacción.</strong>{' '}
+                Quién participa, quién responde a un compañero y qué hilos llevan más de 48 horas
+                sin contestar. Aparte, y detrás de su propio permiso, la presencia docente:
+                en cuántas ventanas intervino, cuánto tarda en responder, si publica anuncios y a
+                cuántos foros llega su mediación.
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                <strong className="font-semibold text-slate-900">Evaluación y entregas</strong>{' '}
+                (desde la 3.19).
                 En cada curso, una fila por tarea y cuestionario: entregas esperadas y a tiempo,
                 cuestionarios completados, quiénes alcanzan la nota de aprobado, entregas calificadas
                 con retroalimentación y dentro del plazo que tú definas, reentregas, ganancia entre

@@ -34,6 +34,7 @@ const PRO_FEATURES = [
   { icon: Globe2, title: 'Mapa geográfico', text: 'Distribución de tus usuarios por país sobre fronteras reales, dibujado en la propia plataforma: no se pide ningún mosaico a servidores externos.' },
   { icon: GraduationCap, title: 'Analítica por curso', text: 'Progreso total, por sección y por actividad; calificación promedio y por actividad; permanencia estimada de cada estudiante.' },
   { icon: Users, title: 'Tablas de personas', text: 'Padrón con progreso, calificación, último acceso y permanencia. Filtrable por rango de progreso y de nota.' },
+  { icon: MessageCircle, title: 'Foros e interacción', text: 'Participación en foros, respuestas entre pares e hilos sin contestar. Con un permiso aparte, la presencia docente: intervención, tiempo de respuesta, anuncios y mediación.' },
   { icon: Award, title: 'Evaluación y entregas', text: 'Por curso: entregas a tiempo, cuestionarios completados, quiénes alcanzan el aprobado, retroalimentación y su plazo, reentregas, ganancia entre intentos y libro de calificaciones al día.' },
   { icon: TrendingUp, title: 'Permanencia y riesgo', text: 'Una regla configurable (7 horas en 7 días) separa activos, poca actividad y sin actividad; añade regularidad, entrada temprana, vencidas pendientes y salida temprana, y mide quién volvió tras un mensaje.' },
   { icon: Mail, title: 'Contacto directo', text: 'Escribe a un estudiante con su progreso ya redactado en el correo, o a todos los que devuelve un filtro, con confirmación previa.' },
