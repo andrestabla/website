@@ -124,10 +124,14 @@ const PAQUETES_IA = [
   { credits: 100, usd: 80 },
 ]
 
-const PRICES = [
-  { name: 'Trimestral', price: '100', period: '3 meses', note: '', ia: 20 },
-  { name: 'Semestral', price: '180', period: '6 meses', note: 'Ahorras un 10 %', ia: 50 },
-  { name: 'Anual', price: '320', period: '12 meses', note: 'Ahorras un 20 %', ia: 100 },
+const PRICES: {
+  name: string; price: string | null; period: string; note: string; ia: number | null;
+}[] = [
+  { name: 'Semestral', price: '180', period: '6 meses', note: '', ia: 50 },
+  { name: 'Anual', price: '320', period: '12 meses', note: 'Ahorras un 11 %', ia: 100 },
+  // Sin precio de lista: incluye análisis y desarrollo, y eso depende del
+  // alcance que se acuerde con la institución.
+  { name: 'A la medida', price: null, period: '12 meses', note: 'Mapeo de KPIs y desarrollo propio', ia: null },
 ]
 
 export function LearningAnalyticsDownload() {
@@ -320,7 +324,9 @@ export function LearningAnalyticsDownload() {
         <div className="mx-auto max-w-5xl">
           <h2 className="text-3xl font-black tracking-tight">Qué incluye cada plan</h2>
           <p className="mt-3 max-w-2xl text-slate-600">
-            Un solo archivo para todo. El código de licencia habilita las filas de abajo.
+            Un solo archivo para todo. El código de licencia habilita las filas de abajo. Los
+            planes con precio son el plugin tal como lo acabas de descargar; el plan a la medida
+            añade el trabajo de definir contigo qué indicadores necesitas y construirlos.
           </p>
 
           <div className="mt-8 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
@@ -354,22 +360,36 @@ export function LearningAnalyticsDownload() {
             {PRICES.map(({ name, price, period, note, ia }) => (
               <div key={name} className="rounded-2xl border border-slate-200 bg-white p-6">
                 <div className="font-black">{name}</div>
-                <div className="mt-3 flex items-end gap-1">
-                  <span className="text-3xl font-black">${price}</span>
-                  <span className="mb-1 text-xs text-slate-500">USD / {period}</span>
-                </div>
+                {price === null ? (
+                  <div className="mt-3 flex items-end gap-2">
+                    <span className="text-2xl font-black">A convenir</span>
+                    <span className="mb-1 text-xs text-slate-500">{period}</span>
+                  </div>
+                ) : (
+                  <div className="mt-3 flex items-end gap-1">
+                    <span className="text-3xl font-black">${price}</span>
+                    <span className="mb-1 text-xs text-slate-500">USD / {period}</span>
+                  </div>
+                )}
                 {note && <div className="mt-2 text-xs font-bold text-emerald-700">{note}</div>}
                 {AI_DISPONIBLE && (
                   <div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-600">
-                    <span className="font-bold text-slate-900">{ia} consultas de IA</span> incluidas
-                    para toda la vigencia
+                    {ia === null ? (
+                      <span>Consultas de IA según el alcance acordado</span>
+                    ) : (
+                      <>
+                        <span className="font-bold text-slate-900">{ia} consultas de IA</span> incluidas
+                        para toda la vigencia
+                      </>
+                    )}
                   </div>
                 )}
               </div>
             ))}
           </div>
           <p className="mt-4 text-xs text-slate-500">
-            Precio por plataforma, sin límite de usuarios ni de cursos.
+            Precio por plataforma, sin límite de usuarios ni de cursos. El plan a la medida incluye
+            soporte prioritario durante los doce meses y hasta dos ventanas de actualización.
           </p>
 
           {AI_DISPONIBLE && (

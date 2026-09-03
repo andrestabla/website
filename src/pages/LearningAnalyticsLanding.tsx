@@ -50,22 +50,24 @@ const PLANS = [
     cta: 'Descargar del marketplace', highlight: false, plan: 'free',
   },
   {
-    name: 'Trimestral', price: '100', period: '3 meses',
-    tagline: 'Para evaluarlo con datos reales.',
-    features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '20 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
-    cta: 'Solicitar licencia', highlight: false, plan: 'trimestral',
-  },
-  {
     name: 'Semestral', price: '180', period: '6 meses',
-    tagline: 'Ahorra un 10 % frente al trimestral.',
+    tagline: 'El plugin completo, tal como viene de fábrica.',
     features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '50 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte por correo'],
     cta: 'Solicitar licencia', highlight: true, plan: 'semestral',
   },
   {
     name: 'Anual', price: '320', period: '12 meses',
-    tagline: 'Ahorra un 20 % frente al trimestral.',
+    tagline: 'Lo mismo, un 11 % más barato que dos semestrales.',
     features: ['Todo lo del plan gratuito', 'Todas las funciones avanzadas', '100 consultas de IA para toda la vigencia', 'Actualizaciones durante la vigencia', 'Soporte prioritario'],
     cta: 'Solicitar licencia', highlight: false, plan: 'anual',
+  },
+  {
+    // El único plan que no es el plugin de fábrica: aquí hay trabajo de
+    // análisis y desarrollo, así que el precio depende del alcance.
+    name: 'A la medida', price: null, period: '12 meses',
+    tagline: 'Mapeamos tus KPIs y lo construimos contigo.',
+    features: ['Todo lo del plan anual', 'Mapeo de indicadores con tu equipo', 'Tableros y cálculos a la medida de tu institución', 'Vigencia de 12 meses', 'Soporte prioritario los 12 meses', 'Hasta 2 ventanas de actualización'],
+    cta: 'Solicitar propuesta', highlight: false, plan: 'a la medida',
   },
 ]
 
@@ -99,14 +101,22 @@ export function LearningAnalyticsLanding() {
    * identificador del sitio porque es lo único que necesitamos para emitir
    * la licencia, y así se evita un ida y vuelta.
    */
-  const whatsapp = (plan: string) =>
-    `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
-      'Hola, quiero una licencia del plugin Learning Analytics para Moodle.\n\n' +
-      `Plan: ${plan}\n` +
-      'Institución: \n' +
-      'URL de nuestro Moodle: \n' +
-      'Identificador del sitio (aparece en los ajustes del plugin): '
-    )}`
+  const whatsapp = (plan: string) => {
+    // El plan a la medida no empieza con un código de licencia sino con una
+    // conversación, así que pedir el identificador del sitio sobraría.
+    const cuerpo = plan === 'A la medida'
+      ? 'Hola, me interesa el plan a la medida del plugin Learning Analytics para Moodle.\n\n' +
+        'Institución: \n' +
+        'URL de nuestro Moodle: \n' +
+        'Qué queremos medir: '
+      : 'Hola, quiero una licencia del plugin Learning Analytics para Moodle.\n\n' +
+        `Plan: ${plan}\n` +
+        'Institución: \n' +
+        'URL de nuestro Moodle: \n' +
+        'Identificador del sitio (aparece en los ajustes del plugin): '
+
+    return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(cuerpo)}`
+  }
 
   return (
     <Layout>
@@ -221,10 +231,17 @@ export function LearningAnalyticsLanding() {
                 )}
                 <h3 className="text-lg font-black">{plan.name}</h3>
                 <p className="mt-1 text-xs text-slate-500">{plan.tagline}</p>
-                <div className="mt-5 flex items-end gap-1">
-                  <span className="text-4xl font-black">{plan.price === '0' ? '0' : `$${plan.price}`}</span>
-                  <span className="mb-1 text-xs text-slate-500">USD / {plan.period}</span>
-                </div>
+                {plan.price === null ? (
+                  <div className="mt-5 flex items-end gap-2">
+                    <span className="text-2xl font-black">A convenir</span>
+                    <span className="mb-1 text-xs text-slate-500">{plan.period}</span>
+                  </div>
+                ) : (
+                  <div className="mt-5 flex items-end gap-1">
+                    <span className="text-4xl font-black">{plan.price === '0' ? '0' : `$${plan.price}`}</span>
+                    <span className="mb-1 text-xs text-slate-500">USD / {plan.period}</span>
+                  </div>
+                )}
                 <ul className="mt-6 flex-1 space-y-2.5">
                   {plan.features.map((f) => (
                     <li key={f} className="flex gap-2 text-sm text-slate-700">
@@ -248,6 +265,12 @@ export function LearningAnalyticsLanding() {
           </div>
 
           <p className="mt-6 text-xs text-slate-500">
+            Los tres primeros planes son el plugin tal como se descarga, sin desarrollos añadidos.
+            El plan a la medida parte de él y suma el trabajo de definir contigo qué indicadores
+            necesita tu institución y construirlos.
+          </p>
+
+          <p className="mt-3 text-xs text-slate-500">
             Las consultas de IA se pueden recargar en paquetes desde 10 USD y duran lo que dure la
             licencia. Agotarlas no desactiva nada más: el resto del plugin sigue completo.
           </p>
