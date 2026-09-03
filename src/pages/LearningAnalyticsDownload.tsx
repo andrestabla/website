@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Download, Check, ShieldCheck, Server, Database, Boxes, KeyRound, Sparkles,
   MessageCircle, FileArchive, Terminal, MousePointerClick, ArrowLeft, Info,
+  Target, Users, Wrench, LifeBuoy, RefreshCw,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Layout } from '../components/layout/Layout'
@@ -57,29 +59,125 @@ const INSTALL_MANUAL = [
 ]
 
 /**
- * Vistas del plugin. Las capturas provienen de una plataforma real; los
- * nombres de personas se omiten o se sustituyen antes de publicarlas.
+ * Vistas del plugin, agrupadas por área.
+ *
+ * Las imágenes salen de una plataforma real: unas son capturas y otras, la
+ * exportación de imagen que el propio plugin genera de sus gráficas. Ninguna
+ * incluye datos personales de estudiantes. Las cifras son las que había el
+ * día en que se tomaron.
+ *
+ * `more` enumera las vistas del mismo bloque que no tienen imagen aquí, para
+ * que la lista describa el producto completo y no solo lo ilustrado.
  */
-const SCREENS: { src: string; title: string; text: string }[] = [
+const VIEW_TABS: {
+  id: string; label: string; intro: string;
+  shots: { src: string; title: string; text: string }[];
+  more: string[];
+}[] = [
   {
-    src: '/images/la-mapa.png',
-    title: 'Distribución geográfica',
-    text: 'De dónde son tus usuarios, sobre fronteras reales. El mapa se dibuja dentro de tu plataforma: no se pide ni un solo mosaico a servidores externos.',
+    id: 'plataforma',
+    label: 'Plataforma',
+    intro: 'La vista de quien mira el conjunto: cuánta gente hay, de dónde viene, cuándo entró por última vez y cómo crece la matrícula.',
+    shots: [
+      {
+        src: '/images/la-mapa.png',
+        title: 'Distribución geográfica',
+        text: 'De dónde son tus usuarios, sobre fronteras reales. El mapa se dibuja dentro de tu plataforma: no se pide ni un solo mosaico a servidores externos.',
+      },
+      {
+        src: '/images/la-ultimo-acceso.png',
+        title: 'Actividad por último acceso',
+        text: 'Cuántos entraron esta semana y cuántos llevan meses sin aparecer. Suele ser el bloque que decide a quién hay que escribir hoy.',
+      },
+      {
+        src: '/images/la-crecimiento.jpg',
+        title: 'Crecimiento y certificación',
+        text: 'La matrícula mes a mes junto al reparto entre quienes ya tienen certificado y quienes no. Dos preguntas de dirección en una sola fila.',
+      },
+    ],
+    more: [
+      'Cifras clave: usuarios, matriculaciones, certificados emitidos y tasa de certificación',
+      'Usuarios por dominio de correo, para separar personal interno de externo',
+      'Certificados emitidos en el tiempo',
+      'Filtros combinables: categoría en cascada, curso, rol, país, dominio, fechas y persona',
+      'Padrón de personas con estado, supervisor y último acceso',
+    ],
   },
   {
-    src: '/images/la-ultimo-acceso.png',
-    title: 'Actividad por último acceso',
-    text: 'Cuántos entraron esta semana y cuántos llevan meses sin aparecer. Suele ser el bloque que decide a quién hay que escribir hoy.',
+    id: 'riesgo',
+    label: 'Permanencia y riesgo',
+    intro: 'Quién se está quedando atrás, con una regla que tú defines: por defecto, siete horas de permanencia en los últimos siete días.',
+    shots: [
+      {
+        src: '/images/la-riesgo.jpg',
+        title: 'Personas activas por ventana y reparto por actividad',
+        text: 'La serie muestra si la participación cae antes de que se note en las calificaciones. El anillo separa a quienes cumplen la regla, a quienes tienen algo de actividad y a quienes no tienen ninguna.',
+      },
+    ],
+    more: [
+      'Activos, con poca actividad y sin actividad, sobre el conjunto que estés filtrando',
+      'Regulares: activos en al menos 3 de las últimas 4 ventanas',
+      'Días activos por persona dentro de la ventana',
+      'Entrada temprana: matrículas recientes con actividad en sus primeros siete días',
+      'Reactivación tras mensaje: a quién se le escribió y quién volvió',
+      'Actividades vencidas sin entregar y salida temprana, dentro de cada curso',
+      'Tabla de personas por debajo de la regla, ordenada de menor a mayor actividad',
+      'Filtro por actividad enlazado con el envío masivo: de la alerta al mensaje en un clic',
+    ],
   },
   {
-    src: '/images/la-cursos.png',
-    title: 'Cursos con más matriculaciones',
-    text: 'Qué se está llevando la demanda. Este bloque está también en la versión gratuita.',
+    id: 'curso',
+    label: 'Dentro del curso',
+    intro: 'El detalle que necesita quien acompaña un grupo concreto: dónde avanza, dónde se atasca y qué actividad está frenando a todos.',
+    shots: [
+      {
+        src: '/images/la-progreso-seccion.png',
+        title: 'Progreso por sección',
+        text: 'En qué módulo avanza el grupo y en cuál se queda atascado. El mismo bloque baja al detalle de cada actividad.',
+      },
+      {
+        src: '/images/la-cursos.png',
+        title: 'Cursos con más matriculaciones',
+        text: 'Qué se está llevando la demanda. Este bloque está también en la versión gratuita.',
+      },
+    ],
+    more: [
+      'Estudiantes, progreso promedio, calificación promedio y permanencia estimada',
+      'Progreso por sección y por actividad, y calificación promedio de cada actividad',
+      'Tabla de estudiantes con progreso, nota, último acceso, permanencia y estado de actividad',
+      'Filtros por rango de progreso, rango de calificación, rol y último acceso',
+      'Correo a un estudiante con su progreso ya redactado',
+    ],
   },
   {
-    src: '/images/la-progreso-seccion.png',
-    title: 'Progreso por sección',
-    text: 'Dentro de un curso, en qué módulo avanza el grupo y en cuál se queda atascado. El mismo bloque baja al detalle de cada actividad.',
+    id: 'evaluacion',
+    label: 'Evaluación y foros',
+    intro: 'Qué pasa con las entregas y con la conversación. Una fila por tarea, por cuestionario y por foro.',
+    shots: [],
+    more: [
+      'Entregas a tiempo sobre las esperadas, respetando las excepciones por persona',
+      'Cuestionarios completados y ganancia entre el primer y el último intento',
+      'Estudiantes que alcanzan la nota de aprobado',
+      'Entregas con retroalimentación y cuántas llegaron dentro del plazo que definas',
+      'Reentregas y libro de calificaciones al día con lo vencido',
+      'Participación en foros, respuestas entre pares e hilos sin contestar',
+      'Presencia docente, con permiso aparte: intervención, tiempo de respuesta, anuncios y mediación',
+    ],
+  },
+  {
+    id: 'ia',
+    label: 'Asistente y descargas',
+    intro: 'Preguntar en lenguaje natural sobre lo que tienes en pantalla, y llevarte el informe donde lo necesites.',
+    shots: [],
+    more: [
+      'Pregunta en lenguaje natural sobre el recorte que estés viendo',
+      'El asistente lee todos los bloques: plataforma, riesgo, evaluación y foros',
+      'Modo respuesta breve y modo informe estructurado',
+      'Explicación de una gráfica concreta, sin salir de ella',
+      'Historial de consultas por persona, exportable y borrable',
+      'Descarga en PDF con las gráficas incrustadas, Excel, CSV y JPG',
+      'Descarga por bloque o del informe completo',
+    ],
   },
 ]
 
@@ -91,29 +189,43 @@ const CAPABILITIES = [
   { cap: 'local/learninganalytics:resendcredentials', text: 'Reenviar credenciales de acceso a quien no ha entrado nunca.' },
 ]
 
-const PLAN_ROWS = [
-  { feature: 'Total de usuarios y certificados emitidos', free: true },
-  { feature: 'Crecimiento de usuarios mes a mes', free: true },
-  { feature: 'Cursos con más matriculaciones', free: true },
-  { feature: 'Descarga en CSV', free: true },
-  { feature: 'Padrón de personas con progreso, nota y último acceso', free: false },
-  { feature: 'Filtros combinables y categorías en cascada', free: false },
-  { feature: 'Filtro por rol, país, dominio de correo y fechas', free: false },
-  { feature: 'Mapa geográfico de usuarios', free: false },
-  { feature: 'Tableros de categoría y de curso', free: false },
-  { feature: 'Progreso por sección y por actividad', free: false },
-  { feature: 'Calificación promedio y por actividad', free: false },
-  { feature: 'Permanencia estimada por estudiante', free: false },
-  { feature: 'Permanencia y riesgo: activos, regulares, entrada temprana, vencidas pendientes y salida temprana', free: false },
-  { feature: 'Filtro por actividad y reactivación tras mensaje', free: false },
-  { feature: 'Evaluación y entregas: a tiempo, cuestionarios completados, aprobado, retroalimentación y su plazo, reentregas, libro al día', free: false },
-  { feature: 'Foros e interacción: participación, respuestas entre pares e hilos sin respuesta', free: false },
-  { feature: 'Presencia docente, con permiso aparte: intervención, tiempo de respuesta, anuncios y mediación', free: false },
-  { feature: 'Correo a un estudiante con su progreso', free: false },
-  { feature: 'Mensaje masivo por correo o por Moodle', free: false },
-  { feature: 'Descarga en Excel, PDF y JPG', free: false },
-  { feature: 'Asistente de IA con historial: preguntas, explicación por gráfica e informes', free: false },
-  { feature: 'El asistente lee todos los bloques: permanencia, riesgo, evaluación y foros del recorte que estés viendo', free: false },
+const PLAN_ROWS: { feature: string; free: boolean; licensed: boolean }[] = [
+  { feature: 'Total de usuarios y certificados emitidos', free: true, licensed: true },
+  { feature: 'Crecimiento de usuarios mes a mes', free: true, licensed: true },
+  { feature: 'Cursos con más matriculaciones', free: true, licensed: true },
+  { feature: 'Descarga en CSV', free: true, licensed: true },
+  { feature: 'Padrón de personas con progreso, nota y último acceso', free: false, licensed: true },
+  { feature: 'Filtros combinables y categorías en cascada', free: false, licensed: true },
+  { feature: 'Filtro por rol, país, dominio de correo y fechas', free: false, licensed: true },
+  { feature: 'Mapa geográfico de usuarios', free: false, licensed: true },
+  { feature: 'Tableros de categoría y de curso', free: false, licensed: true },
+  { feature: 'Progreso por sección y por actividad', free: false, licensed: true },
+  { feature: 'Calificación promedio y por actividad', free: false, licensed: true },
+  { feature: 'Permanencia estimada por estudiante', free: false, licensed: true },
+  { feature: 'Permanencia y riesgo: activos, regulares, entrada temprana y salida temprana', free: false, licensed: true },
+  { feature: 'Filtro por actividad y reactivación tras mensaje', free: false, licensed: true },
+  { feature: 'Evaluación y entregas: a tiempo, aprobado, retroalimentación y libro al día', free: false, licensed: true },
+  { feature: 'Foros e interacción: participación, respuestas entre pares e hilos sin respuesta', free: false, licensed: true },
+  { feature: 'Presencia docente, con permiso aparte', free: false, licensed: true },
+  { feature: 'Correo a un estudiante con su progreso', free: false, licensed: true },
+  { feature: 'Mensaje masivo por correo o por Moodle', free: false, licensed: true },
+  { feature: 'Descarga en Excel, PDF y JPG', free: false, licensed: true },
+  { feature: 'Asistente de IA con historial: preguntas, explicación por gráfica e informes', free: false, licensed: true },
+  { feature: 'El asistente lee todos los bloques del recorte que estés viendo', free: false, licensed: true },
+]
+
+/**
+ * Lo que solo existe en el plan a la medida. Son filas aparte porque no son
+ * funciones del plugin: son trabajo de consultoría y desarrollo.
+ */
+const CUSTOM_ROWS = [
+  'Consultoría de KPIs estratégicos con el equipo directivo',
+  'Traducción de cada KPI a datos que tu Moodle sí registra',
+  'Indicadores, reglas y umbrales propios de tu institución',
+  'Tableros y cálculos construidos a la medida',
+  'Acompañamiento en la lectura de los primeros informes',
+  'Soporte prioritario durante los 12 meses',
+  'Hasta 2 ventanas de actualización',
 ]
 
 /** Consultas de IA incluidas en cada plan, para toda su vigencia. */
@@ -135,6 +247,9 @@ const PRICES: {
 ]
 
 export function LearningAnalyticsDownload() {
+
+  const [vista, setVista] = useState(VIEW_TABS[0].id)
+  const activa = VIEW_TABS.find((v) => v.id === vista) ?? VIEW_TABS[0]
 
   const whatsapp = (text: string) =>
     `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`
@@ -258,75 +373,76 @@ export function LearningAnalyticsDownload() {
       </section>
 
       {/* ---------------------------------------------------------------- */}
-      {SCREENS.length > 0 && (
-        <section className="bg-white px-6 py-20">
-          <div className="mx-auto max-w-5xl">
-            <h2 className="text-3xl font-black tracking-tight">Cómo se ve</h2>
-            <p className="mt-3 max-w-2xl text-slate-600">
-              Capturas de una plataforma en funcionamiento, no una maqueta: las cifras son las que
-              había el día que se tomaron. Ninguna incluye datos personales de estudiantes.
-            </p>
-            <div className="mt-6 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-5">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
-                Nuevo en la {RELEASE.version}
+      <section className="bg-white px-6 py-20">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="text-3xl font-black tracking-tight">Cómo se ve</h2>
+          <p className="mt-3 max-w-2xl text-slate-600">
+            Imágenes de una plataforma en funcionamiento, no una maqueta: las cifras son las que
+            había el día en que se tomaron. Ninguna incluye datos personales de estudiantes.
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Áreas del tablero">
+            {VIEW_TABS.map((v) => (
+              <button key={v.id} type="button" role="tab"
+                id={`tab-${v.id}`}
+                aria-selected={v.id === vista}
+                aria-controls={`panel-${v.id}`}
+                onClick={() => setVista(v.id)}
+                className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+                  v.id === vista
+                    ? 'bg-slate-900 text-white'
+                    : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}>
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          <div role="tabpanel" id={`panel-${activa.id}`} aria-labelledby={`tab-${activa.id}`}
+            className="mt-6">
+            <p className="max-w-2xl text-slate-600">{activa.intro}</p>
+
+            {activa.shots.length > 0 && (
+              <div className={`mt-6 grid gap-6 ${activa.shots.length > 1 ? 'md:grid-cols-2' : ''}`}>
+                {activa.shots.map(({ src, title, text }) => (
+                  <figure key={src} className="overflow-hidden rounded-2xl border border-slate-200">
+                    <img src={src} alt={title} loading="lazy"
+                      className="w-full border-b border-slate-200 bg-slate-50" />
+                    <figcaption className="p-5">
+                      <div className="font-black">{title}</div>
+                      <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{text}</p>
+                    </figcaption>
+                  </figure>
+                ))}
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                <strong className="font-semibold text-slate-900">El asistente ve todo lo nuevo.</strong>{' '}
-                Hasta ahora la pregunta en lenguaje natural solo alcanzaba las cifras generales de
-                la plataforma. Ahora recibe también permanencia y riesgo, evaluación y entregas, y
-                foros, calculados con los mismos filtros que tienes puestos. Siguen viajando solo
-                cifras agregadas: ni nombres, ni correos, ni notas de nadie.
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-slate-700">
-                <strong className="font-semibold text-slate-900">Foros e interacción.</strong>{' '}
-                Quién participa, quién responde a un compañero y qué hilos llevan más de 48 horas
-                sin contestar. Aparte, y detrás de su propio permiso, la presencia docente:
-                en cuántas ventanas intervino, cuánto tarda en responder, si publica anuncios y a
-                cuántos foros llega su mediación.
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-slate-700">
-                <strong className="font-semibold text-slate-900">Evaluación y entregas</strong>{' '}
-                (desde la 3.19).
-                En cada curso, una fila por tarea y cuestionario: entregas esperadas y a tiempo,
-                cuestionarios completados, quiénes alcanzan la nota de aprobado, entregas calificadas
-                con retroalimentación y dentro del plazo que tú definas, reentregas, ganancia entre
-                el primer y el último intento, y si el libro de calificaciones está al día con lo
-                vencido.
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-slate-700">
-                <strong className="font-semibold text-slate-900">Permanencia y riesgo</strong>{' '}
-                (desde la 3.18). Una regla configurable define quién está activo (por defecto, 7 horas
-                de permanencia en los últimos 7 días) y el tablero la aplica a toda la plataforma o a
-                un curso: activos, con poca actividad, sin actividad, regulares, entrada temprana,
-                actividades vencidas sin entregar y salida temprana. La lista de personas por debajo
-                de la regla se filtra y se escribe de una vez, y el plugin mide después cuántas
-                volvieron.
-              </p>
-            </div>
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
-              {SCREENS.map(({ src, title, text }) => (
-                <figure key={src} className="overflow-hidden rounded-2xl border border-slate-200">
-                  <img src={src} alt={title} loading="lazy"
-                    className="w-full border-b border-slate-200 bg-slate-50" />
-                  <figcaption className="p-5">
-                    <div className="font-black">{title}</div>
-                    <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{text}</p>
-                  </figcaption>
-                </figure>
-              ))}
+            )}
+
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Todo lo que incluye este bloque
+              </div>
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                {activa.more.map((m) => (
+                  <li key={m} className="flex gap-2 text-sm leading-relaxed text-slate-700">
+                    <Check size={15} className="mt-1 shrink-0 text-emerald-600" />
+                    <span>{m}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* ---------------------------------------------------------------- */}
       <section className="bg-slate-50 px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-3xl font-black tracking-tight">Qué incluye cada plan</h2>
           <p className="mt-3 max-w-2xl text-slate-600">
-            Un solo archivo para todo. El código de licencia habilita las filas de abajo. Los
-            planes con precio son el plugin tal como lo acabas de descargar; el plan a la medida
-            añade el trabajo de definir contigo qué indicadores necesitas y construirlos.
+            Un solo archivo para todo, y el código de licencia habilita las filas de abajo.
+            Gratuito, semestral y anual entregan el plugin tal como lo acabas de descargar. El plan
+            a la medida es otra cosa: incluye una consultoría completa para definir tus KPIs
+            estratégicos y construir los indicadores que hagan falta.
           </p>
 
           <div className="mt-8 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
@@ -334,19 +450,29 @@ export function LearningAnalyticsDownload() {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-left">
                   <th className="px-5 py-3.5 font-black">Función</th>
-                  <th className="w-32 px-5 py-3.5 text-center font-black">Gratuito</th>
+                  <th className="w-28 px-5 py-3.5 text-center font-black">Gratuito</th>
                   <th className="w-32 px-5 py-3.5 text-center font-black text-indigo-700">Con licencia</th>
+                  <th className="w-32 px-5 py-3.5 text-center font-black text-indigo-700">A la medida</th>
                 </tr>
               </thead>
               <tbody>
-                {PLAN_ROWS.map(({ feature, free }) => (
+                {PLAN_ROWS.map(({ feature, free, licensed }) => (
                   <tr key={feature} className="border-b border-slate-100 last:border-0">
                     <td className="px-5 py-3 text-slate-700">{feature}</td>
-                    <td className="px-5 py-3 text-center">
-                      {free
-                        ? <Check size={17} className="mx-auto text-emerald-600" />
-                        : <span className="text-slate-300">—</span>}
-                    </td>
+                    {[free, licensed, licensed].map((incluido, i) => (
+                      <td key={i} className="px-5 py-3 text-center">
+                        {incluido
+                          ? <Check size={17} className="mx-auto text-emerald-600" />
+                          : <span className="text-slate-300">—</span>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {CUSTOM_ROWS.map((feature) => (
+                  <tr key={feature} className="border-b border-slate-100 bg-indigo-50/40 last:border-0">
+                    <td className="px-5 py-3 font-semibold text-slate-800">{feature}</td>
+                    <td className="px-5 py-3 text-center"><span className="text-slate-300">—</span></td>
+                    <td className="px-5 py-3 text-center"><span className="text-slate-300">—</span></td>
                     <td className="px-5 py-3 text-center">
                       <Check size={17} className="mx-auto text-emerald-600" />
                     </td>
@@ -410,6 +536,85 @@ export function LearningAnalyticsDownload() {
               </div>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* El plan a la medida no es una función más del plugin: es trabajo de
+          consultoría. La página tiene que decirlo sin rodeos, porque quien
+          compra un plan con precio recibe algo distinto. */}
+      <section className="bg-indigo-950 px-6 py-20 text-white">
+        <div className="mx-auto max-w-5xl">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wider">
+            <Target size={13} /> Plan a la medida
+          </span>
+          <h2 className="mt-5 text-3xl font-black tracking-tight sm:text-4xl">
+            No es una licencia más: es una consultoría completa alineada a tus KPIs estratégicos
+          </h2>
+          <p className="mt-5 max-w-3xl text-lg text-indigo-100">
+            Los planes gratuito, semestral y anual entregan el plugin tal como se descarga, con los
+            indicadores que ya trae. El plan a la medida empieza antes: nos sentamos con tu equipo
+            directivo a definir qué mide el éxito en tu institución, y desde ahí construimos los
+            indicadores, las reglas y los tableros que hacen falta.
+          </p>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            {[
+              {
+                icon: Target,
+                title: '1. Definimos tus KPIs estratégicos',
+                text: 'Un taller con dirección académica para poner por escrito qué decisiones hay que tomar y qué indicador las cambia. No partimos de lo que el plugin ya calcula, sino de lo que tu institución necesita saber.',
+              },
+              {
+                icon: Users,
+                title: '2. Los traducimos a datos reales',
+                text: 'Cada KPI se contrasta con lo que tu Moodle registra de verdad. Si alguno no se puede calcular con esos datos, te lo decimos antes de empezar y proponemos el más cercano que sí sea medible.',
+              },
+              {
+                icon: Wrench,
+                title: '3. Construimos a la medida',
+                text: 'Indicadores propios, reglas y umbrales con los valores de tu institución, tableros y descargas hechos para tu operación. Todo dentro de tu plataforma, con los permisos de Moodle de siempre.',
+              },
+              {
+                icon: LifeBuoy,
+                title: '4. Acompañamos la puesta en marcha',
+                text: 'Te acompañamos en la lectura de los primeros informes, para que los números lleguen a las reuniones donde se decide y no se queden en una pestaña que nadie abre.',
+              },
+            ].map(({ icon: Icon, title, text }) => (
+              <div key={title} className="rounded-2xl border border-white/15 bg-white/5 p-6">
+                <Icon size={20} className="text-indigo-300" />
+                <h3 className="mt-3 font-black">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-indigo-100">{text}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            {[
+              { icon: RefreshCw, label: 'Vigencia', value: '12 meses' },
+              { icon: LifeBuoy, label: 'Soporte prioritario', value: 'los 12 meses' },
+              { icon: Wrench, label: 'Ventanas de actualización', value: 'hasta 2' },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/5 p-5">
+                <Icon size={18} className="shrink-0 text-indigo-300" />
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-300">{label}</div>
+                  <div className="font-black">{value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <a href={whatsapp('Hola, me interesa el plan a la medida del plugin Learning Analytics para Moodle.\n\nInstitución: \nURL de nuestro Moodle: \nQué queremos medir: ')}
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100">
+              <MessageCircle size={17} /> Hablemos de tus KPIs
+            </a>
+            <span className="text-sm text-indigo-200">
+              El alcance define el precio, así que empezamos por entender qué necesitas medir.
+            </span>
+          </div>
         </div>
       </section>
 
