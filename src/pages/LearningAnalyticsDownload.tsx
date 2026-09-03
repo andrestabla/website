@@ -25,12 +25,12 @@ const AI_DISPONIBLE = true
 
 /** Ficha del paquete. Cambiar al publicar una versión nueva. */
 const RELEASE = {
-  version: '3.18.0',
-  file: 'local_learninganalytics-3.18.0.zip',
-  size: '260 KB',
+  version: '3.19.0',
+  file: 'local_learninganalytics-3.19.0.zip',
+  size: '272 KB',
   date: '3 de septiembre de 2026',
   // Permite a quien instala comprobar que el archivo no se alteró en el camino.
-  sha256: 'be5e64d55069bfba879bb98352987da3f6c4a8c6038e147ba949a3d5555a0ac6',
+  sha256: '3d3663718c2f3df59544a05353f9cd3d38a115cf0aa7d03b1db384411c0d487b',
 }
 
 const DOWNLOAD_URL = `/downloads/${RELEASE.file}`
@@ -105,6 +105,7 @@ const PLAN_ROWS = [
   { feature: 'Permanencia estimada por estudiante', free: false },
   { feature: 'Permanencia y riesgo: activos, regulares, entrada temprana, vencidas pendientes y salida temprana', free: false },
   { feature: 'Filtro por actividad y reactivación tras mensaje', free: false },
+  { feature: 'Evaluación y entregas: a tiempo, cuestionarios completados, aprobado, retroalimentación y su plazo, reentregas, libro al día', free: false },
   { feature: 'Correo a un estudiante con su progreso', free: false },
   { feature: 'Mensaje masivo por correo o por Moodle', free: false },
   { feature: 'Descarga en Excel, PDF y JPG', free: false },
@@ -262,13 +263,21 @@ export function LearningAnalyticsDownload() {
                 Nuevo en la {RELEASE.version}
               </div>
               <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                <strong className="font-semibold text-slate-900">Permanencia y riesgo.</strong>{' '}
-                Una regla configurable define quién está activo (por defecto, 7 horas de permanencia
-                en los últimos 7 días) y el tablero la aplica a toda la plataforma o a un curso:
-                activos, con poca actividad, sin actividad, regulares, entrada temprana de los
-                recién matriculados, actividades vencidas sin entregar y salida temprana. La lista
-                de personas por debajo de la regla se filtra y se escribe de una vez, y el plugin
-                mide después cuántas volvieron.
+                <strong className="font-semibold text-slate-900">Evaluación y entregas.</strong>{' '}
+                En cada curso, una fila por tarea y cuestionario: entregas esperadas y a tiempo,
+                cuestionarios completados, quiénes alcanzan la nota de aprobado, entregas calificadas
+                con retroalimentación y dentro del plazo que tú definas, reentregas, ganancia entre
+                el primer y el último intento, y si el libro de calificaciones está al día con lo
+                vencido.
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                <strong className="font-semibold text-slate-900">Permanencia y riesgo</strong>{' '}
+                (desde la 3.18). Una regla configurable define quién está activo (por defecto, 7 horas
+                de permanencia en los últimos 7 días) y el tablero la aplica a toda la plataforma o a
+                un curso: activos, con poca actividad, sin actividad, regulares, entrada temprana,
+                actividades vencidas sin entregar y salida temprana. La lista de personas por debajo
+                de la regla se filtra y se escribe de una vez, y el plugin mide después cuántas
+                volvieron.
               </p>
             </div>
             <div className="mt-8 grid gap-6 md:grid-cols-2">
