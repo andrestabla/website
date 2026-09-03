@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ComponentType } from 'react'
 import { motion } from 'framer-motion'
 import {
   BarChart3, Users, Award, TrendingUp, Download, Check, ArrowRight,
@@ -6,6 +7,9 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Layout } from '../components/layout/Layout'
+import {
+  MockPlataforma, MockRiesgo, MockCurso, MockEvaluacion, MockAsistente,
+} from '../components/learninganalytics/DashboardMocks'
 
 /**
  * Página pública del plugin Learning Analytics para Moodle.
@@ -31,44 +35,26 @@ const FREE_FEATURES = [
 ]
 
 /**
- * Vistas del plugin, agrupadas por área.
+ * Vistas del tablero, agrupadas por área.
  *
- * Las imágenes salen de una plataforma real: unas son capturas y otras, la
- * exportación de imagen que el propio plugin genera de sus gráficas. Ninguna
- * incluye datos personales de estudiantes. Las cifras son las que había el
- * día en que se tomaron.
- *
- * `more` enumera las vistas del mismo bloque que no tienen imagen aquí, para
- * que la lista describa el producto completo y no solo lo ilustrado.
+ * Cada pestaña muestra una maqueta del bloque, dibujada en la propia página
+ * con SVG y CSS: nítida a cualquier tamaño y con las cifras marcadas como
+ * ejemplo dentro del propio marco. `more` enumera el resto de vistas del
+ * bloque, para que la lista describa el producto completo.
  */
 const VIEW_TABS: {
   id: string; label: string; intro: string;
-  shots: { src: string; title: string; text: string }[];
+  mock: ComponentType;
   more: string[];
 }[] = [
   {
     id: 'plataforma',
     label: 'Plataforma',
     intro: 'La vista de quien mira el conjunto: cuánta gente hay, de dónde viene, cuándo entró por última vez y cómo crece la matrícula.',
-    shots: [
-      {
-        src: '/images/la-mapa.png',
-        title: 'Distribución geográfica',
-        text: 'De dónde son tus usuarios, sobre fronteras reales. El mapa se dibuja dentro de tu plataforma: no se pide ni un solo mosaico a servidores externos.',
-      },
-      {
-        src: '/images/la-ultimo-acceso.png',
-        title: 'Actividad por último acceso',
-        text: 'Cuántos entraron esta semana y cuántos llevan meses sin aparecer. Suele ser el bloque que decide a quién hay que escribir hoy.',
-      },
-      {
-        src: '/images/la-crecimiento.jpg',
-        title: 'Crecimiento y certificación',
-        text: 'La matrícula mes a mes junto al reparto entre quienes ya tienen certificado y quienes no. Dos preguntas de dirección en una sola fila.',
-      },
-    ],
+    mock: MockPlataforma,
     more: [
       'Cifras clave: usuarios, matriculaciones, certificados emitidos y tasa de certificación',
+      'Mapa geográfico dibujado dentro de tu plataforma, sin servidores externos',
       'Usuarios por dominio de correo, para separar personal interno de externo',
       'Certificados emitidos en el tiempo',
       'Filtros combinables: categoría en cascada, curso, rol, país, dominio, fechas y persona',
@@ -79,13 +65,7 @@ const VIEW_TABS: {
     id: 'riesgo',
     label: 'Permanencia y riesgo',
     intro: 'Quién se está quedando atrás, con una regla que tú defines: por defecto, siete horas de permanencia en los últimos siete días.',
-    shots: [
-      {
-        src: '/images/la-riesgo.jpg',
-        title: 'Personas activas por ventana y reparto por actividad',
-        text: 'La serie muestra si la participación cae antes de que se note en las calificaciones. El anillo separa a quienes cumplen la regla, a quienes tienen algo de actividad y a quienes no tienen ninguna.',
-      },
-    ],
+    mock: MockRiesgo,
     more: [
       'Activos, con poca actividad y sin actividad, sobre el conjunto que estés filtrando',
       'Regulares: activos en al menos 3 de las últimas 4 ventanas',
@@ -101,31 +81,21 @@ const VIEW_TABS: {
     id: 'curso',
     label: 'Dentro del curso',
     intro: 'El detalle que necesita quien acompaña un grupo concreto: dónde avanza, dónde se atasca y qué actividad está frenando a todos.',
-    shots: [
-      {
-        src: '/images/la-progreso-seccion.png',
-        title: 'Progreso por sección',
-        text: 'En qué módulo avanza el grupo y en cuál se queda atascado. El mismo bloque baja al detalle de cada actividad.',
-      },
-      {
-        src: '/images/la-cursos.png',
-        title: 'Cursos con más matriculaciones',
-        text: 'Qué se está llevando la demanda. Este bloque está también en la versión gratuita.',
-      },
-    ],
+    mock: MockCurso,
     more: [
       'Estudiantes, progreso promedio, calificación promedio y permanencia estimada',
       'Progreso por sección y por actividad, y calificación promedio de cada actividad',
       'Tabla de estudiantes con progreso, nota, último acceso, permanencia y estado de actividad',
       'Filtros por rango de progreso, rango de calificación, rol y último acceso',
       'Correo a un estudiante con su progreso ya redactado',
+      'Cursos con más matriculaciones, también en la versión gratuita',
     ],
   },
   {
     id: 'evaluacion',
     label: 'Evaluación y foros',
     intro: 'Qué pasa con las entregas y con la conversación. Una fila por tarea, por cuestionario y por foro.',
-    shots: [],
+    mock: MockEvaluacion,
     more: [
       'Entregas a tiempo sobre las esperadas, respetando las excepciones por persona',
       'Cuestionarios completados y ganancia entre el primer y el último intento',
@@ -138,9 +108,9 @@ const VIEW_TABS: {
   },
   {
     id: 'ia',
-    label: 'Asistente y descargas',
-    intro: 'Preguntar en lenguaje natural sobre lo que tienes en pantalla, y llevarte el informe donde lo necesites.',
-    shots: [],
+    label: 'Asistente de IA',
+    intro: 'Preguntas en tu idioma sobre lo que tienes en pantalla y recibes una lectura con las cifras detrás. Así funciona:',
+    mock: MockAsistente,
     more: [
       'Pregunta en lenguaje natural sobre el recorte que estés viendo',
       'El asistente lee todos los bloques: plataforma, riesgo, evaluación y foros',
@@ -148,7 +118,7 @@ const VIEW_TABS: {
       'Explicación de una gráfica concreta, sin salir de ella',
       'Historial de consultas por persona, exportable y borrable',
       'Descarga en PDF con las gráficas incrustadas, Excel, CSV y JPG',
-      'Descarga por bloque o del informe completo',
+      'Solo viajan cifras agregadas: ni nombres, ni correos, ni notas',
     ],
   },
 ]
@@ -257,6 +227,7 @@ export function LearningAnalyticsLanding() {
 
   const [vista, setVista] = useState(VIEW_TABS[0].id)
   const activa = VIEW_TABS.find((v) => v.id === vista) ?? VIEW_TABS[0]
+  const Maqueta = activa.mock
 
   /**
    * Contacto por WhatsApp con el mensaje ya redactado. Pedimos de entrada el
@@ -353,8 +324,9 @@ export function LearningAnalyticsLanding() {
         <div className="mx-auto max-w-5xl">
           <h2 className="text-3xl font-black tracking-tight">Cómo se ve</h2>
           <p className="mt-3 max-w-2xl text-slate-600">
-            Imágenes de una plataforma en funcionamiento, no una maqueta: las cifras son las que
-            había el día en que se tomaron. Ninguna incluye datos personales de estudiantes.
+            Así se ve el tablero dentro de tu Moodle. Los bloques, los filtros y las acciones son
+            los que trae el plugin; las cifras de los ejemplos son ilustrativas y ninguna
+            corresponde a personas reales.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Áreas del tablero">
@@ -378,20 +350,9 @@ export function LearningAnalyticsLanding() {
             className="mt-6">
             <p className="max-w-2xl text-slate-600">{activa.intro}</p>
 
-            {activa.shots.length > 0 && (
-              <div className={`mt-6 grid gap-6 ${activa.shots.length > 1 ? 'md:grid-cols-2' : ''}`}>
-                {activa.shots.map(({ src, title, text }) => (
-                  <figure key={src} className="overflow-hidden rounded-2xl border border-slate-200">
-                    <img src={src} alt={title} loading="lazy"
-                      className="w-full border-b border-slate-200 bg-slate-50" />
-                    <figcaption className="p-5">
-                      <div className="font-black">{title}</div>
-                      <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{text}</p>
-                    </figcaption>
-                  </figure>
-                ))}
-              </div>
-            )}
+            <div className="mt-6">
+              <Maqueta />
+            </div>
 
             <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6">
               <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
