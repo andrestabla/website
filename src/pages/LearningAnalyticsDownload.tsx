@@ -25,12 +25,12 @@ const AI_DISPONIBLE = true
 
 /** Ficha del paquete. Cambiar al publicar una versión nueva. */
 const RELEASE = {
-  version: '3.20.0',
-  file: 'local_learninganalytics-3.20.0.zip',
-  size: '284 KB',
+  version: '3.20.1',
+  file: 'local_learninganalytics-3.20.1.zip',
+  size: '288 KB',
   date: '3 de septiembre de 2026',
   // Permite a quien instala comprobar que el archivo no se alteró en el camino.
-  sha256: 'db61d3f8be345daadbdcad49e1423d52fa5db7cd908d0770cf26e2657a3b2dfd',
+  sha256: 'f5dcf17cb0a5cfc70126f836ca2c033f79472113f371d9c2a803811195fbac54',
 }
 
 const DOWNLOAD_URL = `/downloads/${RELEASE.file}`
@@ -113,6 +113,7 @@ const PLAN_ROWS = [
   { feature: 'Mensaje masivo por correo o por Moodle', free: false },
   { feature: 'Descarga en Excel, PDF y JPG', free: false },
   { feature: 'Asistente de IA con historial: preguntas, explicación por gráfica e informes', free: false },
+  { feature: 'El asistente lee todos los bloques: permanencia, riesgo, evaluación y foros del recorte que estés viendo', free: false },
 ]
 
 /** Consultas de IA incluidas en cada plan, para toda su vigencia. */
@@ -266,6 +267,13 @@ export function LearningAnalyticsDownload() {
                 Nuevo en la {RELEASE.version}
               </div>
               <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                <strong className="font-semibold text-slate-900">El asistente ve todo lo nuevo.</strong>{' '}
+                Hasta ahora la pregunta en lenguaje natural solo alcanzaba las cifras generales de
+                la plataforma. Ahora recibe también permanencia y riesgo, evaluación y entregas, y
+                foros, calculados con los mismos filtros que tienes puestos. Siguen viajando solo
+                cifras agregadas: ni nombres, ni correos, ni notas de nadie.
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">
                 <strong className="font-semibold text-slate-900">Foros e interacción.</strong>{' '}
                 Quién participa, quién responde a un compañero y qué hilos llevan más de 48 horas
                 sin contestar. Aparte, y detrás de su propio permiso, la presencia docente:
