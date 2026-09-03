@@ -25,12 +25,12 @@ const AI_DISPONIBLE = true
 
 /** Ficha del paquete. Cambiar al publicar una versión nueva. */
 const RELEASE = {
-  version: '3.17.4',
-  file: 'local_learninganalytics-3.17.4.zip',
-  size: '236 KB',
-  date: '24 de agosto de 2026',
+  version: '3.18.0',
+  file: 'local_learninganalytics-3.18.0.zip',
+  size: '260 KB',
+  date: '3 de septiembre de 2026',
   // Permite a quien instala comprobar que el archivo no se alteró en el camino.
-  sha256: 'e44488b085505617bb33ba3af47754c8ed4acd8f87d443be4614b59c20766339',
+  sha256: 'be5e64d55069bfba879bb98352987da3f6c4a8c6038e147ba949a3d5555a0ac6',
 }
 
 const DOWNLOAD_URL = `/downloads/${RELEASE.file}`
@@ -103,6 +103,8 @@ const PLAN_ROWS = [
   { feature: 'Progreso por sección y por actividad', free: false },
   { feature: 'Calificación promedio y por actividad', free: false },
   { feature: 'Permanencia estimada por estudiante', free: false },
+  { feature: 'Permanencia y riesgo: activos, regulares, entrada temprana, vencidas pendientes y salida temprana', free: false },
+  { feature: 'Filtro por actividad y reactivación tras mensaje', free: false },
   { feature: 'Correo a un estudiante con su progreso', free: false },
   { feature: 'Mensaje masivo por correo o por Moodle', free: false },
   { feature: 'Descarga en Excel, PDF y JPG', free: false },
@@ -238,8 +240,9 @@ export function LearningAnalyticsDownload() {
             <Info size={18} className="mt-0.5 shrink-0 text-amber-600" />
             <p className="text-sm leading-relaxed text-amber-900">
               Como con cualquier plugin, haz una copia de seguridad de la base de datos antes de
-              instalarlo en una plataforma en producción. Learning Analytics solo lee datos y crea
-              una tabla propia para su configuración, pero la costumbre es sana.
+              instalarlo en una plataforma en producción. Learning Analytics no modifica datos de
+              Moodle: solo crea sus propias tablas (historial del asistente y permanencia diaria
+              agregada), pero la costumbre es sana.
             </p>
           </div>
         </div>
@@ -254,6 +257,20 @@ export function LearningAnalyticsDownload() {
               Capturas de una plataforma en funcionamiento, no una maqueta: las cifras son las que
               había el día que se tomaron. Ninguna incluye datos personales de estudiantes.
             </p>
+            <div className="mt-6 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-5">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
+                Nuevo en la {RELEASE.version}
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                <strong className="font-semibold text-slate-900">Permanencia y riesgo.</strong>{' '}
+                Una regla configurable define quién está activo (por defecto, 7 horas de permanencia
+                en los últimos 7 días) y el tablero la aplica a toda la plataforma o a un curso:
+                activos, con poca actividad, sin actividad, regulares, entrada temprana de los
+                recién matriculados, actividades vencidas sin entregar y salida temprana. La lista
+                de personas por debajo de la regla se filtra y se escribe de una vez, y el plugin
+                mide después cuántas volvieron.
+              </p>
+            </div>
             <div className="mt-8 grid gap-6 md:grid-cols-2">
               {SCREENS.map(({ src, title, text }) => (
                 <figure key={src} className="overflow-hidden rounded-2xl border border-slate-200">

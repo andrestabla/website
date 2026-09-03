@@ -34,6 +34,7 @@ const PRO_FEATURES = [
   { icon: Globe2, title: 'Mapa geográfico', text: 'Distribución de tus usuarios por país sobre fronteras reales, dibujado en la propia plataforma: no se pide ningún mosaico a servidores externos.' },
   { icon: GraduationCap, title: 'Analítica por curso', text: 'Progreso total, por sección y por actividad; calificación promedio y por actividad; permanencia estimada de cada estudiante.' },
   { icon: Users, title: 'Tablas de personas', text: 'Padrón con progreso, calificación, último acceso y permanencia. Filtrable por rango de progreso y de nota.' },
+  { icon: TrendingUp, title: 'Permanencia y riesgo', text: 'Una regla configurable (7 horas en 7 días) separa activos, poca actividad y sin actividad; añade regularidad, entrada temprana, vencidas pendientes y salida temprana, y mide quién volvió tras un mensaje.' },
   { icon: Mail, title: 'Contacto directo', text: 'Escribe a un estudiante con su progreso ya redactado en el correo, o a todos los que devuelve un filtro, con confirmación previa.' },
   { icon: Sparkles, title: 'Pregunta en lenguaje natural', text: 'Escribe una pregunta sobre lo que hay en pantalla y recibe una lectura de las cifras. Solo viajan las series agregadas: ni nombres, ni correos, ni notas.' },
   { icon: Download, title: 'Descargas completas', text: 'Cualquier gráfica, bloque o el informe entero en PDF con las gráficas incrustadas, Excel, CSV o JPG.' },
@@ -130,8 +131,9 @@ export function LearningAnalyticsLanding() {
               Entiende qué pasa dentro de tu Moodle
             </h1>
             <p className="mt-5 max-w-2xl text-lg text-slate-300">
-              Learning Analytics reúne en un solo tablero el progreso, las calificaciones y la
-              permanencia de tus estudiantes — y te deja escribirles sin salir de allí.
+              Learning Analytics reúne en un solo tablero el progreso, las calificaciones, la
+              permanencia y el riesgo de abandono de tus estudiantes — y te deja escribirles sin
+              salir de allí.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href="#planes" className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-bold text-slate-900 transition hover:bg-slate-100">
