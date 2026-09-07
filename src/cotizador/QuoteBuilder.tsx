@@ -426,12 +426,15 @@ export function QuoteBuilder() {
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5">
                 <div className="flex items-center gap-2 text-sm font-bold text-indigo-700"><Sparkles size={15} /> Construyamos la cotización</div>
                 <p className="mt-2 text-[13px] leading-relaxed text-slate-600">
+                  Conozco el portafolio completo de Algoritmo T tal como está publicado en algoritmot.com:
+                  la línea Empresas (las seis fases, los tres protocolos y el método MD-IA) y la línea
+                  Educación (plataformas, virtualización, auditoría QM y formación docente).
                   Cuéntame del cliente: a qué se dedica, qué le duele hoy y qué quiere lograr.
-                  Con eso ajusto los módulos y redacto el diagnóstico, la carta y el enfoque.
+                  Con eso elijo las variables, enciendo los módulos y redacto el diagnóstico, la carta y el método.
                   Los precios salen del catálogo; yo no los invento.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {['El cliente es una editorial universitaria…', 'Solo necesita el frente comercial', 'Redacta la carta de presentación'].map((suggestion) => (
+                  {['El cliente es una editorial universitaria…', 'Una universidad que quiere virtualizar 20 cursos', 'Una pyme que necesita diagnóstico MD-IA y mapeo de procesos', 'Redacta la carta de presentación'].map((suggestion) => (
                     <button
                       key={suggestion}
                       onClick={() => setDraft(suggestion)}

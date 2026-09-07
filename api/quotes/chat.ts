@@ -5,9 +5,16 @@
  * los cambios que propone sobre la cotización. El servidor es quien aplica ese
  * patch: valida los códigos contra el catálogo, ignora cualquier cifra que venga
  * del modelo y recalcula los totales. La IA redacta; el catálogo cotiza.
+ *
+ * La IA construye con el portafolio completo de la casa: lee en cada turno lo
+ * que publica algoritmot.com (portada, línea Empresas y línea Educación, con
+ * sus servicios, protocolos y método), además del catálogo y del histórico de
+ * propuestas. Así una cotización de cursos habla de las fases de virtualización
+ * y una de transformación, de las seis fases y los tres protocolos.
  */
 import { prisma } from '../_lib/prisma.js'
 import { generateJsonWithAI } from '../_lib/ai.js'
+import { loadPlatformContext } from '../_lib/platform-context.js'
 import {
   quoteSessionState,
   loadCatalog,
@@ -41,22 +48,31 @@ const QUOTES_MODEL = process.env.OPENAI_QUOTES_MODEL || 'gpt-5.5'
  * Presupuesto de contexto documental, en caracteres. gpt-5.5 opera con 500k
  * tokens/minuto en esta organización: cabe el histórico completo. Se mantiene
  * la selección por relevancia (índice de todos + detalle de los pertinentes)
- * para que el modelo lea primero lo que importa.
+ * para que el modelo lea primero lo que importa. La plataforma (~40k
+ * caracteres) va aparte y completa, siempre.
  */
 const KNOWLEDGE_BUDGET = 200_000
 const HISTORY_TURNS = 16
 
 const SYSTEM_RULES = `
-Eres la consultora senior de Algoritmo T que construye cotizaciones junto a su equipo comercial.
+Eres la consultora senior de Algoritmo T y la constructora de esta cotización: la armas junto al equipo
+comercial, de principio a fin. Conoces el portafolio completo de la casa tal como lo publica
+algoritmot.com (bloque PLATAFORMA): la línea Empresas (las seis fases del servicio, los tres
+protocolos, las soluciones empaquetadas y el método MD-IA) y la línea Educación (plataformas de
+aprendizaje, virtualización de programas, auditoría con estándares Quality Matters y formación
+docente). Con ese conocimiento ubicas al cliente en la línea correcta, eliges las variables de la
+propuesta, enciendes los módulos y redactas cada sección.
 Hablas español de Colombia, en tono profesional y aterrizado.
 
 REGLAS DURAS
 1. Nunca inventes precios, plazos ni descuentos. Los montos salen del CATÁLOGO y el servidor los recalcula.
    Si necesitas mover el precio, di que hay que ajustar el catálogo; no lo cambies tú.
 2. Solo puedes encender o apagar módulos usando los CÓDIGOS exactos del catálogo.
-3. Toda afirmación sobre metodología, condiciones o antecedentes debe apoyarse en el ÍNDICE o en el
-   CONTEXTO documental. Una cifra que no esté escrita ahí NO EXISTE: dilo y pide traer el caso al
-   contexto. Jamás des una cifra aproximada, deducida o "de memoria".
+3. Toda afirmación sobre método, servicios, condiciones o antecedentes debe apoyarse en la PLATAFORMA,
+   en el ÍNDICE o en el CONTEXTO documental. Las cifras públicas de la plataforma (docentes formados,
+   plazos de los protocolos, reducción de tiempos de ciclo) puedes citarlas tal como aparecen ahí. Una
+   cifra que no esté escrita en ninguno de los tres NO EXISTE: dilo y pide traer el caso al contexto.
+   Jamás des una cifra aproximada, deducida o "de memoria".
 4. Pregunta de a una cosa. Si ya tienes lo necesario para redactar una sección, redáctala.
 5. Quien cotiza decide las variables del precio: la cotización arranca vacía y solo enciendes
    las líneas que el consultor pida o confirme. Jamás enciendas líneas "por si acaso".
@@ -68,6 +84,15 @@ REGLAS DURAS
    carta, diagnóstico, método/fases, cronograma e hitos, y di qué falta para el siguiente turno.
 8. Tu "reply" solo afirma lo que de verdad va en el patch de este turno. Si no cambiaste algo,
    di que falta, jamás que "procederás" a hacerlo.
+9. CONSTRUYE CON EL PORTAFOLIO: el método, las fases, los entregables y los nombres propios salen de la
+   PLATAFORMA (Captura del ADN Digital, Mapeo de Procesos con BPMN 2.x, Decisión Humano vs Tecnología,
+   Ingeniería Humana, Despliegue IA, Madurez Orgánica, rúbrica Quality Matters, ProfeTabla, Maturity360…).
+   Cuando el histórico trae un caso parecido, el caso manda en la estructura; la plataforma aporta el
+   lenguaje y las promesas de cada servicio. Cita la plataforma con sus palabras, adaptadas al cliente.
+10. LÍNEA CORRECTA: la plantilla de esta cotización fija el catálogo. Si lo que describe el consultor
+   pertenece a otra línea del portafolio (por ejemplo, está en Soluciones y el cliente quiere producir
+   cursos virtuales), dilo en tu primera respuesta y nombra la plantilla que corresponde. La plantilla
+   se elige al crear la cotización; desde el chat no se cambia.
 
 ESTILO (la casa es estricta con esto)
 - Prohibido: "compuerta", "en la era digital", "desbloquear el potencial", "robusto", "sin fisuras",
@@ -341,7 +366,7 @@ function applyContentPatch(current: any, incoming: any) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { session, allowed } = quoteSessionState(req)
+  const { session, allowed } = await quoteSessionState(req)
   if (!session) return res.status(401).json({ ok: false, error: 'Sesión requerida' })
   if (!allowed) return res.status(403).json({ ok: false, error: 'Sin acceso al Cotizador' })
   if (req.method !== 'POST') {
@@ -364,7 +389,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const template = normalizeTemplate(quote.template)
-    const [catalogRows, history, docs] = await Promise.all([
+    const [catalogRows, history, docs, platformContext] = await Promise.all([
       loadCatalog(template),
       msgDb().findMany({ where: { quoteId }, orderBy: { createdAt: 'desc' }, take: HISTORY_TURNS }),
       knowledgeDb().findMany({
@@ -373,6 +398,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         take: 20,
         select: { title: true, kind: true, summary: true, content: true },
       }),
+      loadPlatformContext(),
     ])
 
     const catalog = catalogMap(catalogRows)
@@ -449,6 +475,10 @@ ${SYSTEM_RULES}
 
 ## CATÁLOGO (única fuente de cifras)
 ${catalogBlock}
+
+## PLATAFORMA (lo que publica algoritmot.com: portada, /empresas, /educacion y sus páginas)
+Es el portafolio vigente de la casa y la fuente del método y del lenguaje de cada servicio.
+${platformContext || '(la plataforma no respondió en este turno; apóyate en el índice y el catálogo)'}
 
 ## ÍNDICE DEL HISTÓRICO DE ALGORITMO T (todos los documentos disponibles)
 ${indexBlock || '(sin documentos cargados todavía)'}
