@@ -260,9 +260,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (op === 'set-fields') {
       const quote = await own()
       const edits = Array.isArray(body.fields) ? body.fields : []
-      const { content, quoteData, applied } = applyFieldEdits(quote.content, edits)
+      const currentItems: QuoteItem[] = Array.isArray(quote.pricing?.items) ? quote.pricing.items : []
+      const { content, quoteData, applied, items } = applyFieldEdits(quote.content, edits, currentItems)
       if (!applied.length) return res.status(400).json({ ok: false, error: 'Ninguna referencia válida' })
-      const updated = await db().update({ where: { id: quote.id }, data: { content, ...quoteData } })
+      const data: Record<string, unknown> = { content, ...quoteData }
+      if (items) Object.assign(data, await priced(items, quote.discountScale, normalizeTemplate(quote.template)))
+      const updated = await db().update({ where: { id: quote.id }, data })
       return res.status(200).json({ ok: true, quote: updated, applied })
     }
 

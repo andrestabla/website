@@ -93,6 +93,8 @@ export function EditorPanel({ publicId, onReload }: { publicId: string; onReload
   const listRef = useRef<HTMLDivElement>(null)
   const modeRef = useRef<Mode>(mode)
   modeRef.current = mode
+  const fileRef = useRef<HTMLInputElement>(null)
+  const imgTarget = useRef<string>('')
 
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight }) }, [messages, busy])
 
@@ -106,12 +108,18 @@ export function EditorPanel({ publicId, onReload }: { publicId: string; onReload
     document.body.classList.toggle('qv-mode-edit', mode === 'edit')
     if (mode !== 'select') return
     const onClick = (e: MouseEvent) => {
-      const target = (e.target as Element).closest('[data-ref]') as HTMLElement | null
+      const img = (e.target as Element).closest('[data-img-ref]') as HTMLElement | null
+      const target = img || ((e.target as Element).closest('[data-ref]') as HTMLElement | null)
       if (!target || target.closest('.qv-editor')) return
       e.preventDefault()
       e.stopPropagation()
       clearSelectedClass()
       target.classList.add('qv-ref-selected')
+      if (img) {
+        const ref = img.dataset.imgRef || ''
+        setFocus({ ref, label: `Imagen · ${labelFor(ref)}`, text: (img as HTMLImageElement).getAttribute('alt') || (img as HTMLImageElement).src })
+        return
+      }
       const ref = target.dataset.ref || ''
       setFocus({ ref, label: labelFor(ref), text: domToMarks(target).slice(0, 6000) })
     }
@@ -161,17 +169,49 @@ export function EditorPanel({ publicId, onReload }: { publicId: string; onReload
       // Enter en un campo de una sola línea guarda en vez de partir el texto
       if (e.key === 'Enter' && !e.shiftKey && /^(H1|H2|H3|H4|TD|TH|SPAN|LI|FIGCAPTION|DT|DD)$/.test(el.tagName)) { e.preventDefault(); el.blur() }
     }
+    const onImgClick = (e: MouseEvent) => {
+      const img = (e.target as Element).closest('[data-img-ref]') as HTMLElement | null
+      if (!img || img.closest('.qv-editor')) return
+      e.preventDefault()
+      e.stopPropagation()
+      imgTarget.current = img.dataset.imgRef || ''
+      fileRef.current?.click()
+    }
+    document.addEventListener('click', onImgClick, true)
     document.addEventListener('focusout', onBlur)
     document.addEventListener('keydown', onKey)
     // el documento se vuelve a pintar tras cada guardado: se reactivan los campos nuevos
     const observer = new MutationObserver(() => enable())
     observer.observe(document.body, { childList: true, subtree: true })
     return () => {
+      document.removeEventListener('click', onImgClick, true)
       document.removeEventListener('focusout', onBlur)
       document.removeEventListener('keydown', onKey)
       observer.disconnect()
     }
   }, [mode, saveEdits])
+
+  const replaceImage = async (file: File | undefined) => {
+    const ref = imgTarget.current
+    if (!file || !ref) return
+    if (file.size > 4 * 1024 * 1024) { flash('La imagen supera 4 MB'); return }
+    setStatus('Subiendo imagen…')
+    try {
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = () => reject(new Error('No se pudo leer la imagen'))
+        reader.readAsDataURL(file)
+      })
+      const up = await post('/api/quotes/upload', { fileBase64, filename: file.name, contentType: file.type })
+      await saveEdits([{ ref, value: up.url }])
+    } catch (e) {
+      flash(`No se reemplazó: ${(e as Error).message}`)
+    } finally {
+      imgTarget.current = ''
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
 
   // ── chat con la IA ──
   const send = async () => {
@@ -206,6 +246,7 @@ export function EditorPanel({ publicId, onReload }: { publicId: string; onReload
 
   return (
     <div className="qv-editor">
+      <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden onChange={(e) => void replaceImage(e.target.files?.[0])} />
       <div className="qv-editor-head">
         <b>✦ Editor con IA</b>
         <span className="qv-editor-status">{busy ? 'Aplicando…' : status}</span>
@@ -218,7 +259,7 @@ export function EditorPanel({ publicId, onReload }: { publicId: string; onReload
       </div>
       <p className="qv-editor-hint">
         {mode === 'select' && (focus ? 'Escribe qué cambiar en el elemento señalado, o señala otro.' : 'Haz clic sobre un título, párrafo, celda o pie de imagen para señalarlo.')}
-        {mode === 'edit' && 'Haz clic en cualquier texto y escribe. Se guarda al salir del campo; Esc cancela el foco.'}
+        {mode === 'edit' && 'Haz clic en cualquier texto y escribe: se guarda al salir del campo. Clic en una imagen la reemplaza (se sube a R2).'}
         {mode === 'read' && 'Pide cambios generales: la IA edita cualquier parte del documento, las líneas y las imágenes.'}
       </p>
       {focus && (

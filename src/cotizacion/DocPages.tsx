@@ -316,8 +316,8 @@ export function DocBlockView({
     case 'img':
       return (
         <figure className={`qv-shot${block.wide ? ' wide' : ''}`}>
-          <img src={block.url} alt={block.caption || ''} loading="lazy" />
-          {block.caption && <figcaption {...r('caption')}>{block.caption}</figcaption>}
+          <img src={block.url} alt={block.caption || ''} loading="lazy" {...(refBase ? { 'data-img-ref': `${refBase}.url` } : {})} />
+          {(block.caption || refBase) && <figcaption {...r('caption')}>{block.caption || ''}</figcaption>}
         </figure>
       )
 
@@ -344,8 +344,8 @@ export function DocBlockView({
                   </tr>
                 ))}
                 <tr className="tot">
-                  <td className="lab">{block.totalLabel || 'Valor total de la propuesta'}</td>
-                  <td className="r"><span className="big">{block.total || money(totals.total)}</span></td>
+                  <td className="lab" {...r('totalLabel')}>{block.totalLabel || 'Valor total de la propuesta'}</td>
+                  <td className="r"><span className="big" {...r('total')}>{block.total || money(totals.total)}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -390,7 +390,7 @@ export function DocBlockView({
               </li>
             ))}
           </ul>
-          {block.note && <p className="qv-note">{block.note}</p>}
+          {block.note && <p className="qv-note" {...r('note')}>{block.note}</p>}
         </>
       )
     }
@@ -426,7 +426,7 @@ export function DocBlockView({
           <div className="qv-timeline">
             <div className="tl-row tl-labels" style={{ gridTemplateColumns: cols }}>
               {segs.map((sg, i) => (
-                <span className={`tl-lab ${tone(sg.tone)}`} key={i}>{sg.label}</span>
+                <span className={`tl-lab ${tone(sg.tone)}`} key={i} {...r(`segments.${i}.label`)}>{sg.label}</span>
               ))}
             </div>
             <div className="tl-row tl-bars" style={{ gridTemplateColumns: cols }}>
@@ -434,11 +434,11 @@ export function DocBlockView({
             </div>
             <div className="tl-row tl-marks" style={{ gridTemplateColumns: `${cols} 0` }}>
               {marks.map((m, i) => (
-                <span className={`tl-mark${i === marks.length - 1 && marks.length > segs.length ? ' is-end' : ''}`} key={i}>{m}</span>
+                <span className={`tl-mark${i === marks.length - 1 && marks.length > segs.length ? ' is-end' : ''}`} key={i} {...r(`marks.${i}`)}>{m}</span>
               ))}
             </div>
           </div>
-          {block.note && <p className="qv-note">{rich(block.note)}</p>}
+          {block.note && <p className="qv-note" {...r('note')}>{rich(block.note)}</p>}
         </>
       )
     }
@@ -451,20 +451,20 @@ export function DocBlockView({
           <div className="qv-gantt" style={{ ['--n' as string]: n }}>
             <div className="g-row g-head">
               <span className="g-lab" />
-              {block.cols.map((c, i) => <span className="g-col" key={i}>{c}</span>)}
+              {block.cols.map((c, i) => <span className="g-col" key={i} {...r(`cols.${i}`)}>{c}</span>)}
             </div>
-            {block.rows.map((r, i) => (
+            {block.rows.map((row, i) => (
               <div className="g-row" key={i}>
-                <span className={`g-lab${r.bold ? ' is-bold' : ''}`}>{r.label}</span>
+                <span className={`g-lab${row.bold ? ' is-bold' : ''}`} {...r(`rows.${i}.label`)}>{row.label}</span>
                 {block.cols.map((_, c) => <span className="g-col" key={c} />)}
                 <span
-                  className={`g-bar ${tone(r.tone)}`}
-                  style={{ gridColumn: `${Math.max(1, r.from) + 1} / ${Math.max(r.from, r.to) + 2}` }}
+                  className={`g-bar ${tone(row.tone)}`}
+                  style={{ gridColumn: `${Math.max(1, row.from) + 1} / ${Math.max(row.from, row.to) + 2}` }}
                 />
               </div>
             ))}
           </div>
-          {block.note && <p className="qv-note">{rich(block.note)}</p>}
+          {block.note && <p className="qv-note" {...r('note')}>{rich(block.note)}</p>}
         </>
       )
     }
@@ -494,6 +494,8 @@ export function DocPageView({
   head,
   cobrand,
   pageIndex,
+  headLeft,
+  headRight,
 }: {
   page: DocPage
   client: string
@@ -503,6 +505,9 @@ export function DocPageView({
   pages?: DocPage[]
   /** Índice en content.pages: activa las referencias editables de la página. */
   pageIndex?: number
+  /** Textos de la cabecera corrida (content.labels.rheadLeft / rheadRight). */
+  headLeft?: string
+  headRight?: string
   /** Línea superior de la hoja. Con cobranding lleva las dos marcas. */
   head?: string
   /** Marca del aliado en la cabecera corrida (versión para fondo claro). */
@@ -514,15 +519,15 @@ export function DocPageView({
     <section className="qv-section" id={page.id} data-qsec={page.id} data-head={head || undefined}>
       <div className="qv-sheet-in">
       <div className="qv-rhead">
-        <span className="r-l">Propuesta · {client}</span>
+        <span className="r-l" {...(base ? { 'data-ref': 'content.labels.rheadLeft' } : {})}>{headLeft || `Propuesta · ${client}`}</span>
         <span className="r-r">
-          Algoritmo&nbsp;T
+          <span {...(base ? { 'data-ref': 'content.labels.rheadRight' } : {})}>{headRight || 'Algoritmo\u00a0T'}</span>
           {cobrand && (cobrand.logoDark || cobrand.name) && (
             <>
               <i className="cb-sep" aria-hidden="true" />
               {cobrand.logoDark
-                ? <img className="cb-logo" src={cobrand.logoDark} alt={cobrand.name || 'Aliado'} />
-                : <span>{cobrand.name}</span>}
+                ? <img className="cb-logo" src={cobrand.logoDark} alt={cobrand.name || 'Aliado'} {...(base ? { 'data-img-ref': 'content.cobrand.logoDark' } : {})} />
+                : <span {...(base ? { 'data-ref': 'content.cobrand.name' } : {})}>{cobrand.name}</span>}
             </>
           )}
         </span>

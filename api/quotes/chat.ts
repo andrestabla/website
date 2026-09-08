@@ -56,6 +56,8 @@ const strArray = (v: unknown, max = 12) =>
  *  propuestas de la casa. Sobreescribible por entorno sin tocar el resto del
  *  sitio (BI y simulador siguen con el modelo global). */
 const QUOTES_MODEL = process.env.OPENAI_QUOTES_MODEL || 'gpt-5.5'
+/** Modelo para ediciones puntuales (un título, un párrafo, una cifra): más barato; si no existe, cae al principal. */
+const QUOTES_MODEL_LIGHT = process.env.OPENAI_QUOTES_MODEL_LIGHT || 'gpt-5-mini'
 
 /**
  * Presupuesto de contexto documental, en caracteres. gpt-5.5 opera con 500k
@@ -74,6 +76,23 @@ const HISTORY_TURNS = 16
  * espacio que un patch de secciones: gpt-5.5 lo soporta.
  */
 const MAX_OUTPUT_TOKENS = 24_000
+
+/**
+ * Intención del turno. Construir una propuesta necesita el portafolio, el
+ * histórico y los adjuntos completos; cambiar un título o un párrafo, no.
+ * Mandar todo en cada turno multiplicaba el costo por veinte.
+ */
+type Intent = 'build' | 'edit'
+const BUILD_WORDS = /\b(redact|complet|constru|arma|arme|crea|cre[ae]|gener|propuesta completa|todo el contenido|plantilla|cotiz|precio|catálogo|catalogo|línea|linea|módulo|modulo|adjunto|archivo|vuelca|import|traduc|diagn[oó]stic|método|metodo|cronograma|hitos|equipo|garant|supuest|exclusi|carta|inversi[oó]n|plan de pagos|imagen|esquema|foto|ilustraci)/i
+function detectIntent(message: string, quote: any, hasFocus: boolean, attachedNow: number): Intent {
+  if (attachedNow > 0) return 'build'
+  const c = quote.content || {}
+  const empty = !c.intro && !(Array.isArray(c.pages) && c.pages.length) && !(c.diagnosis?.fronts?.length)
+  if (empty) return 'build'
+  if (hasFocus && message.length < 600 && !/\b(imagen|esquema|foto|ilustraci|adjunto|archivo)/i.test(message)) return 'edit'
+  if (message.length < 240 && !BUILD_WORDS.test(message)) return 'edit'
+  return 'build'
+}
 
 /** Secciones del esquema clásico: id · antetítulo · título por defecto. */
 const LEGACY_SECTIONS: Array<[string, string, string]> = [
@@ -680,6 +699,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     ])
     const attachedNow = attachments.filter((a: any) => attachmentIds.includes(a.id))
+    const intent = detectIntent(message, quote, !!focus?.ref, attachedNow.length)
+    // presupuestos por intención: edición = solo lo que hace falta para tocar el documento
+    const knowledgeBudget = intent === 'build' ? KNOWLEDGE_BUDGET : 0
+    const attachmentsBudget = intent === 'build' ? ATTACHMENTS_BUDGET : 40_000
+    const historyTurns = intent === 'build' ? HISTORY_TURNS : 6
 
     const catalog = catalogMap(catalogRows)
     const items: QuoteItem[] = Array.isArray(quote.pricing?.items) ? quote.pricing.items : []
@@ -722,8 +746,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const contextBlocks: string[] = []
     const included: string[] = []
     for (const { doc } of scored) {
-      if (used >= KNOWLEDGE_BUDGET) break
-      const room = KNOWLEDGE_BUDGET - used
+      if (used >= knowledgeBudget) break
+      const room = knowledgeBudget - used
       const slice = String(doc.content || '').slice(0, room)
       if (slice.length < 400) continue
       used += slice.length
@@ -745,7 +769,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const totals = computeTotals(items, { scale: quote.discountScale, minWeeks: QUOTE_TEMPLATES[template].minWeeks })
 
     const transcript = history
-      .slice()
+      .slice(0, historyTurns)
       .reverse()
       .map((m: any) => {
         const names = Array.isArray(m.meta?.attachments) ? m.meta.attachments.map((a: any) => a?.name).filter(Boolean) : []
@@ -757,9 +781,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── Adjuntos: los de este turno primero y completos; el resto, hasta el presupuesto ──
     const attachmentBlocks: string[] = []
     let attachUsed = 0
-    const ordered = [...attachedNow, ...attachments.filter((a: any) => !attachmentIds.includes(a.id))]
+    // en edición solo viajan los adjuntos de este mensaje; el resto queda en el índice
+    const ordered = intent === 'build' ? [...attachedNow, ...attachments.filter((a: any) => !attachmentIds.includes(a.id))] : attachedNow
     for (const a of ordered) {
-      const room = ATTACHMENTS_BUDGET - attachUsed
+      const room = attachmentsBudget - attachUsed
       if (room <= 0) break
       const text = String(a.markdown || '').slice(0, room)
       attachUsed += text.length
@@ -785,9 +810,12 @@ ${SYSTEM_RULES}
 ## CATÁLOGO (única fuente de cifras)
 ${catalogBlock}
 
-## PLATAFORMA (lo que publica algoritmot.com: portada, /empresas, /educacion y sus páginas)
+${intent === 'build' ? `## PLATAFORMA (lo que publica algoritmot.com: portada, /empresas, /educacion y sus páginas)
 Es el portafolio vigente de la casa y la fuente del método y del lenguaje de cada servicio.
-${platformContext || '(la plataforma no respondió en este turno; apóyate en el índice y el catálogo)'}
+${platformContext || '(la plataforma no respondió en este turno; apóyate en el índice y el catálogo)'}` : `## MODO EDICIÓN
+Este turno es una edición puntual del documento existente: cambia exactamente lo pedido y nada más.
+El portafolio y el histórico no se incluyen; si el cambio exige redactar secciones nuevas con el
+método de la casa, dilo y pide que lo soliciten como construcción.`}
 
 ## ÍNDICE DEL HISTÓRICO DE ALGORITMO T (todos los documentos disponibles)
 ${indexBlock || '(sin documentos cargados todavía)'}
@@ -957,12 +985,18 @@ REGLAS DEL PATCH
     // La organización de OpenAI limita tokens/minuto: ante un 429 se reintenta
     // una vez tras una pausa corta antes de rendirse.
     let aiResult
+    const model = intent === 'edit' ? QUOTES_MODEL_LIGHT : QUOTES_MODEL
+    const maxTokens = intent === 'edit' ? 8_000 : MAX_OUTPUT_TOKENS
     try {
-      aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: MAX_OUTPUT_TOKENS, model: QUOTES_MODEL })
+      aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens, model })
     } catch (error: any) {
-      if (/rate limit|tokens per min|TPM/i.test(String(error?.message))) {
+      const msg = String(error?.message)
+      if (/rate limit|tokens per min|TPM/i.test(msg)) {
         await new Promise((resolve) => setTimeout(resolve, 1500))
-        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: MAX_OUTPUT_TOKENS, model: QUOTES_MODEL })
+        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens, model })
+      } else if (model !== QUOTES_MODEL && /model|not found|does not exist|unsupported/i.test(msg)) {
+        // el modelo ligero no está disponible en esta organización: se usa el principal
+        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens, model: QUOTES_MODEL })
       } else {
         throw error
       }
@@ -1184,7 +1218,7 @@ REGLAS DEL PATCH
             content: message,
             meta: attachedNow.length ? { attachments: attachedNow.map((a: any) => ({ id: a.id, name: a.name })) } : undefined,
           },
-          { quoteId, role: 'assistant', content: reply, meta: { providerUsed, changes, patchKeys, patchContentKeys } },
+          { quoteId, role: 'assistant', content: reply, meta: { providerUsed, changes, patchKeys, patchContentKeys, intent, model, promptChars: prompt.length } },
         ],
       }),
     ])

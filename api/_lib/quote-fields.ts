@@ -11,16 +11,21 @@
 export type FieldEdit = { ref: string; value: string }
 
 const QUOTE_FIELDS = new Set(['title', 'subtitle', 'clientName', 'sector'])
+/** Campos de texto de una línea de la cotización (item.<CODIGO>.<campo>). */
+const ITEM_FIELDS = new Set(['name', 'summary', 'category', 'unit'])
+/** Ramas de content donde se crean objetos y arreglos intermedios al escribir. */
+const FREE_BRANCHES = new Set(['cover', 'sections', 'labels', 'paymentLabels', 'screens', 'signature', 'cobrand', 'schedule', 'service'])
 const MAX_VALUE = 8000
 const MAX_SEGMENTS = 12
 
-export function parseRef(ref: string): { scope: 'quote' | 'content'; path: string[] } | null {
+export function parseRef(ref: string): { scope: 'quote' | 'content' | 'item'; path: string[] } | null {
   const parts = String(ref || '').trim().split('.')
   if (parts.length < 2 || parts.length > MAX_SEGMENTS) return null
   const [scope, ...path] = parts
   const FORBIDDEN = new Set(['__proto__', 'constructor', 'prototype'])
   if (!path.every((p) => /^[A-Za-z0-9_-]{1,40}$/.test(p) && !FORBIDDEN.has(p))) return null
   if (scope === 'quote') return path.length === 1 && QUOTE_FIELDS.has(path[0]) ? { scope, path } : null
+  if (scope === 'item') return path.length === 2 && ITEM_FIELDS.has(path[1]) ? { scope, path } : null
   if (scope === 'content') return { scope, path }
   return null
 }
@@ -29,10 +34,12 @@ export function parseRef(ref: string): { scope: 'quote' | 'content'; path: strin
  * Aplica ediciones sobre una copia del contenido. Devuelve qué cambió y los
  * campos de la cotización a actualizar. Una referencia inválida se ignora.
  */
-export function applyFieldEdits(content: any, edits: FieldEdit[]) {
+export function applyFieldEdits(content: any, edits: FieldEdit[], items: any[] = []) {
   const next = structuredClone(content ?? {})
+  const nextItems = items.map((i) => ({ ...i }))
   const quoteData: Record<string, string> = {}
   const applied: string[] = []
+  let itemsChanged = false
 
   for (const edit of edits.slice(0, 60)) {
     const parsed = parseRef(edit?.ref)
@@ -46,17 +53,39 @@ export function applyFieldEdits(content: any, edits: FieldEdit[]) {
       continue
     }
 
-    // content.*: recorrer creando solo objetos intermedios que ya existan
+    if (parsed.scope === 'item') {
+      const [code, field] = parsed.path
+      const target = nextItems.find((i) => String(i.code).toUpperCase() === code.toUpperCase())
+      if (!target) continue
+      if (field === 'name' && !value) continue
+      target[field] = field === 'unit' ? (value.slice(0, 40) || null) : value.slice(0, field === 'summary' ? 900 : 160)
+      itemsChanged = true
+      applied.push(edit.ref)
+      continue
+    }
+
+    // content.*: recorrer el camino; en las ramas libres se crean los tramos que falten
+    const free = FREE_BRANCHES.has(parsed.path[0])
     let node: any = next
     let ok = true
     for (let i = 0; i < parsed.path.length - 1; i++) {
       const key = parsed.path[i]
-      const child = Array.isArray(node) ? node[Number(key)] : node[key]
+      const nextKey = parsed.path[i + 1]
+      let child = Array.isArray(node) ? node[Number(key)] : node[key]
       if (child === undefined || child === null) {
-        // se crean objetos intermedios solo en las ramas de estructura libre
-        // (cover.duration, sections.diagnostico.title, labels.front)
-        const free = ['cover', 'sections', 'labels'].includes(parsed.path[0])
-        if (!Array.isArray(node) && (free || (i === 0 && parsed.path.length === 2))) { node[key] = {}; node = node[key]; continue }
+        if (free || (i === 0 && parsed.path.length === 2)) {
+          child = /^\d+$/.test(nextKey) ? [] : {}
+          if (Array.isArray(node)) {
+            const idx = Number(key)
+            if (!Number.isInteger(idx) || idx < 0 || idx > 40) { ok = false; break }
+            while (node.length < idx) node.push({})
+            node[idx] = child
+          } else {
+            node[key] = child
+          }
+          node = child
+          continue
+        }
         ok = false
         break
       }
@@ -69,7 +98,9 @@ export function applyFieldEdits(content: any, edits: FieldEdit[]) {
     if (current !== undefined && current !== null && typeof current !== 'string') continue
     if (Array.isArray(node)) {
       const idx = Number(leaf)
-      if (!Number.isInteger(idx) || idx < 0 || idx >= node.length) continue
+      if (!Number.isInteger(idx) || idx < 0 || idx > 40) continue
+      if (idx >= node.length && !free) continue
+      while (node.length < idx) node.push('')
       node[idx] = value
     } else {
       node[leaf] = value
@@ -77,5 +108,5 @@ export function applyFieldEdits(content: any, edits: FieldEdit[]) {
     applied.push(edit.ref)
   }
 
-  return { content: next, quoteData, applied }
+  return { content: next, quoteData, applied, items: itemsChanged ? nextItems : null }
 }
