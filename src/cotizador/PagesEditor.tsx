@@ -19,7 +19,7 @@ const inputCls = 'w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[
 const labelCls = 'mb-1 mt-2 block text-[10px] font-bold uppercase tracking-wide text-slate-400'
 const miniBtn = 'grid h-6 w-6 place-items-center rounded-full text-slate-300 hover:bg-slate-100 hover:text-slate-600'
 
-const BLOCK_TYPES: Array<[string, string]> = [
+export const BLOCK_TYPES: Array<[string, string]> = [
   ['lede', 'Entradilla'],
   ['p', 'Párrafos'],
   ['h3', 'Subtítulo'],
@@ -40,7 +40,7 @@ const BLOCK_TYPES: Array<[string, string]> = [
 ]
 const BLOCK_LABEL: Record<string, string> = Object.fromEntries(BLOCK_TYPES)
 
-const EMPTY: Record<string, Block> = {
+export const EMPTY: Record<string, Block> = {
   lede: { type: 'lede', text: '' },
   p: { type: 'p', text: '' },
   h3: { type: 'h3', text: '' },
@@ -75,7 +75,7 @@ const EMPTY: Record<string, Block> = {
  * tipo de página y desde ahí se edita. Las cotizaciones difieren, así que
  * cualquier plantilla se puede vaciar, ampliar o combinar.
  */
-const TEMPLATES: Array<{ id: string; label: string; make: (n: number) => Page }> = [
+export const TEMPLATES: Array<{ id: string; label: string; make: (n: number) => Page }> = [
   {
     id: 'contenido', label: 'Contenido libre',
     make: (n) => ({ id: `pag-${n}`, num: String(n).padStart(2, '0'), kicker: '', title: 'Nueva página', blocks: [{ type: 'p', text: '' }] }),

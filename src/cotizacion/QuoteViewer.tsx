@@ -18,6 +18,7 @@ import {
 } from './pricing'
 import { DocPageView, useFitPages, type DocPage } from './DocPages'
 import { EditorPanel } from './EditorPanel'
+import { applyRef } from './refs'
 import './quote-viewer.css'
 
 type PublicQuote = {
@@ -179,6 +180,11 @@ export default function QuoteViewer() {
   const [preview, setPreview] = useState(false)
   const [items, setItems] = useState<QuoteItem[]>([])
   const initialOn = useRef<Map<string, boolean>>(new Map())
+  // editor: lo guardado (para saber si hay cambios) y la vista previa limpia
+  const baseline = useRef<string>('')
+  const [editorPreview, setEditorPreview] = useState(false)
+  const snapshot = (q: PublicQuote | null, its: QuoteItem[]) =>
+    JSON.stringify({ t: q?.title, s: q?.subtitle, c: q?.clientName, se: q?.sector, content: q?.content, items: its })
 
   const track = useTracker(publicId, recipientToken, state === 'ready' && !preview)
 
@@ -206,8 +212,8 @@ export default function QuoteViewer() {
       setPreview(payload.preview === true)
       setRecipientName(payload.recipient?.name || '')
       const loaded: QuoteItem[] = Array.isArray(q.pricing?.items) ? q.pricing.items : []
-      // en una recarga del editor se conservan los interruptores que el lector movió
-      setItems((prev) => (silent && prev.length ? loaded.map((i) => ({ ...i, on: prev.find((p) => p.code === i.code)?.on ?? i.on })) : loaded))
+      setItems(loaded)
+      baseline.current = snapshot(q, loaded)
       if (!silent) initialOn.current = new Map(loaded.map((i) => [i.code, i.kind === 'CORE' ? true : i.on]))
       setState('ready')
     } catch {
@@ -269,7 +275,31 @@ export default function QuoteViewer() {
     : quote?.template === 'SERVICIO' // cotizaciones anteriores al registro de plantillas
   const scale = quote?.discountScale?.length ? quote.discountScale : DEFAULT_DISCOUNT_SCALE
   const flatScale = scale.every((tier: DiscountTier) => tier.pct === 0)
-  useFitPages([state, items.length])
+  useFitPages([state, items.length, quote?.content])
+
+  // ── editor: edición local, guardado y descarte ──
+  const dirty = !!quote && editor && snapshot(quote, items) !== baseline.current
+  const onApplyRef = useCallback((ref: string, value: string) => {
+    if (!quote) return false
+    const next = applyRef({ title: quote.title, subtitle: quote.subtitle ?? null, clientName: quote.clientName, sector: quote.sector ?? null, content: quote.content, items }, ref, value)
+    if (!next) return false
+    setQuote({ ...quote, title: next.title, subtitle: next.subtitle, clientName: next.clientName, sector: next.sector, content: next.content })
+    setItems(next.items)
+    return true
+  }, [quote, items])
+  const onPages = useCallback((pages: DocPage[]) => setQuote((q) => (q ? { ...q, content: { ...q.content, pages } } : q)), [])
+  const onSections = useCallback((sections: any) => setQuote((q) => (q ? { ...q, content: { ...q.content, sections } } : q)), [])
+  const saveDraft = useCallback(async () => {
+    if (!quote) return
+    const res = await fetch('/api/quotes/manage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op: 'update', publicId: quote.publicId, title: quote.title, subtitle: quote.subtitle ?? '', clientName: quote.clientName, sector: quote.sector ?? '', content: quote.content, items }),
+    })
+    const payload = await res.json().catch(() => null)
+    if (!res.ok || payload?.ok === false) throw new Error(payload?.error || `Error ${res.status}`)
+    await load(true)
+  }, [quote, items, load])
 
   const paymentSplit: number[] | undefined =
     Array.isArray(quote?.content?.paymentSplit) && quote.content.paymentSplit.length
@@ -1065,7 +1095,24 @@ export default function QuoteViewer() {
       </footer>
       )}
 
-      {editor && <EditorPanel publicId={quote.publicId} onReload={() => load(true)} />}
+      {editor && (
+        <EditorPanel
+          publicId={quote.publicId}
+          quoteTitle={quote.title}
+          published={quote.status === 'PUBLISHED'}
+          pages={docPages as any}
+          sections={sections}
+          dirty={dirty}
+          preview={editorPreview}
+          onPreview={setEditorPreview}
+          onApplyRef={onApplyRef}
+          onPages={onPages as any}
+          onSections={onSections}
+          onSave={saveDraft}
+          onDiscard={() => load(true)}
+          onReload={() => load(true)}
+        />
+      )}
     </div>
   )
 }

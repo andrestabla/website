@@ -546,8 +546,13 @@ export function DocPageView({
         </div>
       )}
       {page.blocks.map((block, i) => (
-        <DocBlockView key={i} block={block} items={items} totals={totals} money={money} pages={pages}
-          refBase={base ? `${base}.blocks.${i}` : undefined} />
+        base ? (
+          <div className="qv-block" data-block={`${pageIndex}:${i}`} key={i}>
+            <DocBlockView block={block} items={items} totals={totals} money={money} pages={pages} refBase={`${base}.blocks.${i}`} />
+          </div>
+        ) : (
+          <DocBlockView key={i} block={block} items={items} totals={totals} money={money} pages={pages} />
+        )
       ))}
       </div>
     </section>

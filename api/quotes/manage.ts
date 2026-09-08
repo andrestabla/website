@@ -22,6 +22,7 @@ import {
   type QuoteTemplateKey,
 } from '../_lib/quotes.js'
 import { applyFieldEdits } from '../_lib/quote-fields.js'
+import { legacyToPages } from '../_lib/quote-legacy-pages.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -254,6 +255,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const updated = await db().update({ where: { id: quote.id }, data })
       return res.status(200).json({ ok: true, quote: updated })
+    }
+
+    // Esquema clásico → páginas libres (para el editor por páginas del visor).
+    if (op === 'to-pages') {
+      const quote = await own()
+      if (Array.isArray(quote.content?.pages) && quote.content.pages.length && body.force !== true) {
+        return res.status(400).json({ ok: false, error: 'Esta cotización ya se compone por páginas' })
+      }
+      const pages = legacyToPages(quote)
+      if (!pages.length) return res.status(400).json({ ok: false, error: 'No hay contenido que convertir' })
+      const updated = await db().update({ where: { id: quote.id }, data: { content: { ...(quote.content as object), pages } } })
+      return res.status(200).json({ ok: true, quote: updated, pagesCount: pages.length })
     }
 
     // Edición directa desde el visor: lista de { ref, value } sobre textos.
