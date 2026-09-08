@@ -118,6 +118,10 @@ const LABEL_KEYS = [
   'investmentIntro', 'invComponent', 'invDeliverables', 'invInvestment', 'payMoment', 'payMilestone', 'payValue', 'milestonesTitle',
   'msHito', 'msWeek', 'msCriterion', 'svcPeriod', 'svcCovers', 'svcValue', 'levelsTitle', 'assumptionsTitle', 'exclusionsTitle',
   'guaranteesTitle', 'garConcept', 'garScope', 'backTagline', 'coverClient', 'coverDuration', 'coverScope', 'coverInvestment',
+  'brandName', 'barBrand', 'barInvestment', 'barTotal', 'pdfButton', 'coverIndex', 'rheadLeft', 'rheadRight', 'pageFooter',
+  'cfgCount', 'cfgModulesAmount', 'cfgTotalAmount', 'cfgIncludes', 'cmModules', 'cmModulesValue', 'cmDeliverables', 'cmDeliverablesValue',
+  'cmWeeks', 'cmWeeksValue', 'mandatoryWord', 'deliverablesWord', 'includedLabel', 'excludedLabel', 'qtyLabel', 'subtotalRow', 'discountRow',
+  'invTotalCount', 'invTotalAmount', 'payTotalAmount', 'weekPrefix', 'backSite', 'svcIncludedTitle', 'svcIncludedDesc', 'svcRenewalTitle', 'svcExitTitle',
 ]
 
 const SYSTEM_RULES = `
@@ -216,7 +220,10 @@ ESTILO (la casa es estricta con esto)
    "content.sections": { "<id>": { "kicker": "", "title": "", "hidden": false } }. Los rótulos
    fijos del documento (Frente, Necesita:, Componente, Entregables, Momento, Hito habilitante,
    Lo que asumimos, Lo que queda fuera, Escenarios, Inversión total, Cliente, Duración, Alcance…)
-   se cambian con "content.labels": { "<clave>": "texto" } usando las claves del ESTADO. Nunca
+   se cambian con "content.labels": { "<clave>": "texto" } usando las claves del ESTADO. Los valores
+   calculados (conteos, totales, cifras del configurador) también admiten un texto fijo por su clave
+   (cfgCount, cmWeeksValue, invTotalAmount, payPct0, payAmount0…); el número de sección con
+   content.sections.<id>.num; la marca con brandName y content.brand.logo (URL). Nunca
    escribas un título de sección dentro de "diagnosis", "architecture" u otra clave: ahí no existe.
    Para quitar una sección entera ("no hablar de módulos") usa hidden true.
 17. ERES EL SÚPER BUILDER: si el consultor pide algo, lo haces en este turno con el patch, aunque
@@ -440,7 +447,7 @@ function applyContentPatch(current: any, incoming: any) {
     const next = { ...(content.labels ?? {}) }
     let changed = false
     for (const [key, raw] of Object.entries(incoming.labels)) {
-      if (!/^[a-zA-Z]{2,40}$/.test(key)) continue
+      if (!/^[a-zA-Z][a-zA-Z0-9]{1,40}$/.test(key)) continue
       const value = str(raw, 200)
       if (value) { next[key] = value; changed = true }
       else if (raw === null || raw === '') { delete next[key]; changed = true }

@@ -12,9 +12,12 @@ export type FieldEdit = { ref: string; value: string }
 
 const QUOTE_FIELDS = new Set(['title', 'subtitle', 'clientName', 'sector'])
 /** Campos de texto de una línea de la cotización (item.<CODIGO>.<campo>). */
-const ITEM_FIELDS = new Set(['name', 'summary', 'category', 'unit'])
+const ITEM_FIELDS = new Set(['name', 'summary', 'category', 'unit', 'price', 'qty', 'deliverables', 'weeks'])
+const ITEM_NUMERIC = new Set(['price', 'qty', 'deliverables', 'weeks'])
+/** «$ 13.500.000» → 13500000; «4» → 4. */
+const toNumber = (text: string) => Number(String(text).replace(/[^\d.,-]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'))
 /** Ramas de content donde se crean objetos y arreglos intermedios al escribir. */
-const FREE_BRANCHES = new Set(['cover', 'sections', 'labels', 'paymentLabels', 'screens', 'signature', 'cobrand', 'schedule', 'service'])
+const FREE_BRANCHES = new Set(['cover', 'sections', 'labels', 'paymentLabels', 'screens', 'signature', 'cobrand', 'schedule', 'service', 'brand'])
 const MAX_VALUE = 8000
 const MAX_SEGMENTS = 12
 
@@ -58,7 +61,13 @@ export function applyFieldEdits(content: any, edits: FieldEdit[], items: any[] =
       const target = nextItems.find((i) => String(i.code).toUpperCase() === code.toUpperCase())
       if (!target) continue
       if (field === 'name' && !value) continue
-      target[field] = field === 'unit' ? (value.slice(0, 40) || null) : value.slice(0, field === 'summary' ? 900 : 160)
+      if (ITEM_NUMERIC.has(field)) {
+        const n = toNumber(value)
+        if (!Number.isFinite(n) || n < 0) continue
+        target[field] = field === 'qty' ? Math.min(999, Math.max(1, Math.round(n))) : field === 'weeks' ? n : Math.round(n)
+      } else {
+        target[field] = field === 'unit' ? (value.slice(0, 40) || null) : value.slice(0, field === 'summary' ? 900 : 160)
+      }
       itemsChanged = true
       applied.push(edit.ref)
       continue

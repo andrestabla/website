@@ -138,7 +138,7 @@ function SectionHead({ id, num, kicker, title, client, override, editor, headLef
         </div>
       )}
       <div className="qv-sechead">
-        <div className="sn">{num}</div>
+        <div className="sn" {...r('num')}>{(override as any)?.num || num}</div>
         <div>
           <div className="kicker" {...r('kicker')}>{override?.kicker || kicker}</div>
           <h2 {...r('title')}>{override?.title || title}</h2>
@@ -368,6 +368,10 @@ export default function QuoteViewer() {
   )
   // imagen reemplazable en el modo edición (clic → subir a R2 → guardar la URL)
   const IMG = (ref: string) => (editor ? { 'data-img-ref': ref } : {})
+  const brandLogo: string = content.brand?.logo || '/assets/algoritmot-mark.svg'
+  const pageFooter = L('pageFooter', 'Algoritmo T — pág.')
+  // pie de hoja editable (con el editor sustituye al pseudoelemento de CSS)
+  const sfoot = editor ? <div className="qv-sfoot"><span {...lab('pageFooter')}>{pageFooter}</span> <b /></div> : null
   const selectable = content.modulesSelectable !== false
   const itemsNoun: string = content.itemsNoun || 'Módulos'
   const canMove = (i: QuoteItem) => selectable && i.kind !== 'CORE' && i.selectable !== false
@@ -420,15 +424,15 @@ export default function QuoteViewer() {
   const nextNum = () => String(++sectionNumber).padStart(2, '0')
 
   return (
-    <div className={`qv${docPages.length ? ' is-paged' : ''}`}>
+    <div className={`qv${docPages.length ? ' is-paged' : ''}${editor ? ' is-editor' : ''}`}>
       <div className="qv-bar">
-        <span className="b-brand"><img src="/assets/algoritmot-mark.svg" alt="" />Algoritmo&nbsp;T</span>
+        <span className="b-brand"><img src={brandLogo} alt="" {...IMG('content.brand.logo')} /><span {...lab('barBrand')}>{L('barBrand', 'Algoritmo\u00a0T')}</span></span>
         <div className="b-total">
           <div className="t-l"><span {...lab('barInvestment')}>{L('barInvestment', 'Inversión')}</span>{!isService && totals.moduleCount > 0 ? ` · ${totals.moduleCount} ${itemsNoun.toLowerCase()}` : ''}</div>
-          <div className="t-v">{money(totals.total)}</div>
+          <div className="t-v" {...lab('barTotal')}>{L('barTotal', money(totals.total))}</div>
         </div>
         <button className="qv-pdfbtn" onClick={() => { void printPdf() }} disabled={printing}>
-          {printing ? 'Preparando…' : '↓ PDF'}
+          {printing ? 'Preparando…' : <span {...lab('pdfButton')}>{L('pdfButton', '↓ PDF')}</span>}
         </button>
         {content.docxUrl && (
           <a className="qv-docxbtn" href={content.docxUrl} download>↓ Word</a>
@@ -440,7 +444,7 @@ export default function QuoteViewer() {
         <div className="qv-page">
           <div className="cv-top">
             <span className="brandmark">
-              <b>Algoritmo</b><img src="/assets/algoritmot-mark.svg" alt="Algoritmo T" />
+              <b {...lab('brandName')}>{L('brandName', 'Algoritmo')}</b><img src={brandLogo} alt="Algoritmo T" {...IMG('content.brand.logo')} />
               {hasCobrand && (
                 <>
                   <i className="cb-sep" aria-hidden="true" />
@@ -478,15 +482,15 @@ export default function QuoteViewer() {
             <DocPageView key={page.id} page={page} client={quote.clientName}
               items={items} totals={totals} money={money} pages={docPages}
               pageIndex={editor ? pi : undefined}
-              headLeft={labels.rheadLeft} headRight={labels.rheadRight}
+              headLeft={labels.rheadLeft} headRight={labels.rheadRight} pageFooter={pageFooter}
               head={headLine} cobrand={hasCobrand ? { name: cobrand.name, logoDark: cobrand.logoDark } : undefined} />
           ))
         ) : (
         <>
         {/* Presentación */}
         {show('presentacion') && (content.intro || content.letterhead) && (
-          <section className="qv-section" data-qsec="presentacion">
-            {head('presentacion', nextNum(), 'Presentación', 'Una propuesta que se lee y se configura')}
+          <section className="qv-section" data-foot={pageFooter} data-qsec="presentacion">
+            {sfoot}{head('presentacion', nextNum(), 'Presentación', 'Una propuesta que se lee y se configura')}
             {content.letterhead && (
               <div className="qv-letterhead">
                 {content.letterhead.date && <p className="lh-date">{content.letterhead.date}</p>}
@@ -501,8 +505,8 @@ export default function QuoteViewer() {
 
         {/* Diagnóstico */}
         {show('diagnostico') && (content.diagnosis?.lede || fronts.length > 0) && (
-          <section className="qv-section" data-qsec="diagnostico">
-            {head('diagnostico', nextNum(), 'Diagnóstico', 'Lectura del reto')}
+          <section className="qv-section" data-foot={pageFooter} data-qsec="diagnostico">
+            {sfoot}{head('diagnostico', nextNum(), 'Diagnóstico', 'Lectura del reto')}
             {content.diagnosis?.lede && <p className="qv-lede" {...R('content.diagnosis.lede')}>{content.diagnosis.lede}</p>}
             {fronts.length > 0 && (
               <div className="qv-fronts">
@@ -522,8 +526,8 @@ export default function QuoteViewer() {
 
         {/* Arquitectura */}
         {show('arquitectura') && (architecture.lede || architecture.layers?.length) && (
-          <section className="qv-section" data-qsec="arquitectura">
-            {head('arquitectura', nextNum(), isService ? 'Método' : 'Solución', isService ? 'Cómo lo hacemos' : 'Arquitectura de la solución')}
+          <section className="qv-section" data-foot={pageFooter} data-qsec="arquitectura">
+            {sfoot}{head('arquitectura', nextNum(), isService ? 'Método' : 'Solución', isService ? 'Cómo lo hacemos' : 'Arquitectura de la solución')}
             {architecture.lede && <p className="qv-lede" {...R('content.architecture.lede')}>{architecture.lede}</p>}
             {architecture.layers?.length > 0 && (
               <div className="qv-arch">
@@ -562,8 +566,8 @@ export default function QuoteViewer() {
 
         {/* Enfoque y alcance en palabras (complementa la arquitectura) */}
         {show('enfoque') && content.approach && (
-          <section className="qv-section" data-qsec="enfoque">
-            {head('enfoque', nextNum(), architecture.lede ? 'Alcance y método' : 'Solución', architecture.lede ? 'Qué comprende el trabajo' : 'Cómo lo resolvemos')}
+          <section className="qv-section" data-foot={pageFooter} data-qsec="enfoque">
+            {sfoot}{head('enfoque', nextNum(), architecture.lede ? 'Alcance y método' : 'Solución', architecture.lede ? 'Qué comprende el trabajo' : 'Cómo lo resolvemos')}
             <p className="qv-letter" {...R('content.approach')}>{content.approach}</p>
             {content.scopeNote && <div className="qv-scopebox"><div className="sb-h" {...lab('scopeNoteTitle')}>{L('scopeNoteTitle', 'Nota de alcance')}</div><p {...R('content.scopeNote')}>{content.scopeNote}</p></div>}
           </section>
@@ -571,8 +575,8 @@ export default function QuoteViewer() {
 
         {/* La plataforma en pantalla */}
         {show('pantallas') && screenItems.length > 0 && (
-          <section className="qv-section" data-qsec="pantallas">
-            {head('pantallas', nextNum(), 'La plataforma en pantalla', 'Así se ve funcionando')}
+          <section className="qv-section" data-foot={pageFooter} data-qsec="pantallas">
+            {sfoot}{head('pantallas', nextNum(), 'La plataforma en pantalla', 'Así se ve funcionando')}
             {screens.intro && <p className="qv-compact" {...R('content.screens.intro')}>{screens.intro}</p>}
             <div className="qv-shots">
               {screenItems.map((shot, index) => (
@@ -592,8 +596,8 @@ export default function QuoteViewer() {
 
         {/* Núcleo + módulos */}
         {show('modulos') && (
-        <section className="qv-section" data-qsec="modulos">
-          {head('modulos', nextNum(), 'Alcance configurable', isService ? 'Servicios incluidos' : 'Núcleo y catálogo de módulos')}
+        <section className="qv-section" data-foot={pageFooter} data-qsec="modulos">
+          {sfoot}{head('modulos', nextNum(), 'Alcance configurable', isService ? 'Servicios incluidos' : 'Núcleo y catálogo de módulos')}
           {selectable && (
           <span className="qv-livehint" {...lab('livehint')}>
             {L('livehint', isService
@@ -616,8 +620,8 @@ export default function QuoteViewer() {
                 </ul>
               )}
               <div className="md-f">
-                <span className="md-e">{item.deliverables} <span {...lab('deliverablesWord')}>{L('deliverablesWord', 'entregables')}</span></span>
-                <span className="md-p">{money(item.price)}</span>
+                <span className="md-e"><span {...R(`item.${item.code}.deliverables`)}>{item.deliverables}</span> <span {...lab('deliverablesWord')}>{L('deliverablesWord', 'entregables')}</span></span>
+                <span className="md-p" {...R(`item.${item.code}.price`)}>{money(item.price)}</span>
               </div>
             </article>
           ))}
@@ -657,9 +661,9 @@ export default function QuoteViewer() {
                         </div>
                       )}
                       <div className="md-f">
-                        <span className="md-e">{item.deliverables} <span {...lab('deliverablesWord')}>{L('deliverablesWord', 'entregables')}</span>{item.unit ? ` por ${item.unit}` : ''}</span>
+                        <span className="md-e"><span {...R(`item.${item.code}.deliverables`)}>{item.deliverables}</span> <span {...lab('deliverablesWord')}>{L('deliverablesWord', 'entregables')}</span>{item.unit ? ` por ${item.unit}` : ''}</span>
                         <span className="md-p">
-                          {(item.qty ?? 1) > 1 ? `${item.qty} × ` : ''}{money(item.price)}{item.unit ? ` / ${item.unit}` : ''}
+                          {(item.qty ?? 1) > 1 ? `${item.qty} × ` : ''}<span {...R(`item.${item.code}.price`)}>{money(item.price)}</span>{item.unit ? ` / ${item.unit}` : ''}
                         </span>
                       </div>
                     </article>
@@ -681,11 +685,11 @@ export default function QuoteViewer() {
 
         {/* Configurador */}
         {show('configurador') && (
-        <section className="qv-section" data-qsec="configurador">
-          {head('configurador', nextNum(), 'Alcance elegido', 'Configurador de alcance')}
+        <section className="qv-section" data-foot={pageFooter} data-qsec="configurador">
+          {sfoot}{head('configurador', nextNum(), 'Alcance elegido', 'Configurador de alcance')}
           <div className="qv-cfg">
             <div className="qv-cfg-sum">
-              <div className="cs-h"><span {...lab('cfgCurrent')}>{L('cfgCurrent', 'Configuración actual')}</span> · {totals.moduleCount} de {items.filter((i) => i.kind !== 'CORE').length} {itemsNoun.toLowerCase()}</div>
+              <div className="cs-h"><span {...lab('cfgCurrent')}>{L('cfgCurrent', 'Configuración actual')}</span> · <span {...lab('cfgCount')}>{L('cfgCount', `${totals.moduleCount} de ${items.filter((i) => i.kind !== 'CORE').length} ${itemsNoun.toLowerCase()}`)}</span></div>
               <ul className="qv-cfg-list">
                 {core.map((item) => (
                   <li className="core" key={item.code}><span>{item.name} · <span {...lab('mandatoryWord')}>{L('mandatoryWord', 'obligatorio')}</span></span><span className="cl-v">{money(item.price)}</span></li>
@@ -693,7 +697,7 @@ export default function QuoteViewer() {
                 {active.length === 0 && <li className="cl-empty">Sin {itemsNoun.toLowerCase()} adicionales seleccionados.</li>}
                 {active.map((item) => (
                   <li key={item.code}>
-                    <span>{item.code} · {item.name}{(item.qty ?? 1) > 1 ? ` × ${item.qty}` : ''}</span>
+                    <span>{item.code} · <span {...R(`item.${item.code}.name`)}>{item.name}</span>{(item.qty ?? 1) > 1 ? <> × <span {...R(`item.${item.code}.qty`)}>{item.qty}</span></> : ''}</span>
                     <span className="cl-v">{money(item.price * (item.qty ?? 1))}</span>
                   </li>
                 ))}
@@ -703,20 +707,20 @@ export default function QuoteViewer() {
               <div className="qv-cfg-tot">
                 <div className="ct-k" {...lab('cfgResult')}>{L('cfgResult', 'Inversión resultante')}</div>
                 {core.length > 0 && <div className="ct-row"><span {...lab('coreRow')}>{L('coreRow', 'Núcleo de la plataforma')}</span><b>{money(totals.core)}</b></div>}
-                <div className="ct-row"><span {...lab('modulesRow')}>{L('modulesRow', `${itemsNoun} seleccionados`)}</span><b>{money(totals.modules)}</b></div>
+                <div className="ct-row"><span {...lab('modulesRow')}>{L('modulesRow', `${itemsNoun} seleccionados`)}</span><b {...lab('cfgModulesAmount')}>{L('cfgModulesAmount', money(totals.modules))}</b></div>
                 {!flatScale && <div className="ct-row dto"><span>Economía de escala {totals.discountPct}%</span><b>{totals.discount ? `− ${money(totals.discount)}` : '—'}</b></div>}
                 <div className="ct-big">
                   <div className="cb-l"><span {...lab('totalLabel')}>{L('totalLabel', 'Inversión total')}</span> · {currency}</div>
-                  <div className="cb-v">{money(totals.total)}</div>
+                  <div className="cb-v" {...lab('cfgTotalAmount')}>{L('cfgTotalAmount', money(totals.total))}</div>
                   {service.includedMonths ? (
                     <div className="cb-s" {...lab('cfgIncludes')}>{L('cfgIncludes', `Incluye ${service.includedMonths} meses de infraestructura y soporte de niveles 2, 3 y 4`)}</div>
                   ) : null}
                 </div>
               </div>
               <div className="qv-cfg-meta">
-                <div><div className="cm-l">{itemsNoun}</div><div className="cm-v">{totals.moduleCount}</div></div>
-                <div><div className="cm-l" {...lab('cmDeliverables')}>{L('cmDeliverables', 'Entregables')}</div><div className="cm-v">{totals.deliverables}</div></div>
-                <div><div className="cm-l" {...lab('cmWeeks')}>{L('cmWeeks', 'Semanas')}</div><div className="cm-v">{totals.weeks}</div></div>
+                <div><div className="cm-l" {...lab('cmModules')}>{L('cmModules', itemsNoun)}</div><div className="cm-v" {...lab('cmModulesValue')}>{L('cmModulesValue', String(totals.moduleCount))}</div></div>
+                <div><div className="cm-l" {...lab('cmDeliverables')}>{L('cmDeliverables', 'Entregables')}</div><div className="cm-v" {...lab('cmDeliverablesValue')}>{L('cmDeliverablesValue', String(totals.deliverables))}</div></div>
+                <div><div className="cm-l" {...lab('cmWeeks')}>{L('cmWeeks', 'Semanas')}</div><div className="cm-v" {...lab('cmWeeksValue')}>{L('cmWeeksValue', String(totals.weeks))}</div></div>
               </div>
             </div>
           </div>
@@ -742,15 +746,15 @@ export default function QuoteViewer() {
 
         {/* Cronograma */}
         {show('cronograma') && scheduleGroups.length > 0 && (
-          <section className="qv-section" data-qsec="cronograma">
-            {head('cronograma', nextNum(), 'Tiempos', 'Cronograma de ejecución')}
+          <section className="qv-section" data-foot={pageFooter} data-qsec="cronograma">
+            {sfoot}{head('cronograma', nextNum(), 'Tiempos', 'Cronograma de ejecución')}
             {schedule.intro && <p className="qv-compact" {...R('content.schedule.intro')}>{schedule.intro}</p>}
             <div className="qv-tablewrap">
               <table className="qv-crono">
                 <thead>
                   <tr>
                     <th {...lab('activity')}>{L('activity', 'Actividad')}</th>
-                    {Array.from({ length: scheduleWeeks }, (_, i) => <th key={i}>S{i + 1}</th>)}
+                    {Array.from({ length: scheduleWeeks }, (_, i) => <th key={i}>{i === 0 ? <><span {...lab('weekPrefix')}>{L('weekPrefix', 'S')}</span>1</> : `${L('weekPrefix', 'S')}${i + 1}`}</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -786,8 +790,8 @@ export default function QuoteViewer() {
 
         {/* Inversión */}
         {show('inversion') && (
-        <section className="qv-section" data-qsec="inversion">
-          {head('inversion', nextNum(), 'Inversión', 'Propuesta económica')}
+        <section className="qv-section" data-foot={pageFooter} data-qsec="inversion">
+          {sfoot}{head('inversion', nextNum(), 'Inversión', 'Propuesta económica')}
           <p className="qv-compact" {...lab('investmentIntro')}>
             {L('investmentIntro', `Valores en ${currency === 'USD' ? 'dólares estadounidenses' : 'pesos colombianos'}.${selectable ? ` Las líneas atenuadas corresponden a ${itemsNoun.toLowerCase()} desactivados, que quedan fuera del total.` : ''}`)}
           </p>
@@ -797,9 +801,9 @@ export default function QuoteViewer() {
               <tbody>
                 {core.map((item) => (
                   <tr key={item.code}>
-                    <td className="ci">{item.name}</td>
-                    <td className="cn">{item.deliverables}</td>
-                    <td className="cv">{money(item.price)}</td>
+                    <td className="ci" {...R(`item.${item.code}.name`)}>{item.name}</td>
+                    <td className="cn" {...R(`item.${item.code}.deliverables`)}>{item.deliverables}</td>
+                    <td className="cv" {...R(`item.${item.code}.price`)}>{money(item.price)}</td>
                   </tr>
                 ))}
                 {categories.map((category) => [
@@ -808,9 +812,9 @@ export default function QuoteViewer() {
                     .filter((i) => i.kind !== 'CORE' && (i.category || 'Módulos') === category)
                     .map((item) => (
                       <tr key={item.code} className={item.on ? '' : 'off'}>
-                        <td className="ci">{item.code} · {item.name}{(item.qty ?? 1) > 1 ? ` × ${item.qty}` : ''}</td>
+                        <td className="ci">{item.code} · <span {...R(`item.${item.code}.name`)}>{item.name}</span>{(item.qty ?? 1) > 1 ? <> × <span {...R(`item.${item.code}.qty`)}>{item.qty}</span></> : ''}</td>
                         <td className="cn">{(item.deliverables ?? 0) * (item.qty ?? 1)}</td>
-                        <td className="cv">{money(item.price * (item.qty ?? 1))}</td>
+                        <td className="cv">{(item.qty ?? 1) > 1 ? money(item.price * (item.qty ?? 1)) : <span {...R(`item.${item.code}.price`)}>{money(item.price)}</span>}</td>
                       </tr>
                     )),
                 ])}
@@ -828,8 +832,8 @@ export default function QuoteViewer() {
                 )}
                 <tr className="tot">
                   <td className="lab" {...lab('totalLabel')}>{L('totalLabel', 'Inversión total')}</td>
-                  <td className="cn">{totals.moduleCount} {itemsNoun.toLowerCase()}</td>
-                  <td><span className="big">{money(totals.total)}</span></td>
+                  <td className="cn" {...lab('invTotalCount')}>{L('invTotalCount', `${totals.moduleCount} ${itemsNoun.toLowerCase()}`)}</td>
+                  <td><span className="big" {...lab('invTotalAmount')}>{L('invTotalAmount', money(totals.total))}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -840,8 +844,8 @@ export default function QuoteViewer() {
 
         {/* Plan de pagos */}
         {show('pagos') && (
-        <section className="qv-section" data-qsec="pagos">
-          {head('pagos', nextNum(), 'Condiciones', 'Plan de pagos e hitos')}
+        <section className="qv-section" data-foot={pageFooter} data-qsec="pagos">
+          {sfoot}{head('pagos', nextNum(), 'Condiciones', 'Plan de pagos e hitos')}
           <div className="qv-tablewrap">
             <table className="qv-table">
               <thead><tr><th {...lab('payMoment')}>{L('payMoment', 'Momento')}</th><th {...lab('payMilestone')}>{L('payMilestone', 'Hito habilitante')}</th><th>%</th><th><span {...lab('payValue')}>{L('payValue', 'Valor')}</span> ({currency})</th></tr></thead>
@@ -865,12 +869,12 @@ export default function QuoteViewer() {
                     <tr key={index}>
                       <td className="t-m" {...R(`content.paymentLabels.${index}.moment`)}>{moment}</td>
                       <td className="t-h" {...R(`content.paymentLabels.${index}.milestone`)}>{description}</td>
-                      <td className="t-m">{payment.pct}%</td>
-                      <td className="t-v">{money(payment.amount)}</td>
+                      <td className="t-m" {...lab(`payPct${index}`)}>{L(`payPct${index}`, `${payment.pct}%`)}</td>
+                      <td className="t-v" {...lab(`payAmount${index}`)}>{L(`payAmount${index}`, money(payment.amount))}</td>
                     </tr>
                   )
                 })}
-                <tr className="tot"><td className="lab" colSpan={2} {...lab('totalLabel')}>{L('totalLabel', 'Inversión total')}</td><td className="t-m">100%</td><td className="t-v">{money(totals.total)}</td></tr>
+                <tr className="tot"><td className="lab" colSpan={2} {...lab('totalLabel')}>{L('totalLabel', 'Inversión total')}</td><td className="t-m">100%</td><td className="t-v" {...lab('payTotalAmount')}>{L('payTotalAmount', money(totals.total))}</td></tr>
               </tbody>
             </table>
           </div>
@@ -899,8 +903,8 @@ export default function QuoteViewer() {
 
         {/* Servicio */}
         {show('servicio') && (service.includedMonths || serviceRows) ? (
-          <section className="qv-section" data-qsec="servicio">
-            {head('servicio', nextNum(), 'Después de la entrega', 'Servicio, soporte y renovación')}
+          <section className="qv-section" data-foot={pageFooter} data-qsec="servicio">
+            {sfoot}{head('servicio', nextNum(), 'Después de la entrega', 'Servicio, soporte y renovación')}
             <div className="qv-tablewrap">
               <table className="qv-table">
                 <thead><tr><th {...lab('svcPeriod')}>{L('svcPeriod', 'Periodo')}</th><th {...lab('svcCovers')}>{L('svcCovers', 'Qué cubre')}</th><th {...lab('svcValue')}>{L('svcValue', 'Valor')}</th></tr></thead>
@@ -959,8 +963,8 @@ export default function QuoteViewer() {
 
         {/* Equipo */}
         {show('equipo') && team.length > 0 && (
-          <section className="qv-section" data-qsec="equipo">
-            {head('equipo', nextNum(), 'Cómo trabajamos', 'Equipo y forma de trabajo')}
+          <section className="qv-section" data-foot={pageFooter} data-qsec="equipo">
+            {sfoot}{head('equipo', nextNum(), 'Cómo trabajamos', 'Equipo y forma de trabajo')}
             {content.teamIntro && <p className="qv-lede" {...R('content.teamIntro')}>{content.teamIntro}</p>}
             <ul className="qv-team">
               {team.map((member, index) => (
@@ -984,8 +988,8 @@ export default function QuoteViewer() {
 
         {/* Supuestos y exclusiones */}
         {show('condiciones') && (content.assumptions?.length || content.exclusions?.length || guarantees.length) ? (
-          <section className="qv-section" data-qsec="condiciones">
-            {head('condiciones', nextNum(), 'Letra clara', 'Supuestos y exclusiones')}
+          <section className="qv-section" data-foot={pageFooter} data-qsec="condiciones">
+            {sfoot}{head('condiciones', nextNum(), 'Letra clara', 'Supuestos y exclusiones')}
             <div className="qv-twocol">
               {content.assumptions?.length ? (
                 <div className="qv-tcbox">
@@ -1032,7 +1036,7 @@ export default function QuoteViewer() {
       <footer className="qv-back" data-qsec="cierre">
         <div className="qv-page">
           <div className="bk-top">
-            <b>Algoritmo</b><img src="/assets/algoritmot-mark.svg" alt="Algoritmo T" />
+            <b {...lab('brandName')}>{L('brandName', 'Algoritmo')}</b><img src={brandLogo} alt="Algoritmo T" {...IMG('content.brand.logo')} />
             {hasCobrand && (
               <>
                 <i className="cb-sep" aria-hidden="true" />

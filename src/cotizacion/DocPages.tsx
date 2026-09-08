@@ -496,6 +496,7 @@ export function DocPageView({
   pageIndex,
   headLeft,
   headRight,
+  pageFooter,
 }: {
   page: DocPage
   client: string
@@ -508,6 +509,8 @@ export function DocPageView({
   /** Textos de la cabecera corrida (content.labels.rheadLeft / rheadRight). */
   headLeft?: string
   headRight?: string
+  /** Texto del pie de hoja antes del número (content.labels.pageFooter). */
+  pageFooter?: string
   /** Línea superior de la hoja. Con cobranding lleva las dos marcas. */
   head?: string
   /** Marca del aliado en la cabecera corrida (versión para fondo claro). */
@@ -516,8 +519,9 @@ export function DocPageView({
   const base = pageIndex !== undefined ? `content.pages.${pageIndex}` : undefined
   const ref = (field: string) => (base ? { 'data-ref': `${base}.${field}` } : {})
   return (
-    <section className="qv-section" id={page.id} data-qsec={page.id} data-head={head || undefined}>
+    <section className="qv-section" id={page.id} data-qsec={page.id} data-head={head || undefined} data-foot={pageFooter || 'Algoritmo T — pág.'}>
       <div className="qv-sheet-in">
+      {base && <div className="qv-sfoot"><span data-ref="content.labels.pageFooter">{pageFooter || 'Algoritmo T — pág.'}</span> <b /></div>}
       <div className="qv-rhead">
         <span className="r-l" {...(base ? { 'data-ref': 'content.labels.rheadLeft' } : {})}>{headLeft || `Propuesta · ${client}`}</span>
         <span className="r-r">
@@ -534,7 +538,7 @@ export function DocPageView({
       </div>
       {(page.title || page.kicker) && (
         <div className="qv-sechead">
-          <div className="sn">{page.num || '—'}</div>
+          <div className="sn" {...ref('num')}>{page.num || '—'}</div>
           <div>
             {page.kicker && <div className="kicker" {...ref('kicker')}>{page.kicker}</div>}
             {page.title && <h2 {...ref('title')}>{page.title}</h2>}
