@@ -23,6 +23,7 @@ import {
   renumberPages,
   type DocPage,
 } from '../_lib/quote-attachments.js'
+import { resolveMedia, type MediaRequest } from '../_lib/quote-media.js'
 import {
   quoteSessionState,
   loadCatalog,
@@ -149,6 +150,25 @@ ESTILO (la casa es estricta con esto)
   empresa, bórrala y escribe otra.
 - Nada de rayas decorativas ni emojis. Frases cortas. Verbos concretos.
 - Los hitos se llaman "hitos", nunca "compuertas" ni "gates".
+14. PORTADA: los datos de la portada (duración, alcance, inversión, antetítulo, lema) se calculan
+   a partir de las líneas. Para cambiarlos o quitar algo de ahí ("borra los 20 entregables",
+   "que diga 9 semanas") escribe el texto exacto en "content.cover": duration, scope, investment,
+   kicker, tagline. Lo que pongas ahí manda sobre el cálculo. "itemsNoun" es cómo se llaman las
+   piezas que se cotizan (Módulos, Cursos, Etapas…): cámbialo cuando el cliente no compra módulos.
+15. ELEMENTO SELECCIONADO: si el mensaje trae un bloque «ELEMENTO SELECCIONADO», el consultor
+   señaló ese texto en el documento. Tu cambio va exactamente ahí (misma sección, misma página,
+   mismo bloque); si además pide cambios en otros lugares, hazlos también.
+16. IMÁGENES Y ESQUEMAS: con "media" insertas imágenes en el documento. kind "search" busca una
+   fotografía con licencia abierta (di qué buscar en inglés y en concreto: "university students
+   laptop classroom"); kind "generate" crea una ilustración (descríbela); kind "diagram" es un
+   esquema que dibujas tú en SVG (flujos, fases, arquitectura, mapas de proceso: 1200×700, fondo
+   blanco, tipografía sans-serif, azul marino #1a2d5a, cian #14b8c8, dorado #d9a441, texto legible,
+   sin scripts). Cada media lleva "caption" y dónde va: "pageId" + "afterBlock" (índice del bloque
+   tras el cual se inserta; -1 = al inicio) en documentos por páginas, o "section": "screens" en
+   el esquema clásico. Máximo 3 por turno y una sola "generate" por turno.
+17. ERES EL SÚPER BUILDER: si el consultor pide algo, lo haces en este turno con el patch, aunque
+   toque varias partes a la vez (portada, líneas, páginas, imágenes). No expliques cómo podría
+   hacerse: hazlo. Si de verdad falta un dato, pídelo en una frase y haz todo lo demás.
 `.trim()
 
 /** Aplica los cambios de módulos que propuso el modelo, contra el catálogo real. */
@@ -346,6 +366,24 @@ function applyContentPatch(current: any, incoming: any) {
     if (value) { content[key] = value; touched.push(key) }
   }
 
+  // ── portada: textos que mandan sobre el cálculo ──
+  if (incoming.cover && typeof incoming.cover === 'object') {
+    const next = { ...(content.cover ?? {}) }
+    let changed = false
+    for (const key of ['kicker', 'duration', 'scope', 'investment', 'tagline'] as const) {
+      if (incoming.cover[key] === undefined) continue
+      const value = str(incoming.cover[key], 200)
+      if (value) { next[key] = value; changed = true }
+      else if (incoming.cover[key] === null || incoming.cover[key] === '') { delete next[key]; changed = true }
+    }
+    if (changed) { content.cover = next; touched.push('cover') }
+  }
+  {
+    const noun = str(incoming.itemsNoun, 40)
+    if (noun) { content.itemsNoun = noun; touched.push('itemsNoun') }
+    if (typeof incoming.modulesSelectable === 'boolean') { content.modulesSelectable = incoming.modulesSelectable; touched.push('modulesSelectable') }
+  }
+
   // ── cajas {title, body} de primer nivel ──
   for (const key of ['coreNote', 'workRhythm'] as const) {
     const value = box(incoming[key])
@@ -539,13 +577,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
-    const quoteId = str(body.quoteId, 40)
+    const publicId = str(body.publicId, 40)
     const message = str(body.message, 4000)
-    if (!quoteId) return res.status(400).json({ ok: false, error: 'quoteId requerido' })
+    if (!str(body.quoteId, 40) && !publicId) return res.status(400).json({ ok: false, error: 'quoteId requerido' })
     if (!message) return res.status(400).json({ ok: false, error: 'Escribe algo para continuar' })
+    // Elemento que el consultor señaló en el visor (modo selección).
+    const focus = body.focus && typeof body.focus === 'object'
+      ? { ref: str(body.focus.ref, 200), label: str(body.focus.label, 200), text: str(body.focus.text, 6000) }
+      : null
 
-    const quote = await quoteDb().findUnique({ where: { id: quoteId } })
+    const quote = await quoteDb().findUnique({ where: str(body.quoteId, 40) ? { id: str(body.quoteId, 40) } : { publicId } })
     if (!quote) return res.status(404).json({ ok: false, error: 'Cotización no encontrada' })
+    const quoteId: string = quote.id
     const isAdmin = session.role === 'SUPERADMIN' || session.role === 'ADMIN'
     if (quote.ownerId !== session.userId && !isAdmin) {
       return res.status(403).json({ ok: false, error: 'Esta cotización es de otro usuario' })
@@ -717,6 +760,7 @@ Título: ${quote.title}
 Líneas activas (${totals.moduleCount}): ${activeCodes.join(', ') || 'ninguna'}
 Todas las líneas de esta cotización (código · nombre · precio unitario × cantidad · estado):
 ${items.map((i) => `- ${i.code} · ${i.name} · ${formatMoney(i.price, quote.currency)}${i.unit ? ` por ${i.unit}` : ''} × ${i.qty ?? 1} · ${i.kind === 'CORE' ? 'núcleo' : i.on ? 'encendida' : 'apagada'}`).join('\n') || '- (sin líneas)'}
+Portada (content.cover, texto que manda sobre el cálculo): ${JSON.stringify(quote.content?.cover || {})} · itemsNoun: ${quote.content?.itemsNoun || 'Módulos'}
 Moneda: ${quote.currency} · Vigencia: ${quote.validDays} días · Plan de pagos: ${Array.isArray(quote.content?.paymentSplit) && quote.content.paymentSplit.length ? quote.content.paymentSplit.join('/') : '30/25/25/20 estándar'}
 Total calculado: ${formatMoney(totals.total, quote.currency)} · ${totals.weeks} semanas · ${totals.deliverables} entregables
 ${pagesState
@@ -744,6 +788,12 @@ Secciones ya redactadas: ${(() => {
 ## CONVERSACIÓN
 ${transcript || '(primera intervención)'}
 CONSULTOR: ${message}
+${focus?.ref ? `\nELEMENTO SELECCIONADO POR EL CONSULTOR EN EL DOCUMENTO
+ref: ${focus.ref}${focus.label ? ` · ${focus.label}` : ''}
+texto actual: «${focus.text || '(vacío)'}»
+El cambio pedido aplica sobre este elemento. Si es content.pages.N.blocks.M.*, edita esa página con pagesPatch
+(id de la página N del ESTADO); si es content.<clave>, edita esa clave en "content"; si es quote.title o
+quote.subtitle, usa "title"/"subtitle".` : ''}
 
 ## RESPONDE SOLO CON ESTE JSON
 {
@@ -789,6 +839,8 @@ CONSULTOR: ${message}
       "finalNote": "", "backQuote": "",
       "signature": { "name": "", "role": "", "email": "", "phone": "" }
     },
+    "content": { "cover": { "kicker": "", "duration": "9 semanas desde el kickoff", "scope": "4 cursos virtuales", "investment": "", "tagline": "" }, "itemsNoun": "Cursos", "modulesSelectable": false },
+    "media": [{ "kind": "search | generate | diagram", "prompt": "qué buscar / describir / título del esquema", "caption": "pie de la imagen", "svg": "<svg …>…</svg> solo en diagram", "pageId": "id de página", "afterBlock": 1, "section": "screens" }],
     "importAttachment": { "id": "id del adjunto", "mode": "replace | append", "setTitle": true },
     "pagesPatch": {
       "set": [{ "id": "id de página existente", "num": "02", "kicker": "opcional", "title": "Título de la sección", "tocHidden": false,
@@ -899,7 +951,7 @@ REGLAS DEL PATCH
     // El modelo a veces aplana el patch (schedule/team/etc. en la raíz en vez
     // de patch.content). Se aceptan ambas formas: todo lo que no sea una clave
     // de primer nivel conocida se trata como contenido.
-    const TOP_LEVEL = new Set(['clientName', 'sector', 'title', 'subtitle', 'template', 'currency', 'validDays', 'modules', 'lines', 'content', 'importAttachment', 'pagesPatch', 'pages'])
+    const TOP_LEVEL = new Set(['clientName', 'sector', 'title', 'subtitle', 'template', 'currency', 'validDays', 'modules', 'lines', 'content', 'importAttachment', 'pagesPatch', 'pages', 'media'])
     const flattened: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(patch)) {
       if (!TOP_LEVEL.has(key)) flattened[key] = value
@@ -974,6 +1026,48 @@ REGLAS DEL PATCH
         changes.push(`+página ${clean.id}`)
       }
     }
+    // ── imágenes y esquemas ──
+    const mediaReqs: any[] = Array.isArray(patch.media) ? patch.media.slice(0, 3) : []
+    let generated = 0
+    let screensChanged = false
+    const screens = { ...(content.screens ?? {}), items: Array.isArray(content.screens?.items) ? [...content.screens.items] : [] }
+    for (const raw of mediaReqs) {
+      const kind = raw?.kind === 'generate' || raw?.kind === 'diagram' ? raw.kind : 'search'
+      if (kind === 'generate' && generated >= 1) continue
+      const req: MediaRequest = { kind, prompt: str(raw?.prompt, 1500), caption: str(raw?.caption, 400), svg: typeof raw?.svg === 'string' ? raw.svg : '' }
+      if (!req.prompt && kind !== 'diagram') continue
+      try {
+        if (kind === 'generate') generated += 1
+        const result = await resolveMedia(req, session.username)
+        if (!result) { changes.push(`sin imagen para «${req.prompt.slice(0, 40)}»`); continue }
+        const caption = [req.caption, result.caption].filter(Boolean).join(' · ')
+        const pageId = str(raw?.pageId, 60)
+        const target = pageId ? pages.findIndex((p) => p.id === pageId) : -1
+        if (target !== -1) {
+          const after = Number.isInteger(Number(raw?.afterBlock)) ? Number(raw.afterBlock) : pages[target].blocks.length - 1
+          const at = Math.min(pages[target].blocks.length, Math.max(0, after + 1))
+          pages[target] = { ...pages[target], blocks: [...pages[target].blocks.slice(0, at), { type: 'img', url: result.url, caption, wide: true }, ...pages[target].blocks.slice(at)] }
+          pagesChanged = true
+          changes.push(`imagen → ${pageId}`)
+        } else if (pages.length && !raw?.section) {
+          // sin destino claro en un documento por páginas: al final de la última página
+          const last = pages.length - 1
+          pages[last] = { ...pages[last], blocks: [...pages[last].blocks, { type: 'img', url: result.url, caption, wide: true }] }
+          pagesChanged = true
+          changes.push(`imagen → ${pages[last].id}`)
+        } else {
+          screens.items.push({ url: result.url, caption, wide: screens.items.length === 0 })
+          screensChanged = true
+          changes.push('imagen → capturas')
+        }
+      } catch (error: any) {
+        changes.push(`imagen fallida: ${String(error?.message || error).slice(0, 80)}`)
+      }
+    }
+    if (screensChanged) {
+      updates.content = { ...(updates.content as object ?? content), screens }
+    }
+
     if (pagesChanged) {
       updates.content = { ...(updates.content as object ?? content), pages: renumberPages(pages) }
     }

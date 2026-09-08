@@ -980,11 +980,13 @@ export function QuoteBuilder() {
             {tab === 'vista' && (
               <div className="flex h-full flex-col">
                 <p className="mb-2 text-[12px] text-slate-400">
-                  El documento tal como lo verá el cliente. Se actualiza con cada cambio del chat, de los módulos o del editor.
+                  El documento tal como lo verá el cliente, con el editor con IA encima: señala un texto y pide el cambio,
+                  o activa «Editar texto» y escribe directamente sobre el documento.{' '}
+                  <a href={`${publicUrl}?editor=1`} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">Abrir a pantalla completa ↗</a>
                 </p>
                 <iframe
                   key={quote.updatedAt}
-                  src={publicUrl}
+                  src={`${publicUrl}?editor=1`}
                   title="Vista previa de la cotización"
                   className="min-h-[70vh] w-full flex-1 rounded-xl border border-slate-200 bg-white shadow-sm"
                 />

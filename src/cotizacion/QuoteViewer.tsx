@@ -17,6 +17,7 @@ import {
   type QuoteItem,
 } from './pricing'
 import { DocPageView, useFitPages, type DocPage } from './DocPages'
+import { EditorPanel } from './EditorPanel'
 import './quote-viewer.css'
 
 type PublicQuote = {
@@ -135,12 +136,13 @@ function SectionHead({ num, kicker, title, client }: { num: string; kicker: stri
   )
 }
 
-function ScopeBox({ title, body }: { title?: string; body?: string }) {
+function ScopeBox({ title, body, refBase }: { title?: string; body?: string; refBase?: string }) {
   if (!body) return null
+  const r = (f: string) => (refBase ? { 'data-ref': `${refBase}.${f}` } : {})
   return (
     <div className="qv-scopebox">
-      {title && <div className="sb-h">{title}</div>}
-      <p>{body}</p>
+      {title && <div className="sb-h" {...r('title')}>{title}</div>}
+      <p {...r('body')}>{body}</p>
     </div>
   )
 }
@@ -156,6 +158,8 @@ export default function QuoteViewer() {
   const { publicId } = useParams<{ publicId: string }>()
   const [search] = useSearchParams()
   const recipientToken = search.get('d') || ''
+  // ?editor=1: panel de edición con IA sobre el documento (requiere sesión del dueño)
+  const editor = search.get('editor') === '1'
 
   const [state, setState] = useState<'loading' | 'ready' | 'notfound' | 'error'>('loading')
   const [quote, setQuote] = useState<PublicQuote | null>(null)
@@ -175,33 +179,31 @@ export default function QuoteViewer() {
     return () => { document.head.removeChild(link) }
   }, [])
 
-  useEffect(() => {
+  const load = useCallback(async (silent = false) => {
     if (!publicId) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const url = `/api/quotes/public?id=${encodeURIComponent(publicId)}${recipientToken ? `&d=${encodeURIComponent(recipientToken)}` : ''}`
-        const res = await fetch(url)
-        const payload = await res.json().catch(() => null)
-        if (cancelled) return
-        if (!res.ok || !payload?.ok) {
-          setState(res.status === 404 ? 'notfound' : 'error')
-          return
-        }
-        const q: PublicQuote = payload.quote
-        setQuote(q)
-        setPreview(payload.preview === true)
-        setRecipientName(payload.recipient?.name || '')
-        const loaded: QuoteItem[] = Array.isArray(q.pricing?.items) ? q.pricing.items : []
-        setItems(loaded)
-        initialOn.current = new Map(loaded.map((i) => [i.code, i.kind === 'CORE' ? true : i.on]))
-        setState('ready')
-      } catch {
-        if (!cancelled) setState('error')
+    try {
+      const url = `/api/quotes/public?id=${encodeURIComponent(publicId)}${recipientToken ? `&d=${encodeURIComponent(recipientToken)}` : ''}`
+      const res = await fetch(url, { cache: 'no-store' })
+      const payload = await res.json().catch(() => null)
+      if (!res.ok || !payload?.ok) {
+        if (!silent) setState(res.status === 404 ? 'notfound' : 'error')
+        return
       }
-    })()
-    return () => { cancelled = true }
+      const q: PublicQuote = payload.quote
+      setQuote(q)
+      setPreview(payload.preview === true)
+      setRecipientName(payload.recipient?.name || '')
+      const loaded: QuoteItem[] = Array.isArray(q.pricing?.items) ? q.pricing.items : []
+      // en una recarga del editor se conservan los interruptores que el lector movió
+      setItems((prev) => (silent && prev.length ? loaded.map((i) => ({ ...i, on: prev.find((p) => p.code === i.code)?.on ?? i.on })) : loaded))
+      if (!silent) initialOn.current = new Map(loaded.map((i) => [i.code, i.kind === 'CORE' ? true : i.on]))
+      setState('ready')
+    } catch {
+      if (!silent) setState('error')
+    }
   }, [publicId, recipientToken])
+
+  useEffect(() => { void load() }, [load])
 
   // Título del documento. El SEO global del sitio (SiteSEO) escribe el suyo al
   // hidratar el CMS; se reafirma un par de veces para ganar esa carrera.
@@ -336,6 +338,10 @@ export default function QuoteViewer() {
 
   const content = quote.content || {}
   const docPages: DocPage[] = Array.isArray(content.pages) ? content.pages : []
+  // Portada: lo escrito en content.cover manda sobre lo calculado.
+  const cover: { kicker?: string; duration?: string; scope?: string; investment?: string; tagline?: string } = content.cover || {}
+  // Con el editor activo, cada texto lleva su referencia para señalarlo o editarlo en sitio.
+  const R = (ref: string) => (editor ? { 'data-ref': ref } : {})
   const selectable = content.modulesSelectable !== false
   const itemsNoun: string = content.itemsNoun || 'Módulos'
   const canMove = (i: QuoteItem) => selectable && i.kind !== 'CORE' && i.selectable !== false
@@ -392,7 +398,7 @@ export default function QuoteViewer() {
       <div className="qv-bar">
         <span className="b-brand"><img src="/assets/algoritmot-mark.svg" alt="" />Algoritmo&nbsp;T</span>
         <div className="b-total">
-          <div className="t-l">Inversión{totals.moduleCount > 0 ? ` · ${totals.moduleCount} ${itemsNoun.toLowerCase()}` : ""}</div>
+          <div className="t-l">Inversión{!isService && totals.moduleCount > 0 ? ` · ${totals.moduleCount} ${itemsNoun.toLowerCase()}` : ''}</div>
           <div className="t-v">{money(totals.total)}</div>
         </div>
         <button className="qv-pdfbtn" onClick={() => { void printPdf() }} disabled={printing}>
@@ -422,29 +428,30 @@ export default function QuoteViewer() {
           </div>
           {hasCobrand && cobrand.role && <div className="cv-cobrand-role">{cobrand.role}</div>}
           {preview && <span className="qv-preview-flag">Vista previa · sin publicar</span>}
-          <div className="kick">
-            Propuesta técnica y económica
+          <div className="kick" {...R('content.cover.kicker')}>
+            {cover.kicker || 'Propuesta técnica y económica'}
             {recipientName ? ` · preparada para ${recipientName}` : ''}
           </div>
-          <h1>{quote.title}</h1>
+          <h1 {...R('quote.title')}>{quote.title}</h1>
           <div className="rule" />
-          {quote.subtitle && <p className="sub">{quote.subtitle}</p>}
+          {(quote.subtitle || editor) && <p className="sub" {...R('quote.subtitle')}>{quote.subtitle || ''}</p>}
           <div className="meta">
-            <div className="m"><div className="ml">Cliente</div><div className="mv">{quote.clientName}</div></div>
-            <div className="m"><div className="ml">Duración</div><div className="mv">{totals.weeks} semanas desde el kickoff</div></div>
-            <div className="m"><div className="ml">Alcance</div><div className="mv">{isService ? `${totals.moduleCount} ${totals.moduleCount === 1 ? 'línea' : 'líneas'} de servicio · ${totals.deliverables} entregables` : totals.moduleCount > 0 ? `Núcleo + ${totals.moduleCount} ${itemsNoun.toLowerCase()} · ${totals.deliverables} entregables` : `${items.filter((i) => i.kind === 'CORE').length} componentes · ${totals.deliverables} entregables`}</div></div>
+            <div className="m"><div className="ml">Cliente</div><div className="mv" {...R('quote.clientName')}>{quote.clientName}</div></div>
+            <div className="m"><div className="ml">Duración</div><div className="mv" {...R('content.cover.duration')}>{cover.duration || `${totals.weeks} semanas desde el kickoff`}</div></div>
+            <div className="m"><div className="ml">Alcance</div><div className="mv" {...R('content.cover.scope')}>{cover.scope || (isService ? `${totals.moduleCount} ${totals.moduleCount === 1 ? 'línea' : 'líneas'} de servicio · ${totals.deliverables} entregables` : totals.moduleCount > 0 ? `Núcleo + ${totals.moduleCount} ${itemsNoun.toLowerCase()} · ${totals.deliverables} entregables` : `${items.filter((i) => i.kind === 'CORE').length} componentes · ${totals.deliverables} entregables`)}</div></div>
             {/* formatMoney ya antepone "USD" en dólares; solo COP necesita el sufijo */}
-            <div className="m"><div className="ml">Inversión</div><div className="mv">{money(totals.total)}{currency === 'USD' ? '' : ` ${currency}`}</div></div>
+            <div className="m"><div className="ml">Inversión</div><div className="mv" {...R('content.cover.investment')}>{cover.investment || <>{money(totals.total)}{currency === 'USD' ? '' : ` ${currency}`}</>}</div></div>
           </div>
-          <div className="tagline">Soluciones digitales con <b>sentido humano</b></div>
+          <div className="tagline" {...R('content.cover.tagline')}>{cover.tagline || <>Soluciones digitales con <b>sentido humano</b></>}</div>
         </div>
       </header>
 
       <main className="qv-page">
         {docPages.length > 0 ? (
-          docPages.map((page) => (
+          docPages.map((page, pi) => (
             <DocPageView key={page.id} page={page} client={quote.clientName}
               items={items} totals={totals} money={money} pages={docPages}
+              pageIndex={editor ? pi : undefined}
               head={headLine} cobrand={hasCobrand ? { name: cobrand.name, logoDark: cobrand.logoDark } : undefined} />
           ))
         ) : (
@@ -461,7 +468,7 @@ export default function QuoteViewer() {
                 {content.letterhead.salutation && <p className="lh-salutation">{content.letterhead.salutation}</p>}
               </div>
             )}
-            {content.intro && <p className="qv-letter qv-drop">{content.intro}</p>}
+            {content.intro && <p className="qv-letter qv-drop" {...R('content.intro')}>{content.intro}</p>}
           </section>
         )}
 
@@ -469,20 +476,20 @@ export default function QuoteViewer() {
         {(content.diagnosis?.lede || fronts.length > 0) && (
           <section className="qv-section" data-qsec="diagnostico">
             <SectionHead client={quote.clientName} num={nextNum()} kicker="Diagnóstico" title="Lectura del reto" />
-            {content.diagnosis?.lede && <p className="qv-lede">{content.diagnosis.lede}</p>}
+            {content.diagnosis?.lede && <p className="qv-lede" {...R('content.diagnosis.lede')}>{content.diagnosis.lede}</p>}
             {fronts.length > 0 && (
               <div className="qv-fronts">
                 {fronts.map((front, index) => (
                   <div className="qv-front" key={index}>
                     <div className="f-n">Frente {String(index + 1).padStart(2, '0')}</div>
-                    <h3>{front.title}</h3>
-                    <p>{front.body}</p>
-                    {front.needs && <div className="f-o">Necesita: <b>{front.needs}</b></div>}
+                    <h3 {...R(`content.diagnosis.fronts.${index}.title`)}>{front.title}</h3>
+                    <p {...R(`content.diagnosis.fronts.${index}.body`)}>{front.body}</p>
+                    {front.needs && <div className="f-o">Necesita: <b {...R(`content.diagnosis.fronts.${index}.needs`)}>{front.needs}</b></div>}
                   </div>
                 ))}
               </div>
             )}
-            <ScopeBox title={content.diagnosis?.note?.title} body={content.diagnosis?.note?.body} />
+            <ScopeBox title={content.diagnosis?.note?.title} body={content.diagnosis?.note?.body} refBase={editor ? 'content.diagnosis.note' : undefined} />
           </section>
         )}
 
@@ -493,14 +500,14 @@ export default function QuoteViewer() {
               kicker={isService ? 'Método' : 'Solución'}
               title={isService ? 'Cómo lo hacemos' : 'Arquitectura de la solución'}
             />
-            {architecture.lede && <p className="qv-lede">{architecture.lede}</p>}
+            {architecture.lede && <p className="qv-lede" {...R('content.architecture.lede')}>{architecture.lede}</p>}
             {architecture.layers?.length > 0 && (
               <div className="qv-arch">
                 {architecture.layers.map((layer: any, index: number) => (
                   <div className="ar" key={index}>
-                    <div className="ar-n">{layer.name}</div>
-                    <div className="ar-t">{layer.title}</div>
-                    <div className="ar-d">{layer.desc}</div>
+                    <div className="ar-n" {...R(`content.architecture.layers.${index}.name`)}>{layer.name}</div>
+                    <div className="ar-t" {...R(`content.architecture.layers.${index}.title`)}>{layer.title}</div>
+                    <div className="ar-d" {...R(`content.architecture.layers.${index}.desc`)}>{layer.desc}</div>
                   </div>
                 ))}
               </div>
@@ -508,16 +515,16 @@ export default function QuoteViewer() {
             {architecture.stack?.length > 0 && (
               <>
                 <h3 className="qv-subtitle">Base tecnológica</h3>
-                {architecture.stackNote && <p className="qv-compact">{architecture.stackNote}</p>}
+                {architecture.stackNote && <p className="qv-compact" {...R('content.architecture.stackNote')}>{architecture.stackNote}</p>}
                 <div className="qv-tablewrap">
                   <table className="qv-stack">
                     <thead><tr>{(architecture.stackHeaders?.length === 3 ? architecture.stackHeaders : ['Componente', 'Tecnología', 'Qué aporta']).map((h: string) => <th key={h}>{h}</th>)}</tr></thead>
                     <tbody>
                       {architecture.stack.map((row: any, index: number) => (
                         <tr key={index}>
-                          <td className="sk-c">{row.component}</td>
-                          <td className="sk-t">{row.tech}</td>
-                          <td>{row.what}</td>
+                          <td className="sk-c" {...R(`content.architecture.stack.${index}.component`)}>{row.component}</td>
+                          <td className="sk-t" {...R(`content.architecture.stack.${index}.tech`)}>{row.tech}</td>
+                          <td {...R(`content.architecture.stack.${index}.what`)}>{row.what}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -525,7 +532,7 @@ export default function QuoteViewer() {
                 </div>
               </>
             )}
-            <ScopeBox title={architecture.ownership?.title} body={architecture.ownership?.body} />
+            <ScopeBox title={architecture.ownership?.title} body={architecture.ownership?.body} refBase={editor ? 'content.architecture.ownership' : undefined} />
           </section>
         )}
 
@@ -535,8 +542,8 @@ export default function QuoteViewer() {
             <SectionHead client={quote.clientName} num={nextNum()}
               kicker={architecture.lede ? 'Alcance y método' : 'Solución'}
               title={architecture.lede ? 'Qué comprende el trabajo' : 'Cómo lo resolvemos'} />
-            <p className="qv-letter">{content.approach}</p>
-            {content.scopeNote && <ScopeBox title="Nota de alcance" body={content.scopeNote} />}
+            <p className="qv-letter" {...R('content.approach')}>{content.approach}</p>
+            {content.scopeNote && <div className="qv-scopebox"><div className="sb-h">Nota de alcance</div><p {...R('content.scopeNote')}>{content.scopeNote}</p></div>}
           </section>
         )}
 
@@ -544,7 +551,7 @@ export default function QuoteViewer() {
         {screenItems.length > 0 && (
           <section className="qv-section" data-qsec="pantallas">
             <SectionHead client={quote.clientName} num={nextNum()} kicker="La plataforma en pantalla" title="Así se ve funcionando" />
-            {screens.intro && <p className="qv-compact">{screens.intro}</p>}
+            {screens.intro && <p className="qv-compact" {...R('content.screens.intro')}>{screens.intro}</p>}
             <div className="qv-shots">
               {screenItems.map((shot, index) => (
                 <figure className={`qv-shot${shot.wide ? ' wide' : ''}`} key={index}>
@@ -552,12 +559,12 @@ export default function QuoteViewer() {
                       estar listas aunque se imprima sin recorrer la página. */}
                   <img src={shot.url} alt={shot.caption || `Captura ${index + 1}`} loading="eager" decoding="async" />
                   {shot.caption && (
-                    <figcaption><b>Fig. {String(index + 1).padStart(2, '0')}</b> {shot.caption}</figcaption>
+                    <figcaption><b>Fig. {String(index + 1).padStart(2, '0')}</b> <span {...R(`content.screens.items.${index}.caption`)}>{shot.caption}</span></figcaption>
                   )}
                 </figure>
               ))}
             </div>
-            {screens.note && <p className="qv-shotnote">{screens.note}</p>}
+            {screens.note && <p className="qv-shotnote" {...R('content.screens.note')}>{screens.note}</p>}
           </section>
         )}
 
@@ -592,7 +599,7 @@ export default function QuoteViewer() {
               </div>
             </article>
           ))}
-          {content.coreNote?.body && <ScopeBox title={content.coreNote.title} body={content.coreNote.body} />}
+          {content.coreNote?.body && <ScopeBox title={content.coreNote.title} body={content.coreNote.body} refBase={editor ? 'content.coreNote' : undefined} />}
 
           {categories.map((category) => (
             <div key={category}>
@@ -654,12 +661,12 @@ export default function QuoteViewer() {
           <SectionHead client={quote.clientName} num={nextNum()} kicker="Alcance elegido" title="Configurador de alcance" />
           <div className="qv-cfg">
             <div className="qv-cfg-sum">
-              <div className="cs-h">Configuración actual · {totals.moduleCount} de {items.filter((i) => i.kind !== 'CORE').length} módulos</div>
+              <div className="cs-h">Configuración actual · {totals.moduleCount} de {items.filter((i) => i.kind !== 'CORE').length} {itemsNoun.toLowerCase()}</div>
               <ul className="qv-cfg-list">
                 {core.map((item) => (
                   <li className="core" key={item.code}><span>{item.name} · obligatorio</span><span className="cl-v">{money(item.price)}</span></li>
                 ))}
-                {active.length === 0 && <li className="cl-empty">Sin módulos adicionales seleccionados.</li>}
+                {active.length === 0 && <li className="cl-empty">Sin {itemsNoun.toLowerCase()} adicionales seleccionados.</li>}
                 {active.map((item) => (
                   <li key={item.code}>
                     <span>{item.code} · {item.name}{(item.qty ?? 1) > 1 ? ` × ${item.qty}` : ''}</span>
@@ -671,9 +678,9 @@ export default function QuoteViewer() {
             <div>
               <div className="qv-cfg-tot">
                 <div className="ct-k">Inversión resultante</div>
-                <div className="ct-row"><span>Núcleo de la plataforma</span><b>{money(totals.core)}</b></div>
-                <div className="ct-row"><span>Módulos seleccionados</span><b>{money(totals.modules)}</b></div>
-                <div className="ct-row dto"><span>Economía de escala {totals.discountPct}%</span><b>{totals.discount ? `− ${money(totals.discount)}` : '—'}</b></div>
+                {core.length > 0 && <div className="ct-row"><span>Núcleo de la plataforma</span><b>{money(totals.core)}</b></div>}
+                <div className="ct-row"><span>{itemsNoun} seleccionados</span><b>{money(totals.modules)}</b></div>
+                {!flatScale && <div className="ct-row dto"><span>Economía de escala {totals.discountPct}%</span><b>{totals.discount ? `− ${money(totals.discount)}` : '—'}</b></div>}
                 <div className="ct-big">
                   <div className="cb-l">Inversión total · {currency}</div>
                   <div className="cb-v">{money(totals.total)}</div>
@@ -683,7 +690,7 @@ export default function QuoteViewer() {
                 </div>
               </div>
               <div className="qv-cfg-meta">
-                <div><div className="cm-l">Módulos</div><div className="cm-v">{totals.moduleCount}</div></div>
+                <div><div className="cm-l">{itemsNoun}</div><div className="cm-v">{totals.moduleCount}</div></div>
                 <div><div className="cm-l">Entregables</div><div className="cm-v">{totals.deliverables}</div></div>
                 <div><div className="cm-l">Semanas</div><div className="cm-v">{totals.weeks}</div></div>
               </div>
@@ -705,14 +712,14 @@ export default function QuoteViewer() {
               )
             })}
           </div>}
-          {content.timelineNote && <ScopeBox title="Cómo leer el plazo" body={content.timelineNote} />}
+          {content.timelineNote && <div className="qv-scopebox"><div className="sb-h">Cómo leer el plazo</div><p {...R('content.timelineNote')}>{content.timelineNote}</p></div>}
         </section>
 
         {/* Cronograma */}
         {scheduleGroups.length > 0 && (
           <section className="qv-section" data-qsec="cronograma">
             <SectionHead client={quote.clientName} num={nextNum()} kicker="Tiempos" title="Cronograma de ejecución" />
-            {schedule.intro && <p className="qv-compact">{schedule.intro}</p>}
+            {schedule.intro && <p className="qv-compact" {...R('content.schedule.intro')}>{schedule.intro}</p>}
             <div className="qv-tablewrap">
               <table className="qv-crono">
                 <thead>
@@ -756,8 +763,8 @@ export default function QuoteViewer() {
         <section className="qv-section" data-qsec="inversion">
           <SectionHead client={quote.clientName} num={nextNum()} kicker="Inversión" title="Propuesta económica" />
           <p className="qv-compact">
-            Valores en {currency === 'USD' ? 'dólares estadounidenses' : 'pesos colombianos'}. Las líneas
-            atenuadas corresponden a módulos desactivados, que quedan fuera del total.
+            Valores en {currency === 'USD' ? 'dólares estadounidenses' : 'pesos colombianos'}.
+            {selectable ? ` Las líneas atenuadas corresponden a ${itemsNoun.toLowerCase()} desactivados, que quedan fuera del total.` : ''}
           </p>
           <div className="qv-tablewrap">
             <table className="qv-inv">
@@ -771,7 +778,7 @@ export default function QuoteViewer() {
                   </tr>
                 ))}
                 {categories.map((category) => [
-                  <tr className="grp" key={`c-${category}`}><td colSpan={3}>Módulos · {category}</td></tr>,
+                  <tr className="grp" key={`c-${category}`}><td colSpan={3}>{itemsNoun} · {category}</td></tr>,
                   ...items
                     .filter((i) => i.kind !== 'CORE' && (i.category || 'Módulos') === category)
                     .map((item) => (
@@ -783,24 +790,26 @@ export default function QuoteViewer() {
                     )),
                 ])}
                 <tr className="sub">
-                  <td>Subtotal · núcleo + módulos activos</td>
+                  <td>{core.length ? `Subtotal · núcleo + ${itemsNoun.toLowerCase()} activos` : `Subtotal · ${itemsNoun.toLowerCase()} activos`}</td>
                   <td className="cn">{totals.deliverables}</td>
                   <td className="cv">{money(totals.subtotal)}</td>
                 </tr>
+                {!flatScale && (
                 <tr className="dto">
-                  <td>Economía de escala · {totals.discountPct}% sobre módulos</td>
+                  <td>Economía de escala · {totals.discountPct}% sobre {itemsNoun.toLowerCase()}</td>
                   <td />
                   <td className="cv">{totals.discount ? `− ${money(totals.discount)}` : '—'}</td>
                 </tr>
+                )}
                 <tr className="tot">
                   <td className="lab">Inversión total</td>
-                  <td className="cn">{totals.moduleCount} módulos</td>
+                  <td className="cn">{totals.moduleCount} {itemsNoun.toLowerCase()}</td>
                   <td><span className="big">{money(totals.total)}</span></td>
                 </tr>
               </tbody>
             </table>
           </div>
-          {content.investmentNote && <p className="qv-note">{content.investmentNote}</p>}
+          {content.investmentNote && <p className="qv-note" {...R('content.investmentNote')}>{content.investmentNote}</p>}
         </section>
 
         {/* Plan de pagos */}
@@ -827,8 +836,8 @@ export default function QuoteViewer() {
                   const description = custom[index]?.milestone || fallback[1]
                   return (
                     <tr key={index}>
-                      <td className="t-m">{moment}</td>
-                      <td className="t-h">{description}</td>
+                      <td className="t-m" {...(custom[index] ? R(`content.paymentLabels.${index}.moment`) : {})}>{moment}</td>
+                      <td className="t-h" {...(custom[index] ? R(`content.paymentLabels.${index}.milestone`) : {})}>{description}</td>
                       <td className="t-m">{payment.pct}%</td>
                       <td className="t-v">{money(payment.amount)}</td>
                     </tr>
@@ -847,9 +856,9 @@ export default function QuoteViewer() {
                   <tbody>
                     {milestones.map((m, i) => (
                       <tr key={i}>
-                        <td className="t-m">{m.name}</td>
-                        <td className="t-m">{m.week}</td>
-                        <td className="t-h" style={{ textAlign: 'left', fontWeight: 400 }}>{m.criterion}</td>
+                        <td className="t-m" {...R(`content.milestones.${i}.name`)}>{m.name}</td>
+                        <td className="t-m" {...R(`content.milestones.${i}.week`)}>{m.week}</td>
+                        <td className="t-h" style={{ textAlign: 'left', fontWeight: 400 }} {...R(`content.milestones.${i}.criterion`)}>{m.criterion}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -857,7 +866,7 @@ export default function QuoteViewer() {
               </div>
             </>
           )}
-          {content.paymentsNote && <p className="qv-note">{content.paymentsNote}</p>}
+          {content.paymentsNote && <p className="qv-note" {...R('content.paymentsNote')}>{content.paymentsNote}</p>}
         </section>
 
         {/* Servicio */}
@@ -871,8 +880,8 @@ export default function QuoteViewer() {
                   {serviceRows ? (
                     serviceRows.map((row, i) => (
                       <tr key={i}>
-                        <td className="t-m">{row.period}</td>
-                        <td className="t-h">{row.title}{row.desc ? <span>{row.desc}</span> : null}</td>
+                        <td className="t-m" {...R(`content.service.rows.${i}.period`)}>{row.period}</td>
+                        <td className="t-h"><span {...R(`content.service.rows.${i}.title`)}>{row.title}</span>{row.desc ? <span {...R(`content.service.rows.${i}.desc`)}>{row.desc}</span> : null}</td>
                         <td className="t-v" style={/^incluido$/i.test(row.value.trim()) ? { fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' } : undefined}>
                           {row.value}
                         </td>
@@ -907,16 +916,16 @@ export default function QuoteViewer() {
             {serviceLevels.length > 0 && (
               <>
                 <h3 className="qv-subtitle">Niveles de soporte</h3>
-                {service.levelsIntro && <p className="qv-compact">{service.levelsIntro}</p>}
+                {service.levelsIntro && <p className="qv-compact" {...R('content.service.levelsIntro')}>{service.levelsIntro}</p>}
                 <ul className="qv-deliv one">
                   {serviceLevels.map((level, i) => (
-                    <li key={i}><b>{level.name}.</b> {level.desc}</li>
+                    <li key={i}><b {...R(`content.service.levels.${i}.name`)}>{level.name}</b>. <span {...R(`content.service.levels.${i}.desc`)}>{level.desc}</span></li>
                   ))}
                 </ul>
               </>
             )}
-            {service.budgetNote?.body && <ScopeBox title={service.budgetNote.title} body={service.budgetNote.body} />}
-            {service.note && <p className="qv-note">{service.note}</p>}
+            {service.budgetNote?.body && <ScopeBox title={service.budgetNote.title} body={service.budgetNote.body} refBase={editor ? 'content.service.budgetNote' : undefined} />}
+            {service.note && <p className="qv-note" {...R('content.service.note')}>{service.note}</p>}
           </section>
         ) : null}
 
@@ -924,24 +933,24 @@ export default function QuoteViewer() {
         {team.length > 0 && (
           <section className="qv-section" data-qsec="equipo">
             <SectionHead client={quote.clientName} num={nextNum()} kicker="Cómo trabajamos" title="Equipo y forma de trabajo" />
-            {content.teamIntro && <p className="qv-lede">{content.teamIntro}</p>}
+            {content.teamIntro && <p className="qv-lede" {...R('content.teamIntro')}>{content.teamIntro}</p>}
             <ul className="qv-team">
               {team.map((member, index) => (
                 <li key={index}>
                   <div className="tm-head">
                     <span className="tm-n">{String(index + 1).padStart(2, '0')}</span>
                     <div>
-                      <h4>{member.role}</h4>
-                      <div className="tm-resp">{member.dedication}</div>
+                      <h4 {...R(`content.team.${index}.role`)}>{member.role}</h4>
+                      <div className="tm-resp" {...R(`content.team.${index}.dedication`)}>{member.dedication}</div>
                     </div>
                   </div>
                   <ul className="tm-fns">
-                    {member.functions?.map((fn, i) => <li key={i}>{fn}</li>)}
+                    {member.functions?.map((fn, i) => <li key={i} {...R(`content.team.${index}.functions.${i}`)}>{fn}</li>)}
                   </ul>
                 </li>
               ))}
             </ul>
-            {content.workRhythm?.body && <ScopeBox title={content.workRhythm.title} body={content.workRhythm.body} />}
+            {content.workRhythm?.body && <ScopeBox title={content.workRhythm.title} body={content.workRhythm.body} refBase={editor ? 'content.workRhythm' : undefined} />}
           </section>
         )}
 
@@ -953,13 +962,13 @@ export default function QuoteViewer() {
               {content.assumptions?.length ? (
                 <div className="qv-tcbox">
                   <h3>Lo que asumimos</h3>
-                  <ul>{content.assumptions.map((text: string, i: number) => <li key={i}>{text}</li>)}</ul>
+                  <ul>{content.assumptions.map((text: string, i: number) => <li key={i} {...R(`content.assumptions.${i}`)}>{text}</li>)}</ul>
                 </div>
               ) : null}
               {content.exclusions?.length ? (
                 <div className="qv-tcbox warn">
                   <h3>Lo que queda fuera</h3>
-                  <ul>{content.exclusions.map((text: string, i: number) => <li key={i}>{text}</li>)}</ul>
+                  <ul>{content.exclusions.map((text: string, i: number) => <li key={i} {...R(`content.exclusions.${i}`)}>{text}</li>)}</ul>
                 </div>
               ) : null}
             </div>
@@ -972,8 +981,8 @@ export default function QuoteViewer() {
                     <tbody>
                       {guarantees.map((g, i) => (
                         <tr key={i}>
-                          <td className="t-m">{g.concept}</td>
-                          <td className="t-h" style={{ textAlign: 'left', fontWeight: 400 }}>{g.text}</td>
+                          <td className="t-m" {...R(`content.guarantees.${i}.concept`)}>{g.concept}</td>
+                          <td className="t-h" style={{ textAlign: 'left', fontWeight: 400 }} {...R(`content.guarantees.${i}.text`)}>{g.text}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -981,8 +990,8 @@ export default function QuoteViewer() {
                 </div>
               </>
             )}
-            <p className="qv-note">
-              {content.finalNote || `Propuesta válida por ${quote.validDays} días. Este documento es interactivo: la configuración de módulos activa al momento de la firma constituye el alcance contractual.`}
+            <p className="qv-note" {...R('content.finalNote')}>
+              {content.finalNote || `Propuesta válida por ${quote.validDays} días.${selectable ? ` Este documento es interactivo: la configuración de ${itemsNoun.toLowerCase()} activa al momento de la firma constituye el alcance contractual.` : ''}`}
             </p>
           </section>
         ) : null}
@@ -1004,13 +1013,13 @@ export default function QuoteViewer() {
               </>
             )}
           </div>
-          <div className="bk-q">
+          <div className="bk-q" {...R('content.backQuote')}>
             {content.backQuote || <>Toda la operación de <em>{quote.clientName}</em> en un solo lugar.</>}
           </div>
           <div className="bk-tag">Soluciones digitales con sentido humano.</div>
           <div className="sig">
-            <div className="nm">{signature.name || 'Algoritmo T'}</div>
-            {signature.role && <div className="rl">{signature.role}</div>}
+            <div className="nm" {...R('content.signature.name')}>{signature.name || 'Algoritmo T'}</div>
+            {signature.role && <div className="rl" {...R('content.signature.role')}>{signature.role}</div>}
             <div className="ct">
               {signature.email && <a href={`mailto:${signature.email}`}>{signature.email}</a>}
               {signature.email && signature.phone ? ' · ' : ''}
@@ -1021,6 +1030,8 @@ export default function QuoteViewer() {
           </div>
         </div>
       </footer>
+
+      {editor && <EditorPanel publicId={quote.publicId} onReload={() => load(true)} />}
     </div>
   )
 }

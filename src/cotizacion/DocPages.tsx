@@ -217,40 +217,45 @@ export function DocBlockView({
   totals,
   money,
   pages = [],
+  refBase,
 }: {
   block: DocBlock
   items: QuoteItem[]
   totals: QuoteTotals
   money: (n: number) => string
   pages?: DocPage[]
+  /** Referencia del bloque (content.pages.N.blocks.M) para el editor en sitio. */
+  refBase?: string
 }) {
+  // data-ref de un campo del bloque; sin refBase el visor es de solo lectura
+  const r = (field: string) => (refBase ? { 'data-ref': `${refBase}.${field}` } : {})
   switch (block.type) {
     case 'lede':
-      return <>{paras(block.text).map((t, i) => <p className="qv-lede" style={al(block.align)} key={i}>{lines(t)}</p>)}</>
+      return <div {...r('text')}>{paras(block.text).map((t, i) => <p className="qv-lede" style={al(block.align)} key={i}>{lines(t)}</p>)}</div>
 
     case 'p':
-      return <Prose text={block.text} align={block.align} />
+      return <div {...r('text')}><Prose text={block.text} align={block.align} /></div>
 
     case 'h3':
-      return <h3 className="qv-subtitle" style={al(block.align)}>{rich(block.text)}</h3>
+      return <h3 className="qv-subtitle" style={al(block.align)} {...r('text')}>{rich(block.text)}</h3>
 
     case 'list':
       return (
         <ul className="qv-deliv one" style={al(block.align)}>
-          {block.items.filter(Boolean).map((it, i) => <li key={i}>{rich(it)}</li>)}
+          {block.items.map((it, i) => (it ? <li key={i} {...r(`items.${i}`)}>{rich(it)}</li> : null))}
         </ul>
       )
 
     case 'box':
       return (
         <div className="qv-scopebox" style={al(block.align)}>
-          {block.title && <div className="sb-h">{rich(block.title)}</div>}
-          <Prose text={block.body} />
+          {block.title && <div className="sb-h" {...r('title')}>{rich(block.title)}</div>}
+          <div {...r('body')}><Prose text={block.body} /></div>
         </div>
       )
 
     case 'note':
-      return <p className="qv-note" style={al(block.align)}>{rich(block.text)}</p>
+      return <p className="qv-note" style={al(block.align)} {...r('text')}>{rich(block.text)}</p>
 
     case 'table':
       return (
@@ -258,14 +263,14 @@ export function DocBlockView({
           <table className="qv-table doc">
             {block.headers?.length ? (
               <thead><tr>{block.headers.map((h, i) => (
-                <th key={i} style={al(block.colAlign?.[i])}>{h}</th>
+                <th key={i} style={al(block.colAlign?.[i])} {...r(`headers.${i}`)}>{h}</th>
               ))}</tr></thead>
             ) : null}
             <tbody>
               {block.rows.map((row, ri) => (
                 <tr key={ri}>
                   {row.map((cell, ci) => (
-                    <td key={ci} style={al(block.colAlign?.[ci])}
+                    <td key={ci} style={al(block.colAlign?.[ci])} {...r(`rows.${ri}.${ci}`)}
                       className={ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : undefined}>{rich(cell)}</td>
                   ))}
                 </tr>
@@ -280,10 +285,10 @@ export function DocBlockView({
         <div className={`qv-fronts${block.cols === 3 ? ' three' : ''}`}>
           {block.items.map((card, i) => (
             <div className="qv-front" key={i}>
-              {card.tag && <div className="f-n">{card.tag}</div>}
-              <h3>{rich(card.title)}</h3>
-              <Prose text={card.body} />
-              {card.foot && <div className="f-o">{rich(card.foot)}</div>}
+              {card.tag && <div className="f-n" {...r(`items.${i}.tag`)}>{card.tag}</div>}
+              <h3 {...r(`items.${i}.title`)}>{rich(card.title)}</h3>
+              <div {...r(`items.${i}.body`)}><Prose text={card.body} /></div>
+              {card.foot && <div className="f-o" {...r(`items.${i}.foot`)}>{rich(card.foot)}</div>}
             </div>
           ))}
         </div>
@@ -293,15 +298,15 @@ export function DocBlockView({
       return (
         <div className="qv-fase">
           <div className="h">
-            <span className="id">{block.id}</span>
-            <b>{block.name}</b>
-            {block.when && <span className="when">{block.when}</span>}
+            <span className="id" {...r('id')}>{block.id}</span>
+            <b {...r('name')}>{block.name}</b>
+            {block.when && <span className="when" {...r('when')}>{block.when}</span>}
           </div>
           <dl>
             {block.defs.map((d, i) => (
               <div className="dpair" key={i}>
-                <dt>{d.term}</dt>
-                <dd className={d.strong ? 'pf' : undefined}>{rich(d.desc)}</dd>
+                <dt {...r(`defs.${i}.term`)}>{d.term}</dt>
+                <dd className={d.strong ? 'pf' : undefined} {...r(`defs.${i}.desc`)}>{rich(d.desc)}</dd>
               </div>
             ))}
           </dl>
@@ -312,7 +317,7 @@ export function DocBlockView({
       return (
         <figure className={`qv-shot${block.wide ? ' wide' : ''}`}>
           <img src={block.url} alt={block.caption || ''} loading="lazy" />
-          {block.caption && <figcaption>{block.caption}</figcaption>}
+          {block.caption && <figcaption {...r('caption')}>{block.caption}</figcaption>}
         </figure>
       )
 
@@ -332,10 +337,10 @@ export function DocBlockView({
                 {rows.map((row: any, i: number) => (
                   <tr key={i}>
                     <td className="c">
-                      {rich(row.concept)}
-                      {row.detail && <span className="sub">{rich(row.detail)}</span>}
+                      <span {...(block.rows?.length ? r(`rows.${i}.concept`) : {})}>{rich(row.concept)}</span>
+                      {row.detail && <span className="sub" {...(block.rows?.length ? r(`rows.${i}.detail`) : {})}>{rich(row.detail)}</span>}
                     </td>
-                    <td className="r">{row.amount}</td>
+                    <td className="r" {...(block.rows?.length ? r(`rows.${i}.amount`) : {})}>{row.amount}</td>
                   </tr>
                 ))}
                 <tr className="tot">
@@ -345,7 +350,7 @@ export function DocBlockView({
               </tbody>
             </table>
           </div>
-          {block.note && <p className="qv-note">{rich(block.note)}</p>}
+          {block.note && <p className="qv-note" {...r('note')}>{rich(block.note)}</p>}
         </>
       )
     }
@@ -355,8 +360,8 @@ export function DocBlockView({
         <div className="qv-pay">
           {block.items.map((p, i) => (
             <div className="p" key={i}>
-              <div className="pc">{p.pct}</div>
-              <div className="pl">{rich(p.label)}</div>
+              <div className="pc" {...r(`items.${i}.pct`)}>{p.pct}</div>
+              <div className="pl" {...r(`items.${i}.label`)}>{rich(p.label)}</div>
             </div>
           ))}
         </div>
@@ -398,12 +403,12 @@ export function DocBlockView({
               <div className="tm-head">
                 <span className="tm-n">{String(i + 1).padStart(2, '0')}</span>
                 <div>
-                  <h4>{member.role}</h4>
-                  {member.dedication && <div className="tm-resp">{member.dedication}</div>}
+                  <h4 {...r(`items.${i}.role`)}>{member.role}</h4>
+                  {member.dedication && <div className="tm-resp" {...r(`items.${i}.dedication`)}>{member.dedication}</div>}
                 </div>
               </div>
               <ul className="tm-fns">
-                {member.functions.filter(Boolean).map((f, k) => <li key={k}>{rich(f)}</li>)}
+                {member.functions.map((f, k) => (f ? <li key={k} {...r(`items.${i}.functions.${k}`)}>{rich(f)}</li> : null))}
               </ul>
             </li>
           ))}
@@ -467,10 +472,10 @@ export function DocBlockView({
     case 'letterhead':
       return (
         <div className="qv-letterhead">
-          {block.date && <p className="lh-date">{block.date}</p>}
-          {block.addressee && <p className="lh-addr">{block.addressee}</p>}
-          {block.subject && <p className="lh-subject"><b>Asunto:</b> {block.subject}</p>}
-          {block.salutation && <p className="lh-salutation">{block.salutation}</p>}
+          {block.date && <p className="lh-date" {...r('date')}>{block.date}</p>}
+          {block.addressee && <p className="lh-addr" {...r('addressee')}>{block.addressee}</p>}
+          {block.subject && <p className="lh-subject"><b>Asunto:</b> <span {...r('subject')}>{block.subject}</span></p>}
+          {block.salutation && <p className="lh-salutation" {...r('salutation')}>{block.salutation}</p>}
         </div>
       )
 
@@ -488,6 +493,7 @@ export function DocPageView({
   pages = [],
   head,
   cobrand,
+  pageIndex,
 }: {
   page: DocPage
   client: string
@@ -495,11 +501,15 @@ export function DocPageView({
   totals: QuoteTotals
   money: (n: number) => string
   pages?: DocPage[]
+  /** Índice en content.pages: activa las referencias editables de la página. */
+  pageIndex?: number
   /** Línea superior de la hoja. Con cobranding lleva las dos marcas. */
   head?: string
   /** Marca del aliado en la cabecera corrida (versión para fondo claro). */
   cobrand?: { name?: string; logoDark?: string }
 }) {
+  const base = pageIndex !== undefined ? `content.pages.${pageIndex}` : undefined
+  const ref = (field: string) => (base ? { 'data-ref': `${base}.${field}` } : {})
   return (
     <section className="qv-section" id={page.id} data-qsec={page.id} data-head={head || undefined}>
       <div className="qv-sheet-in">
@@ -521,13 +531,14 @@ export function DocPageView({
         <div className="qv-sechead">
           <div className="sn">{page.num || '—'}</div>
           <div>
-            {page.kicker && <div className="kicker">{page.kicker}</div>}
-            {page.title && <h2>{page.title}</h2>}
+            {page.kicker && <div className="kicker" {...ref('kicker')}>{page.kicker}</div>}
+            {page.title && <h2 {...ref('title')}>{page.title}</h2>}
           </div>
         </div>
       )}
       {page.blocks.map((block, i) => (
-        <DocBlockView key={i} block={block} items={items} totals={totals} money={money} pages={pages} />
+        <DocBlockView key={i} block={block} items={items} totals={totals} money={money} pages={pages}
+          refBase={base ? `${base}.blocks.${i}` : undefined} />
       ))}
       </div>
     </section>

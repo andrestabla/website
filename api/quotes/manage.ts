@@ -21,6 +21,7 @@ import {
   type QuoteItem,
   type QuoteTemplateKey,
 } from '../_lib/quotes.js'
+import { applyFieldEdits } from '../_lib/quote-fields.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -82,11 +83,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body ?? {})
     const op = str(body.op, 40)
     const quoteId = str(body.quoteId, 40)
+    const publicId = str(body.publicId, 40)
 
     // Toda operación sobre una cotización valida propiedad (o rol admin).
+    // Acepta el id interno (builder) o el publicId (editor sobre la vista pública).
     const own = async () => {
-      if (!quoteId) throw Object.assign(new Error('quoteId requerido'), { status: 400 })
-      const quote = await db().findUnique({ where: { id: quoteId } })
+      if (!quoteId && !publicId) throw Object.assign(new Error('quoteId requerido'), { status: 400 })
+      const quote = await db().findUnique({ where: quoteId ? { id: quoteId } : { publicId } })
       if (!quote) throw Object.assign(new Error('Cotización no encontrada'), { status: 404 })
       if (quote.ownerId !== userId && !isAdmin) {
         throw Object.assign(new Error('Esta cotización es de otro usuario'), { status: 403 })
@@ -251,6 +254,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const updated = await db().update({ where: { id: quote.id }, data })
       return res.status(200).json({ ok: true, quote: updated })
+    }
+
+    // Edición directa desde el visor: lista de { ref, value } sobre textos.
+    if (op === 'set-fields') {
+      const quote = await own()
+      const edits = Array.isArray(body.fields) ? body.fields : []
+      const { content, quoteData, applied } = applyFieldEdits(quote.content, edits)
+      if (!applied.length) return res.status(400).json({ ok: false, error: 'Ninguna referencia válida' })
+      const updated = await db().update({ where: { id: quote.id }, data: { content, ...quoteData } })
+      return res.status(200).json({ ok: true, quote: updated, applied })
     }
 
     if (op === 'publish' || op === 'unpublish' || op === 'archive') {

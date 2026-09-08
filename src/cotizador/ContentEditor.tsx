@@ -457,6 +457,17 @@ export function ContentEditor({
         </div>
         <Field label="Título"><textarea rows={2} value={meta.title} onChange={(e) => setMetaField('title', e.target.value)} className={inputCls} /></Field>
         <Field label="Bajada (subtítulo)"><textarea rows={3} value={meta.subtitle} onChange={(e) => setMetaField('subtitle', e.target.value)} className={inputCls} /></Field>
+        <p className="mb-1 mt-3 text-[11.5px] leading-relaxed text-slate-500">
+          Datos de la portada. Vacíos, se calculan a partir de las líneas (semanas, entregables, inversión).
+          Lo que escribas aquí manda sobre el cálculo.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Antetítulo (kicker)"><input value={val('cover.kicker')} onChange={(e) => patch('cover.kicker', e.target.value)} placeholder="Propuesta técnica y económica" className={inputCls} /></Field>
+          <Field label="Duración"><input value={val('cover.duration')} onChange={(e) => patch('cover.duration', e.target.value)} placeholder="9 semanas desde el kickoff" className={inputCls} /></Field>
+          <Field label="Alcance"><input value={val('cover.scope')} onChange={(e) => patch('cover.scope', e.target.value)} placeholder="4 cursos virtuales completos" className={inputCls} /></Field>
+          <Field label="Inversión"><input value={val('cover.investment')} onChange={(e) => patch('cover.investment', e.target.value)} placeholder="$ 54.000.000 COP" className={inputCls} /></Field>
+        </div>
+        <Field label="Lema al pie de la portada"><input value={val('cover.tagline')} onChange={(e) => patch('cover.tagline', e.target.value)} placeholder="Soluciones digitales con sentido humano" className={inputCls} /></Field>
         <Field label="Documento Word para descarga (URL, opcional)">
           <input
             value={val('docxUrl')}
