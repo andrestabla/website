@@ -513,7 +513,8 @@ export async function buildQuoteDocx(quote: DocxQuote, baseUrl: string): Promise
   const doc = new Document({
     styles: { default: { document: { run: { font: FONT, size: 21, color: '333840' }, paragraph: { spacing: { line: 300 } } } } },
     sections: [{
-      properties: { page: { margin: { top: 1000, bottom: 1000, left: 1100, right: 1100 } } },
+      // Hoja A4 (210 × 297 mm en twips): sin esto la librería cae a Carta.
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1000, bottom: 1000, left: 1100, right: 1100 } } },
       headers: {
         default: new Header({
           children: [new Paragraph({

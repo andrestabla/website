@@ -3,8 +3,9 @@
  *
  * El consultor conversa; el modelo responde y además devuelve un *patch* con
  * los cambios que propone sobre la cotización. El servidor es quien aplica ese
- * patch: valida los códigos contra el catálogo, ignora cualquier cifra que venga
- * del modelo y recalcula los totales. La IA redacta; el catálogo cotiza.
+ * patch: valida los códigos contra el catálogo, aplica las líneas y cifras que
+ * el consultor dictó en la conversación y recalcula los totales. La IA
+ * construye la cotización entera; el servidor calcula.
  *
  * La IA construye con el portafolio completo de la casa: lee en cada turno lo
  * que publica algoritmot.com (portada, línea Empresas y línea Educación, con
@@ -23,7 +24,10 @@ import {
   formatMoney,
   QUOTE_TEMPLATES,
   normalizeTemplate,
+  DEFAULT_DISCOUNT_SCALE,
+  FLAT_DISCOUNT_SCALE,
   type QuoteItem,
+  type QuoteTemplateKey,
 } from '../_lib/quotes.js'
 
 type VercelRequest = any
@@ -65,16 +69,18 @@ propuesta, enciendes los módulos y redactas cada sección.
 Hablas español de Colombia, en tono profesional y aterrizado.
 
 REGLAS DURAS
-1. Nunca inventes precios, plazos ni descuentos. Los montos salen del CATÁLOGO y el servidor los recalcula.
-   Si necesitas mover el precio, di que hay que ajustar el catálogo; no lo cambies tú.
-2. Solo puedes encender o apagar módulos usando los CÓDIGOS exactos del catálogo.
+1. Tú construyes y modificas TODO lo que el consultor pida: líneas, precios, cantidades, moneda,
+   plantilla, plan de pagos, títulos y cada sección del documento. Nunca respondas que algo "no se
+   puede" o "falta un código": si el consultor dicta una línea o un precio, la creas o lo fijas en este
+   mismo turno con "lines".
+2. Cifras: por defecto salen del CATÁLOGO. Cuando el consultor dicta un precio, una cantidad o un plazo
+   en la conversación, ese dato manda y lo aplicas tal cual. Jamás inventes ni deduzcas una cifra que
+   nadie dictó ni está escrita en el catálogo, la plataforma o el histórico: si falta, pregúntala.
 3. Toda afirmación sobre método, servicios, condiciones o antecedentes debe apoyarse en la PLATAFORMA,
    en el ÍNDICE o en el CONTEXTO documental. Las cifras públicas de la plataforma (docentes formados,
-   plazos de los protocolos, reducción de tiempos de ciclo) puedes citarlas tal como aparecen ahí. Una
-   cifra que no esté escrita en ninguno de los tres NO EXISTE: dilo y pide traer el caso al contexto.
-   Jamás des una cifra aproximada, deducida o "de memoria".
+   plazos de los protocolos, reducción de tiempos de ciclo) puedes citarlas tal como aparecen ahí.
 4. Pregunta de a una cosa. Si ya tienes lo necesario para redactar una sección, redáctala.
-5. Quien cotiza decide las variables del precio: la cotización arranca vacía y solo enciendes
+5. Quien cotiza decide las variables del precio: la cotización arranca vacía y solo enciendes o creas
    las líneas que el consultor pida o confirme. Jamás enciendas líneas "por si acaso".
 6. ESTRUCTURA SEGÚN EL HISTÓRICO: antes de redactar, identifica en el índice el caso más parecido
    (mismo servicio o producto) y modela sobre él las secciones, las variables de precio, las fases
@@ -89,10 +95,13 @@ REGLAS DURAS
    Ingeniería Humana, Despliegue IA, Madurez Orgánica, rúbrica Quality Matters, ProfeTabla, Maturity360…).
    Cuando el histórico trae un caso parecido, el caso manda en la estructura; la plataforma aporta el
    lenguaje y las promesas de cada servicio. Cita la plataforma con sus palabras, adaptadas al cliente.
-10. LÍNEA CORRECTA: la plantilla de esta cotización fija el catálogo. Si lo que describe el consultor
-   pertenece a otra línea del portafolio (por ejemplo, está en Soluciones y el cliente quiere producir
-   cursos virtuales), dilo en tu primera respuesta y nombra la plantilla que corresponde. La plantilla
-   se elige al crear la cotización; desde el chat no se cambia.
+10. LÍNEA CORRECTA: la plantilla fija el catálogo y la forma del documento. Si lo que describe el
+   consultor pertenece a otra línea del portafolio (por ejemplo, está en Soluciones y el cliente quiere
+   producir cursos virtuales), cámbiala con "template" en el mismo turno, apaga las líneas que sobren
+   (el núcleo incluido) y crea o enciende las que correspondan.
+11. El total es la suma de las líneas activas: precio unitario × cantidad. Si el consultor dice
+   "4 cursos a $13.500.000 cada uno", la línea lleva price 13500000 y qty 4, y el servidor calcula
+   54.000.000. Nunca escribas el total a mano en las notas si las líneas no lo respaldan.
 
 ESTILO (la casa es estricta con esto)
 - Prohibido: "compuerta", "en la era digital", "desbloquear el potencial", "robusto", "sin fisuras",
@@ -167,6 +176,103 @@ function applyModulePatch(
       detail: source.detail ?? null,
     })
     applied.push(`+${source.code}${qtyBy.has(code) ? `×${qtyBy.get(code)}` : ''}`)
+  }
+
+  return { items: next, applied }
+}
+
+type LinePatch = {
+  code?: string
+  name?: string
+  summary?: string
+  category?: string
+  unit?: string | null
+  kind?: string
+  price?: number
+  qty?: number
+  weeks?: number
+  deliverables?: number
+  on?: boolean
+}
+
+const asMoney = (v: unknown) => {
+  const n = Math.round(Number(v))
+  return Number.isFinite(n) && n >= 0 ? n : undefined
+}
+
+/**
+ * Líneas dictadas por el consultor: crear, editar y quitar. Es el mismo poder
+ * que tiene el editor de líneas del builder; la IA lo usa cuando el consultor
+ * dicta un precio o un concepto que no está en el catálogo.
+ */
+export function applyLinesPatch(
+  items: QuoteItem[],
+  patch: { add?: LinePatch[] | null; update?: LinePatch[] | null; remove?: string[] | null }
+) {
+  const applied: string[] = []
+  let next = items.map((i) => ({ ...i }))
+
+  // ── quitar ──
+  const remove = new Set((patch.remove ?? []).map((c) => String(c ?? '').toUpperCase()).filter(Boolean))
+  if (remove.size) {
+    const kept = next.filter((i) => !remove.has(i.code.toUpperCase()))
+    // La cotización conserva al menos una línea: si el patch la vaciaría, se ignora ese retiro.
+    if (kept.length) {
+      for (const i of next) if (remove.has(i.code.toUpperCase())) applied.push(`×${i.code}`)
+      next = kept
+    }
+  }
+
+  // ── editar ──
+  for (const entry of patch.update ?? []) {
+    const code = String(entry?.code ?? '').toUpperCase()
+    const target = next.find((i) => i.code.toUpperCase() === code)
+    if (!target) continue
+    const before = { ...target }
+    const name = str(entry.name, 160); if (name) target.name = name
+    const summary = str(entry.summary, 900); if (summary) target.summary = summary
+    const category = str(entry.category, 120); if (category) target.category = category
+    if (entry.unit !== undefined) target.unit = str(entry.unit, 40) || null
+    const price = asMoney(entry.price); if (price !== undefined) target.price = price
+    const qty = Math.round(Number(entry.qty)); if (Number.isFinite(qty) && entry.qty !== undefined) target.qty = Math.min(999, Math.max(1, qty))
+    const weeks = Number(entry.weeks); if (Number.isFinite(weeks) && entry.weeks !== undefined) target.weeks = Math.max(0, weeks)
+    const deliverables = Math.round(Number(entry.deliverables)); if (Number.isFinite(deliverables) && entry.deliverables !== undefined) target.deliverables = Math.max(0, deliverables)
+    if (entry.kind === 'CORE' || entry.kind === 'MODULE') target.kind = entry.kind
+    if (typeof entry.on === 'boolean' && target.kind !== 'CORE') target.on = entry.on
+    if (target.kind === 'CORE') { target.on = true; target.selectable = false }
+    const diff = (Object.keys(target) as Array<keyof QuoteItem>).filter((k) => JSON.stringify(target[k]) !== JSON.stringify(before[k]))
+    if (diff.length) applied.push(`${target.code}: ${diff.join('/')}`)
+  }
+
+  // ── crear ──
+  for (const entry of patch.add ?? []) {
+    const name = str(entry?.name, 160)
+    const price = asMoney(entry?.price)
+    if (!name || price === undefined) continue
+    let code = str(entry.code, 40).toUpperCase().replace(/[^A-Z0-9-]/g, '')
+    if (!code || next.some((i) => i.code.toUpperCase() === code)) {
+      let n = next.length + 1
+      while (next.some((i) => i.code.toUpperCase() === `L${String(n).padStart(2, '0')}`)) n += 1
+      code = `L${String(n).padStart(2, '0')}`
+    }
+    const qty = Math.round(Number(entry.qty))
+    const kind: 'CORE' | 'MODULE' = entry.kind === 'CORE' ? 'CORE' : 'MODULE'
+    next.push({
+      code,
+      name,
+      summary: str(entry.summary, 900),
+      category: str(entry.category, 120) || undefined,
+      kind,
+      price,
+      qty: Number.isFinite(qty) && entry.qty !== undefined ? Math.min(999, Math.max(1, qty)) : 1,
+      unit: str(entry.unit, 40) || null,
+      weeks: Math.max(0, Number(entry.weeks) || 0),
+      deliverables: Math.max(0, Math.round(Number(entry.deliverables)) || 0),
+      on: true,
+      selectable: kind !== 'CORE',
+      detail: null,
+    })
+    applied.push(`+${code}${qty > 1 ? `×${qty}` : ''}`)
   }
 
   return { items: next, applied }
@@ -350,6 +456,31 @@ function applyContentPatch(current: any, incoming: any) {
     if (list?.length) { content[key] = list; touched.push(key) }
   }
 
+  // ── plan de pagos personalizado: porcentajes + etiquetas (momento e hito) ──
+  if (Array.isArray(incoming.paymentSplit)) {
+    const split = incoming.paymentSplit
+      .map((n: unknown) => Math.round(Number(n)))
+      .filter((n: number) => Number.isFinite(n) && n > 0 && n <= 100)
+      .slice(0, 8)
+    const sum = split.reduce((a: number, b: number) => a + b, 0)
+    if (split.length && sum === 100) {
+      content.paymentSplit = split
+      touched.push('paymentSplit')
+      const labels = objList(incoming.paymentLabels, (l) => {
+        const moment = str(l?.moment, 80); const milestone = str(l?.milestone, 300)
+        return moment || milestone ? { moment, milestone } : null
+      }, 8)
+      if (labels && labels.length === split.length) {
+        content.paymentLabels = labels
+        touched.push('paymentLabels')
+      }
+    }
+  } else if (incoming.paymentSplit === null) {
+    content.paymentSplit = null
+    content.paymentLabels = null
+    touched.push('paymentSplit')
+  }
+
   // ── firma ──
   if (incoming.signature && typeof incoming.signature === 'object') {
     const sig = incoming.signature
@@ -507,7 +638,10 @@ ESTRUCTURA DE REFERENCIA DE ESTA LÍNEA: ${QUOTE_TEMPLATES[template].aiNotes}
 Plantilla: ${template} — ${QUOTE_TEMPLATES[template].description}
 Cliente: ${quote.clientName}${quote.sector ? ` · Sector: ${quote.sector}` : ''}
 Título: ${quote.title}
-Módulos activos (${totals.moduleCount}): ${activeCodes.join(', ') || 'ninguno'}
+Líneas activas (${totals.moduleCount}): ${activeCodes.join(', ') || 'ninguna'}
+Todas las líneas de esta cotización (código · nombre · precio unitario × cantidad · estado):
+${items.map((i) => `- ${i.code} · ${i.name} · ${formatMoney(i.price, quote.currency)}${i.unit ? ` por ${i.unit}` : ''} × ${i.qty ?? 1} · ${i.kind === 'CORE' ? 'núcleo' : i.on ? 'encendida' : 'apagada'}`).join('\n') || '- (sin líneas)'}
+Moneda: ${quote.currency} · Vigencia: ${quote.validDays} días · Plan de pagos: ${Array.isArray(quote.content?.paymentSplit) && quote.content.paymentSplit.length ? quote.content.paymentSplit.join('/') : '30/25/25/20 estándar'}
 Total calculado: ${formatMoney(totals.total, quote.currency)} · ${totals.weeks} semanas · ${totals.deliverables} entregables
 Secciones ya redactadas: ${(() => {
       const c: any = quote.content || {}
@@ -537,7 +671,15 @@ CONSULTOR: ${message}
   "reply": "tu respuesta al consultor, 2 a 5 frases; si redactaste algo, dilo y ofrece el siguiente paso",
   "patch": {
     "clientName": "opcional", "sector": "opcional", "title": "opcional", "subtitle": "opcional",
+    "template": "solo si hay que cambiar de línea: ${Object.keys(QUOTE_TEMPLATES).join(' | ')}",
+    "currency": "COP | USD, solo si el consultor lo pide",
+    "validDays": 45,
     "modules": { "on": ["M03"], "off": ["M12"], "qty": [{ "code": "SV01", "qty": 5 }] },
+    "lines": {
+      "add": [{ "code": "UTB-01", "name": "Curso virtual de especialización (3 créditos)", "summary": "qué incluye", "category": "Producción", "unit": "curso", "price": 13500000, "qty": 4, "weeks": 6, "deliverables": 5 }],
+      "update": [{ "code": "SV01", "price": 12000000, "qty": 3, "name": "opcional", "unit": "opcional", "on": true }],
+      "remove": ["L03"]
+    },
     "content": {
       "intro": "carta, párrafos separados por \\n\\n",
       "diagnosis": { "lede": "", "fronts": [{ "title": "", "body": "", "needs": "" }], "note": { "title": "", "body": "" } },
@@ -554,6 +696,7 @@ CONSULTOR: ${message}
         "groups": [{ "name": "Bloque", "rows": [{ "label": "Actividad o 'M03 · Nombre'", "on": [3, 4], "hito": [8] }] }]
       },
       "investmentNote": "", "paymentsNote": "",
+      "paymentSplit": [50, 50], "paymentLabels": [{ "moment": "A la firma", "milestone": "" }, { "moment": "Entrega final", "milestone": "" }],
       "milestones": [{ "name": "Hito 01", "week": "Fin S2", "criterion": "" }],
       "service": {
         "includedMonths": 12, "renewalPrice": 0, "exitPrice": 0,
@@ -570,8 +713,17 @@ CONSULTOR: ${message}
   }
 }
 REGLAS DEL PATCH
+- "modules" enciende, apaga o cambia la cantidad de líneas del CATÁLOGO por su código.
+- "lines" crea, edita o quita líneas con las cifras que dictó el consultor: "add" para un concepto que no
+  está en el catálogo (precio unitario + qty), "update" para cambiar precio, cantidad, nombre o unidad de
+  una línea existente (incluidas las del catálogo), "remove" para retirarla del todo. Los precios van en
+  unidades enteras de la moneda, sin separadores (13.500.000 → 13500000).
 - Plantillas por UNIDADES: las líneas tienen precio POR UNIDAD; fija cantidades con "modules.qty"
   (p. ej. 5 cursos → {"code":"SV01","qty":5}) y apaga las líneas que no apliquen. No hay núcleo.
+- "template" cambia la línea de negocio de la cotización (catálogo, escala de descuento y forma del
+  documento). Úsalo cuando el cliente pertenece a otra línea; en el mismo turno deja las líneas como deben quedar.
+- "paymentSplit" son porcentajes enteros que suman 100, en el orden de los pagos; "paymentLabels" va en
+  paralelo (momento e hito de cada pago). null = volver al esquema estándar 30/25/25/20.
 - Incluye SOLO las claves que cambian en este turno; lo demás se conserva. Sin cambios: "patch": {}.
 - Las listas (fronts, layers, stack, groups, milestones, levels, team, guarantees, assumptions, exclusions)
   REEMPLAZAN la lista completa: si agregas o quitas un elemento, reenvía la lista entera ya corregida.
@@ -616,11 +768,38 @@ REGLAS DEL PATCH
         changes.push(field)
       }
     }
+    const currency = str(patch.currency, 3).toUpperCase()
+    if ((currency === 'COP' || currency === 'USD') && currency !== quote.currency) {
+      updates.currency = currency
+      changes.push(`moneda ${currency}`)
+    }
+    if (patch.validDays !== undefined) {
+      const days = Math.round(Number(patch.validDays))
+      if (Number.isFinite(days) && days >= 1 && days <= 365 && days !== quote.validDays) {
+        updates.validDays = days
+        changes.push(`vigencia ${days} días`)
+      }
+    }
+
+    // Cambio de línea de negocio: nueva plantilla, su escala de descuento y su
+    // catálogo (para que "modules.on" de este mismo turno resuelva códigos nuevos).
+    let effectiveTemplate: QuoteTemplateKey = template
+    let effectiveCatalog = catalog
+    let effectiveScale = quote.discountScale
+    const requestedTemplate = str(patch.template, 40).toUpperCase()
+    if (requestedTemplate && requestedTemplate in QUOTE_TEMPLATES && requestedTemplate !== template) {
+      effectiveTemplate = requestedTemplate as QuoteTemplateKey
+      effectiveScale = QUOTE_TEMPLATES[effectiveTemplate].kind === 'MODULAR' ? DEFAULT_DISCOUNT_SCALE : FLAT_DISCOUNT_SCALE
+      effectiveCatalog = catalogMap(await loadCatalog(effectiveTemplate))
+      updates.template = effectiveTemplate
+      updates.discountScale = effectiveScale
+      changes.push(`plantilla ${QUOTE_TEMPLATES[effectiveTemplate].short}`)
+    }
 
     // El modelo a veces aplana el patch (schedule/team/etc. en la raíz en vez
     // de patch.content). Se aceptan ambas formas: todo lo que no sea una clave
     // de primer nivel conocida se trata como contenido.
-    const TOP_LEVEL = new Set(['clientName', 'sector', 'title', 'subtitle', 'modules', 'content'])
+    const TOP_LEVEL = new Set(['clientName', 'sector', 'title', 'subtitle', 'template', 'currency', 'validDays', 'modules', 'lines', 'content'])
     const flattened: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(patch)) {
       if (!TOP_LEVEL.has(key)) flattened[key] = value
@@ -637,15 +816,22 @@ REGLAS DEL PATCH
 
     let nextItems = items
     if (patch.modules && typeof patch.modules === 'object') {
-      const result = applyModulePatch(items, patch.modules, catalog)
+      const result = applyModulePatch(nextItems, patch.modules, effectiveCatalog)
+      if (result.applied.length) {
+        nextItems = result.items
+        changes.push(...result.applied)
+      }
+    }
+    if (patch.lines && typeof patch.lines === 'object') {
+      const result = applyLinesPatch(nextItems, patch.lines)
       if (result.applied.length) {
         nextItems = result.items
         changes.push(...result.applied)
       }
     }
 
-    const nextTotals = computeTotals(nextItems, { scale: quote.discountScale, minWeeks: QUOTE_TEMPLATES[template].minWeeks })
-    if (nextItems !== items || nextTotals.total !== quote.totalFinal) {
+    const nextTotals = computeTotals(nextItems, { scale: effectiveScale, minWeeks: QUOTE_TEMPLATES[effectiveTemplate].minWeeks })
+    if (nextItems !== items || nextTotals.total !== quote.totalFinal || updates.template) {
       updates.pricing = { items: nextItems, totals: nextTotals }
       updates.totalBase = nextTotals.subtotal
       updates.totalFinal = nextTotals.total

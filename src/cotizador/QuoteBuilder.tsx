@@ -431,7 +431,8 @@ export function QuoteBuilder() {
                   Educación (plataformas, virtualización, auditoría QM y formación docente).
                   Cuéntame del cliente: a qué se dedica, qué le duele hoy y qué quiere lograr.
                   Con eso elijo las variables, enciendo los módulos y redacto el diagnóstico, la carta y el método.
-                  Los precios salen del catálogo; yo no los invento.
+                  Los precios salen del catálogo, y si me dictas uno distinto, una línea nueva, la cantidad,
+                  la moneda o el plan de pagos, lo aplico tal cual.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {['El cliente es una editorial universitaria…', 'Una universidad que quiere virtualizar 20 cursos', 'Una pyme que necesita diagnóstico MD-IA y mapeo de procesos', 'Redacta la carta de presentación'].map((suggestion) => (
