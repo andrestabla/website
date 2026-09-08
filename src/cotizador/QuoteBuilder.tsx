@@ -8,7 +8,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Send, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, Sparkles,
   Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw, PenSquare, MoreVertical, CopyPlus, Archive,
-  Mic, Square, Eye, Paperclip, X, FileInput, Code2, Save, ChevronDown, ChevronRight,
+  Mic, Square, Eye, Paperclip, X, FileInput, Code2, Save, ChevronDown, ChevronRight, PanelLeft, PanelRight,
 } from 'lucide-react'
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
 import { ContentEditor } from './ContentEditor'
@@ -16,6 +16,16 @@ import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type Quot
 import { TEMPLATE_LABEL } from './CotizadorList'
 
 type Tab = 'propuesta' | 'contenido' | 'vista' | 'destinatarios' | 'metricas'
+/** Disposición del builder: las dos columnas, solo el chat o solo el panel. Se recuerda por navegador. */
+type Layout = 'both' | 'chat' | 'panel'
+const LAYOUT_KEY = 'cotizador:layout'
+const SPLIT_KEY = 'cotizador:split'
+const readLayout = (): Layout => {
+  try { const v = localStorage.getItem(LAYOUT_KEY); return v === 'chat' || v === 'panel' ? v : 'both' } catch { return 'both' }
+}
+const readSplit = (): number => {
+  try { const n = Number(localStorage.getItem(SPLIT_KEY)); return n >= 25 && n <= 75 ? n : 44 } catch { return 44 }
+}
 
 /** Formatos que el asistente acepta como adjunto. Markdown es el recomendado; el resto se convierte. */
 const ATTACH_ACCEPT = '.md,.markdown,.txt,.docx,.pdf,.html,.htm,text/markdown,text/plain,application/pdf,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -59,6 +69,42 @@ export function QuoteBuilder() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<Tab>('propuesta')
+
+  // disposición: columnas visibles y ancho del chat (arrastrando el divisor)
+  const [layout, setLayoutState] = useState<Layout>(readLayout)
+  const [split, setSplit] = useState<number>(readSplit)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const dragging = useRef(false)
+  const setLayout = (next: Layout) => { setLayoutState(next); try { localStorage.setItem(LAYOUT_KEY, next) } catch { /* sin almacenamiento */ } }
+  // ocultar la columna visible deja la otra sola; mostrar la oculta vuelve a las dos
+  const toggleColumn = (col: 'chat' | 'panel') => {
+    const chatVisible = layout !== 'panel'
+    const panelVisible = layout !== 'chat'
+    if (col === 'chat') setLayout(chatVisible ? 'panel' : (panelVisible ? 'both' : 'chat'))
+    else setLayout(panelVisible ? 'chat' : (chatVisible ? 'both' : 'panel'))
+  }
+  const startDrag = (e: React.MouseEvent) => {
+    e.preventDefault()
+    dragging.current = true
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    const onMove = (ev: MouseEvent) => {
+      const rect = gridRef.current?.getBoundingClientRect()
+      if (!rect || !dragging.current) return
+      const pct = Math.min(75, Math.max(25, ((ev.clientX - rect.left) / rect.width) * 100))
+      setSplit(Math.round(pct))
+    }
+    const onUp = () => {
+      dragging.current = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      setSplit((v) => { try { localStorage.setItem(SPLIT_KEY, String(v)) } catch { /* sin almacenamiento */ } return v })
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
 
   // chat
   const [draft, setDraft] = useState('')
@@ -534,6 +580,24 @@ export function QuoteBuilder() {
           </span>
         )}
         <div className="flex-1" />
+        <div className="mr-1 hidden items-center gap-0.5 rounded-lg border border-slate-200 p-0.5 lg:flex" title="Mostrar u ocultar columnas">
+          <button
+            onClick={() => toggleColumn('chat')}
+            className={`grid h-7 w-7 place-items-center rounded-md ${layout !== 'panel' ? 'bg-slate-100 text-slate-700' : 'text-slate-300 hover:text-slate-600'}`}
+            title={layout !== 'panel' ? 'Ocultar el chat' : 'Mostrar el chat'}
+            aria-label="Chat"
+          >
+            <PanelLeft size={15} />
+          </button>
+          <button
+            onClick={() => toggleColumn('panel')}
+            className={`grid h-7 w-7 place-items-center rounded-md ${layout !== 'chat' ? 'bg-slate-100 text-slate-700' : 'text-slate-300 hover:text-slate-600'}`}
+            title={layout !== 'chat' ? 'Ocultar el panel' : 'Mostrar el panel'}
+            aria-label="Panel"
+          >
+            <PanelRight size={15} />
+          </button>
+        </div>
         <button
           onClick={() => copy(publicUrl, 'link')}
           className="hidden items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-[13px] font-semibold text-slate-600 hover:bg-slate-100 sm:inline-flex"
@@ -583,9 +647,14 @@ export function QuoteBuilder() {
 
       {error && <div className="border-b border-rose-200 bg-rose-50 px-6 py-2 text-[13px] text-rose-700">{error}</div>}
 
-      <div className="mx-auto grid w-full max-w-7xl flex-1 gap-0 lg:grid-cols-[minmax(380px,1fr)_minmax(420px,1.1fr)]">
+      <div
+        ref={gridRef}
+        className="mx-auto grid w-full flex-1 gap-0"
+        style={{ gridTemplateColumns: layout === 'both' ? `${split}% 6px minmax(0, 1fr)` : 'minmax(0, 1fr)' }}
+      >
         {/* ── Chat ── */}
-        <section className="flex min-h-[50vh] flex-col border-slate-200 lg:border-r">
+        {layout !== 'panel' && (
+        <section className={`flex min-h-[50vh] flex-col border-slate-200 ${layout === 'chat' ? 'mx-auto w-full max-w-4xl' : ''}`}>
           <div className="flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-6" style={{ maxHeight: 'calc(100vh - 190px)' }}>
             {messages.length === 0 && (
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5">
@@ -760,6 +829,19 @@ export function QuoteBuilder() {
             </p>
           </div>
         </section>
+        )}
+
+        {/* divisor arrastrable entre columnas */}
+        {layout === 'both' && (
+          <div
+            onMouseDown={startDrag}
+            onDoubleClick={() => { setSplit(44); try { localStorage.setItem(SPLIT_KEY, '44') } catch { /* sin almacenamiento */ } }}
+            className="group hidden cursor-col-resize items-stretch justify-center bg-slate-200/70 hover:bg-indigo-300 lg:flex"
+            title="Arrastra para repartir el espacio · doble clic restablece"
+          >
+            <div className="my-auto h-10 w-0.5 rounded bg-slate-400 group-hover:bg-indigo-600" />
+          </div>
+        )}
 
         {/* ── Editor de Markdown de un adjunto ── */}
         {mdEditor && (
@@ -788,7 +870,8 @@ export function QuoteBuilder() {
         )}
 
         {/* ── Estado ── */}
-        <section className="flex flex-col">
+        {layout !== 'chat' && (
+        <section className="flex min-w-0 flex-col">
           <nav className="flex gap-1 border-b border-slate-200 bg-white px-4 pt-2 sm:px-6">
             {([['propuesta', 'Propuesta', FileText], ['contenido', 'Contenido', PenSquare], ['vista', 'Vista previa', Eye], ['destinatarios', 'Destinatarios', Users], ['metricas', 'Métricas', BarChart2]] as const).map(([key, label, Icon]) => (
               <button
@@ -1298,6 +1381,7 @@ export function QuoteBuilder() {
             )}
           </div>
         </section>
+        )}
       </div>
     </div>
   )
