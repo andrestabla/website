@@ -192,6 +192,18 @@ export async function ensurePdfRuntime() {
     }
     if (typeof g.DOMMatrix === 'undefined') g.DOMMatrix = MinimalDOMMatrix
   }
+  // Sin Web Workers, pdfjs carga el worker con un import dinámico de ruta
+  // calculada que el empaquetador de Vercel no rastrea, y la función se
+  // despliega sin ese archivo. Importarlo aquí con ruta literal lo incluye
+  // en el bundle; pdfjs usa `globalThis.pdfjsWorker` antes de buscarlo en disco.
+  if (!g.pdfjsWorker) {
+    try {
+      // @ts-ignore: el worker no publica tipos; solo interesa que viaje en el bundle
+      g.pdfjsWorker = await import('pdfjs-dist/legacy/build/pdf.worker.mjs')
+    } catch {
+      // se deja que pdfjs intente su propia carga
+    }
+  }
 }
 
 /** mammoth escribe __negrita__ y escapa signos; el visor entiende **negrita** y texto limpio. */
