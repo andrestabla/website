@@ -141,6 +141,18 @@ export function EditorPanel(props: EditorProps) {
   const flash = useCallback((text: string) => { setStatus(text); window.setTimeout(() => setStatus(''), 2500) }, [])
   const clearSelectedClass = () => document.querySelectorAll('.qv-ref-selected').forEach((el) => el.classList.remove('qv-ref-selected'))
 
+  // Esc cierra menús y modal
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (addMenu) setAddMenu(null)
+      if (pageMenu !== null) setPageMenu(null)
+      if (saveModal && !saving) setSaveModal(false)
+    }
+    document.addEventListener('keydown', onEsc)
+    return () => document.removeEventListener('keydown', onEsc)
+  }, [addMenu, pageMenu, saveModal, saving])
+
   // avisar antes de cerrar con cambios sin guardar
   useEffect(() => {
     const onUnload = (e: BeforeUnloadEvent) => { if (dirty) { e.preventDefault(); e.returnValue = '' } }
