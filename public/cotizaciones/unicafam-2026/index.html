@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta · Learning Analytics plan a la medida — Unicafam | Algoritmo T</title>
+<meta name="description" content="Propuesta técnica y económica de Algoritmo T para la implementación del plan a la medida de Learning Analytics en el Moodle de Unicafam: definición de KPIs estratégicos, construcción de indicadores propios, licencia de doce meses y apropiación del equipo de Educación Virtual.">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/print.css" media="print">
+</head>
+<body>
+
+<div class="bar no-print">
+  <span class="b-l"><img src="assets/img/algoritmot-mark.svg" alt="">Algoritmo&nbsp;T</span>
+  <div class="b-r">
+    <nav>
+      <a href="#partida">Punto de partida</a>
+      <a href="#arquitectura">Arquitectura</a>
+      <a href="#frentes">Fases</a>
+      <a href="#equipo">Equipo</a>
+      <a href="#inversion">Inversión</a>
+      <a href="#cronograma">Cronograma</a>
+      <a href="#condiciones">Condiciones</a>
+    </nav>
+    <button class="pdfbtn" onclick="descargarPDF()">Descargar PDF</button>
+  </div>
+</div>
+
+<!-- ===================== 1 · PORTADA ===================== -->
+<section class="page cover">
+  <div class="cv-top">
+    <span class="brandmark"><b>Algoritmo</b><img src="assets/img/algoritmot-mark.svg" alt="Algoritmo T"></span>
+    <span class="cv-idx">PROPUESTA · 2026</span>
+  </div>
+  <div class="cv-mid">
+    <span class="kick">Propuesta técnica y económica</span>
+    <h1>Learning Analytics para el Moodle de <em>Unicafam</em></h1>
+    <div class="cv-rule"></div>
+    <p class="cv-sub">Plan a la medida del tablero de analítica del aprendizaje. Comprende la definición de los indicadores estratégicos con la dirección académica, la construcción de las reglas y los tableros propios de la Institución, la licencia de doce meses sobre la plataforma institucional y la apropiación del equipo de Educación Virtual.</p>
+    <div class="cv-meta">
+      <div class="m"><div class="ml">Cliente</div><div class="mv">Unicafam · Fundación Universitaria Cafam</div></div>
+      <div class="m"><div class="ml">Duración</div><div class="mv">6 semanas de implementación · 2 de apropiación · 12 meses de vigencia</div></div>
+      <div class="m"><div class="ml">Alcance</div><div class="mv">4 fases · KPIs y construcción, licencia, apropiación y soporte</div></div>
+      <div class="m"><div class="ml">Inversión</div><div class="mv">$ 13.090.000 IVA incluido · una plataforma</div></div>
+    </div>
+  </div>
+  <div class="cv-bot">
+    <span class="tag">Soluciones digitales con <b>sentido humano</b></span>
+    <span class="client"><span>Dirigida a la<br>Dirección Académica y de<br>Educación Virtual · Unicafam</span></span>
+  </div>
+</section>
+
+<!-- ===================== 2 · CONTENIDO ===================== -->
+<section class="page pad toc">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <h2>Contenido</h2>
+  <ol>
+    <li><a href="#presentacion"><span class="num">01</span><span class="ti">Presentación</span><span class="pg"><i>pág.</i> 03</span></a></li>
+    <li><a href="#partida"><span class="num">02</span><span class="ti">Punto de partida: aulas en operación</span><span class="pg"><i>pág.</i> 04</span></a></li>
+    <li><a href="#arquitectura"><span class="num">03</span><span class="ti">Arquitectura de la solución</span><span class="pg"><i>pág.</i> 05</span></a></li>
+    <li><a href="#frentes"><span class="num">04</span><span class="ti">Fases de trabajo y entregables</span><span class="pg"><i>pág.</i> 06</span></a></li>
+    <li><a href="#equipo"><span class="num">05</span><span class="ti">Equipo y gobernanza</span><span class="pg"><i>pág.</i> 14</span></a></li>
+    <li><a href="#inversion"><span class="num">06</span><span class="ti">Inversión, aprobaciones y facturación</span><span class="pg"><i>pág.</i> 15</span></a></li>
+    <li><a href="#cronograma"><span class="num">07</span><span class="ti">Cronograma</span><span class="pg"><i>pág.</i> 17</span></a></li>
+    <li><a href="#condiciones"><span class="num">08</span><span class="ti">Supuestos y condiciones</span><span class="pg"><i>pág.</i> 18</span></a></li>
+  </ol>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">02 / 19</span></div>
+</section>
+
+<!-- ===================== 3 · PRESENTACIÓN ===================== -->
+<section class="page pad" id="presentacion">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">01</div><div class="sh"><span class="kicker">Presentación</span><h2>Objeto de la propuesta</h2></div></div>
+  <div class="col">
+    <p class="addr"><b>Señores</b><br>Unicafam · Fundación Universitaria Cafam<br>Dirección Académica y de Educación Virtual<br>Bogotá D. C., 5 de septiembre de 2026</p>
+    <p class="salutation">Respetados señores:</p>
+    <p class="drop">Durante este año hemos trabajado juntos en la virtualización de las unidades de aprendizaje del pregrado y de la Especialización en Gerencia de MiPymes. Los cursos ya se encuentran disponibles en Moodle. Cada corte cuenta con sus recursos, actividades y evaluaciones configuradas. Con esta base instalada, aparece la siguiente pregunta, que motiva este documento: qué está ocurriendo dentro de esas aulas.</p>
+    <p>Hoy esa respuesta se construye de manera manual. Una persona ingresa a la plataforma, revisa curso por curso, exporta calificaciones a una hoja de cálculo y cruza esa información con la matrícula. El ejercicio toma días y llega tarde para el estudiante que empezó a quedarse atrás desde la semana cuatro. La información existe: está registrada en la base de datos de Moodle, actividad por actividad. Lo que falta es una capa analítica que la lea, la organice y la presente en un tablero el mismo día.</p>
+    <p>Algoritmo T desarrolló <b>Learning Analytics</b>, un plugin propio para Moodle que cumple esa función. La herramienta reúne en un solo tablero el progreso, las calificaciones, la permanencia y el riesgo de abandono, y permite escribirle al estudiante desde la misma vista en la que aparece la alerta. Funciona dentro de su plataforma, aprovecha las capacidades habituales de Moodle y mantiene los datos de los estudiantes en su servidor.</p>
+    <p>Esta propuesta plantea un <b>plan a la medida</b>, que supera la instalación estándar del producto. Inicia con un taller en el que el equipo directivo define qué significa el éxito académico en Unicafam; continúa con la traducción de esos indicadores a los registros reales disponibles en Moodle; y culmina con tableros construidos para su operación, junto con un equipo de Educación Virtual preparado para leerlos con autonomía. La implementación tendría una duración de seis semanas y una vigencia de doce meses.</p>
+    <p>Quedamos atentos a sus comentarios y agradecemos la confianza que han depositado en nosotros a lo largo de este proceso.</p>
+    <div class="signoff">
+      <div class="nm">Ana Milena Diazgranados</div>
+      <div class="rl">Directora de Relacionamiento · Algoritmo T</div>
+    </div>
+  </div>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">03 / 19</span></div>
+</section>
+
+<!-- ===================== 4 · PUNTO DE PARTIDA ===================== -->
+<section class="page pad" id="partida">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">02</div><div class="sh"><span class="kicker">Punto de partida</span><h2>Aulas en operación</h2></div></div>
+  <p class="lede">La Institución ya cuenta con unidades de aprendizaje en operación. Desde el primer día de clase, esas aulas empiezan a generar registros; y con esos registros aparecen las preguntas de quienes acompañan a los estudiantes.</p>
+
+  <p style="margin-top:16px">Moodle guarda el recorrido por cada recurso, la entrega de cada tarea, el intento de cada cuestionario y la participación en cada foro. La materia prima ya existe. Lo que hoy toma días de exportaciones y cruces manuales puede organizarse en una pantalla disponible desde el mismo lunes en que aparece la pregunta.</p>
+
+  <p style="margin-top:12px">La siguiente tabla relaciona cada pregunta de gestión con el dato que Moodle ya registra y con la vista del tablero que permite responderla.</p>
+
+  <table class="schema sch4">
+    <thead><tr><th>N.º</th><th class="rh">Pregunta de la Institución</th><th>Dato que Moodle registra</th><th>Vista del tablero que responde</th></tr></thead>
+    <tbody>
+    <tr><td class="u">01</td><td class="r">¿Quién se está quedando atrás esta semana?</td><td class="ty">Registro de permanencia por sesión</td><td>Permanencia y riesgo, con la regla de horas y días activos que Unicafam defina.</td></tr>
+    <tr><td class="u">02</td><td class="r">¿Qué actividad frena al grupo completo?</td><td class="ty">Finalización por actividad y calificación</td><td>Progreso por sección y por actividad dentro del curso, con la nota promedio de cada una.</td></tr>
+    <tr><td class="u">03</td><td class="r">¿Las entregas llegan a tiempo?</td><td class="ty">Fecha de entrega frente a fecha límite</td><td>Evaluación y entregas: puntuales sobre esperadas, respetando las excepciones por persona.</td></tr>
+    <tr><td class="u">04</td><td class="r">¿La retroalimentación docente está al día?</td><td class="ty">Calificación y comentario por entrega</td><td>Entregas con retroalimentación y libro de calificaciones al día con lo vencido.</td></tr>
+    <tr><td class="u">05</td><td class="r">¿El estudiante nuevo arrancó de verdad?</td><td class="ty">Matrícula y actividad de los primeros días</td><td>Entrada temprana: matrículas recientes con actividad en sus primeros siete días.</td></tr>
+    <tr><td class="u">06</td><td class="r">¿Sirvió el mensaje que le enviamos?</td><td class="ty">Envío registrado y actividad posterior</td><td>Reactivación tras mensaje: a quién se escribió y quién volvió al aula.</td></tr>
+    <tr><td class="u">07</td><td class="r">¿Cómo va cada programa frente a los demás?</td><td class="ty">Categorías y matrículas por curso</td><td>Tablero de categoría con filtros en cascada, rol, fechas y dominio de correo.</td></tr>
+    <tr><td class="u">08</td><td class="r">¿La conversación en los foros existe?</td><td class="ty">Hilos, respuestas y tiempos</td><td>Participación, respuestas entre pares e hilos que siguen esperando respuesta.</td></tr>
+    <tr><td class="u">09</td><td class="r">¿Qué explica lo que muestra la gráfica?</td><td class="ty">Cifras agregadas del recorte en pantalla</td><td>Asistente de IA con lectura en lenguaje natural e informe descargable.</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:18px">El plugin lee las tablas que Moodle escribe por su cuenta y las presenta agregadas, con los filtros de programa, curso, rol y fechas ya aplicados.</p>
+
+  <p class="schema-note">Fuente: arquitectura funcional del plugin <b>local_learninganalytics</b> versión 3.20.1, verificada sobre instalaciones reales de Moodle 4.5.13 con MariaDB y Moodle 5.2.2 con PostgreSQL.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">04 / 19</span></div>
+</section>
+
+<!-- ===================== 5 · ARQUITECTURA ===================== -->
+<section class="page pad" id="arquitectura">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Arquitectura</span><h2>Cuatro fases, un solo tablero</h2></div></div>
+  <p class="lede">La definición de indicadores inicia el cronograma, pues establece la información que debe integrar el tablero. Su construcción se desarrolla en paralelo durante esta primera fase. Las tres fases siguientes sostienen la operación de la plataforma, consolidan una rutina de consulta y permiten ajustar el tablero según las necesidades identificadas. El plan comprende seis semanas de implementación, dos semanas de apropiación y doce meses de vigencia, dentro del alcance de la inversión acordada.</p>
+
+  <div class="cmap cmap4" style="margin-top:12px">
+    <div class="cmap-head">
+      <span class="cmap-root">Learning Analytics · Unicafam</span>
+      <span class="cm-lbl">6 semanas de implementación + 2 de apropiación · 12 meses de vigencia</span>
+    </div>
+    <div class="cmap-units">
+      <div class="cmap-u">
+        <div class="uh"><b>Fase 1 · Semanas 1 a 6</b>KPIs estratégicos y construcción a la medida</div>
+        <div class="cm-row"><em>Entrega</em>Mapa de decisiones académicas</div>
+        <div class="cm-row"><em>Entrega</em>Catálogo de KPIs contrastado</div>
+        <div class="cm-row"><em>Entrega</em>Línea base del semestre</div>
+        <div class="cm-row"><em>Módulo</em>Indicadores propios de Unicafam</div>
+        <div class="cm-row"><em>Módulo</em>Reglas y umbrales institucionales</div>
+        <div class="cm-row"><em>Módulo</em>Tableros de dirección y de programa</div>
+        <div class="cm-row"><em>Módulo</em>Informes programados y pruebas</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Producto</b>El tablero que responde sus preguntas</div></div></div>
+      </div>
+      <div class="cmap-u">
+        <div class="uh"><b>Fase 2 · 12 meses</b>Licencia de la plataforma</div>
+        <div class="cm-row"><em>Servicio</em>Licencia sobre una plataforma</div>
+        <div class="cm-row"><em>Servicio</em>Instalación asistida y verificación</div>
+        <div class="cm-row"><em>Servicio</em>Permisos por rol con capacidades de Moodle</div>
+        <div class="cm-row"><em>Servicio</em>500 consultas de asistente de IA</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Producto</b>El tablero completo, operando</div></div></div>
+      </div>
+      <div class="cmap-u">
+        <div class="uh"><b>Fase 3 · Semanas 7 y 8</b>Apropiación</div>
+        <div class="cm-row"><em>Entrega</em>Formación por perfil</div>
+        <div class="cm-row"><em>Entrega</em>Guía de lectura de indicadores</div>
+        <div class="cm-row"><em>Entrega</em>Protocolo de intervención temprana</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Producto</b>El equipo leyendo por su cuenta</div></div></div>
+      </div>
+      <div class="cmap-u">
+        <div class="uh"><b>Fase 4 · 12 meses</b>Soporte, seguimiento y evolución</div>
+        <div class="cm-row"><em>Servicio</em>Soporte prioritario</div>
+        <div class="cm-row"><em>Servicio</em>Hasta 2 ventanas de actualización</div>
+        <div class="cm-row"><em>Servicio</em>Revisión semestral de indicadores</div>
+        <div class="cm-row"><em>Servicio</em>Ajuste de reglas y umbrales</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Producto</b>El tablero sigue el ritmo de la Institución</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:13px"><b>Cómo circula el dato.</b> Todo ocurre dentro del servidor de Unicafam. El plugin lee la base de datos de Moodle, agrega los valores cada media hora mediante una tarea programada y dibuja las gráficas con la librería que el propio núcleo de Moodle ya trae.</p>
+  <div class="flow">
+    <div class="st"><div class="sn">01</div><div class="sl">Actividad</div><div class="sd">El estudiante trabaja en el aula</div></div>
+    <div class="st"><div class="sn">02</div><div class="sl">Registro</div><div class="sd">Moodle guarda cada evento</div></div>
+    <div class="st"><div class="sn">03</div><div class="sl">Agregación</div><div class="sd">Tarea programada cada 30 min</div></div>
+    <div class="st"><div class="sn">04</div><div class="sl">Tablero</div><div class="sd">Vistas con filtros combinables</div></div>
+    <div class="st"><div class="sn">05</div><div class="sl">Alerta</div><div class="sd">Quién queda bajo la regla</div></div>
+    <div class="st end"><div class="sn">06</div><div class="sl">Acción</div><div class="sd">Mensaje desde la misma vista</div></div>
+  </div>
+  <p style="margin-top:11px"><b>Por qué se desarrollan de manera articulada.</b> Un catálogo de indicadores sin tablero limita su uso a la consulta documental, mientras que un tablero diseñado antes de definir el catálogo termina midiendo las variables predeterminadas por la herramienta en lugar de responder a las necesidades de gestión. La formación conecta la lectura de los datos con los espacios de decisión, y el soporte mantiene articulados los indicadores, el tablero y las prácticas de uso durante el año.</p>
+
+  <p class="schema-note">Quién ve cada tablero se define con <b>capacidades reales de Moodle</b>: un docente accede a los datos de sus cursos, comprobado en el servidor. La verificación de licencia es local y transmite tres campos: identificador, huella del sitio y versión instalada.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">05 / 19</span></div>
+</section>
+
+<!-- ===================== 6 · FRENTE 01 ===================== -->
+<section class="page pad" id="frentes">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Fase 1 · Semanas 1 y 2</span><h2>Definición de los KPIs estratégicos</h2></div></div>
+  <p class="lede">Aquí está la diferencia entre el plan a la medida y una licencia. El trabajo empieza antes del software, en una mesa con la dirección académica, poniendo por escrito qué decisiones hay que tomar y qué indicador las cambia.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">E1</div>
+      <h4>Mapa de decisiones académicas</h4>
+      <p>La pregunta central es: qué decisiones se toman cada mes sobre permanencia, calidad del curso y desempeño docente, y quién es responsable de tomarlas. A partir de esa conversación con la dirección académica, coordinadores de programa y virtualidad, se define la lista de indicadores prioritarios.</p>
+      <span class="mx">Parte de las decisiones de Unicafam, más allá de lo que el plugin ya calcula</span>
+    </li>
+    <li>
+      <div class="mn">E2</div>
+      <h4>Catálogo de KPIs contrastado con la plataforma</h4>
+      <p>Cada indicador queda documentado con su definición, fórmula, umbral de alerta y responsable, organizado en tres niveles de lectura: <b>dirección</b>, <b>programa</b> y <b>aula</b>. En el mismo documento, cada KPI se contrasta con los registros reales disponibles en Moodle. Los indicadores calculables pasan a construcción; para los demás, proponemos el indicador más cercano que pueda medirse y se toma la decisión en conjunto.</p>
+      <span class="mx">Documento aprobado en la semana 2 · es la especificación de la construcción</span>
+    </li>
+    <li>
+      <div class="mn">E3</div>
+      <h4>Línea base del semestre en curso</h4>
+      <p>La fase incluye una primera medición sobre los datos que la plataforma ya tiene, con el plugin en su configuración estándar. También incorpora las reglas de permanencia y riesgo con los valores definidos por Unicafam, en reemplazo del umbral de fábrica, y fija el punto de comparación para los semestres siguientes.</p>
+      <span class="mx">Entrega valor desde la semana 2, mientras se construye el resto</span>
+    </li>
+  </ul>
+
+  <p style="margin-top:18px"><b>Alcance de esta fase.</b> El taller se desarrolla en dos momentos: una sesión de definición y una sesión de validación. La lista de indicadores que pasa a construcción, un alcance compatible con una ventana de seis semanas y con el nivel de calidad esperado. Los demás indicadores quedan catalogados, con su fórmula escrita y disponibles para una fase posterior.</p>
+
+  <div class="pull">
+    <p>Primero los indicadores. Después el tablero. Ese orden garantiza que lo construido responda a decisiones que ya están sobre la mesa.</p>
+    <svg class="pull-check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24" fill="#14306b"/><path d="M16 26.5 L23 34 L37 18.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">06 / 19</span></div>
+</section>
+
+<!-- ===================== 7 · FRENTE 02 (I) ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Fase 1 · Semanas 3 a 6</span><h2>Construcción · indicadores y reglas</h2></div></div>
+  <p class="lede">Cuatro módulos componen la construcción a la medida. Dos trabajan sobre el motor de cálculo, uno sobre las vistas y el último sobre la comprobación de cada cifra contra su fuente.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">M1</div>
+      <h4>Indicadores propios de Unicafam</h4>
+      <p>Desarrollo de los KPIs priorizados en la semana 2, con su consulta a la base de datos, su cálculo agregado y su representación gráfica. Entran al mismo motor que los indicadores de fábrica y comparten los filtros del tablero.</p>
+      <span class="mx">Priorizados con la dirección académica en la semana 2</span>
+    </li>
+    <li>
+      <div class="mn">M2</div>
+      <h4>Reglas, umbrales y semáforo de riesgo</h4>
+      <p>La regla de permanencia con los valores de Unicafam. Combina permanencia, progreso, entregas vencidas y calificación en una señal por estudiante, con los pesos que la Institución defina.</p>
+      <span class="mx">De la alerta al mensaje en un clic, con registro del envío</span>
+    </li>
+    <li>
+      <div class="mn">M3</div>
+      <h4>Tableros de dirección y de programa</h4>
+      <p>Las dos vistas que el producto de fábrica todavía requiere construir, con los indicadores del catálogo ya operando. Incluyen un corte para las unidades que Algoritmo T está montando: apertura del aula, primeras semanas de uso y comparación entre asignaturas del mismo programa.</p>
+      <span class="mx">La vista de aula llega completa con la licencia, ya construida</span>
+    </li>
+    <li>
+      <div class="mn">M4</div>
+      <h4>Informes programados y pruebas de control</h4>
+      <p>Envío automático del informe mensual a los correos que la Institución indique, con las gráficas incrustadas y el recorte que corresponda a cada destinatario, en PDF, Excel o CSV. Cada indicador se verifica contra un cálculo manual sobre una muestra de cursos.</p>
+      <span class="mx">El número llega a la reunión donde se decide, ya comprobado</span>
+    </li>
+  </ul>
+
+  <div class="pull">
+    <p>Los KPIs traducen los datos del LMS en evidencias que permiten detectar riesgos, evaluar el aprendizaje y orientar decisiones oportunas sobre el diseño, el acompañamiento y la mejora de los cursos.</p>
+    <svg class="pull-check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24" fill="#14306b"/><path d="M16 26.5 L23 34 L37 18.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">07 / 19</span></div>
+</section>
+
+<!-- ===================== 8 · FRENTE 02 (II) · TABLEROS ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Fase 1 — continuación</span><h2>Los tres niveles de lectura</h2></div></div>
+  <p class="lede">El mismo motor alimenta tres vistas distintas. Cada perfil abre la suya y encuentra el nivel de detalle con el que trabaja, con las capacidades de Moodle decidiendo quién entra a cada una.</p>
+
+  <table class="schema niv-t">
+    <thead><tr><th class="rh">Nivel</th><th>Quién la usa</th><th>Qué muestra</th><th>Ritmo</th></tr></thead>
+    <tbody>
+      <tr><td class="r">Dirección</td><td class="ty">Vicerrectoría y dirección académica</td><td>Matrícula, permanencia y certificación por programa, con la evolución mes a mes y el mapa de procedencia de los estudiantes.</td><td class="pz">Mensual</td></tr>
+      <tr><td class="r">Programa</td><td class="ty">Coordinación de programa</td><td>Cursos del programa comparados entre sí, estudiantes bajo la regla de riesgo, entregas a tiempo y presencia docente.</td><td class="pz">Quincenal</td></tr>
+      <tr><td class="r">Aula</td><td class="ty">Docente y gestor LMS</td><td>Progreso por sección y actividad, calificación de cada actividad, permanencia estimada y la tabla de estudiantes del curso.</td><td class="pz">Semanal</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:16px"><b>La misma cifra, tres profundidades.</b> Un dato del tablero de dirección se abre hacia el programa que lo explica, y desde ahí hacia el aula donde ocurre. Cada nivel descarga lo que ve en PDF con las gráficas incrustadas, en Excel, en CSV o en imagen, y el asistente de IA responde sobre el recorte que esté en pantalla.</p>
+
+  <figure class="vista">
+    <figcaption>Maqueta · Tablero de dirección con los indicadores institucionales</figcaption>
+    <div class="v16 la">
+      <div class="v-app">
+        <div class="va-bar"><span class="va-dot"></span><b>Learning Analytics · Unicafam</b><span class="va-step">Dirección · septiembre de 2026</span></div>
+        <div class="va-body">
+          <div class="la-grid">
+            <div class="la-c"><div class="lv">1.482</div><div class="ll">Estudiantes activos</div></div>
+            <div class="la-c"><div class="lv">78 %</div><div class="ll">Permanencia</div></div>
+            <div class="la-c"><div class="lv">64</div><div class="ll">En riesgo</div></div>
+            <div class="la-c"><div class="lv">86 %</div><div class="ll">Entregas a tiempo</div></div>
+          </div>
+          <div class="la-chart">
+            <i style="height:38%"></i><i style="height:52%"></i><i style="height:47%"></i><i style="height:63%"></i>
+            <i style="height:71%"></i><i class="hi" style="height:58%"></i><i style="height:80%"></i><i style="height:74%"></i>
+            <i style="height:88%"></i><i class="hi" style="height:66%"></i><i style="height:92%"></i><i style="height:84%"></i>
+          </div>
+          <div class="la-legend">Actividad semanal por programa · barras oscuras marcan la semana de corte</div>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <p class="schema-note">Las cifras de la maqueta son un ejemplo. La composición de la vista, sus filtros y su descarga corresponden al comportamiento real del plugin en su versión 3.20.1. Los tableros finales se aprueban al <b>cierre de la fase 1</b>, con los indicadores del catálogo ya operando sobre la plataforma de Unicafam.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">08 / 19</span></div>
+</section>
+
+<!-- ===================== 9 · FRENTE 03 ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Fase 2 · 12 meses</span><h2>Licencia de la plataforma</h2></div></div>
+  <p class="lede">El producto de fábrica entra completo apenas la licencia se habilita, mientras la construcción a la medida avanza en paralelo. Así el equipo empieza a leer cifras reales desde la tercera semana, mucho antes de que los tableros propios estén terminados.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">S1</div>
+      <h4>Licencia del plan a la medida · 12 meses</h4>
+      <p>Habilita las funciones avanzadas sobre una plataforma, con usuarios y cursos ilimitados. Cubre los cinco bloques del tablero: plataforma, permanencia y riesgo, detalle del curso, evaluación y foros, y asistente de IA.</p>
+      <span class="mx">Vigencia de 12 meses desde la activación del código</span>
+    </li>
+    <li>
+      <div class="mn">S2</div>
+      <h4>Instalación asistida y verificación</h4>
+      <p>Instalación en el ambiente de pruebas de Unicafam y luego en producción, con revisión de la versión de Moodle, del motor de base de datos y de las tareas programadas. El plugin opera en <b>Moodle 4.5 a 5.2</b>, sobre MariaDB o PostgreSQL.</p>
+      <span class="mx">Verificado sobre Moodle 4.5.13 y 5.2.2 con datos reales</span>
+    </li>
+    <li>
+      <div class="mn">S3</div>
+      <h4>Configuración de permisos por rol</h4>
+      <p>Cinco capacidades propias de Moodle deciden quién ve el tablero, quién escribe a un estudiante, quién envía mensajes masivos, quién consulta la presencia docente y quién reenvía credenciales. Se ajustan a la matriz de roles de la Institución.</p>
+      <span class="mx">La comprobación ocurre en el servidor, más allá de la pantalla</span>
+    </li>
+    <li>
+      <div class="mn">S4</div>
+      <h4>Bolsa ampliada de consultas de IA</h4>
+      <p><b>500 consultas</b> para toda la vigencia, cinco veces la bolsa del plan anual. Preguntas en lenguaje natural sobre el recorte en pantalla, explicación de una gráfica concreta e informes estructurados descargables. Hacia el asistente viajan cifras agregadas.</p>
+      <span class="mx">Recargable en paquetes que duran lo que dure la licencia</span>
+    </li>
+  </ul>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">09 / 19</span></div>
+</section>
+
+<!-- ===================== 10 · FRENTE 04 ===================== -->
+<!-- ===================== FASE 2 — CONT · TABLERO POR DENTRO I ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Fase 2 — continuación</span><h2>El tablero por dentro</h2></div></div>
+  <p class="lede">Así se ven las vistas que más se consultan a diario.</p>
+
+  <div class="mockstack">
+    <figure>
+      <figcaption>Permanencia y riesgo · quién se está quedando atrás</figcaption>
+      <div class="v16 la wide">
+        <div class="v-app">
+          <div class="va-bar"><span class="va-dot"></span><b>Learning Analytics · Permanencia y riesgo</b><span class="va-step">Regla: 7 h en 7 días · 27 ago</span></div>
+          <div class="va-body">
+            <div class="la-grid">
+              <div class="la-c good"><div class="lv">812</div><div class="ll">Activos · 63,2 %</div></div>
+              <div class="la-c warn"><div class="lv">268</div><div class="ll">Con poca actividad</div></div>
+              <div class="la-c bad"><div class="lv">204</div><div class="ll">Actividad en cero</div></div>
+              <div class="la-c"><div class="lv">54,1 %</div><div class="ll">Regulares</div></div>
+            </div>
+            <div class="la-cols">
+              <div class="la-pan">
+                <div class="pt">Personas por debajo de la regla</div>
+                <div class="la-tbl">
+                  <div class="tr th" style="grid-template-columns:1.6fr 1.4fr 42px 42px"><span>Estudiante</span><span>Curso</span><span class="num">Perm.</span><span class="num">Prog.</span></div>
+                  <div class="tr" style="grid-template-columns:1.6fr 1.4fr 42px 42px"><b>A. Rivera</b><span>Dirección de Marketing</span><span class="num warn">0 h 40</span><span class="num">18 %</span></div>
+                  <div class="tr" style="grid-template-columns:1.6fr 1.4fr 42px 42px"><b>M. Cárdenas</b><span>Gerencia Estratégica</span><span class="num warn">1 h 05</span><span class="num">24 %</span></div>
+                  <div class="tr" style="grid-template-columns:1.6fr 1.4fr 42px 42px"><b>J. Olarte</b><span>Business Intelligence</span><span class="num warn">1 h 20</span><span class="num">31 %</span></div>
+                  <div class="tr" style="grid-template-columns:1.6fr 1.4fr 42px 42px"><b>S. Bermúdez</b><span>Matemáticas Financieras</span><span class="num warn">2 h 10</span><span class="num">37 %</span></div>
+                </div>
+                <div class="la-act" style="margin-top:auto"><span class="bt">Mensaje a los filtrados</span><span class="hint">64 personas seleccionadas</span></div>
+              </div>
+              <div class="la-pan">
+                <div class="pt">Reparto por actividad</div>
+                <div class="la-bars">
+                  <div class="br"><div><div class="bl">Activo</div><div class="bt"><i style="width:63%"></i></div></div><span class="bl" style="text-align:right">63,2 %</span></div>
+                  <div class="br"><div><div class="bl">Poca actividad</div><div class="bt"><i style="width:21%"></i></div></div><span class="bl" style="text-align:right">20,9 %</span></div>
+                  <div class="br"><div><div class="bl">Actividad en cero</div><div class="bt"><i style="width:16%"></i></div></div><span class="bl" style="text-align:right">15,9 %</span></div>
+                </div>
+                <div class="pt" style="margin-top:8px">Entrada temprana</div>
+                <div class="la-bars"><div class="br"><div><div class="bl">Con actividad en 7 días</div><div class="bt"><i class="alt" style="width:85%"></i></div></div><span class="bl" style="text-align:right">88/104</span></div></div>
+                <div class="pt" style="margin-top:8px">Reactivación tras mensaje</div>
+                <div class="la-bars"><div class="br"><div><div class="bl">Volvieron al aula</div><div class="bt"><i class="alt" style="width:63%"></i></div></div><span class="bl" style="text-align:right">61/97</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <figure>
+      <figcaption>Dentro del curso · dónde avanza y dónde se atasca el grupo</figcaption>
+      <div class="v16 la wide">
+        <div class="v-app">
+          <div class="va-bar"><span class="va-dot"></span><b>Learning Analytics · Dentro del curso</b><span class="va-step">Dirección de Marketing · corte 2</span></div>
+          <div class="va-body">
+            <div class="la-grid">
+              <div class="la-c"><div class="lv">34</div><div class="ll">Estudiantes</div></div>
+              <div class="la-c"><div class="lv">64,2 %</div><div class="ll">Progreso promedio</div></div>
+              <div class="la-c"><div class="lv">78,4 %</div><div class="ll">Calificación promedio</div></div>
+              <div class="la-c"><div class="lv">4 h 12</div><div class="ll">Permanencia estimada</div></div>
+            </div>
+            <div class="la-cols even">
+              <div class="la-pan">
+                <div class="pt">Progreso por sección</div>
+                <div class="la-bars">
+                  <div class="br"><div><div class="bl">Presentación del corte</div><div class="bt"><i style="width:97%"></i></div></div><span class="bl" style="text-align:right">97 %</span></div>
+                  <div class="br"><div><div class="bl">Segmentación de mercado</div><div class="bt"><i style="width:84%"></i></div></div><span class="bl" style="text-align:right">84 %</span></div>
+                  <div class="br"><div><div class="bl">Analítica de campañas</div><div class="bt"><i style="width:61%"></i></div></div><span class="bl" style="text-align:right">61 %</span></div>
+                  <div class="br"><div><div class="bl">Embudo de conversión</div><div class="bt"><i style="width:38%"></i></div></div><span class="bl" style="text-align:right">38 %</span></div>
+                  <div class="br"><div><div class="bl">Proyecto integrador</div><div class="bt"><i style="width:12%"></i></div></div><span class="bl" style="text-align:right">12 %</span></div>
+                </div>
+              </div>
+              <div class="la-pan">
+                <div class="pt">Calificación promedio por actividad</div>
+                <div class="la-bars">
+                  <div class="br"><div><div class="bl">Quiz 1 · Fundamentos</div><div class="bt"><i class="alt" style="width:88%"></i></div></div><span class="bl" style="text-align:right">88</span></div>
+                  <div class="br"><div><div class="bl">Taller · Buyer persona</div><div class="bt"><i class="alt" style="width:76%"></i></div></div><span class="bl" style="text-align:right">76</span></div>
+                  <div class="br"><div><div class="bl">Quiz 2 · Métricas</div><div class="bt"><i class="alt" style="width:64%"></i></div></div><span class="bl" style="text-align:right">64</span></div>
+                  <div class="br"><div><div class="bl">Informe de campaña</div><div class="bt"><i class="alt" style="width:81%"></i></div></div><span class="bl" style="text-align:right">81</span></div>
+                </div>
+                <div class="la-act" style="margin-top:auto"><span class="bt">Correo al estudiante</span><span class="hint">con su progreso ya redactado</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </div>
+
+  <p class="schema-note" style="margin-top:12px">Las cifras son un ejemplo. La composición de cada vista, sus filtros y sus descargas corresponden al comportamiento real del plugin en su versión 3.20.1. El nombre de cada curso proviene del catálogo que Unicafam tiene en producción.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">10 / 19</span></div>
+</section>
+
+<!-- ===================== FASE 2 — CONT · TABLERO POR DENTRO II ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Fase 2 — continuación</span><h2>Evaluación y asistente</h2></div></div>
+  <p class="lede">Las otras dos vistas del producto. Una mira lo que pasa con las entregas y la conversación; la otra responde en lenguaje natural sobre el recorte que esté en pantalla.</p>
+
+  <div class="mockstack">
+    <figure>
+      <figcaption>Evaluación y foros · una fila por tarea, cuestionario y foro</figcaption>
+      <div class="v16 la wide">
+        <div class="v-app">
+          <div class="va-bar"><span class="va-dot"></span><b>Learning Analytics · Evaluación y foros</b><span class="va-step">Gerencia Estratégica · corte 2</span></div>
+          <div class="va-body">
+            <div class="la-grid">
+              <div class="la-c"><div class="lv">82,4 %</div><div class="ll">Entregas a tiempo</div></div>
+              <div class="la-c good"><div class="lv">91,2 %</div><div class="ll">Cuestionarios completos</div></div>
+              <div class="la-c"><div class="lv">76,5 %</div><div class="ll">Alcanzan el aprobado</div></div>
+              <div class="la-c good"><div class="lv">+9,3 pp</div><div class="ll">Ganancia entre intentos</div></div>
+            </div>
+            <div class="la-cols even">
+              <div class="la-pan">
+                <div class="pt">Actividades evaluables</div>
+                <div class="la-tbl">
+                  <div class="tr th" style="grid-template-columns:1.7fr 44px 44px 40px"><span>Actividad</span><span class="num">Entreg.</span><span class="num">A tiempo</span><span class="num">Prom.</span></div>
+                  <div class="tr" style="grid-template-columns:1.7fr 44px 44px 40px"><b>Taller · Matriz DOFA</b><span class="num">32/34</span><span class="num">88 %</span><span class="num">81</span></div>
+                  <div class="tr" style="grid-template-columns:1.7fr 44px 44px 40px"><b>Quiz · Estrategia</b><span class="num">34/34</span><span class="num">94 %</span><span class="num">77</span></div>
+                  <div class="tr" style="grid-template-columns:1.7fr 44px 44px 40px"><b>Foro · Casos</b><span class="num">27/34</span><span class="num warn">62 %</span><span class="num">73</span></div>
+                  <div class="tr" style="grid-template-columns:1.7fr 44px 44px 40px"><b>Informe final</b><span class="num warn">19/34</span><span class="num warn">54 %</span><span class="num">79</span></div>
+                </div>
+                <div class="la-act" style="margin-top:auto"><span class="bt">Descargar</span><span class="hint">PDF · Excel · CSV · JPG</span></div>
+              </div>
+              <div class="la-pan">
+                <div class="pt">Foros e interacción</div>
+                <div class="la-bars">
+                  <div class="br"><div><div class="bl">Participan en foros</div><div class="bt"><i style="width:71%"></i></div></div><span class="bl" style="text-align:right">71,4 %</span></div>
+                  <div class="br"><div><div class="bl">Responden a un compañero</div><div class="bt"><i style="width:58%"></i></div></div><span class="bl" style="text-align:right">58,3 %</span></div>
+                  <div class="br"><div><div class="bl">Hilos que esperan respuesta</div><div class="bt"><i style="width:9%"></i></div></div><span class="bl" style="text-align:right">9,1 %</span></div>
+                </div>
+                <div class="pt" style="margin-top:9px">Presencia docente · permiso aparte</div>
+                <div class="la-bars">
+                  <div class="br"><div><div class="bl">Entregas con retroalimentación</div><div class="bt"><i class="alt" style="width:74%"></i></div></div><span class="bl" style="text-align:right">74 %</span></div>
+                  <div class="br"><div><div class="bl">Tiempo medio de respuesta</div><div class="bt"><i class="alt" style="width:45%"></i></div></div><span class="bl" style="text-align:right">6,2 h</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <figure>
+      <figcaption>Asistente de IA · una pregunta en español sobre lo que hay en pantalla</figcaption>
+      <div class="v16 la wide">
+        <div class="v-app">
+          <div class="va-bar"><span class="va-dot"></span><b>Learning Analytics · Asistente</b><span class="va-step">Recorte: Marketing · corte 2 · sep 2026</span></div>
+          <div class="va-body">
+            <div class="la-ask">¿Qué explica la caída de entregas a tiempo en el corte 2?</div>
+            <div class="la-ans">
+              <b>Lectura del recorte.</b> Las entregas a tiempo bajan de 88 % a 54 % entre el taller y el informe final. Tres señales coinciden en el mismo tramo: el progreso de la sección «Embudo de conversión» se queda en 38 %, la calificación del Quiz 2 cae a 64 y hay 64 estudiantes por debajo de la regla de permanencia.<br><br>
+              <b>Dónde mirar.</b> El informe final concentra 15 entregas pendientes, y 11 de esas personas aparecen también en la lista de riesgo. Un mensaje al grupo filtrado alcanza a esas once en un solo envío.
+              <div class="la-bars" style="margin-top:9px">
+                <div class="br"><div><div class="bl">Taller · Matriz DOFA</div><div class="bt"><i style="width:88%"></i></div></div><span class="bl" style="text-align:right">88 %</span></div>
+                <div class="br"><div><div class="bl">Quiz · Estrategia</div><div class="bt"><i style="width:94%"></i></div></div><span class="bl" style="text-align:right">94 %</span></div>
+                <div class="br"><div><div class="bl">Foro · Casos</div><div class="bt"><i class="alt" style="width:62%"></i></div></div><span class="bl" style="text-align:right">62 %</span></div>
+                <div class="br"><div><div class="bl">Informe final</div><div class="bt"><i class="alt" style="width:54%"></i></div></div><span class="bl" style="text-align:right">54 %</span></div>
+              </div>
+              <div class="pt" style="margin-top:6px">Entregas a tiempo por actividad · corte 2</div>
+            </div>
+            <div class="la-chips"><span class="on">Respuesta breve</span><span>Informe estructurado</span><span>Explicar esta gráfica</span><span>Descargar PDF</span></div>
+            <div class="la-act"><span class="hint">Historial por persona, exportable · consultas usadas 37 de 500 · hacia el asistente viajan cifras agregadas</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+  </div>
+
+  <p class="schema-note" style="margin-top:12px">La respuesta del asistente es un ejemplo de su forma de leer. Trabaja sobre las cifras agregadas del recorte activo en pantalla, con acceso a los cuatro bloques del tablero, y su historial queda registrado por persona.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">11 / 19</span></div>
+</section>
+
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Fase 3 · Semanas 7 y 8</span><h2>Apropiación del equipo</h2></div></div>
+  <p class="lede">Un tablero vale lo que valen las decisiones que provoca. Esta fase existe para que las cifras lleguen a las reuniones donde se decide y el equipo de Educación Virtual las lea por su cuenta cuando terminemos.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">A1</div>
+      <h4>Formación por perfil</h4>
+      <p>Dos sesiones de dos horas. La primera reúne a dirección académica y coordinación de programa; la segunda, a gestores LMS y docentes. Cada grupo trabaja sobre su propia vista con los datos reales de la plataforma.</p>
+      <span class="mx">Grabadas y entregadas como manual en video</span>
+    </li>
+    <li>
+      <div class="mn">A2</div>
+      <h4>Guía de lectura de indicadores</h4>
+      <p>Documento breve que acompaña al catálogo de la fase 1: qué significa cada cifra, qué la mueve, qué acción sugiere cuando cruza el umbral y qué lectura equivocada acecha detrás.</p>
+      <span class="mx">Imprimible para el puesto de trabajo</span>
+    </li>
+    <li>
+      <div class="mn">A3</div>
+      <h4>Protocolo de intervención temprana</h4>
+      <p>Documento con la secuencia acordada para el estudiante que cruza el umbral de riesgo: quién le escribe, en qué plazo, con qué mensaje y qué se registra. Aprovecha el envío masivo del tablero y su registro de reactivación. Se cierra con una sesión donde leemos juntos el primer informe del periodo.</p>
+      <span class="mx">Convierte la alerta en una acción con responsable</span>
+    </li>
+  </ul>
+
+  <p style="margin-top:18px"><b>Alcance de esta fase.</b> La formación empieza con los tableros ya cerrados y mostrando cifras propias, y el acompañamiento cubre la primera lectura conjunta dentro de la semana 8. Las sesiones mensuales de seguimiento a lo largo del año quedan disponibles como servicio aparte, con su propia valoración.</p>
+
+  <div class="pull">
+    <p>Cerramos cuando el equipo de Unicafam abre el tablero un lunes cualquiera y sabe qué hacer con lo que ve.</p>
+    <svg class="pull-check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24" fill="#14306b"/><path d="M16 26.5 L23 34 L37 18.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">12 / 19</span></div>
+</section>
+
+<!-- ===================== FASE 4 · SOPORTE, SEGUIMIENTO Y EVOLUCIÓN ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Fase 4 · 12 meses</span><h2>Soporte, seguimiento y evolución</h2></div></div>
+  <p class="lede">Un tablero se desactualiza si se queda quieto. Los programas cambian de calendario, la Institución revisa sus metas y aparecen preguntas que la primera versión todavía ignora. Por tal razón, el equipo de Algoritmo T da soporte, realiza seguimiento y colabora en la evolución del producto durante el período de la licencia.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">V1</div>
+      <h4>Soporte prioritario</h4>
+      <p>Atención durante los doce meses con respuesta dentro del día hábil siguiente, por correo y por el canal directo con el equipo de Algoritmo T. Cubre dudas de uso, revisión de cifras que resulten extrañas y diagnóstico de cualquier comportamiento imprevisto del plugin.</p>
+      <span class="mx">Interlocución con quien construyó el tablero, más allá de una mesa de ayuda genérica</span>
+    </li>
+    <li>
+      <div class="mn">V2</div>
+      <h4>Hasta dos ventanas de actualización</h4>
+      <p>Instalación de las versiones nuevas del plugin dentro de la vigencia, con las mejoras que se incorporen al producto. Cada ventana se coordina con el calendario académico y se prueba primero en el ambiente de pruebas, fuera del periodo de exámenes.</p>
+      <span class="mx">Los indicadores a la medida se migran con cada versión</span>
+    </li>
+    <li>
+      <div class="mn">V3</div>
+      <h4>Revisión semestral de indicadores</h4>
+      <p>Dos sesiones a lo largo del año para contrastar el catálogo con lo que la operación reveló: qué indicador se consulta de verdad, cuál quedó grande y qué pregunta nueva apareció en las reuniones de dirección. Se entrega un acta con los ajustes acordados.</p>
+      <span class="mx">El catálogo de KPIs se mantiene vivo</span>
+    </li>
+    <li>
+      <div class="mn">V4</div>
+      <h4>Ajuste de reglas y umbrales</h4>
+      <p>Calibración de la regla de permanencia, de los pesos del semáforo de riesgo y de los umbrales de alerta con la evidencia del primer semestre de uso. La primera medición fija un punto de partida razonable, y la operación real dice dónde moverlo.</p>
+      <span class="mx">Incluido dentro de la vigencia, con acta de cada cambio</span>
+    </li>
+  </ul>
+
+  <p class="schema-note" style="margin-top:16px">El desarrollo de indicadores que amplíen el catálogo priorizado en la fase 1 se gestiona como orden de cambio, con su propia valoración. Esta fase cubre el ajuste de lo entregado y el acompañamiento a su uso.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">13 / 19</span></div>
+</section>
+
+<!-- ===================== 11 · EQUIPO Y GOBERNANZA ===================== -->
+<section class="page pad tight-team" id="equipo">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">05</div><div class="sh"><span class="kicker">Talento</span><h2>Equipo y gobernanza</h2></div></div>
+  <p class="col">Cinco perfiles sobre el mismo cronograma. El equipo se concentra en la definición de indicadores durante las dos primeras semanas y se abre a desarrollo desde la tercera, con el especialista en apropiación entrando en la séptima.</p>
+  <ol class="team">
+    <li>
+      <div class="tm-h"><span class="tm-n">01</span><div class="tm-id"><h4>Director de proyecto</h4><p class="tm-resp">Responsable único ante Unicafam y de la coordinación integral del servicio.</p></div></div>
+      <ul class="tm-fns">
+        <li>Conducir el comité semanal y las sesiones de aprobación.</li>
+        <li>Articular este proyecto con el de virtualización que ya está en curso.</li>
+        <li>Resolver bloqueos y gestionar las órdenes de cambio.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">02</span><div class="tm-id"><h4>Analista de learning analytics</h4><p class="tm-resp">Responsable de la definición de indicadores y de la coherencia entre los KPIs y el tablero.</p></div></div>
+      <ul class="tm-fns">
+        <li>Conducir el taller de definición con la dirección académica.</li>
+        <li>Construir el catálogo de KPIs, el diccionario y la línea base.</li>
+        <li>Contrastar cada indicador con lo que la plataforma registra.</li>
+        <li>Validar que cada cifra del tablero coincida con su cálculo de control.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">03</span><div class="tm-id"><h4>Desarrollador Moodle · PHP</h4><p class="tm-resp">Responsable de los indicadores propios, de las vistas y del comportamiento del plugin.</p></div></div>
+      <ul class="tm-fns">
+        <li>Construir los cuatro módulos de construcción a la medida.</li>
+        <li>Implementar las reglas parametrizables y el semáforo de riesgo.</li>
+        <li>Diseñar los tableros de dirección y de programa con sus filtros.</li>
+        <li>Configurar los informes programados y ajustar el rendimiento de las consultas.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">04</span><div class="tm-id"><h4>Especialista LMS</h4><p class="tm-resp">Responsable de la instalación, los permisos y el puente con las aulas en producción.</p></div></div>
+      <ul class="tm-fns">
+        <li>Instalar y verificar el plugin en pruebas y en producción.</li>
+        <li>Configurar las cinco capacidades según la matriz de roles de Unicafam.</li>
+        <li>Coordinar las ventanas de actualización con el calendario académico.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">05</span><div class="tm-id"><h4>Especialista en apropiación</h4><p class="tm-resp">Responsable de la apropiación y del acompañamiento a la lectura.</p></div></div>
+      <ul class="tm-fns">
+        <li>Dictar las dos sesiones de formación por perfil.</li>
+        <li>Redactar la guía de lectura y el protocolo de intervención temprana.</li>
+        <li>Acompañar la primera lectura conjunta del informe, con acta de decisiones.</li>
+      </ul>
+    </li>
+  </ol>
+  <p class="schema-note"><b>Gobernanza.</b> Un responsable único por cada lado. Comité de seguimiento semanal, <b>8 sesiones de 45 a 60 minutos</b> a lo largo del proyecto, con acta y decisiones registradas. Cada tramo cierra con una aprobación escrita.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">14 / 19</span></div>
+</section>
+
+<!-- ===================== 12 · INVERSIÓN ===================== -->
+<section class="page pad tight-inv" id="inversion">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">06</div><div class="sh"><span class="kicker">Inversión</span><h2>Propuesta económica</h2></div></div>
+  <p class="col">Las cuatro fases se contratan como un solo servicio y comparten un valor único. Se ejecutan encadenadas: la definición de indicadores da forma a lo que se construye, la licencia sostiene lo construido, la apropiación instala su uso y el soporte lo mantiene vigente durante el año.</p>
+
+  <table class="inv-t">
+    <thead><tr><th>Fase de trabajo</th><th>Ventana</th><th>Entregables</th><th>Valor</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="ci">Fase 1</span><br><span class="cf">KPIs estratégicos y construcción a la medida</span></td>
+        <td class="cn">Semanas&nbsp;1&nbsp;a&nbsp;6</td>
+        <td class="cn">3 documentos · 4 módulos</td>
+        <td class="cv">Incluida</td>
+      </tr>
+      <tr>
+        <td><span class="ci">Fase 2</span><br><span class="cf">licencia de la plataforma</span></td>
+        <td class="cn">12&nbsp;meses</td>
+        <td class="cn">4 servicios</td>
+        <td class="cv">Incluida</td>
+      </tr>
+      <tr>
+        <td><span class="ci">Fase 3</span><br><span class="cf">apropiación</span></td>
+        <td class="cn">Semanas&nbsp;7&nbsp;y&nbsp;8</td>
+        <td class="cn">3 entregables</td>
+        <td class="cv">Incluida</td>
+      </tr>
+      <tr>
+        <td><span class="ci">Fase 4</span><br><span class="cf">soporte, seguimiento y evolución</span></td>
+        <td class="cn">12&nbsp;meses</td>
+        <td class="cn">4 servicios</td>
+        <td class="cv">Incluida</td>
+      </tr>
+      <tr class="tot"><td class="lab">Inversión total</td><td class="num">8&nbsp;semanas + 12&nbsp;meses</td><td class="num">$&nbsp;11.000.000 + IVA</td><td><span class="big">$ 13.090.000</span></td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:16px"><b>Qué sostiene la vigencia.</b> Los doce meses cubren:</p>
+  <div class="escala">
+    <span class="base"><b>Una plataforma</b> · usuarios y cursos ilimitados</span>
+    <span class="base"><b>500 consultas</b> de asistente de IA</span>
+    <span><b>Soporte prioritario</b> · respuesta en 1 día hábil</span>
+    <span><b>Hasta 2 ventanas</b> de actualización</span>
+  </div>
+  <p style="margin-top:14px"><b>A partir del segundo año</b>, la continuidad del servicio se ofrece en <b>$ 8.000.000 + IVA</b> anuales, con hasta dos ventanas de actualización. Cubre la licencia sobre la plataforma, el soporte prioritario, el seguimiento semestral de indicadores y la evolución del tablero, con los indicadores a la medida operando.</p>
+  <p><b>El precio fija el alcance.</b> La ventana de seis semanas sostiene el conjunto de indicadores que se prioriza con la dirección académica en la semana 2, junto con los dos tableros construidos. El catálogo de la fase 1 documenta los KPIs restantes con su fórmula, listos para una etapa siguiente.</p>
+
+  <p class="note">Valores expresados en pesos colombianos. El IVA del 19 % se calcula sobre $ 11.000.000, para un total de $ 13.090.000. Las retenciones aplican según el régimen tributario de la Institución. El tratamiento tributario definitivo del componente de licencia se confirma con el área contable de Unicafam antes de la facturación. La oferta tiene vigencia de 30 días calendario.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">15 / 19</span></div>
+</section>
+
+<!-- ===================== 13 · HITOS Y FACTURACIÓN ===================== -->
+<section class="page pad tight-pay">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">06</div><div class="sh"><span class="kicker">Inversión — continuación</span><h2>Aprobaciones y facturación</h2></div></div>
+  <p class="col">Cuatro aprobaciones escritas marcan el avance del proyecto. Cada una tiene su producto verificable y su acta, de manera que Unicafam sigue el trabajo contra entregas reales.</p>
+
+  <table class="inv-t">
+    <thead><tr><th>Momento</th><th>Fase</th><th>Producto verificable</th><th>Aprobación</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="ci">Semana 2</span><br><span class="cf">indicadores definidos</span></td>
+        <td class="cn">Fase&nbsp;1</td>
+        <td class="cn" style="text-align:left">Catálogo de KPIs contrastado con la plataforma y línea base del semestre</td>
+        <td class="cv">Acta de comité</td>
+      </tr>
+      <tr>
+        <td><span class="ci">Semana 3</span><br><span class="cf">al pago · tablero habilitado</span></td>
+        <td class="cn">Fase&nbsp;2</td>
+        <td class="cn" style="text-align:left">Plugin instalado en producción, licencia activa y permisos por rol configurados</td>
+        <td class="cv">Acta de comité</td>
+      </tr>
+      <tr>
+        <td><span class="ci">Semana 6</span><br><span class="cf">construcción cerrada</span></td>
+        <td class="cn">Fase&nbsp;1</td>
+        <td class="cn" style="text-align:left">Indicadores propios, reglas institucionales y los tableros de dirección y programa operando</td>
+        <td class="cv">Acta de comité</td>
+      </tr>
+      <tr>
+        <td><span class="ci">Semana 8</span><br><span class="cf">rutina instalada</span></td>
+        <td class="cn">Fase&nbsp;3</td>
+        <td class="cn" style="text-align:left">Formación dictada, guía de lectura y protocolo de intervención entregados</td>
+        <td class="cv">Acta de cierre</td>
+      </tr>
+      <tr class="tot"><td class="lab">Proyecto</td><td class="num">4&nbsp;fases</td><td class="num">4 aprobaciones</td><td><span class="big">8&nbsp;semanas</span></td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:16px"><b>Facturación.</b> La factura por el valor total de <b>$ 13.090.000 IVA incluido</b> se radica el <b>día 1 del proyecto</b>, con la orden de inicio, y el pago corre según el plazo que fije el área financiera de Unicafam.</p>
+  <p><b>Habilitación del tablero.</b> El código de licencia se emite cuando se recibe el <b>pago total de la licencia anual</b>. Desde ese momento el plugin queda operando completo sobre la plataforma institucional y empiezan a contar los doce meses de vigencia.</p>
+  <p><b>Qué ocurre mientras tanto.</b> La definición de indicadores arranca con la orden de inicio y avanza con independencia de la habilitación, sobre la información que la Institución aporta. La construcción y las fases 2 a 4 corren a partir de la habilitación, así que un pago posterior a la semana 3 desplaza esa aprobación y las que le siguen.</p>
+  <p><b>Qué revisa cada aprobación.</b> Unicafam recibe los entregables del tramo con tres días hábiles de anticipación a la sesión de cierre, donde se revisan uno por uno y se firma el acta. Las observaciones menores se incorporan dentro del tramo siguiente, con el acta ya firmada.</p>
+
+  <p class="note">La vigencia de doce meses se cuenta desde la habilitación del tablero, que ocurre con el pago total de la licencia anual. La continuidad del segundo año se factura por anticipado.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">16 / 19</span></div>
+</section>
+
+<!-- ===================== 14 · CRONOGRAMA ===================== -->
+<section class="page pad" id="cronograma">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">07</div><div class="sh"><span class="kicker">Tiempos</span><h2>Cronograma</h2></div></div>
+  <p class="col">Seis semanas de implementación y dos de apropiación. La fase 1 abre con el catálogo de indicadores y cierra la construcción en la semana 6; el tablero de la fase 2 queda habilitado en la tercera con el producto completo; la fase 3 ocupa las dos últimas.</p>
+  <div class="tscroll">
+  <table class="crono">
+    <thead><tr><th>Actividad</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>S5</th><th>S6</th><th>S7</th><th>S8</th></tr></thead>
+    <tbody>
+      <tr><td>Taller de definición de indicadores</td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Contraste con la base de datos y línea base</td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Semana 2 · catálogo de indicadores aprobado</td><td><div class="gbar"></div></td><td><div class="gbar aprob"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Instalación, licencia y permisos por rol</td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Semana 3 · tablero habilitado</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar aprob"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Indicadores propios y reglas institucionales</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Tableros de dirección y de programa</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Informes programados y pruebas de control</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Semana 6 · cierre de la fase 1</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar aprob"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Formación por perfil</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Guía de lectura y protocolo de intervención</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td></tr>
+      <tr><td>Semana 8 · cierre de la fase 3</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar aprob"></div></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="crono-legend">
+    <span><i style="background:#4fd0ec"></i> Ejecución</span>
+    <span><i style="background:#f1ba5b"></i> Aprobación escrita</span>
+    <span>S = semana · 6 de implementación + 2 de apropiación</span>
+  </div>
+  <p style="margin-top:16px"><b>Qué sigue a la semana 8.</b> El tablero queda operando con los indicadores de Unicafam y el equipo formado para leerlo. Durante el resto del año entra la fase 4: soporte prioritario, hasta dos ventanas de actualización, la revisión semestral del catálogo y el ajuste de reglas con la evidencia del uso real.</p>
+  <p class="schema-note" style="margin-top:14px">Ritmo de decisión: <b>8 sesiones de 45 a 60 minutos</b>, una por semana. La sesión de la semana donde cae una aprobación revisa sus entregables y firma el acta. El cronograma supone la habilitación del tablero dentro de la semana 3, y un pago posterior a esa fecha mueve esa aprobación y todo lo que viene después en la misma proporción.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">17 / 19</span></div>
+</section>
+
+<!-- ===================== 15 · CONDICIONES ===================== -->
+<section class="page pad tight-terms tight-terms2" id="condiciones">
+  <div class="rhead"><span class="r-l">Propuesta · Learning Analytics Unicafam</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">08</div><div class="sh"><span class="kicker">Condiciones</span><h2>Supuestos y condiciones del servicio</h2></div></div>
+  <ul class="terms">
+    <li><div class="tt">Interlocución</div><div class="tb">Un responsable único por cada lado, con capacidad de decisión sobre los indicadores institucionales. Del lado de Unicafam proponemos a la Dirección de Educación Virtual, acompañada por la dirección académica en las aprobaciones.</div></li>
+    <li><div class="tt">Acceso a la plataforma</div><div class="tb">Ambiente de pruebas con una copia de la base de datos y credenciales de administrador, disponibles durante la primera semana. El acceso a producción se habilita para la instalación de la semana 3.</div></li>
+    <li><div class="tt">Acceso a las personas</div><div class="tb">Disponibilidad de la dirección académica y de la coordinación de programa para el taller de las semanas 1 y 2. Estimamos <b>4 horas</b> de dirección académica y <b>3 horas</b> de cada coordinación a lo largo del proyecto.</div></li>
+    <li><div class="tt">Retroalimentación</div><div class="tb">Observaciones consolidadas dentro de los <b>3 días hábiles</b> siguientes a cada entrega. El cronograma se calcula sobre ese ritmo y una demora en la respuesta desplaza la aprobación correspondiente.</div></li>
+    <li><div class="tt">Infraestructura</div><div class="tb">El plugin opera dentro del Moodle de Unicafam, sobre la infraestructura que la Institución ya tiene. Requiere <b>Moodle 4.5 a 5.2</b> con MariaDB o PostgreSQL, y las tareas programadas de Moodle activas.</div></li>
+    <li><div class="tt">Datos personales</div><div class="tb">Los datos de los estudiantes permanecen en el servidor de Unicafam. El tratamiento se rige por la política de la Institución y por la Ley 1581 de 2012. Hacia el asistente de IA viajan cifras agregadas: nombres, correos y calificaciones individuales permanecen dentro de la plataforma.</div></li>
+    <li><div class="tt">Propiedad</div><div class="tb">El código del plugin permanece en propiedad de Algoritmo T bajo la licencia de uso descrita. Los indicadores construidos a la medida quedan operando mientras la licencia esté vigente. Los datos y los documentos de la fase 1 son propiedad de Unicafam.</div></li>
+    <li><div class="tt">Consultas de asistente</div><div class="tb">La bolsa de <b>500 consultas</b> cubre toda la vigencia. Al agotarse se recarga en paquetes desde 10 USD, y lo adquirido dura lo que dure la licencia. El resto del tablero sigue completo con la bolsa en cero.</div></li>
+    <li><div class="tt">Facturación y habilitación</div><div class="tb">La factura se radica el <b>día 1 del proyecto</b> por el valor total. El código de licencia se emite al recibirse el <b>pago total de la licencia anual</b>, y desde ese momento el tablero opera completo y empiezan a contar los doce meses de vigencia. El cronograma supone esa habilitación dentro de la semana 3.</div></li>
+    <li><div class="tt">Alcance de fases siguientes</div><div class="tb">Los indicadores del catálogo que la priorización de la semana 2 deje para más adelante, la vista de aula construida a la medida, el acompañamiento mensual a lo largo del año, la integración con el sistema de información académica, la extensión a otras plataformas Moodle, la aplicación móvil y los modelos predictivos de deserción quedan para etapas posteriores, con su propia valoración y cronograma.</div></li>
+    <li><div class="tt">Órdenes de cambio</div><div class="tb">Toda solicitud que altere alcance, plazos o complejidad se evalúa con su impacto en tiempo y costo, y se aprueba por escrito antes de ejecutarse. Los indicadores que amplíen el catálogo priorizado en la fase 1 se valoran por este mecanismo.</div></li>
+    <li><div class="tt">Impuestos y vigencia</div><div class="tb">Valores en pesos colombianos, con IVA del 19 %. Las retenciones aplican según el régimen tributario de la Institución. La oferta tiene vigencia de <b>30 días calendario</b> desde la fecha de esta propuesta.</div></li>
+    <li><div class="tt">Confidencialidad</div><div class="tb">Este documento es propiedad exclusiva de Algoritmo T. Su copia o su uso para fines distintos de la evaluación de esta propuesta requiere autorización escrita.</div></li>
+  </ul>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Learning Analytics Unicafam</span><span class="pf-r">18 / 19</span></div>
+</section>
+
+<!-- ===================== 16 · CONTRAPORTADA ===================== -->
+<section class="page back">
+  <div class="bk-top"><b>Algoritmo</b><img src="assets/img/algoritmot-mark.svg" alt="Algoritmo T"></div>
+  <div class="bk-mid">
+    <div class="bk-q">Los cursos ya están en su plataforma. Ahora <em>vemos qué pasa dentro de ellos</em>.</div>
+    <div class="bk-tag">Soluciones digitales con sentido humano.</div>
+  </div>
+  <div class="bk-bot">
+    <div class="sig">
+      <div class="nm">Ana Milena Diazgranados</div>
+      <div class="rl">Directora de Relacionamiento · Algoritmo T</div>
+      <div class="ct"><a href="mailto:anadiazgranados@algoritmot.com">anadiazgranados@algoritmot.com</a> · +57 300 659 0161<br><a href="https://www.algoritmot.com">www.algoritmot.com</a></div>
+    </div>
+    <div class="bk-client"><span>Unicafam<br>Fundación Universitaria Cafam</span></div>
+  </div>
+</section>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>
