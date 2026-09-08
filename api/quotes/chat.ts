@@ -75,6 +75,32 @@ const HISTORY_TURNS = 16
  */
 const MAX_OUTPUT_TOKENS = 24_000
 
+/** Secciones del esquema clásico: id · antetítulo · título por defecto. */
+const LEGACY_SECTIONS: Array<[string, string, string]> = [
+  ['presentacion', 'Presentación', 'Una propuesta que se lee y se configura'],
+  ['diagnostico', 'Diagnóstico', 'Lectura del reto'],
+  ['arquitectura', 'Método / Solución', 'Cómo lo hacemos / Arquitectura de la solución'],
+  ['enfoque', 'Alcance y método', 'Qué comprende el trabajo'],
+  ['pantallas', 'La plataforma en pantalla', 'Así se ve funcionando'],
+  ['modulos', 'Alcance configurable', 'Servicios incluidos / Núcleo y catálogo de módulos'],
+  ['configurador', 'Alcance elegido', 'Configurador de alcance'],
+  ['cronograma', 'Tiempos', 'Cronograma de ejecución'],
+  ['inversion', 'Inversión', 'Propuesta económica'],
+  ['pagos', 'Condiciones', 'Plan de pagos e hitos'],
+  ['servicio', 'Después de la entrega', 'Servicio, soporte y renovación'],
+  ['equipo', 'Cómo trabajamos', 'Equipo y forma de trabajo'],
+  ['condiciones', 'Letra clara', 'Supuestos y exclusiones'],
+  ['cierre', '(contraportada)', '(contraportada)'],
+]
+/** Rótulos fijos del visor que content.labels puede sobreescribir. */
+const LABEL_KEYS = [
+  'front', 'needs', 'stackTitle', 'scopeNoteTitle', 'livehint', 'alwaysIncluded', 'presets', 'presetSuggested', 'presetFull', 'presetCore',
+  'cfgCurrent', 'cfgResult', 'coreRow', 'modulesRow', 'totalLabel', 'timelineNoteTitle', 'activity', 'legendOn', 'legendHito',
+  'investmentIntro', 'invComponent', 'invDeliverables', 'invInvestment', 'payMoment', 'payMilestone', 'payValue', 'milestonesTitle',
+  'msHito', 'msWeek', 'msCriterion', 'svcPeriod', 'svcCovers', 'svcValue', 'levelsTitle', 'assumptionsTitle', 'exclusionsTitle',
+  'guaranteesTitle', 'garConcept', 'garScope', 'backTagline', 'coverClient', 'coverDuration', 'coverScope', 'coverInvestment',
+]
+
 const SYSTEM_RULES = `
 Eres la consultora senior de Algoritmo T y la constructora de esta cotización: la armas junto al equipo
 comercial, de principio a fin. Conoces el portafolio completo de la casa tal como lo publica
@@ -166,6 +192,14 @@ ESTILO (la casa es estricta con esto)
    sin scripts). Cada media lleva "caption" y dónde va: "pageId" + "afterBlock" (índice del bloque
    tras el cual se inserta; -1 = al inicio) en documentos por páginas, o "section": "screens" en
    el esquema clásico. Máximo 3 por turno y una sola "generate" por turno.
+18. ESTRUCTURA DEL ESQUEMA CLÁSICO: en un documento sin páginas propias, cada sección tiene un id
+   fijo (bloque ESTADO › SECCIONES). Su antetítulo, su título y si se muestra se cambian con
+   "content.sections": { "<id>": { "kicker": "", "title": "", "hidden": false } }. Los rótulos
+   fijos del documento (Frente, Necesita:, Componente, Entregables, Momento, Hito habilitante,
+   Lo que asumimos, Lo que queda fuera, Escenarios, Inversión total, Cliente, Duración, Alcance…)
+   se cambian con "content.labels": { "<clave>": "texto" } usando las claves del ESTADO. Nunca
+   escribas un título de sección dentro de "diagnosis", "architecture" u otra clave: ahí no existe.
+   Para quitar una sección entera ("no hablar de módulos") usa hidden true.
 17. ERES EL SÚPER BUILDER: si el consultor pide algo, lo haces en este turno con el patch, aunque
    toque varias partes a la vez (portada, líneas, páginas, imágenes). No expliques cómo podría
    hacerse: hazlo. Si de verdad falta un dato, pídelo en una frase y haz todo lo demás.
@@ -364,6 +398,35 @@ function applyContentPatch(current: any, incoming: any) {
   for (const [key, max] of TEXTS) {
     const value = str(incoming[key], max)
     if (value) { content[key] = value; touched.push(key) }
+  }
+
+  // ── estructura del esquema clásico: secciones y rótulos ──
+  if (incoming.sections && typeof incoming.sections === 'object') {
+    const next = { ...(content.sections ?? {}) }
+    let changed = false
+    for (const [id, raw] of Object.entries(incoming.sections)) {
+      if (!/^[a-z]{3,20}$/.test(id) || !raw || typeof raw !== 'object') continue
+      const cur = { ...(next[id] ?? {}) }
+      const kicker = str((raw as any).kicker, 120); if (kicker) cur.kicker = kicker
+      const title = str((raw as any).title, 200); if (title) cur.title = title
+      if ((raw as any).kicker === null) delete cur.kicker
+      if ((raw as any).title === null) delete cur.title
+      if (typeof (raw as any).hidden === 'boolean') { if ((raw as any).hidden) cur.hidden = true; else delete cur.hidden }
+      next[id] = cur
+      changed = true
+    }
+    if (changed) { content.sections = next; touched.push('sections') }
+  }
+  if (incoming.labels && typeof incoming.labels === 'object') {
+    const next = { ...(content.labels ?? {}) }
+    let changed = false
+    for (const [key, raw] of Object.entries(incoming.labels)) {
+      if (!/^[a-zA-Z]{2,40}$/.test(key)) continue
+      const value = str(raw, 200)
+      if (value) { next[key] = value; changed = true }
+      else if (raw === null || raw === '') { delete next[key]; changed = true }
+    }
+    if (changed) { content.labels = next; touched.push('labels') }
   }
 
   // ── portada: textos que mandan sobre el cálculo ──
@@ -765,7 +828,13 @@ Moneda: ${quote.currency} · Vigencia: ${quote.validDays} días · Plan de pagos
 Total calculado: ${formatMoney(totals.total, quote.currency)} · ${totals.weeks} semanas · ${totals.deliverables} entregables
 ${pagesState
     ? `DOCUMENTO POR PÁGINAS (la vista pública muestra estas páginas; edítalas con "pagesPatch"):\n${pagesState}`
-    : 'Documento con el esquema clásico de secciones (sin páginas propias).'}
+    : `Documento con el esquema clásico de secciones (sin páginas propias).
+SECCIONES (id · antetítulo · título por defecto; content.sections.<id> los sobreescribe; hidden oculta):
+${LEGACY_SECTIONS.map(([id, kicker, title]) => {
+      const o = quote.content?.sections?.[id] || {}
+      return `- ${id} · ${o.kicker || kicker} · ${o.title || title}${o.hidden ? ' · OCULTA' : ''}${o.kicker || o.title ? ' (personalizada)' : ''}`
+    }).join('\n')}
+RÓTULOS (content.labels.<clave>, valor actual entre paréntesis): ${LABEL_KEYS.map((k) => `${k}${quote.content?.labels?.[k] ? ` (${quote.content.labels[k]})` : ''}`).join(', ')}`}
 Secciones ya redactadas: ${(() => {
       const c: any = quote.content || {}
       const flags: Array<[string, boolean]> = [
@@ -839,7 +908,7 @@ quote.subtitle, usa "title"/"subtitle".` : ''}
       "finalNote": "", "backQuote": "",
       "signature": { "name": "", "role": "", "email": "", "phone": "" }
     },
-    "content": { "cover": { "kicker": "", "duration": "9 semanas desde el kickoff", "scope": "4 cursos virtuales", "investment": "", "tagline": "" }, "itemsNoun": "Cursos", "modulesSelectable": false },
+    "content": { "sections": { "diagnostico": { "kicker": "Servicio", "title": "Descripción del servicio", "hidden": false } }, "labels": { "front": "Componente", "invComponent": "Concepto" }, "cover": { "kicker": "", "duration": "9 semanas desde el kickoff", "scope": "4 cursos virtuales", "investment": "", "tagline": "" }, "itemsNoun": "Cursos", "modulesSelectable": false },
     "media": [{ "kind": "search | generate | diagram", "prompt": "qué buscar / describir / título del esquema", "caption": "pie de la imagen", "svg": "<svg …>…</svg> solo en diagram", "pageId": "id de página", "afterBlock": 1, "section": "screens" }],
     "importAttachment": { "id": "id del adjunto", "mode": "replace | append", "setTitle": true },
     "pagesPatch": {
@@ -900,7 +969,7 @@ REGLAS DEL PATCH
     }
     const { data, providerUsed } = aiResult
 
-    const reply = str(data?.reply, 3000) || 'Listo.'
+    let reply = str(data?.reply, 3000) || 'Listo.'
     const patch = data?.patch && typeof data.patch === 'object' ? data.patch : {}
     // Trazabilidad: qué claves propuso el modelo (para diagnosticar patches perdidos).
     const patchKeys = Object.keys(patch)
@@ -1095,6 +1164,12 @@ REGLAS DEL PATCH
       updates.totalFinal = nextTotals.total
       updates.weeks = nextTotals.weeks
       updates.moduleCount = nextTotals.moduleCount
+    }
+
+    // El modelo a veces afirma un cambio que el servidor no pudo aplicar (clave
+    // inexistente, valor descartado). Se le dice al consultor, sin disfrazarlo.
+    if (!changes.length && (patchKeys.length || /\b(list[oa]|cambi[ée]|actualic[ée]|ajust[ée]|retir[ée]|agregu[ée])\b/i.test(reply))) {
+      reply += `\n\n⚠ En este turno no se aplicó ningún cambio al documento${patchKeys.length ? ` (el patch traía: ${[...patchKeys, ...patchContentKeys].join(', ')} y el servidor no lo reconoció)` : ''}. Pídelo de nuevo señalando el elemento, o dime qué sección exacta quieres tocar.`
     }
 
     const [updated] = await Promise.all([

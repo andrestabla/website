@@ -53,9 +53,10 @@ export function applyFieldEdits(content: any, edits: FieldEdit[]) {
       const key = parsed.path[i]
       const child = Array.isArray(node) ? node[Number(key)] : node[key]
       if (child === undefined || child === null) {
-        // se permite crear un objeto nuevo solo en el primer nivel y solo si la
-        // hoja cuelga directamente de él (cover.duration, screens.intro…)
-        if (i === 0 && parsed.path.length === 2 && !Array.isArray(node)) { node[key] = {}; node = node[key]; continue }
+        // se crean objetos intermedios solo en las ramas de estructura libre
+        // (cover.duration, sections.diagnostico.title, labels.front)
+        const free = ['cover', 'sections', 'labels'].includes(parsed.path[0])
+        if (!Array.isArray(node) && (free || (i === 0 && parsed.path.length === 2))) { node[key] = {}; node = node[key]; continue }
         ok = false
         break
       }
