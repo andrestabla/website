@@ -10,6 +10,7 @@
  */
 import { prisma } from '../_lib/prisma.js'
 import { quoteSessionState } from '../_lib/quotes.js'
+import { ensurePdfRuntime } from '../_lib/quote-attachments.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -51,7 +52,8 @@ async function extractText(buffer: Buffer, fileName: string, mimeType: string): 
     return String(result?.value || '')
   }
   if (isPdf) {
-    // pdf-parse v2: API de clase (PDFParse → getText)
+    // pdf-parse v2: API de clase (PDFParse → getText). DOMMatrix debe existir antes.
+    await ensurePdfRuntime()
     const mod: any = await import('pdf-parse')
     const parser = new mod.PDFParse({ data: new Uint8Array(buffer) })
     try {
@@ -66,7 +68,7 @@ async function extractText(buffer: Buffer, fileName: string, mimeType: string): 
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { session, allowed } = quoteSessionState(req)
+  const { session, allowed } = await quoteSessionState(req)
   if (!session) return res.status(401).json({ ok: false, error: 'Sesión requerida' })
   if (!allowed) return res.status(403).json({ ok: false, error: 'Sin acceso al Cotizador' })
   if (req.method !== 'POST') {

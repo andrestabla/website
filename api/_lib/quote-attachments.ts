@@ -102,6 +102,7 @@ export async function extractMarkdown(
   }
 
   if (sourceFormat === 'pdf') {
+    await ensurePdfRuntime()
     const mod: any = await import('pdf-parse')
     const parser = new mod.PDFParse({ data: new Uint8Array(buffer) })
     let text = ''
@@ -123,6 +124,74 @@ export async function extractMarkdown(
 
   const { markdown, truncated } = tidyMarkdown(plainTextToMarkdown(buffer.toString('utf8')))
   return { markdown, sourceFormat: 'txt', converted: true, truncated }
+}
+
+// ── Entorno para pdfjs en Node ───────────────────────────────────────────────
+
+/**
+ * pdfjs (motor de pdf-parse) evalúa `new DOMMatrix()` al cargar el módulo. En
+ * Node lo cubre con @napi-rs/canvas, un binario nativo que en la función de
+ * Vercel no siempre está disponible: sin él, la subida de un PDF fallaba con
+ * «DOMMatrix is not defined». Extraer texto no dibuja nada, así que basta una
+ * matriz 2D mínima cuando el binario falta.
+ */
+export class MinimalDOMMatrix {
+  a = 1; b = 0; c = 0; d = 1; e = 0; f = 0
+  constructor(init?: number[] | string | { a: number; b: number; c: number; d: number; e: number; f: number }) {
+    if (Array.isArray(init) && init.length >= 6) {
+      const [a, b, c, d, e, f] = init.length === 16 ? [init[0], init[1], init[4], init[5], init[12], init[13]] : init
+      Object.assign(this, { a, b, c, d, e, f })
+    } else if (init && typeof init === 'object' && !Array.isArray(init)) {
+      Object.assign(this, { a: init.a, b: init.b, c: init.c, d: init.d, e: init.e, f: init.f })
+    }
+  }
+  get m11() { return this.a } get m12() { return this.b } get m21() { return this.c } get m22() { return this.d } get m41() { return this.e } get m42() { return this.f }
+  get is2D() { return true }
+  get isIdentity() { return this.a === 1 && this.b === 0 && this.c === 0 && this.d === 1 && this.e === 0 && this.f === 0 }
+  multiply(o: MinimalDOMMatrix) {
+    return new MinimalDOMMatrix([
+      this.a * o.a + this.c * o.b, this.b * o.a + this.d * o.b,
+      this.a * o.c + this.c * o.d, this.b * o.c + this.d * o.d,
+      this.a * o.e + this.c * o.f + this.e, this.b * o.e + this.d * o.f + this.f,
+    ])
+  }
+  multiplySelf(o: MinimalDOMMatrix) { return Object.assign(this, this.multiply(o)) }
+  preMultiplySelf(o: MinimalDOMMatrix) { return Object.assign(this, o.multiply(this)) }
+  translate(tx = 0, ty = 0) { return this.multiply(new MinimalDOMMatrix([1, 0, 0, 1, tx, ty])) }
+  translateSelf(tx = 0, ty = 0) { return this.multiplySelf(new MinimalDOMMatrix([1, 0, 0, 1, tx, ty])) }
+  scale(sx = 1, sy = sx) { return this.multiply(new MinimalDOMMatrix([sx, 0, 0, sy, 0, 0])) }
+  scaleSelf(sx = 1, sy = sx) { return this.multiplySelf(new MinimalDOMMatrix([sx, 0, 0, sy, 0, 0])) }
+  inverse() {
+    const det = this.a * this.d - this.b * this.c
+    if (!det) return new MinimalDOMMatrix([NaN, NaN, NaN, NaN, NaN, NaN])
+    return new MinimalDOMMatrix([
+      this.d / det, -this.b / det, -this.c / det, this.a / det,
+      (this.c * this.f - this.d * this.e) / det, (this.b * this.e - this.a * this.f) / det,
+    ])
+  }
+  invertSelf() { return Object.assign(this, this.inverse()) }
+  transformPoint(p: { x?: number; y?: number } = {}) {
+    const x = p.x ?? 0, y = p.y ?? 0
+    return { x: this.a * x + this.c * y + this.e, y: this.b * x + this.d * y + this.f, z: 0, w: 1 }
+  }
+  toFloat32Array() { return new Float32Array([this.a, this.b, 0, 0, this.c, this.d, 0, 0, 0, 0, 1, 0, this.e, this.f, 0, 1]) }
+  toFloat64Array() { return new Float64Array(this.toFloat32Array()) }
+}
+
+/** Deja DOMMatrix (y compañía) definidos antes de cargar pdf-parse. */
+export async function ensurePdfRuntime() {
+  const g = globalThis as any
+  if (typeof g.DOMMatrix === 'undefined') {
+    try {
+      const canvas: any = await import('@napi-rs/canvas')
+      if (canvas?.DOMMatrix) g.DOMMatrix = canvas.DOMMatrix
+      if (canvas?.ImageData && typeof g.ImageData === 'undefined') g.ImageData = canvas.ImageData
+      if (canvas?.Path2D && typeof g.Path2D === 'undefined') g.Path2D = canvas.Path2D
+    } catch {
+      // sin binario nativo: matriz mínima, suficiente para extraer texto
+    }
+    if (typeof g.DOMMatrix === 'undefined') g.DOMMatrix = MinimalDOMMatrix
+  }
 }
 
 /** mammoth escribe __negrita__ y escapa signos; el visor entiende **negrita** y texto limpio. */
