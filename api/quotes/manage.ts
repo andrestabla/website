@@ -67,7 +67,7 @@ async function priced(items: QuoteItem[], scale: any, template: QuoteTemplateKey
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { session, allowed } = quoteSessionState(req)
+  const { session, allowed } = await quoteSessionState(req)
   if (!session) return res.status(401).json({ ok: false, error: 'Sesión requerida' })
   if (!allowed) return res.status(403).json({ ok: false, error: 'Sin acceso al Cotizador' })
   if (req.method !== 'POST') {
@@ -132,12 +132,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (op === 'get') {
       const quote = await own()
-      const [recipients, messages, catalog] = await Promise.all([
+      const [recipients, messages, catalog, attachments] = await Promise.all([
         recipientDb().findMany({ where: { quoteId: quote.id }, orderBy: { createdAt: 'asc' } }),
         (prisma as any).quoteMessage.findMany({ where: { quoteId: quote.id }, orderBy: { createdAt: 'asc' }, take: 200 }),
         loadCatalog(normalizeTemplate(quote.template)),
+        // adjuntos del chat, sin el Markdown (pesa; se pide aparte con attach/get)
+        (prisma as any).quoteAttachment.findMany({
+          where: { quoteId: quote.id },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, name: true, sourceFormat: true, charCount: true, converted: true, createdAt: true, updatedAt: true },
+        }).catch(() => []),
       ])
-      return res.status(200).json({ ok: true, quote, recipients, messages, catalog })
+      return res.status(200).json({ ok: true, quote, recipients, messages, catalog, attachments })
     }
 
     if (op === 'create') {

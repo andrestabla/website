@@ -33,8 +33,22 @@ export type QuoteMessageRow = {
   id: string
   role: 'user' | 'assistant'
   content: string
-  meta?: { providerUsed?: string; changes?: string[] } | null
+  meta?: { providerUsed?: string; changes?: string[]; attachments?: Array<{ id: string; name: string }> } | null
   createdAt: string
+}
+
+/** Archivo adjunto al chat de una cotización, ya convertido a Markdown. */
+export type QuoteAttachmentRow = {
+  id: string
+  name: string
+  sourceFormat: 'md' | 'docx' | 'pdf' | 'html' | 'txt'
+  charCount: number
+  converted: boolean
+  truncated?: boolean
+  pagesCount?: number
+  docTitle?: string | null
+  createdAt: string
+  updatedAt?: string
 }
 
 async function post(path: string, body: Record<string, unknown>) {
@@ -66,7 +80,19 @@ export const quotesApi = {
     post('/api/quotes/manage', { op: 'add-recipient', quoteId, ...data }),
   removeRecipient: (quoteId: string, recipientId: string) =>
     post('/api/quotes/manage', { op: 'remove-recipient', quoteId, recipientId }),
-  chat: (quoteId: string, message: string) => post('/api/quotes/chat', { quoteId, message }),
+  chat: (quoteId: string, message: string, attachmentIds: string[] = []) =>
+    post('/api/quotes/chat', { quoteId, message, attachmentIds }),
+  attachments: {
+    list: (quoteId: string) => post('/api/quotes/attach', { op: 'list', quoteId }),
+    upload: (quoteId: string, data: { fileBase64: string; fileName: string; mimeType: string }) =>
+      post('/api/quotes/attach', { op: 'upload', quoteId, ...data }),
+    get: (quoteId: string, id: string) => post('/api/quotes/attach', { op: 'get', quoteId, id }),
+    update: (quoteId: string, id: string, data: { markdown?: string; name?: string }) =>
+      post('/api/quotes/attach', { op: 'update', quoteId, id, ...data }),
+    remove: (quoteId: string, id: string) => post('/api/quotes/attach', { op: 'delete', quoteId, id }),
+    import: (quoteId: string, id: string, mode: 'replace' | 'append', setTitle = false) =>
+      post('/api/quotes/attach', { op: 'import', quoteId, id, mode, setTitle }),
+  },
   metrics: (quoteId: string) => post('/api/quotes/metrics', { quoteId }),
   send: (quoteId: string, recipientId: string, note?: string) =>
     post('/api/quotes/send', { quoteId, recipientId, note }),

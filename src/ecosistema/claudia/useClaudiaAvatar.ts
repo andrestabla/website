@@ -53,7 +53,10 @@ export function useClaudiaAvatar(container: React.RefObject<HTMLDivElement | nul
 
     ;(async () => {
       try {
-        const { TalkingHead } = await import(/* @vite-ignore */ 'talkinghead')
+        // El especificador va en una variable: con un literal, Vite intenta
+        // resolver el paquete en desarrollo y tumba todo el Ecosistema.
+        const specifier = 'talkinghead'
+        const { TalkingHead } = await import(/* @vite-ignore */ specifier)
         if (cancelled || !container.current) return
         const head = new TalkingHead(container.current, {
           ttsEndpoint: '/api/claudia?action=tts', // no se usa: hablamos con speakAudio

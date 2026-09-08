@@ -8,14 +8,27 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Send, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, Sparkles,
   Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw, PenSquare, MoreVertical, CopyPlus, Archive,
-  Mic, Square, Eye,
+  Mic, Square, Eye, Paperclip, X, FileInput, Code2, Save, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
 import { ContentEditor } from './ContentEditor'
-import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type QuoteRecipient } from './api'
+import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type QuoteRecipient, type QuoteAttachmentRow } from './api'
 import { TEMPLATE_LABEL } from './CotizadorList'
 
 type Tab = 'propuesta' | 'contenido' | 'vista' | 'destinatarios' | 'metricas'
+
+/** Formatos que el asistente acepta como adjunto. Markdown es el recomendado; el resto se convierte. */
+const ATTACH_ACCEPT = '.md,.markdown,.txt,.docx,.pdf,.html,.htm,text/markdown,text/plain,application/pdf,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+const ATTACH_MAX_BYTES = 3.5 * 1024 * 1024
+const FORMAT_LABEL: Record<string, string> = { md: 'Markdown', docx: 'Word', pdf: 'PDF', html: 'HTML', txt: 'Texto' }
+
+const readAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error(`No se pudo leer «${file.name}»`))
+    reader.readAsDataURL(file)
+  })
 
 const SECTION_LABEL: Record<string, string> = {
   portada: 'Portada',
@@ -52,6 +65,19 @@ export function QuoteBuilder() {
   const [thinking, setThinking] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
+  // adjuntos del asistente
+  const [attachments, setAttachments] = useState<QuoteAttachmentRow[]>([])
+  const [pendingIds, setPendingIds] = useState<string[]>([]) // van con el próximo mensaje
+  const [uploading, setUploading] = useState(false)
+  const [attachOpen, setAttachOpen] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [importing, setImporting] = useState('')
+  const [importMenu, setImportMenu] = useState('')
+  const [mdEditor, setMdEditor] = useState<{ id: string; name: string; markdown: string; dirty: boolean; saving: boolean } | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  // al volcar un adjunto, el editor de contenido se reabre con las páginas nuevas
+  const [editorRev, setEditorRev] = useState(0)
+
   // dictado por voz
   const [recording, setRecording] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
@@ -78,6 +104,7 @@ export function QuoteBuilder() {
       setItems(Array.isArray(payload.quote?.pricing?.items) ? payload.quote.pricing.items : [])
       setMessages(payload.messages || [])
       setRecipients(payload.recipients || [])
+      setAttachments(Array.isArray(payload.attachments) ? payload.attachments : [])
     } catch (e: any) { setError(e.message) } finally { setLoading(false) }
   }, [quoteId])
   useEffect(() => { void load() }, [load])
@@ -92,15 +119,27 @@ export function QuoteBuilder() {
 
   const publicUrl = quote ? `${window.location.origin}/c/${quote.publicId}` : ''
 
+  const pendingRows = attachments.filter((a) => pendingIds.includes(a.id))
+
   const ask = async () => {
-    const message = draft.trim()
-    if (!message || thinking) return
+    const typed = draft.trim()
+    if (thinking || uploading) return
+    // sin texto pero con adjuntos: el mensaje presenta los archivos como referencia
+    const message = typed || (pendingRows.length
+      ? `Adjunto ${pendingRows.map((a) => `«${a.name}»`).join(' y ')}. Tenlo como referencia para esta cotización.`
+      : '')
+    if (!message) return
+    const ids = [...pendingIds]
     setDraft('')
+    setPendingIds([])
     setError('')
     setThinking(true)
-    setMessages((prev) => [...prev, { id: `tmp-${Date.now()}`, role: 'user', content: message, createdAt: new Date().toISOString() }])
+    setMessages((prev) => [...prev, {
+      id: `tmp-${Date.now()}`, role: 'user', content: message, createdAt: new Date().toISOString(),
+      meta: ids.length ? { attachments: pendingRows.map((a) => ({ id: a.id, name: a.name })) } : undefined,
+    }])
     try {
-      const payload = await quotesApi.chat(quoteId, message)
+      const payload = await quotesApi.chat(quoteId, message, ids)
       setQuote(payload.quote)
       setItems(Array.isArray(payload.quote?.pricing?.items) ? payload.quote.pricing.items : [])
       setMessages((prev) => [
@@ -123,6 +162,81 @@ export function QuoteBuilder() {
   const stopTracks = () => {
     recorderRef.current?.stream.getTracks().forEach((t) => t.stop())
     recorderRef.current = null
+  }
+
+  // ── adjuntos ──
+  const onFiles = async (list: FileList | null) => {
+    if (!list || !list.length) return
+    setError('')
+    setUploading(true)
+    const notes: string[] = []
+    try {
+      for (const file of Array.from(list)) {
+        if (file.size > ATTACH_MAX_BYTES) { notes.push(`«${file.name}» supera 3,5 MB: divídelo o súbelo como .md.`); continue }
+        if (!/\.(md|markdown|txt|docx|pdf|html?)$/i.test(file.name)) { notes.push(`«${file.name}»: formato no soportado. Usa .md, .docx, .pdf, .html o .txt.`); continue }
+        const fileBase64 = await readAsDataUrl(file)
+        const payload = await quotesApi.attachments.upload(quoteId, { fileBase64, fileName: file.name, mimeType: file.type })
+        const row: QuoteAttachmentRow = payload.attachment
+        setAttachments((prev) => [...prev, row])
+        setPendingIds((prev) => [...prev, row.id])
+        if (row.converted) {
+          notes.push(`«${row.name}» (${FORMAT_LABEL[row.sourceFormat] || row.sourceFormat}) se convirtió a Markdown con todo su contenido: ${row.charCount.toLocaleString('es-CO')} caracteres, ~${row.pagesCount ?? '?'} páginas. Para más control, sube el archivo en .md.`)
+        }
+        if (row.truncated) notes.push(`«${row.name}» superó el tope de 400.000 caracteres y se recortó.`)
+      }
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+      setNotice(notes.join(' '))
+    }
+  }
+
+  const pagesCount: number = Array.isArray(quote?.content?.pages) ? quote.content.pages.length : 0
+
+  const importAttachment = async (row: QuoteAttachmentRow, mode: 'replace' | 'append') => {
+    setImportMenu('')
+    if (mode === 'replace' && pagesCount > 0 && !confirm(`El documento ya tiene ${pagesCount} páginas. ¿Reemplazarlas por el contenido de «${row.name}»? Los cambios sin guardar del editor de contenido se pierden.`)) return
+    setImporting(row.id)
+    setError('')
+    try {
+      const payload = await quotesApi.attachments.import(quoteId, row.id, mode, mode === 'replace' && !!row.docTitle)
+      setQuote(payload.quote)
+      setEditorRev((v) => v + 1)
+      setNotice(`«${row.name}» quedó volcado en ${payload.pagesCount} páginas editables${mode === 'append' ? ' al final del documento' : ''} (${payload.totalPages} en total). Revisa y edita cada título y bloque en Contenido › Páginas del documento.`)
+      setTab('contenido')
+    } catch (e) { setError((e as Error).message) } finally { setImporting('') }
+  }
+
+  const openMarkdown = async (row: QuoteAttachmentRow) => {
+    setError('')
+    try {
+      const payload = await quotesApi.attachments.get(quoteId, row.id)
+      setMdEditor({ id: row.id, name: row.name, markdown: payload.attachment.markdown || '', dirty: false, saving: false })
+    } catch (e) { setError((e as Error).message) }
+  }
+
+  const saveMarkdown = async () => {
+    if (!mdEditor || !mdEditor.dirty) return
+    setMdEditor({ ...mdEditor, saving: true })
+    try {
+      const payload = await quotesApi.attachments.update(quoteId, mdEditor.id, { markdown: mdEditor.markdown })
+      setAttachments((prev) => prev.map((a) => (a.id === mdEditor.id ? { ...a, ...payload.attachment } : a)))
+      setMdEditor({ ...mdEditor, dirty: false, saving: false })
+    } catch (e) {
+      setError((e as Error).message)
+      setMdEditor({ ...mdEditor, saving: false })
+    }
+  }
+
+  const removeAttachment = async (row: QuoteAttachmentRow) => {
+    if (!confirm(`¿Eliminar el adjunto «${row.name}»? La IA dejará de leerlo; las páginas ya importadas se conservan.`)) return
+    try {
+      await quotesApi.attachments.remove(quoteId, row.id)
+      setAttachments((prev) => prev.filter((a) => a.id !== row.id))
+      setPendingIds((prev) => prev.filter((id) => id !== row.id))
+    } catch (e) { setError((e as Error).message) }
   }
 
   const toggleRecording = async () => {
@@ -432,10 +546,11 @@ export function QuoteBuilder() {
                   Cuéntame del cliente: a qué se dedica, qué le duele hoy y qué quiere lograr.
                   Con eso elijo las variables, enciendo los módulos y redacto el diagnóstico, la carta y el método.
                   Los precios salen del catálogo, y si me dictas uno distinto, una línea nueva, la cantidad,
-                  la moneda o el plan de pagos, lo aplico tal cual.
+                  la moneda o el plan de pagos, lo aplico tal cual. También puedes adjuntarme un archivo
+                  (.md, .docx, .pdf) para tomarlo como referencia o volcarlo íntegro en la propuesta.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {['El cliente es una editorial universitaria…', 'Una universidad que quiere virtualizar 20 cursos', 'Una pyme que necesita diagnóstico MD-IA y mapeo de procesos', 'Redacta la carta de presentación'].map((suggestion) => (
+                  {['El cliente es una editorial universitaria…', 'Una universidad que quiere virtualizar 20 cursos', 'Una pyme que necesita diagnóstico MD-IA y mapeo de procesos', 'Redacta la carta de presentación', 'Vuelca el adjunto tal cual en la propuesta'].map((suggestion) => (
                     <button
                       key={suggestion}
                       onClick={() => setDraft(suggestion)}
@@ -451,6 +566,13 @@ export function QuoteBuilder() {
               <div key={message.id} className={message.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                 <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-[13.5px] leading-relaxed ${message.role === 'user' ? 'bg-indigo-600 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'}`}>
                   {message.content}
+                  {message.role === 'user' && message.meta?.attachments && message.meta.attachments.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1 border-t border-white/20 pt-2">
+                      {message.meta.attachments.map((a) => (
+                        <span key={a.id} className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-[11px]"><Paperclip size={10} /> {a.name}</span>
+                      ))}
+                    </div>
+                  )}
                   {message.role === 'assistant' && message.meta?.changes && message.meta.changes.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1 border-t border-slate-100 pt-2">
                       {message.meta.changes.map((change, index) => (
@@ -471,15 +593,100 @@ export function QuoteBuilder() {
             <div ref={chatEndRef} />
           </div>
           <div className="border-t border-slate-200 bg-white p-3 sm:p-4">
+            {notice && (
+              <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-800">
+                <span className="flex-1">{notice}</span>
+                <button onClick={() => setNotice('')} className="shrink-0 text-amber-500 hover:text-amber-800" aria-label="Cerrar"><X size={13} /></button>
+              </div>
+            )}
+
+            {attachments.length > 0 && (
+              <div className="mb-2 rounded-xl border border-slate-200 bg-slate-50/70">
+                <button onClick={() => setAttachOpen((v) => !v)} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11.5px] font-bold uppercase tracking-wide text-slate-500">
+                  {attachOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  <Paperclip size={12} /> Adjuntos de esta cotización · {attachments.length}
+                  <span className="ml-auto font-normal normal-case tracking-normal text-slate-400">la IA los lee completos en cada turno</span>
+                </button>
+                {attachOpen && (
+                  <ul className="divide-y divide-slate-200 border-t border-slate-200">
+                    {attachments.map((a) => (
+                      <li key={a.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-[12px]">
+                        <span className="rounded bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-slate-500">{a.sourceFormat}</span>
+                        <span className="min-w-0 flex-1 truncate font-semibold text-slate-700" title={a.name}>{a.name}</span>
+                        <span className="text-[11px] text-slate-400">{a.charCount.toLocaleString('es-CO')} car.{a.converted ? ' · convertido a Markdown' : ''}</span>
+                        <button
+                          onClick={() => setPendingIds((prev) => (prev.includes(a.id) ? prev.filter((id) => id !== a.id) : [...prev, a.id]))}
+                          className={`rounded-md border px-2 py-0.5 text-[11px] font-semibold ${pendingIds.includes(a.id) ? 'border-indigo-300 bg-indigo-50 text-indigo-700' : 'border-slate-300 bg-white text-slate-600 hover:border-indigo-300'}`}
+                          title="Mencionarlo en el próximo mensaje para que la IA lo tome como referencia"
+                        >
+                          {pendingIds.includes(a.id) ? '✓ En el mensaje' : 'Referencia'}
+                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setImportMenu((v) => (v === a.id ? '' : a.id))}
+                            disabled={importing === a.id}
+                            className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:border-indigo-300 disabled:opacity-40"
+                            title="Volcar el archivo íntegro como páginas editables de la propuesta"
+                          >
+                            {importing === a.id ? <Loader2 size={11} className="animate-spin" /> : <FileInput size={11} />} Volcar tal cual
+                          </button>
+                          {importMenu === a.id && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setImportMenu('')} />
+                              <div className="absolute bottom-7 right-0 z-20 w-64 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                                <button onClick={() => void importAttachment(a, 'replace')} className="block w-full px-3 py-1.5 text-left text-[12px] text-slate-700 hover:bg-slate-50">
+                                  <b>Como la propuesta completa</b>
+                                  <span className="block text-[11px] text-slate-400">{pagesCount ? `Reemplaza las ${pagesCount} páginas actuales` : 'El documento pasa a componerse por páginas'}</span>
+                                </button>
+                                <button onClick={() => void importAttachment(a, 'append')} className="block w-full px-3 py-1.5 text-left text-[12px] text-slate-700 hover:bg-slate-50">
+                                  <b>Agregar al final</b>
+                                  <span className="block text-[11px] text-slate-400">Sus páginas se suman a las que ya hay</span>
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <button onClick={() => void openMarkdown(a)} className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600 hover:border-indigo-300" title="Ver y editar el Markdown">
+                          <Code2 size={11} /> Markdown
+                        </button>
+                        <button onClick={() => void removeAttachment(a)} className="grid h-6 w-6 place-items-center rounded-md text-slate-300 hover:bg-rose-50 hover:text-rose-600" title="Eliminar adjunto"><Trash2 size={12} /></button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {pendingRows.length > 0 && (
+              <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-semibold text-slate-400">Con el próximo mensaje:</span>
+                {pendingRows.map((a) => (
+                  <span key={a.id} className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11.5px] text-indigo-700">
+                    <Paperclip size={10} /> {a.name}
+                    <button onClick={() => setPendingIds((prev) => prev.filter((id) => id !== a.id))} className="text-indigo-400 hover:text-indigo-700" aria-label={`Quitar ${a.name}`}><X size={11} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-end gap-2">
+              <input ref={fileRef} type="file" accept={ATTACH_ACCEPT} multiple hidden onChange={(e) => void onFiles(e.target.files)} />
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void ask() } }}
                 rows={2}
-                placeholder={recording ? 'Grabando… habla y vuelve a tocar el micrófono' : 'Describe, dicta o pide una sección… (Enter envía)'}
+                placeholder={recording ? 'Grabando… habla y vuelve a tocar el micrófono' : pendingRows.length ? 'Di qué hacer con el adjunto: referencia, volcarlo tal cual, traducirlo… (Enter envía)' : 'Describe, dicta, adjunta o pide una sección… (Enter envía)'}
                 className="flex-1 resize-none rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500"
               />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading || thinking}
+                title="Adjuntar archivo (.md recomendado; .docx, .pdf, .html o .txt se convierten a Markdown)"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-300 bg-white text-slate-500 shadow-sm transition hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-40"
+              >
+                {uploading ? <Loader2 size={17} className="animate-spin" /> : <Paperclip size={17} />}
+              </button>
               <button
                 onClick={toggleRecording}
                 disabled={transcribing}
@@ -489,14 +696,45 @@ export function QuoteBuilder() {
                 {transcribing ? <Loader2 size={17} className="animate-spin" /> : recording ? <Square size={15} /> : <Mic size={17} />}
               </button>
               <button
-                onClick={ask} disabled={thinking || !draft.trim()}
+                onClick={ask} disabled={thinking || uploading || (!draft.trim() && pendingRows.length === 0)}
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 disabled:opacity-40"
               >
                 <Send size={17} />
               </button>
             </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+              Adjunta archivos en <b className="font-semibold text-slate-500">.md</b> (recomendado). Un .docx, .pdf, .html o .txt se
+              convierte a Markdown con el 100 % de su contenido. Luego pide a la IA usarlo como referencia o volcarlo
+              tal cual en la propuesta: cada título y bloque queda editable en Contenido.
+            </p>
           </div>
         </section>
+
+        {/* ── Editor de Markdown de un adjunto ── */}
+        {mdEditor && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => { if (!mdEditor.dirty || confirm('Hay cambios sin guardar en el Markdown. ¿Cerrar de todos modos?')) setMdEditor(null) }}>
+            <div className="flex h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
+                <Code2 size={16} className="text-indigo-600" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-bold text-slate-800">{mdEditor.name}</div>
+                  <div className="text-[11px] text-slate-400">Markdown del adjunto · {mdEditor.markdown.length.toLocaleString('es-CO')} caracteres · lo que edites aquí es lo que lee la IA y lo que se vuelca en la propuesta</div>
+                </div>
+                <button onClick={saveMarkdown} disabled={!mdEditor.dirty || mdEditor.saving}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[12.5px] font-bold text-white disabled:opacity-40">
+                  {mdEditor.saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Guardar
+                </button>
+                <button onClick={() => { if (!mdEditor.dirty || confirm('Hay cambios sin guardar. ¿Cerrar?')) setMdEditor(null) }} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100" aria-label="Cerrar"><X size={16} /></button>
+              </div>
+              <textarea
+                value={mdEditor.markdown}
+                onChange={(e) => setMdEditor({ ...mdEditor, markdown: e.target.value, dirty: true })}
+                spellCheck={false}
+                className="flex-1 resize-none px-4 py-3 font-mono text-[12.5px] leading-relaxed text-slate-800 outline-none"
+              />
+            </div>
+          </div>
+        )}
 
         {/* ── Estado ── */}
         <section className="flex flex-col">
@@ -538,7 +776,16 @@ export function QuoteBuilder() {
                 </div>
 
                 {/* Narrativa */}
-                {!isDoc && (
+                {!isDoc && pagesCount > 0 && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-[12px] font-bold uppercase tracking-wide text-slate-400">Documento por páginas · {pagesCount}</div>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-slate-500">
+                    La vista pública muestra estas páginas. Edita títulos y bloques en <button onClick={() => setTab('contenido')} className="font-semibold text-indigo-600 hover:underline">Contenido</button>,
+                    o pídele a la IA que traduzca, renombre o reescriba una página.
+                  </p>
+                </div>
+                )}
+                {!isDoc && pagesCount === 0 && (
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <div className="text-[12px] font-bold uppercase tracking-wide text-slate-400">Narrativa redactada</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -746,7 +993,7 @@ export function QuoteBuilder() {
 
             {tab === 'contenido' && (
               <ContentEditor
-                key={quote.id}
+                key={`${quote.id}-${editorRev}`}
                 quoteId={quoteId}
                 quote={quote}
                 onSaved={(saved) => {

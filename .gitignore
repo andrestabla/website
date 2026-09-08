@@ -32,3 +32,11 @@ dist-ssr
 
 .next/
 next-env.d.ts
+
+# Material de trabajo local (propuestas, entregables, imágenes sueltas)
+/Servicios_empresas/
+/Tablero seguimiento Unicafam.xlsx
+/Transformación Digital · Sector Público (standalone).html
+/back__ecosistema.jpg
+/back_project_control.jpg
+.claude/

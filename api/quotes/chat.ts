@@ -17,6 +17,13 @@ import { prisma } from '../_lib/prisma.js'
 import { generateJsonWithAI } from '../_lib/ai.js'
 import { loadPlatformContext } from '../_lib/platform-context.js'
 import {
+  markdownToPages,
+  sanitizePage,
+  sanitizePages,
+  renumberPages,
+  type DocPage,
+} from '../_lib/quote-attachments.js'
+import {
   quoteSessionState,
   loadCatalog,
   catalogMap,
@@ -38,6 +45,7 @@ export const maxDuration = 60
 const quoteDb = () => (prisma as any).quote
 const msgDb = () => (prisma as any).quoteMessage
 const knowledgeDb = () => (prisma as any).quoteKnowledgeDoc
+const attachDb = () => (prisma as any).quoteAttachment
 
 const str = (v: unknown, max = 400) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
 const strArray = (v: unknown, max = 12) =>
@@ -56,7 +64,15 @@ const QUOTES_MODEL = process.env.OPENAI_QUOTES_MODEL || 'gpt-5.5'
  * caracteres) va aparte y completa, siempre.
  */
 const KNOWLEDGE_BUDGET = 200_000
+/** Adjuntos del consultor: se leen íntegros; los de este turno van primero. */
+const ATTACHMENTS_BUDGET = 260_000
 const HISTORY_TURNS = 16
+/**
+ * Salida del modelo. Editar páginas enteras del documento (traducir, reescribir
+ * un capítulo, pasar un adjunto a la estructura de la casa) requiere mucho más
+ * espacio que un patch de secciones: gpt-5.5 lo soporta.
+ */
+const MAX_OUTPUT_TOKENS = 24_000
 
 const SYSTEM_RULES = `
 Eres la consultora senior de Algoritmo T y la constructora de esta cotización: la armas junto al equipo
@@ -102,6 +118,22 @@ REGLAS DURAS
 11. El total es la suma de las líneas activas: precio unitario × cantidad. Si el consultor dice
    "4 cursos a $13.500.000 cada uno", la línea lleva price 13500000 y qty 4, y el servidor calcula
    54.000.000. Nunca escribas el total a mano en las notas si las líneas no lo respaldan.
+12. ADJUNTOS: el consultor puede subir archivos al chat (bloque ADJUNTOS). Los lees completos. Sirven
+   para dos cosas y el consultor decide cuál:
+   a) REFERENCIA: tomas de ahí datos, cifras, estructura o tono para redactar las secciones.
+   b) VOLCAR TAL CUAL EN LA PROPUESTA: si pide "pásalo tal cual", "úsalo como la propuesta",
+      "tradúcelo al documento", "que la propuesta sea este archivo", devuelves
+      "importAttachment" con su id y el modo (replace = el documento pasa a ser ese archivo;
+      append = se agrega al final). El servidor convierte el 100 % del contenido en páginas
+      editables, sin resumir: no reescribas tú el archivo entero en el patch.
+   Después de importar, cualquier ajuste (traducir al español, renombrar secciones, cambiar el
+   tono, quitar o agregar párrafos) lo haces con "pagesPatch" página por página.
+13. DOCUMENTO POR PÁGINAS: cuando la cotización tiene páginas (content.pages, bloque ESTADO),
+   la vista pública muestra esas páginas y no las secciones clásicas. Edítalas con "pagesPatch":
+   "set" reescribe páginas por id (título, antetítulo y bloques completos), "remove" las quita,
+   "insert" agrega una página nueva después de otra. Cada página es una hoja A4: unos 2.500
+   caracteres de texto por página; si un capítulo es más largo, continúalo en otra página con el
+   mismo título y tocHidden true. Todo lo que escribas ahí lo puede editar el consultor después.
 
 ESTILO (la casa es estricta con esto)
 - Prohibido: "compuerta", "en la era digital", "desbloquear el potencial", "robusto", "sin fisuras",
@@ -520,7 +552,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const template = normalizeTemplate(quote.template)
-    const [catalogRows, history, docs, platformContext] = await Promise.all([
+    const attachmentIds: string[] = Array.isArray(body.attachmentIds)
+      ? body.attachmentIds.map((x: unknown) => str(x, 40)).filter(Boolean).slice(0, 10)
+      : []
+
+    const [catalogRows, history, docs, platformContext, attachments] = await Promise.all([
       loadCatalog(template),
       msgDb().findMany({ where: { quoteId }, orderBy: { createdAt: 'desc' }, take: HISTORY_TURNS }),
       knowledgeDb().findMany({
@@ -530,7 +566,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         select: { title: true, kind: true, summary: true, content: true },
       }),
       loadPlatformContext(),
+      attachDb().findMany({
+        where: { quoteId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: { id: true, name: true, sourceFormat: true, converted: true, charCount: true, markdown: true, createdAt: true },
+      }),
     ])
+    const attachedNow = attachments.filter((a: any) => attachmentIds.includes(a.id))
 
     const catalog = catalogMap(catalogRows)
     const items: QuoteItem[] = Array.isArray(quote.pricing?.items) ? quote.pricing.items : []
@@ -598,8 +641,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const transcript = history
       .slice()
       .reverse()
-      .map((m: any) => `${m.role === 'user' ? 'CONSULTOR' : 'TÚ'}: ${m.content}`)
+      .map((m: any) => {
+        const names = Array.isArray(m.meta?.attachments) ? m.meta.attachments.map((a: any) => a?.name).filter(Boolean) : []
+        const tag = names.length ? ` [adjuntó: ${names.join(', ')}]` : ''
+        return `${m.role === 'user' ? 'CONSULTOR' : 'TÚ'}: ${m.content}${tag}`
+      })
       .join('\n')
+
+    // ── Adjuntos: los de este turno primero y completos; el resto, hasta el presupuesto ──
+    const attachmentBlocks: string[] = []
+    let attachUsed = 0
+    const ordered = [...attachedNow, ...attachments.filter((a: any) => !attachmentIds.includes(a.id))]
+    for (const a of ordered) {
+      const room = ATTACHMENTS_BUDGET - attachUsed
+      if (room <= 0) break
+      const text = String(a.markdown || '').slice(0, room)
+      attachUsed += text.length
+      const now = attachmentIds.includes(a.id) ? ' · ADJUNTADO EN ESTE MENSAJE' : ''
+      attachmentBlocks.push(
+        `### Adjunto id="${a.id}" · ${a.name} · ${a.sourceFormat}${a.converted ? ' (convertido a Markdown)' : ''} · ${a.charCount} caracteres${now}\n${text}${text.length < a.charCount ? '\n[… recortado por espacio]' : ''}`
+      )
+    }
+    const attachmentsIndex = attachments
+      .map((a: any) => `- id="${a.id}" · ${a.name} · ${a.charCount} caracteres`)
+      .join('\n')
+
+    const currentPages: DocPage[] = Array.isArray(quote.content?.pages) ? quote.content.pages : []
+    const pagesState = currentPages.length
+      ? currentPages
+          .map((p) => `- id="${p.id}" · ${p.num || '—'} · ${p.kicker ? `${p.kicker} › ` : ''}${p.title || '(sin título)'}${p.tocHidden ? ' (continuación)' : ''} · ${p.blocks.length} bloques: ${p.blocks.map((b: any) => b.type).join(', ')}`)
+          .join('\n')
+      : ''
 
     const prompt = `
 ${SYSTEM_RULES}
@@ -618,6 +690,10 @@ ${indexBlock || '(sin documentos cargados todavía)'}
 ${contextBlocks.length ? contextBlocks.join('\n\n') : '(ninguno seleccionado)'}
 Si el consultor pregunta por un caso del índice que no está en detalle, dilo y pide que lo mencione
 explícitamente en su siguiente mensaje para traerlo al contexto.
+
+## ADJUNTOS DEL CONSULTOR (archivos subidos a este chat)
+${attachmentsIndex || '(ninguno)'}
+${attachmentBlocks.length ? `\n${attachmentBlocks.join('\n\n')}` : ''}
 
 ## GUÍA DE SECCIONES PARA ESTA PLANTILLA
 ${QUOTE_TEMPLATES[template].kind === 'UNIDADES'
@@ -643,6 +719,9 @@ Todas las líneas de esta cotización (código · nombre · precio unitario × c
 ${items.map((i) => `- ${i.code} · ${i.name} · ${formatMoney(i.price, quote.currency)}${i.unit ? ` por ${i.unit}` : ''} × ${i.qty ?? 1} · ${i.kind === 'CORE' ? 'núcleo' : i.on ? 'encendida' : 'apagada'}`).join('\n') || '- (sin líneas)'}
 Moneda: ${quote.currency} · Vigencia: ${quote.validDays} días · Plan de pagos: ${Array.isArray(quote.content?.paymentSplit) && quote.content.paymentSplit.length ? quote.content.paymentSplit.join('/') : '30/25/25/20 estándar'}
 Total calculado: ${formatMoney(totals.total, quote.currency)} · ${totals.weeks} semanas · ${totals.deliverables} entregables
+${pagesState
+    ? `DOCUMENTO POR PÁGINAS (la vista pública muestra estas páginas; edítalas con "pagesPatch"):\n${pagesState}`
+    : 'Documento con el esquema clásico de secciones (sin páginas propias).'}
 Secciones ya redactadas: ${(() => {
       const c: any = quote.content || {}
       const flags: Array<[string, boolean]> = [
@@ -709,10 +788,31 @@ CONSULTOR: ${message}
       "guarantees": [{ "concept": "Garantía", "text": "" }],
       "finalNote": "", "backQuote": "",
       "signature": { "name": "", "role": "", "email": "", "phone": "" }
+    },
+    "importAttachment": { "id": "id del adjunto", "mode": "replace | append", "setTitle": true },
+    "pagesPatch": {
+      "set": [{ "id": "id de página existente", "num": "02", "kicker": "opcional", "title": "Título de la sección", "tocHidden": false,
+                "blocks": [{ "type": "lede", "text": "" }, { "type": "p", "text": "párrafos separados por \\n\\n; viñetas con '- '" }, { "type": "h3", "text": "" },
+                           { "type": "list", "items": [""] }, { "type": "box", "title": "", "body": "" }, { "type": "note", "text": "" },
+                           { "type": "table", "headers": [""], "rows": [[""]] }, { "type": "cards", "cols": 2, "items": [{ "tag": "", "title": "", "body": "", "foot": "" }] },
+                           { "type": "phase", "id": "FASE 1", "name": "", "when": "", "defs": [{ "term": "", "desc": "" }] },
+                           { "type": "img", "url": "solo URLs que ya existan en el documento", "caption": "" },
+                           { "type": "invoice", "note": "" }, { "type": "payments", "items": [{ "pct": "30 %", "label": "" }] }, { "type": "toc" },
+                           { "type": "team", "items": [{ "role": "", "dedication": "", "functions": [""] }] },
+                           { "type": "letterhead", "date": "", "addressee": "", "subject": "", "salutation": "" },
+                           { "type": "gantt", "cols": ["Mes 1"], "rows": [{ "label": "", "from": 1, "to": 1, "tone": "cyan" }] }] }],
+      "remove": ["id de página"],
+      "insert": [{ "after": "id de página existente o vacío para el inicio", "page": { "id": "nuevo-id", "title": "", "kicker": "", "blocks": [] } }]
     }
   }
 }
 REGLAS DEL PATCH
+- "importAttachment" vuelca un adjunto completo en páginas editables (lo convierte el servidor). Úsalo
+  cuando el consultor pida pasar el archivo tal cual a la propuesta. Con "setTitle" true el título del
+  documento pasa a ser el del archivo.
+- "pagesPatch" edita el documento por páginas. En "set" cada página va COMPLETA (sus bloques
+  reemplazan a los anteriores). Los ids salen del bloque ESTADO. Para traducir o reescribir todo
+  un documento largo, hazlo por tandas de páginas y di cuáles faltan.
 - "modules" enciende, apaga o cambia la cantidad de líneas del CATÁLOGO por su código.
 - "lines" crea, edita o quita líneas con las cifras que dictó el consultor: "add" para un concepto que no
   está en el catálogo (precio unitario + qty), "update" para cambiar precio, cantidad, nombre o unidad de
@@ -737,11 +837,11 @@ REGLAS DEL PATCH
     // una vez tras una pausa corta antes de rendirse.
     let aiResult
     try {
-      aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 9000, model: QUOTES_MODEL })
+      aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: MAX_OUTPUT_TOKENS, model: QUOTES_MODEL })
     } catch (error: any) {
       if (/rate limit|tokens per min|TPM/i.test(String(error?.message))) {
         await new Promise((resolve) => setTimeout(resolve, 1500))
-        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: 9000, model: QUOTES_MODEL })
+        aiResult = await generateJsonWithAI({ prompt, temperature: 0.5, maxTokens: MAX_OUTPUT_TOKENS, model: QUOTES_MODEL })
       } else {
         throw error
       }
@@ -799,7 +899,7 @@ REGLAS DEL PATCH
     // El modelo a veces aplana el patch (schedule/team/etc. en la raíz en vez
     // de patch.content). Se aceptan ambas formas: todo lo que no sea una clave
     // de primer nivel conocida se trata como contenido.
-    const TOP_LEVEL = new Set(['clientName', 'sector', 'title', 'subtitle', 'template', 'currency', 'validDays', 'modules', 'lines', 'content'])
+    const TOP_LEVEL = new Set(['clientName', 'sector', 'title', 'subtitle', 'template', 'currency', 'validDays', 'modules', 'lines', 'content', 'importAttachment', 'pagesPatch', 'pages'])
     const flattened: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(patch)) {
       if (!TOP_LEVEL.has(key)) flattened[key] = value
@@ -812,6 +912,70 @@ REGLAS DEL PATCH
     if (touched.length) {
       updates.content = content
       changes.push(...touched)
+    }
+
+    // ── Documento por páginas: volcar un adjunto y/o editar páginas ──
+    let pages: DocPage[] = Array.isArray(content?.pages) ? content.pages : []
+    let pagesChanged = false
+    const importReq = patch.importAttachment && typeof patch.importAttachment === 'object' ? patch.importAttachment : null
+    if (importReq) {
+      const target = attachments.find((a: any) => a.id === str(importReq.id, 40))
+      if (target) {
+        const { pages: imported, docTitle } = markdownToPages(target.markdown, { fallbackTitle: target.name.replace(/\.[a-z0-9]+$/i, '') })
+        if (imported.length) {
+          const append = importReq.mode === 'append'
+          const used = new Set(append ? pages.map((p) => p.id) : [])
+          const fresh = imported.map((p) => {
+            let pid = p.id
+            while (used.has(pid)) pid = `${pid}-${Math.random().toString(36).slice(2, 5)}`
+            used.add(pid)
+            return { ...p, id: pid }
+          })
+          pages = append ? [...pages, ...fresh] : fresh
+          pagesChanged = true
+          changes.push(`adjunto → ${fresh.length} páginas${append ? ' (al final)' : ''}`)
+          if (importReq.setTitle === true && docTitle && !updates.title) {
+            updates.title = docTitle.slice(0, 400)
+            changes.push('title')
+          }
+        }
+      }
+    }
+    // reemplazo total (raro; el modelo prefiere pagesPatch)
+    if (Array.isArray(patch.pages)) {
+      const full = sanitizePages(patch.pages)
+      if (full.length) { pages = full; pagesChanged = true; changes.push(`páginas ×${full.length}`) }
+    }
+    const pp = patch.pagesPatch && typeof patch.pagesPatch === 'object' ? patch.pagesPatch : null
+    if (pp) {
+      const used = new Set(pages.map((p) => p.id))
+      for (const raw of Array.isArray(pp.set) ? pp.set : []) {
+        const pid = str(raw?.id, 60)
+        const idx = pages.findIndex((p) => p.id === pid)
+        if (idx === -1) continue
+        const clean = sanitizePage({ ...raw, id: pid }, idx, new Set())
+        if (!clean) continue
+        pages[idx] = clean
+        pagesChanged = true
+        changes.push(`página ${pid}`)
+      }
+      const remove = new Set((Array.isArray(pp.remove) ? pp.remove : []).map((x: unknown) => str(x, 60)))
+      if (remove.size) {
+        const kept = pages.filter((p) => !remove.has(p.id))
+        if (kept.length !== pages.length) { changes.push(`−${pages.length - kept.length} página(s)`); pages = kept; pagesChanged = true }
+      }
+      for (const ins of Array.isArray(pp.insert) ? pp.insert : []) {
+        const clean = sanitizePage(ins?.page, pages.length, used)
+        if (!clean) continue
+        const after = str(ins?.after, 60)
+        const at = after ? pages.findIndex((p) => p.id === after) + 1 : 0
+        pages.splice(at > 0 ? at : after ? pages.length : 0, 0, clean)
+        pagesChanged = true
+        changes.push(`+página ${clean.id}`)
+      }
+    }
+    if (pagesChanged) {
+      updates.content = { ...(updates.content as object ?? content), pages: renumberPages(pages) }
     }
 
     let nextItems = items
@@ -845,7 +1009,12 @@ REGLAS DEL PATCH
         : Promise.resolve(quote),
       msgDb().createMany({
         data: [
-          { quoteId, role: 'user', content: message },
+          {
+            quoteId,
+            role: 'user',
+            content: message,
+            meta: attachedNow.length ? { attachments: attachedNow.map((a: any) => ({ id: a.id, name: a.name })) } : undefined,
+          },
           { quoteId, role: 'assistant', content: reply, meta: { providerUsed, changes, patchKeys, patchContentKeys } },
         ],
       }),

@@ -683,9 +683,10 @@ model Quote {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  recipients QuoteRecipient[]
-  events     QuoteEvent[]
-  messages   QuoteMessage[]
+  recipients  QuoteRecipient[]
+  events      QuoteEvent[]
+  messages    QuoteMessage[]
+  attachments QuoteAttachment[]
 
   @@index([ownerId, updatedAt(sort: Desc)])
   @@index([status, updatedAt(sort: Desc)])
@@ -738,9 +739,29 @@ model QuoteMessage {
   quoteId   String
   role      String // user | assistant
   content   String
-  meta      Json? // { providerUsed, patch }
+  meta      Json? // { providerUsed, patch, attachments }
   createdAt DateTime @default(now())
   quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId, createdAt])
+}
+
+/// Archivo que el consultor adjunta al chat de una cotización. Se guarda ya
+/// convertido a Markdown: es lo que lee la IA y lo que se vuelca, íntegro, en
+/// páginas editables de la propuesta.
+model QuoteAttachment {
+  id           String   @id @default(cuid())
+  quoteId      String
+  name         String // nombre del archivo original
+  mimeType     String?
+  sourceFormat String   @default("md") // md | docx | pdf | html | txt
+  markdown     String // contenido íntegro en Markdown (editable)
+  charCount    Int      @default(0)
+  converted    Boolean  @default(false) // true si no venía en .md
+  uploadedBy   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  quote        Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
   @@index([quoteId, createdAt])
 }
