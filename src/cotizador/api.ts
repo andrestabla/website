@@ -37,6 +37,18 @@ export type QuoteMessageRow = {
   createdAt: string
 }
 
+/** Correo que recibe cada destinatario: se revisa y edita antes de enviar. */
+export type EmailTemplate = {
+  subject: string
+  greeting: string
+  intro: string
+  note: string
+  stats: Array<{ label: string; value: string }>
+  showStats: boolean
+  button: string
+  closing: string
+}
+
 /** Archivo adjunto al chat de una cotización, ya convertido a Markdown. */
 export type QuoteAttachmentRow = {
   id: string
@@ -94,8 +106,12 @@ export const quotesApi = {
       post('/api/quotes/attach', { op: 'import', quoteId, id, mode, setTitle }),
   },
   metrics: (quoteId: string) => post('/api/quotes/metrics', { quoteId }),
-  send: (quoteId: string, recipientId: string, note?: string) =>
-    post('/api/quotes/send', { quoteId, recipientId, note }),
+  send: (quoteId: string, recipientId: string, template?: EmailTemplate) =>
+    post('/api/quotes/send', { op: 'send', quoteId, recipientId, template }),
+  emailPreview: (quoteId: string, template?: EmailTemplate | null, recipientId?: string) =>
+    post('/api/quotes/send', { op: 'preview', quoteId, recipientId, template: template ?? undefined }),
+  emailSave: (quoteId: string, template: EmailTemplate) =>
+    post('/api/quotes/send', { op: 'save', quoteId, template }),
   knowledge: {
     list: () => post('/api/quotes/knowledge', { op: 'list' }),
     create: (data: Record<string, unknown>) => post('/api/quotes/knowledge', { op: 'create', ...data }),

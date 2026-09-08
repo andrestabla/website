@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
 import { ContentEditor } from './ContentEditor'
-import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type QuoteRecipient, type QuoteAttachmentRow } from './api'
+import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type QuoteRecipient, type QuoteAttachmentRow, type EmailTemplate } from './api'
 import { TEMPLATE_LABEL } from './CotizadorList'
 
 type Tab = 'propuesta' | 'contenido' | 'vista' | 'destinatarios' | 'metricas'
@@ -92,6 +92,14 @@ export function QuoteBuilder() {
   const [rName, setRName] = useState('')
   const [rEmail, setREmail] = useState('')
   const [sendingId, setSendingId] = useState('')
+
+  // correo al destinatario: plantilla editable con vista previa
+  const [emailTpl, setEmailTpl] = useState<EmailTemplate | null>(null)
+  const [emailDefaults, setEmailDefaults] = useState<EmailTemplate | null>(null)
+  const [emailHtml, setEmailHtml] = useState('')
+  const [emailDirty, setEmailDirty] = useState(false)
+  const [emailSaving, setEmailSaving] = useState(false)
+  const [emailOpen, setEmailOpen] = useState(true)
 
   // métricas
   const [metrics, setMetrics] = useState<any>(null)
@@ -424,11 +432,54 @@ export function QuoteBuilder() {
   }
 
   const sendTo = async (recipient: QuoteRecipient) => {
+    if (!emailTpl) return
+    if (!confirm(`¿Enviar la cotización a ${recipient.name} (${recipient.email}) con el correo tal como se ve en la vista previa?`)) return
     setSendingId(recipient.id); setError('')
     try {
-      const payload = await quotesApi.send(quoteId, recipient.id)
+      const payload = await quotesApi.send(quoteId, recipient.id, emailTpl)
       setRecipients((prev) => prev.map((r) => (r.id === recipient.id ? payload.recipient : r)))
-    } catch (e: any) { setError(e.message) } finally { setSendingId('') }
+      setEmailDirty(false)
+    } catch (e) { setError((e as Error).message) } finally { setSendingId('') }
+  }
+
+  // plantilla del correo: se carga al abrir la pestaña y se previsualiza al editar
+  useEffect(() => {
+    if (tab !== 'destinatarios' || emailTpl) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const payload = await quotesApi.emailPreview(quoteId, null, recipients[0]?.id)
+        if (cancelled) return
+        setEmailTpl(payload.template)
+        setEmailDefaults(payload.defaults)
+        setEmailHtml(payload.html)
+      } catch (e) { if (!cancelled) setError((e as Error).message) }
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, quoteId])
+
+  useEffect(() => {
+    if (!emailTpl || !emailDirty) return
+    const t = window.setTimeout(async () => {
+      try {
+        const payload = await quotesApi.emailPreview(quoteId, emailTpl, recipients[0]?.id)
+        setEmailHtml(payload.html)
+      } catch { /* la vista previa se reintenta con la siguiente edición */ }
+    }, 450)
+    return () => window.clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailTpl, quoteId])
+
+  const setTpl = (patch: Partial<EmailTemplate>) => { setEmailTpl((prev) => (prev ? { ...prev, ...patch } : prev)); setEmailDirty(true) }
+  const saveEmailTpl = async () => {
+    if (!emailTpl) return
+    setEmailSaving(true); setError('')
+    try {
+      const payload = await quotesApi.emailSave(quoteId, emailTpl)
+      setQuote(payload.quote)
+      setEmailDirty(false)
+    } catch (e) { setError((e as Error).message) } finally { setEmailSaving(false) }
   }
 
   const loadMetrics = useCallback(async () => {
@@ -1007,6 +1058,69 @@ export function QuoteBuilder() {
 
             {tab === 'destinatarios' && (
               <div className="space-y-4">
+                {/* Correo que recibe el destinatario */}
+                <div className="rounded-2xl border border-slate-200 bg-white">
+                  <button onClick={() => setEmailOpen((v) => !v)} className="flex w-full items-center gap-2 px-4 py-3 text-left">
+                    {emailOpen ? <ChevronDown size={14} className="text-indigo-500" /> : <ChevronRight size={14} className="text-slate-300" />}
+                    <span className="text-[12px] font-bold uppercase tracking-wide text-slate-400">Correo que recibe el destinatario</span>
+                    <span className="ml-auto text-[11px] text-slate-400">{emailDirty ? 'Cambios sin guardar' : emailTpl ? 'Plantilla lista' : 'Cargando…'}</span>
+                  </button>
+                  {emailOpen && emailTpl && (
+                    <div className="grid gap-4 border-t border-slate-100 p-4 lg:grid-cols-[minmax(260px,1fr)_minmax(300px,1.1fr)]">
+                      <div className="space-y-2">
+                        <p className="text-[12px] leading-relaxed text-slate-500">
+                          Se arma desde la portada de la cotización (inversión, duración, alcance y si el cliente puede mover
+                          líneas). Revísalo y edítalo aquí; lo que ves en la vista previa es lo que se envía.
+                        </p>
+                        <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400">Asunto
+                          <input value={emailTpl.subject} onChange={(e) => setTpl({ subject: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] font-normal normal-case tracking-normal" />
+                        </label>
+                        <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400">Saludo <span className="font-normal normal-case tracking-normal text-slate-400">· {'{nombre}'} pone el nombre del destinatario</span>
+                          <input value={emailTpl.greeting} onChange={(e) => setTpl({ greeting: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] font-normal normal-case tracking-normal" />
+                        </label>
+                        <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400">Mensaje <span className="font-normal normal-case tracking-normal text-slate-400">· línea en blanco separa párrafos</span>
+                          <textarea rows={5} value={emailTpl.intro} onChange={(e) => setTpl({ intro: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] font-normal normal-case tracking-normal" />
+                        </label>
+                        <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400">Nota adicional (opcional)
+                          <textarea rows={2} value={emailTpl.note} onChange={(e) => setTpl({ note: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] font-normal normal-case tracking-normal" />
+                        </label>
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                          <label className="flex items-center gap-2 text-[11.5px] font-semibold text-slate-600">
+                            <input type="checkbox" checked={emailTpl.showStats} onChange={(e) => setTpl({ showStats: e.target.checked })} /> Mostrar las cifras
+                          </label>
+                          {emailTpl.showStats && emailTpl.stats.map((st, i) => (
+                            <div key={i} className="mt-1.5 flex gap-1.5">
+                              <input value={st.label} onChange={(e) => setTpl({ stats: emailTpl.stats.map((x, k) => (k === i ? { ...x, label: e.target.value } : x)) })} className="w-28 rounded-md border border-slate-300 px-2 py-1 text-[12px]" placeholder="Rótulo" />
+                              <input value={st.value} onChange={(e) => setTpl({ stats: emailTpl.stats.map((x, k) => (k === i ? { ...x, value: e.target.value } : x)) })} className="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1 text-[12px]" placeholder="Valor" />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400">Botón
+                            <input value={emailTpl.button} onChange={(e) => setTpl({ button: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] font-normal normal-case tracking-normal" />
+                          </label>
+                          <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400">Texto bajo el botón
+                            <input value={emailTpl.closing} onChange={(e) => setTpl({ closing: e.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] font-normal normal-case tracking-normal" />
+                          </label>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <button onClick={saveEmailTpl} disabled={!emailDirty || emailSaving}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-[12.5px] font-bold text-white disabled:opacity-40">
+                            {emailSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Guardar plantilla
+                          </button>
+                          <button onClick={() => { if (emailDefaults) { setEmailTpl(emailDefaults); setEmailDirty(true) } }}
+                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-[12.5px] font-semibold text-slate-600 hover:bg-slate-50">
+                            Volver a la propuesta actual
+                          </button>
+                        </div>
+                      </div>
+                      <div className="min-h-[420px] overflow-hidden rounded-xl border border-slate-200 bg-[#f0ede6]">
+                        <iframe title="Vista previa del correo" srcDoc={emailHtml} sandbox="" className="h-[560px] w-full" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <div className="text-[12px] font-bold uppercase tracking-wide text-slate-400">Nuevo destinatario</div>
                   <p className="mt-1 text-[12.5px] text-slate-500">Cada persona recibe un enlace propio: sabrás quién abrió, cuánto leyó y qué tocó.</p>
