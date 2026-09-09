@@ -23,6 +23,10 @@ import {
 } from '../_lib/quotes.js'
 import { applyFieldEdits } from '../_lib/quote-fields.js'
 import { legacyToPages } from '../_lib/quote-legacy-pages.js'
+import { sanitizePages } from '../_lib/quote-attachments.js'
+
+/** Marca en QuoteTemplate.template de las plantillas de una sola página (banco propio). */
+const PAGE_TPL = 'PAGINA'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -335,8 +339,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── Plantillas propias ──
+    // ── Plantillas de página propias (una página reutilizable en otra cotización) ──
+    if (op === 'list-page-templates') {
+      const rows = await templateDb().findMany({ where: { template: PAGE_TPL }, orderBy: { updatedAt: 'desc' }, take: 200, select: { id: true, name: true, description: true, content: true, createdBy: true, updatedAt: true } })
+      return res.status(200).json({ ok: true, templates: rows.map((r: any) => ({ id: r.id, name: r.name, description: r.description, page: r.content?.page ?? null, mine: r.createdBy === userId, updatedAt: r.updatedAt })).filter((r: any) => r.page) })
+    }
+    if (op === 'save-page-template') {
+      const name = str(body.name, 120)
+      if (!name) return res.status(400).json({ ok: false, error: 'Falta el nombre de la plantilla' })
+      const page = sanitizePages([body.page])[0]
+      if (!page || !page.blocks?.length) return res.status(400).json({ ok: false, error: 'La página no tiene contenido que guardar' })
+      const tpl = await templateDb().create({
+        data: { name, description: str(body.description, 400) || null, template: PAGE_TPL, currency: 'COP', content: { page }, pricing: {}, createdBy: userId },
+      })
+      return res.status(200).json({ ok: true, template: { id: tpl.id, name: tpl.name } })
+    }
+
     if (op === 'list-templates') {
-      const rows = await templateDb().findMany({ orderBy: { updatedAt: 'desc' }, take: 100, select: { id: true, name: true, description: true, template: true, currency: true, createdBy: true, createdAt: true, updatedAt: true } })
+      const rows = await templateDb().findMany({ where: { template: { not: PAGE_TPL } }, orderBy: { updatedAt: 'desc' }, take: 100, select: { id: true, name: true, description: true, template: true, currency: true, createdBy: true, createdAt: true, updatedAt: true } })
       return res.status(200).json({ ok: true, templates: rows })
     }
 

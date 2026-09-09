@@ -166,7 +166,7 @@ export type EditorProps = {
 export function EditorPanel(props: EditorProps) {
   const { publicId, pages, sections, dirty, preview, onPreview, onApplyRef, onPages, onSections, onSave, onDiscard, onReload, onUndo, onRedo, canUndo, canRedo } = props
   const [mode, setMode] = useState<Mode>('edit')
-  const { confirm, dialogs } = useDialogs()
+  const { confirm, prompt, alert, dialogs } = useDialogs()
   const [focus, setFocus] = useState<Focus | null>(null)
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState<Msg[]>([])
@@ -180,6 +180,12 @@ export function EditorPanel(props: EditorProps) {
   const [addMenu, setAddMenu] = useState<AddTarget | null>(null)
   const [dialog, setDialog] = useState<Dialog>(null)
   const [pageMenu, setPageMenu] = useState<number | null>(null) // insertar plantilla después de la página N (-1 al inicio)
+  /** Plantillas de página propias (guardadas desde cualquier cotización). */
+  const [ownTpls, setOwnTpls] = useState<Array<{ id: string; name: string; description?: string | null; page: Page; mine: boolean }>>([])
+  useEffect(() => {
+    if (pageMenu === null) return
+    post('/api/quotes/manage', { op: 'list-page-templates' }).then((r) => setOwnTpls(Array.isArray(r.templates) ? r.templates : [])).catch(() => setOwnTpls([]))
+  }, [pageMenu])
   const [saveModal, setSaveModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [converting, setConverting] = useState(false)
@@ -526,20 +532,23 @@ export function EditorPanel(props: EditorProps) {
   const replaceImage = async (file: File | undefined) => {
     const ref = imgTarget.current
     if (!file || !ref) return
-    if (file.size > 4 * 1024 * 1024) { flash('La imagen supera 4 MB'); return }
     setStatus('Subiendo imagen…')
     try {
+      const prepared = await prepareImage(file)
+      if (prepared.blob.size > 3 * 1024 * 1024) throw new Error('La imagen sigue pesando más de 3 MB después de reducirla; usa una más pequeña.')
       const fileBase64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(String(reader.result))
         reader.onerror = () => reject(new Error('No se pudo leer la imagen'))
-        reader.readAsDataURL(file)
+        reader.readAsDataURL(prepared.blob)
       })
-      const up = await post('/api/quotes/upload', { fileBase64, filename: file.name, contentType: file.type })
-      onApplyRef(ref, up.url)
+      const up = await post('/api/quotes/upload', { fileBase64, filename: prepared.name, contentType: prepared.type })
+      if (!up?.url) throw new Error('El servidor no devolvió la URL de la imagen')
+      if (!onApplyRef(ref, up.url)) throw new Error('No se pudo aplicar la imagen a ese elemento')
       flash('Imagen reemplazada · guarda para publicarla')
     } catch (e) {
-      flash(`No se reemplazó: ${(e as Error).message}`)
+      setStatus('')
+      await alert((e as Error).message, { title: 'No se pudo subir la imagen' })
     } finally {
       imgTarget.current = ''
       if (fileRef.current) fileRef.current.value = ''
@@ -569,6 +578,35 @@ export function EditorPanel(props: EditorProps) {
     copy.id = uid(`${pages[pi].id}-copia`)
     onPages([...pages.slice(0, pi + 1), copy, ...pages.slice(pi + 1)])
     scrollToPage(copy.id)
+  }
+  /** Guarda una página (título, antetítulo y bloques) como plantilla propia para reutilizarla en otra cotización. */
+  const savePageTemplate = async (pi: number) => {
+    const pg = pages[pi]
+    if (!pg) return
+    const name = await prompt('Nombre de la plantilla de página', pg.title || pg.id, { title: 'Guardar página como plantilla', okLabel: 'Guardar' })
+    if (!name?.trim()) return
+    try {
+      await post('/api/quotes/manage', { op: 'save-page-template', name: name.trim(), page: pg })
+      flash('Plantilla guardada · disponible en «＋pág» de cualquier cotización')
+    } catch (e) {
+      await alert((e as Error).message, { title: 'No se guardó la plantilla' })
+    }
+  }
+  const addOwnPage = (id: string, after: number) => {
+    const tpl = ownTpls.find((t) => t.id === id)
+    if (!tpl) return
+    const page = structuredClone(tpl.page) as Page
+    page.id = uid(page.id || 'plantilla')
+    page.num = String(after + 2).padStart(2, '0')
+    const at = after + 1
+    onPages([...pages.slice(0, at), page, ...pages.slice(at)])
+    setPageMenu(null)
+    scrollToPage(page.id)
+  }
+  const deleteOwnTpl = async (id: string) => {
+    const tpl = ownTpls.find((t) => t.id === id)
+    if (!tpl || !(await confirm(`¿Eliminar la plantilla «${tpl.name}»?`, { title: 'Eliminar plantilla', okLabel: 'Eliminar', danger: true }))) return
+    try { await post('/api/quotes/manage', { op: 'delete-template', templateId: id }); setOwnTpls((l) => l.filter((t) => t.id !== id)) } catch (e) { await alert((e as Error).message, { title: 'No se eliminó' }) }
   }
   const addPage = (templateId: string, after: number) => {
     const tpl = PAGE_TEMPLATES.find((t) => t.id === templateId) ?? PAGE_TEMPLATES[PAGE_TEMPLATES.length - 1]
@@ -946,7 +984,7 @@ export function EditorPanel(props: EditorProps) {
 
   return (
     <>
-      <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden onChange={(e) => void replaceImage(e.target.files?.[0])} />
+      <input ref={fileRef} type="file" accept="image/*,.heic,.heif" hidden onChange={(e) => void replaceImage(e.target.files?.[0])} />
       {dialogs}
 
       {/* ── barra lateral: páginas o secciones ── */}
@@ -985,6 +1023,7 @@ export function EditorPanel(props: EditorProps) {
                         <button onClick={() => movePage(pi, -1)} disabled={pi === 0} title="Subir">↑</button>
                         <button onClick={() => movePage(pi, 1)} disabled={pi === pages.length - 1} title="Bajar">↓</button>
                         <button onClick={() => duplicatePage(pi)} title="Duplicar">⧉</button>
+                        <button onClick={() => void savePageTemplate(pi)} title="Guardar esta página como plantilla propia, para reutilizarla en otra cotización">☆</button>
                         <button onClick={() => setAddMenu({ pi, after: pg.blocks.length - 1 })} title="Agregar bloque al final">＋</button>
                         <button onClick={() => setPageMenu(pi)} title="Insertar página después">＋pág</button>
                         <button onClick={() => setDialog({ kind: 'merge', pi })} title="Llevar esta sección completa (numeral, título y bloques) dentro de otra página">⇢</button>
@@ -1029,7 +1068,7 @@ export function EditorPanel(props: EditorProps) {
         <button className="qv-side-fab" onClick={() => setSideOpen(true)} title="Mostrar páginas">☰ Páginas{dirty ? ' ●' : ''}</button>
       )}
 
-      {pageMenu !== null && <TemplateMenu onPick={(id) => addPage(id, pageMenu)} onClose={() => setPageMenu(null)} />}
+      {pageMenu !== null && <TemplateMenu own={ownTpls} onPickOwn={(id) => addOwnPage(id, pageMenu)} onDeleteOwn={(id) => void deleteOwnTpl(id)} onPick={(id) => addPage(id, pageMenu)} onClose={() => setPageMenu(null)} />}
 
       {/* ── barra flotante sobre el bloque ── */}
       {hover && hoverBlock && hoverTarget && mode === 'edit' && (
@@ -1145,7 +1184,7 @@ export function EditorPanel(props: EditorProps) {
       {dialog?.kind === 'imgReplace' && (
         <ImgReplaceDialog
           onClose={() => setDialog(null)}
-          onUpload={() => { imgTarget.current = dialog.ref; setDialog(null); window.setTimeout(() => fileRef.current?.click(), 30) }}
+          onUpload={() => { imgTarget.current = dialog.ref; fileRef.current?.click(); setDialog(null) }}
           onUrl={(url) => { setDialog(null); if (onApplyRef(dialog.ref, url)) flash('Imagen reemplazada · guarda para publicarla'); else flash('No se pudo aplicar la URL') }}
         />
       )}
@@ -1452,6 +1491,45 @@ function KidTree({ list, depth, onChange }: { list: Kid[]; depth: number; onChan
       <button className="qv-kid-add" onClick={() => onChange([...list, depth === 1 ? 'Nuevo detalle' : 'Nuevo subnivel'])}>＋ {depth === 1 ? 'Detalle' : 'Ítem en este nivel'}</button>
     </div>
   )
+}
+
+/**
+ * Prepara una imagen para subirla: los formatos de mapa de bits grandes se
+ * reducen (lado mayor 2000 px) y se recodifican, así caben en el límite del
+ * servidor (4,5 MB por petición) y pesan menos en el documento. SVG y GIF van
+ * tal cual; HEIC y otros formatos se convierten si el navegador los decodifica.
+ */
+async function prepareImage(file: File): Promise<{ blob: Blob; type: string; name: string }> {
+  const type = (file.type || '').toLowerCase()
+  const passthrough = type === 'image/svg+xml' || type === 'image/gif'
+  const small = file.size <= 900 * 1024 && ['image/png', 'image/jpeg', 'image/webp'].includes(type)
+  if (passthrough || small) {
+    if (file.size > 4 * 1024 * 1024) throw new Error('La imagen supera 4 MB')
+    return { blob: file, type, name: file.name }
+  }
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = () => reject(new Error(`El navegador no puede leer este formato (${type || file.name.split('.').pop()}). Usa JPG, PNG, WebP, GIF o SVG.`))
+      i.src = url
+    })
+    const MAX = 2000
+    const k = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * k))
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * k))
+    canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+    // PNG conserva transparencia; el resto va a JPEG de buena calidad
+    const out = type === 'image/png' ? 'image/png' : 'image/jpeg'
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, out, 0.88))
+    if (!blob) throw new Error('No se pudo procesar la imagen')
+    const base = file.name.replace(/\.[a-z0-9]+$/i, '') || 'imagen'
+    return { blob, type: out, name: `${base}.${out === 'image/png' ? 'png' : 'jpg'}` }
+  } finally {
+    URL.revokeObjectURL(url)
+  }
 }
 
 /** Selector de índice (fila, tarjeta, hito…) para los diálogos de elementos. */
@@ -2003,9 +2081,10 @@ function AiDialog({ onAsk, onClose }: { onAsk: (kind: string, prompt: string) =>
 }
 
 /** Banco de páginas plantilla: agrupado por momento de la propuesta, con búsqueda. */
-function TemplateMenu({ onPick, onClose }: { onPick: (id: string) => void; onClose: () => void }) {
+function TemplateMenu({ own, onPickOwn, onDeleteOwn, onPick, onClose }: { own: Array<{ id: string; name: string; description?: string | null; page: Page; mine: boolean }>; onPickOwn: (id: string) => void; onDeleteOwn: (id: string) => void; onPick: (id: string) => void; onClose: () => void }) {
   const [q, setQ] = useState('')
   const term = q.trim().toLowerCase()
+  const ownItems = own.filter((t) => !term || `${t.name} ${t.description || ''} ${t.page?.title || ''}`.toLowerCase().includes(term))
   const groups = templatesByCategory()
     .map((g) => ({ ...g, items: g.items.filter((t) => !term || `${t.label} ${t.description} ${t.category}`.toLowerCase().includes(term)) }))
     .filter((g) => g.items.length)
@@ -2016,6 +2095,21 @@ function TemplateMenu({ onPick, onClose }: { onPick: (id: string) => void; onClo
         <p>Páginas A4 completas, con contenido demo construido sobre las propuestas de la casa. Sirven tal cual o editándolas; la IA las adapta al cliente si se lo pides.</p>
         <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar: carta, cronograma, inversión, riesgos, FAQ…" />
         <div className="qv-tplbank-list">
+          {ownItems.length > 0 && (
+            <div className="qv-tplbank-group is-own">
+              <div className="qv-tplbank-cat">Mis plantillas · guardadas desde otras cotizaciones</div>
+              {ownItems.map((t) => (
+                <div className="qv-tplbank-own" key={t.id}>
+                  <button onClick={() => onPickOwn(t.id)}>
+                    <b>{t.name}</b>
+                    <span>{t.description || `${t.page?.title || 'Página'} · ${t.page?.blocks?.length || 0} elementos`}</span>
+                  </button>
+                  {t.mine && <button className="qv-tplbank-del" title="Eliminar plantilla" onClick={() => onDeleteOwn(t.id)}>✕</button>}
+                </div>
+              ))}
+            </div>
+          )}
+          {own.length === 0 && !term && <p className="qv-tplbank-tip">Guarda cualquier página como plantilla propia con «☆» en la lista de páginas; aparecerá aquí para todas tus cotizaciones.</p>}
           {groups.map((g) => (
             <div key={g.category} className="qv-tplbank-group">
               <div className="qv-tplbank-cat">{g.category}</div>
