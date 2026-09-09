@@ -40,6 +40,10 @@ export const BLOCK_TYPES: Array<[string, string]> = [
   ['grid', 'Cuadrícula (2–6 columnas)'],
   ['icon', 'Ícono'],
   ['button', 'Botón con enlace'],
+  ['htimeline', 'Línea de tiempo horizontal'],
+  ['vtimeline', 'Línea de tiempo vertical'],
+  ['signature', 'Firma'],
+  ['sechead', 'Sección numerada (en la misma hoja)'],
 ]
 const BLOCK_LABEL: Record<string, string> = Object.fromEntries(BLOCK_TYPES)
 
@@ -74,6 +78,22 @@ export const EMPTY: Record<string, Block> = {
   grid: { type: 'grid', cols: 3, cells: [[], [], []] },
   icon: { type: 'icon', name: 'sparkles', size: 40, color: 'navy', label: '' },
   button: { type: 'button', label: 'Ver más', url: 'https://www.algoritmot.com', style: 'primary', align: 'left' },
+  htimeline: { type: 'htimeline', items: [
+    { title: 'Kickoff', date: 'Semana 1', desc: 'Orden de inicio, accesos y plan de trabajo acordado.', tone: 'cyan' },
+    { title: 'Definición', date: 'Semana 2', desc: 'Catálogo aprobado en acta de comité.', tone: 'cyan' },
+    { title: 'Construcción', date: 'Semanas 3 a 6', desc: 'Solución en producción, probada con datos reales.', tone: 'deep' },
+    { title: 'Apropiación', date: 'Semanas 7 y 8', desc: 'Equipo formado y primera lectura conjunta.', tone: 'deep' },
+    { title: 'Cierre', date: 'Semana 8', desc: 'Acta de cierre y arranque del soporte.', tone: 'gold' },
+  ] },
+  vtimeline: { type: 'vtimeline', items: [
+    { title: 'Kickoff', date: 'Semana 1', desc: 'Orden de inicio, accesos y plan de trabajo acordado.', tone: 'cyan' },
+    { title: 'Definición', date: 'Semana 2', desc: 'Catálogo aprobado en acta de comité.', tone: 'cyan' },
+    { title: 'Construcción', date: 'Semanas 3 a 6', desc: 'Solución en producción, probada con datos reales.', tone: 'deep' },
+    { title: 'Apropiación', date: 'Semanas 7 y 8', desc: 'Equipo formado y primera lectura conjunta.', tone: 'deep' },
+    { title: 'Cierre', date: 'Semana 8', desc: 'Acta de cierre y arranque del soporte.', tone: 'gold' },
+  ] },
+  signature: { type: 'signature', name: 'Ana Milena Diazgranados', role: 'Directora de Relacionamiento', org: 'Algoritmo T S.A.S.', email: 'anadiazgranados@algoritmot.com', phone: '+57 300 659 0161', place: 'Bogotá D. C.', date: '', note: '' },
+  sechead: { type: 'sechead', num: '00', kicker: 'Antetítulo', title: 'Título de la sección' },
 }
 
 /**

@@ -526,6 +526,57 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
     ]),
   },
   {
+    id: 'timeline-h', category: 'Plan', label: 'Línea de tiempo horizontal',
+    description: 'Cinco hitos en una banda horizontal numerada, con fecha y descripción; se agregan o quitan hitos desde el editor.',
+    make: (n) => page('linea-tiempo', n, 'Tiempos', 'Ruta del proyecto', [
+      lede('Cinco hitos marcan el recorrido. Cada uno tiene un producto verificable y cierra con un acta.'),
+      { type: 'htimeline', items: [
+        { title: 'Kickoff', date: 'Semana 1', desc: 'Orden de inicio, accesos entregados y plan de trabajo acordado.', tone: 'cyan' },
+        { title: 'Definición', date: 'Semana 2', desc: 'Catálogo de indicadores aprobado en acta de comité.', tone: 'cyan' },
+        { title: 'Construcción', date: 'Semanas 3 a 6', desc: 'Solución en producción, probada con datos reales.', tone: 'deep' },
+        { title: 'Apropiación', date: 'Semanas 7 y 8', desc: 'Equipo formado y primera lectura conjunta.', tone: 'deep' },
+        { title: 'Cierre', date: 'Semana 8', desc: 'Acta de cierre y arranque de los doce meses de soporte.', tone: 'gold' },
+      ] },
+      p('**Qué sigue al cierre.** El soporte responde en el día hábil siguiente durante doce meses, con revisión semestral del catálogo y hasta dos ventanas de actualización.'),
+      note('Un retraso en la aprobación de un hito por causas ajenas a Algoritmo T desplaza los siguientes en la misma proporción.'),
+    ]),
+  },
+  {
+    id: 'timeline-v', category: 'Plan', label: 'Línea de tiempo vertical',
+    description: 'Cinco hitos en columna con fecha y descripción amplia; ideal cuando cada hito necesita más texto.',
+    make: (n) => page('hitos-vertical', n, 'Tiempos', 'Hitos del proyecto', [
+      { type: 'vtimeline', items: [
+        { title: 'Kickoff y accesos', date: 'Semana 1', desc: 'Reunión de arranque con el interlocutor institucional. Se entregan los accesos a los sistemas, se confirma el plan de trabajo y se fija el calendario de sesiones semanales.', tone: 'cyan' },
+        { title: 'Catálogo de indicadores', date: 'Semana 2', desc: 'Dos talleres con la dirección: definición y validación. El catálogo aprobado fija qué se construye y cierra con acta de comité.', tone: 'cyan' },
+        { title: 'Solución en producción', date: 'Semana 6', desc: 'Módulos operando sobre la plataforma institucional, con permisos por rol y cifras comprobadas contra su fuente. Acta de entrega.', tone: 'deep' },
+        { title: 'Equipo formado', date: 'Semana 8', desc: 'Dos sesiones por perfil con datos propios y primera lectura conjunta de resultados. Guía de uso entregada y acta de cierre.', tone: 'deep' },
+        { title: 'Soporte y evolución', date: '12 meses', desc: 'Atención en el día hábil siguiente, revisión semestral del catálogo y hasta dos ventanas de actualización.', tone: 'gold' },
+      ] },
+    ]),
+  },
+  {
+    id: 'firma', category: 'Cierre', label: 'Firma y aceptación',
+    description: 'Cierre formal con la firma de Algoritmo T y el espacio de aceptación del cliente, en dos columnas.',
+    make: (n) => page('firma', n, 'Cierre', 'Firma y aceptación', [
+      p('Con la firma de esta propuesta, la institución acepta el alcance, el cronograma, la inversión y las condiciones descritas en este documento. Algoritmo T se compromete a ejecutarlo con los entregables y criterios de aprobación aquí definidos.'),
+      grid(2, [
+        [{ type: 'signature', name: 'Ana Milena Diazgranados', role: 'Directora de Relacionamiento', org: 'Algoritmo T S.A.S.', email: 'anadiazgranados@algoritmot.com', phone: '+57 300 659 0161', place: 'Bogotá D. C.', date: '[fecha]', note: '' }],
+        [{ type: 'signature', name: '[Nombre de quien acepta]', role: '[Cargo]', org: '[Nombre de la institución]', email: '', phone: '', place: '', date: '[fecha]', note: 'Aceptación de la propuesta', accept: true }],
+      ]),
+      note('Propuesta válida por [45] días desde su emisión. El alcance contractual es el descrito en este documento con la configuración de líneas vigente al momento de la firma.'),
+    ]),
+  },
+  {
+    id: 'dos-secciones', category: 'Anexos', label: 'Dos secciones en una hoja',
+    description: 'Ejemplo de página con dos numerales: la primera sección va en el encabezado y la segunda como bloque de sección.',
+    make: (n) => page('dos-secciones', n, 'Condiciones', 'Supuestos', [
+      list(['Un interlocutor único por cada lado, con capacidad de decisión.', 'Acceso a los sistemas y a la información en la primera semana.', 'Respuesta a las validaciones dentro de los tres días hábiles siguientes.'], 'check'),
+      { type: 'sechead', num: num(n + 1), kicker: 'Condiciones', title: 'Exclusiones' },
+      list(['Producción de contenidos y facilitación de sesiones académicas.', 'Licencias de terceros no incluidas en la tabla de inversión.', 'Desarrollos posteriores al catálogo aprobado en la fase 1.']),
+      note('Las dos secciones aparecen en el índice con su número y la misma hoja.'),
+    ]),
+  },
+  {
     id: 'libre', category: 'Anexos', label: 'Página en blanco',
     description: 'Solo un título y un párrafo, para empezar desde cero.',
     make: (n) => page('pagina', n, '', 'Nueva página', [p('Escribe aquí…')]),

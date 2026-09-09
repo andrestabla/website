@@ -310,6 +310,20 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
       // el índice se arma más abajo con los títulos reales de las páginas
       break
 
+    case 'htimeline':
+    case 'vtimeline':
+      return (Array.isArray(b.items) ? b.items : []).flatMap((it: any, i: number) => [
+        new Paragraph({ children: runs(`${i + 1}. ${it.title || ''}${it.date ? ` · ${it.date}` : ''}`, { bold: true, color: '1A2D5A' }), spacing: { before: 80, after: 40 } }),
+        ...(it.desc ? [new Paragraph({ children: runs(String(it.desc)), spacing: { after: 100 } })] : []),
+      ])
+    case 'signature':
+      return [
+        new Paragraph({ children: runs('____________________________'), spacing: { before: 400, after: 60 } }),
+        new Paragraph({ children: runs(String(b.name || ''), { bold: true }) }),
+        ...([b.role, b.org, [b.email, b.phone].filter(Boolean).join(' · '), [b.place, b.date].filter(Boolean).join(', ')].filter(Boolean).map((t: string) => new Paragraph({ children: runs(t, { color: '556070' }) }))),
+      ]
+    case 'sechead':
+      return [new Paragraph({ children: runs(`${b.num ? `${b.num} · ` : ''}${b.kicker ? `${b.kicker} · ` : ''}${b.title}`, { bold: true, size: 30, color: '1A2D5A' }), spacing: { before: 360, after: 160 } })]
     case 'grid': {
       // en Word no hay cuadrícula libre: las celdas se vuelcan una tras otra
       const cells: any[][] = Array.isArray(b.cells) ? b.cells : []

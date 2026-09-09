@@ -539,6 +539,14 @@ function blockWeight(b: PageBlock): number {
       return 160
     case 'button':
       return 120
+    case 'htimeline':
+      return 420 + (Array.isArray(b.items) ? b.items.reduce((s: number, it: any) => s + String(it?.desc || '').length / 2, 0) : 0)
+    case 'vtimeline':
+      return (Array.isArray(b.items) ? b.items.reduce((s: number, it: any) => s + 90 + String(it?.desc || '').length, 0) : 0) + 80
+    case 'signature':
+      return b.imageUrl ? 420 : 300
+    case 'sechead':
+      return 200
     default:
       return 300
   }
@@ -805,7 +813,7 @@ const num = (v: unknown, def = 1) => { const n = Math.round(Number(v)); return N
 
 export const PAGE_BLOCK_TYPES = new Set([
   'lede', 'p', 'h3', 'list', 'box', 'note', 'table', 'cards', 'phase', 'img', 'invoice', 'payments', 'toc', 'team', 'letterhead', 'timeline', 'gantt',
-  'grid', 'icon', 'button',
+  'grid', 'icon', 'button', 'htimeline', 'vtimeline', 'signature', 'sechead',
 ])
 const ICON_COLORS = new Set(['navy', 'cyan', 'gold', 'muted'])
 const STYLE_SIZES = new Set(['xs', 'sm', 'md', 'lg', 'xl', 'xxl'])
@@ -897,6 +905,26 @@ export function sanitizeBlock(raw: any): PageBlock | null {
       const label = s(raw.label, 120)
       const url = safeUrl(raw.url)
       return label ? { type, label, url, style: raw.style === 'outline' ? 'outline' : 'primary', ...align(raw.align) } : null
+    }
+    case 'htimeline':
+    case 'vtimeline': {
+      const items = Array.isArray(raw.items)
+        ? raw.items.slice(0, 12).map((it: any) => ({ title: s(it?.title, 120), date: s(it?.date, 60), desc: s(it?.desc, 400), tone: tone(it?.tone) })).filter((it: any) => it.title || it.desc)
+        : []
+      return items.length ? { type, items, ...(raw.numbered === false ? { numbered: false } : {}) } : null
+    }
+    case 'signature': {
+      const name = s(raw.name, 120)
+      if (!name) return null
+      const out: PageBlock = { type, name, role: s(raw.role, 160), org: s(raw.org, 160), email: s(raw.email, 160), phone: s(raw.phone, 60), place: s(raw.place, 120), date: s(raw.date, 80), note: s(raw.note, 300) }
+      const imageUrl = s(raw.imageUrl, 1000)
+      if (imageUrl) out.imageUrl = imageUrl
+      if (raw.accept === true) out.accept = true
+      return out
+    }
+    case 'sechead': {
+      const title = s(raw.title, 200)
+      return title ? { type, num: s(raw.num, 8), kicker: s(raw.kicker, 120), title } : null
     }
     case 'invoice': {
       const rows = Array.isArray(raw.rows) ? raw.rows.slice(0, 30).map((r: any) => ({ concept: s(r?.concept, 300), detail: s(r?.detail, 800), amount: s(r?.amount, 60) })).filter((r: any) => r.concept) : []

@@ -1200,3 +1200,41 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-tplbank-group button:hover { border-color: #4f46e5; background: #eef2ff; }
 .qv-tplbank-group button b { font-size: 12.5px; }
 .qv-tplbank-group button span { font-size: 11px; color: #64748b; line-height: 1.35; }
+
+/* ── Líneas de tiempo, firma y sección numerada en la misma hoja ─────── */
+.qv-htl { display: grid; gap: 10px; margin: 14px 0 18px; position: relative; }
+.qv-htl::before { content: ''; position: absolute; left: 6%; right: 6%; top: 17px; height: 2px; background: #d3cab6; }
+.qv-htl-item { position: relative; text-align: center; padding: 0 4px; }
+.qv-htl-dot { width: 34px; height: 34px; margin: 0 auto 8px; border-radius: 50%; display: grid; place-items: center; font-family: var(--mono); font-weight: 700; font-size: 12px; color: #fff; background: #14b8c8; position: relative; z-index: 1; box-shadow: 0 0 0 4px var(--paper, #fffdf9); }
+.qv-htl-item.tone-deep .qv-htl-dot { background: #0b6f88; }
+.qv-htl-item.tone-gold .qv-htl-dot { background: #d9a441; color: #1a2d5a; }
+.qv-htl-date { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #a87a14; margin-bottom: 3px; }
+.qv-htl-title { font-weight: 800; color: #1a2d5a; font-size: 13px; line-height: 1.25; }
+.qv-htl-desc { font-size: 11.5px; color: #4b5563; line-height: 1.4; margin-top: 4px; }
+.qv-vtl { list-style: none; margin: 10px 0 16px; padding: 0; position: relative; }
+.qv-vtl::before { content: ''; position: absolute; left: 16px; top: 8px; bottom: 8px; width: 2px; background: #d3cab6; }
+.qv-vtl-item { display: grid; grid-template-columns: 34px 1fr; gap: 12px; margin-bottom: 12px; position: relative; }
+.qv-vtl-dot { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-family: var(--mono); font-weight: 700; font-size: 12px; color: #fff; background: #14b8c8; box-shadow: 0 0 0 4px var(--paper, #fffdf9); z-index: 1; }
+.qv-vtl-item.tone-deep .qv-vtl-dot { background: #0b6f88; }
+.qv-vtl-item.tone-gold .qv-vtl-dot { background: #d9a441; color: #1a2d5a; }
+.qv-vtl-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding-top: 6px; }
+.qv-vtl-title { font-weight: 800; color: #1a2d5a; font-size: 14px; }
+.qv-vtl-date { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #a87a14; }
+.qv-vtl-desc { font-size: 12.5px; color: #4b5563; line-height: 1.45; margin-top: 2px; }
+.qv-sign { margin: 26px 0 10px; max-width: 360px; }
+.qv-sign.is-accept { border: 1px solid #d3cab6; border-radius: 10px; padding: 14px 16px; max-width: none; }
+.qv-sign-accept { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #a87a14; margin-bottom: 8px; }
+.qv-sign-line { height: 64px; border-bottom: 1.5px solid #1a2d5a; margin-bottom: 8px; display: flex; align-items: flex-end; }
+.qv-sign-line img { max-height: 60px; max-width: 220px; object-fit: contain; }
+.qv-sign-blank { display: block; width: 100%; }
+.qv-sign-name { font-weight: 800; color: #1a2d5a; font-size: 14px; }
+.qv-sign-role, .qv-sign-org { font-size: 12px; color: #4b5563; }
+.qv-sign-contact { font-family: var(--mono); font-size: 10.5px; color: #0b6f88; margin-top: 3px; }
+.qv-sign-when { font-size: 11.5px; color: #6b7280; margin-top: 4px; }
+.qv-sign-note { font-size: 11px; color: #6b7280; margin-top: 6px; }
+.qv-sechead-inline { margin-top: 26px; padding-top: 18px; border-top: 1px solid #e3ddce; }
+.qv-mode-edit .qv-sign-line { outline: 1px dashed rgba(79, 70, 229, .35); cursor: pointer; }
+.qv-dialog .row button, .qv-dialog > button { border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 700; cursor: pointer; color: #334155; }
+.qv-dialog .row button:hover, .qv-dialog > button:hover { border-color: #4f46e5; color: #3730a3; }
+.qv-dialog .row button:disabled { opacity: .4; cursor: default; }
+.qv-dialog .row { margin-top: 6px; }

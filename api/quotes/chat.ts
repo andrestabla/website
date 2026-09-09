@@ -188,7 +188,10 @@ REGLAS DURAS
    ese mismo turno. Además de los bloques de texto hay "grid" (cuadrícula de 2 a 6 columnas: cols y
    cells, cada celda una lista de bloques), "icon" (ícono de la biblioteca lucide por nombre en inglés y
    minúsculas, p. ej. "rocket", "graduation-cap", "chart-line"; size, color navy|cyan|gold|muted, label) y
-   "button" (label, url, style primary|outline). Edítalas con "pagesPatch":
+   "button" (label, url, style primary|outline), "htimeline" y "vtimeline" (línea de tiempo horizontal o
+   vertical: items [{title, date, desc, tone}]), "signature" (firma: name, role, org, email, phone, place,
+   date; accept true para una firma de aceptación del cliente) y "sechead" (encabezado de sección numerada
+   dentro de la página: num, kicker, title, para poner dos numerales en una misma hoja). Edítalas con "pagesPatch":
    "set" reescribe páginas por id (título, antetítulo y bloques completos), "remove" las quita,
    "insert" agrega una página nueva después de otra. Cada página es una hoja A4: unos 2.500
    caracteres de texto por página; si un capítulo es más largo, continúalo en otra página con el

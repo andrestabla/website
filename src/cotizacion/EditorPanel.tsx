@@ -14,7 +14,7 @@
  *  - Panel derecho: la IA, que recibe el elemento señalado y aplica cambios en
  *    el servidor (guarda antes lo pendiente).
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { BLOCK_TYPES, EMPTY, type Page, type Block } from '../cotizador/PagesEditor'
 import { IconPicker } from './IconPicker'
 import { PAGE_TEMPLATES, templatesByCategory } from './pageTemplates'
@@ -35,6 +35,7 @@ type Dialog =
   | { kind: 'gridSettings'; loc: Loc }
   | { kind: 'style'; loc: Loc }
   | { kind: 'move'; loc: Loc }
+  | { kind: 'items'; loc: Loc }
   | { kind: 'versions' }
   | null
 
@@ -650,6 +651,7 @@ export function EditorPanel(props: EditorProps) {
         <div className="qv-blockbar" style={{ top: hover.top - 30, left: Math.max(8, hover.left + hover.width - 290) }}>
           <span className="qv-blockbar-type">{BLOCK_LABEL[hoverBlock.type] || hoverBlock.type}{blockPreview(hoverBlock) ? ` · ${blockPreview(hoverBlock)}` : ''}</span>
           {['lede', 'p', 'h3', 'note', 'list', 'box', 'table'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'style', loc: hover })} title="Estilo: tamaño, color, peso, fondo">Aa</button>}
+          {['table', 'gantt', 'cards', 'team', 'htimeline', 'vtimeline', 'payments', 'phase', 'list', 'timeline', 'invoice'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'items', loc: hover })} title="Agregar o quitar filas, columnas, tarjetas, miembros o hitos">⋯</button>}
           {hoverBlock.type === 'grid' && <button onClick={() => setDialog({ kind: 'gridSettings', loc: hover })} title="Columnas">⚙</button>}
           {hoverBlock.type === 'icon' && <button onClick={() => setDialog({ kind: 'icon', loc: hover })} title="Cambiar ícono, tamaño o color">⚙</button>}
           {hoverBlock.type === 'button' && <button onClick={() => setDialog({ kind: 'button', loc: hover })} title="Texto, enlace y estilo">⚙</button>}
@@ -720,6 +722,9 @@ export function EditorPanel(props: EditorProps) {
       )}
       {dialog?.kind === 'style' && (
         <StyleDialog block={blockAt(dialog.loc) as any} onClose={() => setDialog(null)} onSave={(patch) => { updateBlock(dialog.loc, patch as Partial<Block>); setDialog(null) }} />
+      )}
+      {dialog?.kind === 'items' && (
+        <ItemsDialog block={blockAt(dialog.loc) as any} onClose={() => setDialog(null)} onChange={(patch) => updateBlock(dialog.loc, patch as Partial<Block>)} />
       )}
       {dialog?.kind === 'move' && (
         <MoveDialog pages={pages} loc={dialog.loc} onClose={() => setDialog(null)} onMove={(target) => moveTo(dialog.loc, target)} />
@@ -873,6 +878,207 @@ function StyleDialog({ block, onSave, onClose }: { block: any; onSave: (patch: R
           <button onClick={onClose}>Cancelar</button>
           <button className="primary" onClick={apply}>Aplicar</button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/** Selector de índice (fila, tarjeta, hito…) para los diálogos de elementos. */
+function Sel({ n, value, set, label }: { n: number; value: number; set: (v: number) => void; label: string }) {
+  return (
+    <select value={Math.min(value, Math.max(0, n - 1))} onChange={(e) => set(Number(e.target.value))}>
+      {Array.from({ length: n }, (_, i) => <option key={i} value={i}>{label} {i + 1}</option>)}
+    </select>
+  )
+}
+
+/**
+ * Agregar o quitar elementos de un bloque compuesto: filas y columnas de
+ * tablas y cronogramas, tarjetas, miembros del equipo, hitos de las líneas de
+ * tiempo, pagos, filas de fase, ítems de lista, segmentos y conceptos.
+ */
+function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patch: Record<string, unknown>) => void; onClose: () => void }) {
+  const [idx, setIdx] = useState(0)
+  const [colIdx, setColIdx] = useState(0)
+  if (!block) return null
+  const t = block.type
+  const tone = (i: number) => (['cyan', 'deep', 'gold'] as const)[i % 3]
+  let body: React.ReactNode = null
+  let title = 'Elementos del bloque'
+
+  if (t === 'table') {
+    const rows: string[][] = block.rows || []
+    const headers: string[] = block.headers || []
+    const cols = Math.max(headers.length, ...rows.map((r) => r.length), 1)
+    title = 'Filas y columnas de la tabla'
+    body = (
+      <>
+        <p>{rows.length} filas · {cols} columnas. Edita el texto de cada celda directamente en la página.</p>
+        <div className="row">
+          <button onClick={() => onChange({ rows: [...rows, Array.from({ length: cols }, () => 'Celda')] })}>＋ Fila al final</button>
+          <button onClick={() => onChange({ headers: headers.length ? [...headers, `Columna ${cols + 1}`] : headers, rows: rows.map((r) => [...r, '']) })}>＋ Columna al final</button>
+        </div>
+        <label>Eliminar fila</label>
+        <div className="row"><Sel n={rows.length} value={idx} set={setIdx} label="Fila" /><button disabled={rows.length <= 1} onClick={() => onChange({ rows: rows.filter((_, i) => i !== idx) })}>Eliminar fila</button></div>
+        <label>Eliminar columna</label>
+        <div className="row"><Sel n={cols} value={colIdx} set={setColIdx} label="Columna" /><button disabled={cols <= 1} onClick={() => onChange({ headers: headers.filter((_, i) => i !== colIdx), rows: rows.map((r) => r.filter((_, i) => i !== colIdx)), colAlign: Array.isArray(block.colAlign) ? block.colAlign.filter((_: unknown, i: number) => i !== colIdx) : undefined })}>Eliminar columna</button></div>
+        <label>Encabezados</label>
+        <div className="row">
+          <button onClick={() => onChange({ headers: headers.length ? [] : Array.from({ length: cols }, (_, i) => `Columna ${i + 1}`) })}>{headers.length ? 'Quitar encabezados' : 'Agregar encabezados'}</button>
+          <button onClick={() => onChange({ rows: [Array.from({ length: cols }, () => 'Celda'), ...rows] })}>＋ Fila al inicio</button>
+        </div>
+      </>
+    )
+  } else if (t === 'gantt') {
+    const cols: string[] = block.cols || []
+    const rows: any[] = block.rows || []
+    title = 'Periodos y barras del cronograma'
+    body = (
+      <>
+        <p>{cols.length} periodos · {rows.length} barras. Las etiquetas se editan en la página; aquí se ajustan los periodos de cada barra.</p>
+        <div className="row">
+          <button onClick={() => onChange({ cols: [...cols, `${cols.length + 1}`] })}>＋ Periodo</button>
+          <button disabled={cols.length <= 1} onClick={() => onChange({ cols: cols.slice(0, -1), rows: rows.map((r) => ({ ...r, from: Math.min(r.from, cols.length - 1), to: Math.min(r.to, cols.length - 1) })) })}>− Último periodo</button>
+        </div>
+        <div className="qv-versions">
+          {rows.map((r, i) => (
+            <div className="qv-version" key={i} style={{ gap: 6 }}>
+              <input value={r.label || ''} onChange={(e) => onChange({ rows: rows.map((x, k) => (k === i ? { ...x, label: e.target.value } : x)) })} style={{ flex: 1 }} />
+              <input type="number" min={1} max={cols.length} value={r.from ?? 1} onChange={(e) => onChange({ rows: rows.map((x, k) => (k === i ? { ...x, from: Number(e.target.value) } : x)) })} style={{ width: 56 }} title="Desde" />
+              <input type="number" min={1} max={cols.length} value={r.to ?? 1} onChange={(e) => onChange({ rows: rows.map((x, k) => (k === i ? { ...x, to: Number(e.target.value) } : x)) })} style={{ width: 56 }} title="Hasta" />
+              <select value={r.tone || 'cyan'} onChange={(e) => onChange({ rows: rows.map((x, k) => (k === i ? { ...x, tone: e.target.value } : x)) })} style={{ width: 90 }}><option value="cyan">Cian</option><option value="deep">Profundo</option><option value="gold">Dorado</option></select>
+              <button onClick={() => onChange({ rows: rows.filter((_, k) => k !== i) })} title="Eliminar">✕</button>
+            </div>
+          ))}
+        </div>
+        <button onClick={() => onChange({ rows: [...rows, { label: 'Nueva actividad', from: 1, to: Math.max(1, Math.min(2, cols.length)), tone: 'cyan' }] })}>＋ Barra</button>
+      </>
+    )
+  } else if (t === 'cards') {
+    const items: any[] = block.items || []
+    title = 'Tarjetas'
+    body = (
+      <>
+        <p>{items.length} tarjetas en {block.cols || 2} columnas. Los textos se editan en la página.</p>
+        <div className="row">
+          <button onClick={() => onChange({ items: [...items, { tag: `${String(items.length + 1).padStart(2, '0')}`, title: 'Nueva tarjeta', body: 'Texto de la tarjeta.', foot: '' }] })}>＋ Tarjeta</button>
+          <select value={block.cols || 2} onChange={(e) => onChange({ cols: Number(e.target.value) })}><option value={2}>2 columnas</option><option value={3}>3 columnas</option></select>
+        </div>
+        <label>Eliminar tarjeta</label>
+        <div className="row"><Sel n={items.length} value={idx} set={setIdx} label="Tarjeta" /><button disabled={items.length <= 1} onClick={() => onChange({ items: items.filter((_, i) => i !== idx) })}>Eliminar</button></div>
+      </>
+    )
+  } else if (t === 'team') {
+    const items: any[] = block.items || []
+    title = 'Miembros del equipo'
+    body = (
+      <>
+        <p>{items.length} roles. Los textos se editan en la página; aquí se agregan roles y responsabilidades.</p>
+        <button onClick={() => onChange({ items: [...items, { role: 'Nuevo rol', dedication: 'Dedicación', functions: ['Responsabilidad principal.'] }] })}>＋ Miembro</button>
+        <label>Miembro</label>
+        <div className="row"><Sel n={items.length} value={idx} set={setIdx} label="Rol" /><button disabled={items.length <= 1} onClick={() => onChange({ items: items.filter((_, i) => i !== idx) })}>Eliminar miembro</button></div>
+        <div className="row">
+          <button onClick={() => onChange({ items: items.map((m, i) => (i === idx ? { ...m, functions: [...(m.functions || []), 'Nueva responsabilidad.'] } : m)) })}>＋ Responsabilidad</button>
+          <button disabled={!(items[idx]?.functions?.length > 1)} onClick={() => onChange({ items: items.map((m, i) => (i === idx ? { ...m, functions: (m.functions || []).slice(0, -1) } : m)) })}>− Última responsabilidad</button>
+        </div>
+      </>
+    )
+  } else if (t === 'htimeline' || t === 'vtimeline') {
+    const items: any[] = block.items || []
+    title = 'Hitos de la línea de tiempo'
+    body = (
+      <>
+        <p>{items.length} hitos. Título, fecha y descripción se editan en la página.</p>
+        <div className="row">
+          <button onClick={() => onChange({ items: [...items, { title: 'Nuevo hito', date: '', desc: '', tone: tone(items.length) }] })}>＋ Hito al final</button>
+          <label style={{ display: 'flex', gap: 6, alignItems: 'center', textTransform: 'none', letterSpacing: 0, margin: 0 }}><input type="checkbox" checked={block.numbered !== false} onChange={(e) => onChange({ numbered: e.target.checked })} style={{ width: 'auto' }} /> Numerar</label>
+        </div>
+        <label>Hito</label>
+        <div className="row"><Sel n={items.length} value={idx} set={setIdx} label="Hito" /><button disabled={items.length <= 1} onClick={() => onChange({ items: items.filter((_, i) => i !== idx) })}>Eliminar hito</button></div>
+        <div className="row">
+          <button onClick={() => onChange({ items: [...items.slice(0, idx + 1), { title: 'Nuevo hito', date: '', desc: '', tone: tone(idx + 1) }, ...items.slice(idx + 1)] })}>＋ Insertar después</button>
+          <select value={items[idx]?.tone || 'cyan'} onChange={(e) => onChange({ items: items.map((x, i) => (i === idx ? { ...x, tone: e.target.value } : x)) })}><option value="cyan">Cian</option><option value="deep">Profundo</option><option value="gold">Dorado</option></select>
+        </div>
+        <div className="row">
+          <button disabled={idx === 0} onClick={() => { const n = [...items]; [n[idx - 1], n[idx]] = [n[idx], n[idx - 1]]; onChange({ items: n }); setIdx(idx - 1) }}>↑ Subir</button>
+          <button disabled={idx >= items.length - 1} onClick={() => { const n = [...items]; [n[idx + 1], n[idx]] = [n[idx], n[idx + 1]]; onChange({ items: n }); setIdx(idx + 1) }}>↓ Bajar</button>
+        </div>
+      </>
+    )
+  } else if (t === 'payments') {
+    const items: any[] = block.items || []
+    title = 'Pagos'
+    body = (
+      <>
+        <p>{items.length} pagos. Porcentaje y descripción se editan en la página.</p>
+        <button onClick={() => onChange({ items: [...items, { pct: '0 %', label: 'Nuevo pago' }] })}>＋ Pago</button>
+        <label>Eliminar pago</label>
+        <div className="row"><Sel n={items.length} value={idx} set={setIdx} label="Pago" /><button disabled={items.length <= 1} onClick={() => onChange({ items: items.filter((_, i) => i !== idx) })}>Eliminar</button></div>
+      </>
+    )
+  } else if (t === 'phase') {
+    const defs: any[] = block.defs || []
+    title = 'Filas de la fase'
+    body = (
+      <>
+        <p>{defs.length} filas (término y descripción).</p>
+        <button onClick={() => onChange({ defs: [...defs, { term: 'Término', desc: 'Descripción.' }] })}>＋ Fila</button>
+        <label>Eliminar fila</label>
+        <div className="row"><Sel n={defs.length} value={idx} set={setIdx} label="Fila" /><button disabled={defs.length <= 1} onClick={() => onChange({ defs: defs.filter((_, i) => i !== idx) })}>Eliminar</button></div>
+      </>
+    )
+  } else if (t === 'list') {
+    const items: string[] = block.items || []
+    title = 'Ítems de la lista'
+    body = (
+      <>
+        <p>{items.length} ítems.</p>
+        <button onClick={() => onChange({ items: [...items, 'Nuevo punto'] })}>＋ Ítem</button>
+        <label>Eliminar ítem</label>
+        <div className="row"><Sel n={items.length} value={idx} set={setIdx} label="Ítem" /><button disabled={items.length <= 1} onClick={() => onChange({ items: items.filter((_, i) => i !== idx) })}>Eliminar</button></div>
+      </>
+    )
+  } else if (t === 'timeline') {
+    const segs: any[] = block.segments || []
+    const marks: string[] = block.marks || []
+    title = 'Segmentos e hitos de la banda'
+    body = (
+      <>
+        <div className="row">
+          <button onClick={() => onChange({ segments: [...segs, { label: `Etapa ${segs.length + 1}`, weight: 1, tone: tone(segs.length) }] })}>＋ Segmento</button>
+          <button disabled={segs.length <= 1} onClick={() => onChange({ segments: segs.slice(0, -1) })}>− Último segmento</button>
+        </div>
+        <div className="row">
+          <button onClick={() => onChange({ marks: [...marks, 'Hito'] })}>＋ Hito</button>
+          <button disabled={marks.length <= 1} onClick={() => onChange({ marks: marks.slice(0, -1) })}>− Último hito</button>
+        </div>
+        <label>Peso del segmento (ancho proporcional)</label>
+        <div className="row"><Sel n={segs.length} value={idx} set={setIdx} label="Segmento" /><input type="number" min={1} value={segs[idx]?.weight ?? 1} onChange={(e) => onChange({ segments: segs.map((x, i) => (i === idx ? { ...x, weight: Math.max(1, Number(e.target.value)) } : x)) })} /></div>
+      </>
+    )
+  } else if (t === 'invoice') {
+    const rows: any[] = block.rows || []
+    title = 'Conceptos de la tabla de inversión'
+    body = (
+      <>
+        <p>{rows.length ? `${rows.length} conceptos propios.` : 'Sin conceptos propios: la tabla se arma con las líneas de la cotización.'}</p>
+        <button onClick={() => onChange({ rows: [...rows, { concept: 'Nuevo concepto', detail: '', amount: '$ 0' }] })}>＋ Concepto propio</button>
+        {rows.length > 0 && (
+          <>
+            <label>Eliminar concepto</label>
+            <div className="row"><Sel n={rows.length} value={idx} set={setIdx} label="Concepto" /><button onClick={() => onChange({ rows: rows.filter((_, i) => i !== idx) })}>Eliminar</button></div>
+          </>
+        )}
+      </>
+    )
+  }
+
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>{title}</h3>
+        {body}
+        <div className="qv-modal-actions"><button className="primary" onClick={onClose}>Listo</button></div>
       </div>
     </div>
   )

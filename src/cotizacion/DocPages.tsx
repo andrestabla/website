@@ -141,6 +141,12 @@ export type DocBlock =
   | { type: 'grid'; cols: number; cells: DocBlock[][]; gap?: 'sm' }
   | { type: 'icon'; name: string; size?: number; color?: 'navy' | 'cyan' | 'gold' | 'muted'; label?: string; align?: Align }
   | { type: 'button'; label: string; url?: string; style?: 'primary' | 'outline'; align?: Align }
+  /** Líneas de tiempo con hitos; se agregan o quitan desde el editor. */
+  | { type: 'htimeline'; items: Array<{ title: string; date?: string; desc?: string; tone?: 'cyan' | 'deep' | 'gold' }>; numbered?: boolean }
+  | { type: 'vtimeline'; items: Array<{ title: string; date?: string; desc?: string; tone?: 'cyan' | 'deep' | 'gold' }>; numbered?: boolean }
+  | { type: 'signature'; name: string; role?: string; org?: string; email?: string; phone?: string; place?: string; date?: string; note?: string; imageUrl?: string; accept?: boolean }
+  /** Encabezado de sección numerada dentro de la página: permite dos numerales en una hoja. */
+  | { type: 'sechead'; num?: string; kicker?: string; title: string }
 
 export type DocPage = {
   id: string
@@ -395,22 +401,26 @@ export function DocBlockView({
     case 'toc': {
       // Índice automático: páginas con título, sin las ocultas y sin repetir
       // el mismo capítulo cuando continúa en varias páginas.
-      const entries = pages.filter((p, i, all) => {
-        if (!p.title || p.tocHidden) return false
-        const prev = all.slice(0, i).filter((x) => x.title && !x.tocHidden).pop()
-        return !(prev && prev.title === p.title && prev.num === p.num)
+      const entries: Array<{ key: string; href: string; num: string; title: string; sheet: number }> = []
+      pages.forEach((p, i, all) => {
+        const sheet = i + 2 // la portada es la hoja 1
+        if (p.title && !p.tocHidden) {
+          const prev = all.slice(0, i).filter((x) => x.title && !x.tocHidden).pop()
+          if (!(prev && prev.title === p.title && prev.num === p.num)) entries.push({ key: p.id, href: `#${p.id}`, num: p.num || '·', title: p.title, sheet })
+        }
+        // secciones numeradas dentro de la misma hoja
+        p.blocks.forEach((b, bi) => { if (b.type === 'sechead' && b.title) entries.push({ key: `${p.id}-s${bi}`, href: `#${p.id}`, num: b.num || '·', title: b.title, sheet }) })
       })
       return (
         <>
           <ul className="qv-toc">
-            {entries.map((p) => (
-              <li key={p.id}>
-                <a href={`#${p.id}`}>
-                  <span className="n">{p.num || '·'}</span>
-                  <span className="t">{p.title}</span>
+            {entries.map((e) => (
+              <li key={e.key}>
+                <a href={e.href}>
+                  <span className="n">{e.num}</span>
+                  <span className="t">{e.title}</span>
                   <span className="d" />
-                  {/* número de hoja: la portada es la 1 */}
-                  <span className="p">{String(pages.indexOf(p) + 2).padStart(2, '0')}</span>
+                  <span className="p">{String(e.sheet).padStart(2, '0')}</span>
                 </a>
               </li>
             ))}
@@ -529,6 +539,77 @@ export function DocBlockView({
       return (
         <div className="qv-btnwrap" style={al(block.align)}>
           <a className={`qv-btn ${block.style || 'primary'}`} href={block.url || '#'} target="_blank" rel="noreferrer" {...r('label')}>{block.label}</a>
+        </div>
+      )
+
+    case 'htimeline': {
+      const items = block.items || []
+      return (
+        <div className="qv-htl" style={{ gridTemplateColumns: `repeat(${Math.max(1, items.length)}, minmax(0, 1fr))` }}>
+          {items.map((it, i) => (
+            <div className={`qv-htl-item tone-${it.tone || 'cyan'}`} key={i}>
+              <div className="qv-htl-dot">{block.numbered === false ? '' : i + 1}</div>
+              {(it.date || refBase) && <div className="qv-htl-date" {...r(`items.${i}.date`)}>{it.date || ''}</div>}
+              <div className="qv-htl-title" {...r(`items.${i}.title`)}>{rich(it.title)}</div>
+              {(it.desc || refBase) && <div className="qv-htl-desc" {...r(`items.${i}.desc`)}>{rich(it.desc || '')}</div>}
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    case 'vtimeline': {
+      const items = block.items || []
+      return (
+        <ol className="qv-vtl">
+          {items.map((it, i) => (
+            <li className={`qv-vtl-item tone-${it.tone || 'cyan'}`} key={i}>
+              <div className="qv-vtl-dot">{block.numbered === false ? '' : i + 1}</div>
+              <div className="qv-vtl-body">
+                <div className="qv-vtl-head">
+                  <span className="qv-vtl-title" {...r(`items.${i}.title`)}>{rich(it.title)}</span>
+                  {(it.date || refBase) && <span className="qv-vtl-date" {...r(`items.${i}.date`)}>{it.date || ''}</span>}
+                </div>
+                {(it.desc || refBase) && <div className="qv-vtl-desc" {...r(`items.${i}.desc`)}>{rich(it.desc || '')}</div>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      )
+    }
+
+    case 'signature':
+      return (
+        <div className={`qv-sign${block.accept ? ' is-accept' : ''}`}>
+          {block.accept && <div className="qv-sign-accept" {...r('note')}>{block.note || 'Aceptación de la propuesta'}</div>}
+          <div className="qv-sign-line">
+            {block.imageUrl
+              ? <img src={block.imageUrl} alt="Firma" {...(refBase ? { 'data-img-ref': `${refBase}.imageUrl` } : {})} />
+              : <span className="qv-sign-blank" title="Clic para subir la firma" {...(refBase ? { 'data-img-ref': `${refBase}.imageUrl` } : {})} />}
+          </div>
+          <div className="qv-sign-name" {...r('name')}>{block.name}</div>
+          {(block.role || refBase) && <div className="qv-sign-role" {...r('role')}>{block.role || ''}</div>}
+          {(block.org || refBase) && <div className="qv-sign-org" {...r('org')}>{block.org || ''}</div>}
+          <div className="qv-sign-contact">
+            {(block.email || refBase) && <span {...r('email')}>{block.email || ''}</span>}
+            {block.email && block.phone ? ' · ' : ''}
+            {(block.phone || refBase) && <span {...r('phone')}>{block.phone || ''}</span>}
+          </div>
+          {(block.place || block.date || refBase) && (
+            <div className="qv-sign-when"><span {...r('place')}>{block.place || ''}</span>{block.place && block.date ? ', ' : ''}<span {...r('date')}>{block.date || ''}</span></div>
+          )}
+          {!block.accept && (block.note || refBase) && <div className="qv-sign-note" {...r('note')}>{block.note || ''}</div>}
+        </div>
+      )
+
+    case 'sechead':
+      return (
+        <div className="qv-sechead qv-sechead-inline">
+          <div className="sn" {...r('num')}>{block.num || '—'}</div>
+          <div>
+            {(block.kicker || refBase) && <div className="kicker" {...r('kicker')}>{block.kicker || ''}</div>}
+            <h2 {...r('title')}>{block.title}</h2>
+          </div>
         </div>
       )
 
