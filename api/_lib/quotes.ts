@@ -13,19 +13,15 @@
 
 import crypto from 'node:crypto'
 import { prisma } from './prisma.js'
-import { getLiveAdminSession } from './admin-auth.js'
+import { getAdminSession } from './admin-auth.js'
 
 type VercelRequest = any
 
 // ── Acceso al módulo ─────────────────────────────────────────────────────────
 
-/**
- * SUPERADMIN/ADMIN o usuario con permiso de módulo COTIZADOR. El permiso se
- * relee de la base de datos en cada petición, así que un cambio en
- * /admin/users aplica de inmediato.
- */
-export async function quoteSessionState(req: VercelRequest) {
-  const session = await getLiveAdminSession(req)
+/** SUPERADMIN/ADMIN o usuario con permiso de módulo COTIZADOR. */
+export function quoteSessionState(req: VercelRequest) {
+  const session = getAdminSession(req)
   const allowed =
     !!session &&
     (session.role === 'SUPERADMIN' ||
