@@ -969,7 +969,7 @@ quote.subtitle, usa "title"/"subtitle".` : ''}
                            { "type": "list", "items": [""] }, { "type": "box", "title": "", "body": "" }, { "type": "note", "text": "" },
                            { "type": "table", "headers": [""], "rows": [[""]] }, { "type": "cards", "cols": 2, "items": [{ "tag": "", "title": "", "body": "", "foot": "" }] },
                            { "type": "phase", "id": "FASE 1", "name": "", "when": "", "defs": [{ "term": "", "desc": "" }] },
-                           { "type": "img", "url": "solo URLs que ya existan en el documento", "caption": "", "aspect": "square|landscape|wide|portrait" },
+                           { "type": "img", "url": "solo URLs que ya existan en el documento o que el usuario haya pegado en el chat", "caption": "", "aspect": "square|landscape|wide|portrait" },
                            { "type": "invoice", "note": "" }, { "type": "payments", "items": [{ "pct": "30 %", "label": "" }] }, { "type": "toc" },
                            { "type": "team", "items": [{ "role": "", "dedication": "", "functions": [""] }] },
                            { "type": "letterhead", "date": "", "addressee": "", "subject": "", "salutation": "" },

@@ -32,6 +32,7 @@ type AddTarget = { pi: number; bi?: number; ci?: number; after: number }
 type Dialog =
   | { kind: 'grid'; target: AddTarget }
   | { kind: 'img'; target: AddTarget }
+  | { kind: 'imgReplace'; ref: string }
   | { kind: 'icon'; target?: AddTarget; loc?: Loc }
   | { kind: 'button'; target?: AddTarget; loc?: Loc }
   | { kind: 'ai'; target: AddTarget }
@@ -327,8 +328,7 @@ export function EditorPanel(props: EditorProps) {
       const img = (e.target as Element).closest('[data-img-ref]') as HTMLElement | null
       if (!img || img.closest('.qv-editor, .qv-side')) return
       e.preventDefault(); e.stopPropagation()
-      imgTarget.current = img.dataset.imgRef || ''
-      fileRef.current?.click()
+      setDialog({ kind: 'imgReplace', ref: img.dataset.imgRef || '' })
     }
     document.addEventListener('click', onImgClick, true)
     document.addEventListener('focusout', onBlur)
@@ -862,7 +862,14 @@ export function EditorPanel(props: EditorProps) {
         <GridDialog onClose={() => setDialog(null)} onPick={(cols) => insertBlock(dialog.target, { type: 'grid', cols, cells: Array.from({ length: cols }, () => []) } as Block)} />
       )}
       {dialog?.kind === 'img' && (
-        <ImgDialog onClose={() => setDialog(null)} onPick={(aspect) => insertBlock(dialog.target, { type: 'img', url: `/assets/placeholder-${aspect}.svg`, caption: '', aspect, wide: aspect === 'wide' || aspect === 'landscape' } as Block)} />
+        <ImgDialog onClose={() => setDialog(null)} onPick={(aspect, url) => insertBlock(dialog.target, { type: 'img', url: url || `/assets/placeholder-${aspect || 'landscape'}.svg`, caption: '', ...(aspect ? { aspect } : {}), wide: !aspect || aspect === 'wide' || aspect === 'landscape' } as Block)} />
+      )}
+      {dialog?.kind === 'imgReplace' && (
+        <ImgReplaceDialog
+          onClose={() => setDialog(null)}
+          onUpload={() => { imgTarget.current = dialog.ref; setDialog(null); window.setTimeout(() => fileRef.current?.click(), 30) }}
+          onUrl={(url) => { setDialog(null); if (onApplyRef(dialog.ref, url)) flash('Imagen reemplazada · guarda para publicarla'); else flash('No se pudo aplicar la URL') }}
+        />
       )}
       {dialog?.kind === 'gridSettings' && (
         <GridDialog current={(blockAt(dialog.loc) as any)?.cols} onClose={() => setDialog(null)} onPick={(cols) => {
@@ -1547,20 +1554,67 @@ function MoveDialog({ pages, loc, isSection, onMove, onClose }: { pages: Page[];
 }
 
 /** Formato de una imagen nueva: se inserta un marcador genérico con esa proporción y luego se reemplaza. */
-function ImgDialog({ onPick, onClose }: { onPick: (aspect: 'square' | 'landscape' | 'wide' | 'portrait') => void; onClose: () => void }) {
-  const opts: Array<['square' | 'landscape' | 'wide' | 'portrait', string, string]> = [
-    ['square', 'Cuadrada', '1 : 1'], ['landscape', 'Horizontal', '4 : 3'], ['wide', 'Panorámica', '16 : 9'], ['portrait', 'Vertical', '3 : 4'],
-  ]
+type ImgAspect = 'square' | 'landscape' | 'wide' | 'portrait'
+const IMG_FORMATS: Array<[ImgAspect, string, string]> = [
+  ['square', 'Cuadrada', '1 : 1'], ['landscape', 'Horizontal', '4 : 3'], ['wide', 'Panorámica', '16 : 9'], ['portrait', 'Vertical', '3 : 4'],
+]
+/** URL de imagen válida: http(s) o data:image. */
+const isImageUrl = (u: string) => /^(https?:\/\/\S+|data:image\/[a-z+]+;base64,[A-Za-z0-9+/=]+)$/i.test(u.trim())
+
+/** Vista previa de una URL de imagen, con aviso si no carga. */
+function UrlPreview({ url }: { url: string }) {
+  const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading')
+  if (!isImageUrl(url)) return null
+  return (
+    <div className="qv-img-preview">
+      <img src={url.trim()} alt="" onLoad={() => setState('ok')} onError={() => setState('error')} style={{ display: state === 'error' ? 'none' : 'block' }} />
+      {state === 'error' && <span>La URL no devuelve una imagen o no permite mostrarla desde otro sitio.</span>}
+    </div>
+  )
+}
+
+function ImgDialog({ onPick, onClose }: { onPick: (aspect: ImgAspect | null, url?: string) => void; onClose: () => void }) {
+  const [url, setUrl] = useState('')
+  const ok = isImageUrl(url)
   return (
     <div className="qv-modal-wrap" onClick={onClose}>
       <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
         <h3>Nueva imagen</h3>
-        <p>Elige el formato. Se inserta una imagen genérica con esa proporción; haz clic sobre ella para subir la tuya o pídesela a la IA.</p>
+        <p>Pega la URL de una imagen o deja el campo vacío para insertar una imagen genérica que luego reemplazas (subiendo un archivo, con otra URL o con la IA).</p>
+        <label>URL de la imagen (opcional)</label>
+        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…/imagen.jpg" autoFocus />
+        {url.trim() && !ok && <p style={{ color: '#b45309', fontSize: 11.5, margin: '4px 0 0' }}>Debe empezar por http:// o https://</p>}
+        <UrlPreview key={url.trim()} url={url} />
+        <label>Formato del marco</label>
         <div className="qv-addmenu-grid qv-img-formats">
-          {opts.map(([k, label, ratio]) => (
-            <button key={k} onClick={() => onPick(k)}><span className={`qv-img-fmt is-${k}`} aria-hidden="true" />{label}<small>{ratio}</small></button>
+          {IMG_FORMATS.map(([k, label, ratio]) => (
+            <button key={k} disabled={!!url.trim() && !ok} onClick={() => onPick(k, ok ? url.trim() : undefined)}><span className={`qv-img-fmt is-${k}`} aria-hidden="true" />{label}<small>{ratio}</small></button>
           ))}
+          <button disabled={!ok} onClick={() => onPick(null, url.trim())} title="Sin recorte: la imagen conserva su proporción original"><span className="qv-img-fmt is-free" aria-hidden="true" />Original<small>sin recorte</small></button>
         </div>
+        <div className="qv-modal-actions"><button onClick={onClose}>Cancelar</button></div>
+      </div>
+    </div>
+  )
+}
+
+/** Reemplazar una imagen existente: subir un archivo o pegar una URL. */
+function ImgReplaceDialog({ onUpload, onUrl, onClose }: { onUpload: () => void; onUrl: (url: string) => void; onClose: () => void }) {
+  const [url, setUrl] = useState('')
+  const ok = isImageUrl(url)
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>Reemplazar imagen</h3>
+        <p>Sube un archivo desde tu equipo (hasta 4 MB, se guarda en el almacenamiento de la plataforma) o pega la URL de una imagen publicada.</p>
+        <div className="row"><button className="primary" onClick={onUpload}>Subir archivo…</button></div>
+        <label>URL de la imagen</label>
+        <div className="row">
+          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…/imagen.jpg" style={{ flex: 1 }} autoFocus onKeyDown={(e) => { if (e.key === 'Enter' && ok) onUrl(url.trim()) }} />
+          <button disabled={!ok} onClick={() => onUrl(url.trim())}>Usar URL</button>
+        </div>
+        {url.trim() && !ok && <p style={{ color: '#b45309', fontSize: 11.5, margin: '4px 0 0' }}>Debe empezar por http:// o https://</p>}
+        <UrlPreview key={url.trim()} url={url} />
         <div className="qv-modal-actions"><button onClick={onClose}>Cancelar</button></div>
       </div>
     </div>
