@@ -84,23 +84,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await page.goto(url, { waitUntil: 'load', timeout: 40_000 })
     // el visor ajusta cada hoja al alto A4 y las imágenes cargan en diferido
     await page.waitForSelector('.qv .qv-page, .qv-status', { timeout: 25_000 })
-    await page.evaluate(async () => {
+    const missing: number = await page.evaluate(async () => {
       // las imágenes con carga diferida no entran nunca en pantalla en un navegador sin cabeza:
-      // se fuerzan y se espera con tope, para que un recurso caído no bloquee el PDF
+      // se fuerzan y se espera de verdad a que carguen (las de la propuesta pueden pesar varios MB);
+      // el tope evita que un recurso caído bloquee el PDF
       const imgs = Array.from(document.images)
+      const settle = (img: HTMLImageElement) => (img.complete ? Promise.resolve() : new Promise<void>((r) => { img.addEventListener('load', () => r(), { once: true }); img.addEventListener('error', () => r(), { once: true }) }))
       for (const img of imgs) { img.loading = 'eager'; if (!img.complete && img.src) { const src = img.src; img.src = ''; img.src = src } }
       window.scrollTo(0, document.body.scrollHeight)
-      await Promise.race([
-        Promise.all(imgs.map((img) => (img.complete ? Promise.resolve() : new Promise<void>((r) => { img.addEventListener('load', () => r(), { once: true }); img.addEventListener('error', () => r(), { once: true }) })))),
-        new Promise((r) => setTimeout(r, 8000)),
-      ])
+      await Promise.race([Promise.all(imgs.map(settle)), new Promise((r) => setTimeout(r, 30000))])
+      // las que fallaron (red, tiempo) reciben un segundo intento corto
+      const failed = imgs.filter((img) => !img.complete || img.naturalWidth === 0)
+      if (failed.length) {
+        for (const img of failed) { const src = img.src; img.src = ''; img.src = src }
+        await Promise.race([Promise.all(failed.map(settle)), new Promise((r) => setTimeout(r, 8000))])
+      }
       window.scrollTo(0, 0)
       await Promise.race([(document as any).fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 3000))])
+      return imgs.filter((img) => img.naturalWidth === 0).length
     })
     await new Promise((r) => setTimeout(r, 900))
     const pdf: Buffer = await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } })
 
     res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('X-Images-Missing', String(missing))
     res.setHeader('Content-Disposition', `inline; filename="${slug(quote.title)}-${slug(quote.clientName)}.pdf"`)
     res.setHeader('Cache-Control', quote.status === 'PUBLISHED' ? 'private, max-age=60' : 'no-store')
     return res.status(200).send(Buffer.from(pdf))

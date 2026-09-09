@@ -102,30 +102,52 @@ export function mergeTemplate(base: EmailTemplate, raw: any): EmailTemplate {
 function emailHtml(opts: { tpl: EmailTemplate; recipientName: string; title: string; url: string }) {
   const { tpl } = opts
   const greeting = tpl.greeting.replace('{nombre}', opts.recipientName ? `<strong>${esc(opts.recipientName)}</strong>` : '').replace(/\s+:/, ':')
+  // cifras apiladas (una por fila): en el móvil no hay columnas que se salgan del ancho
   const stats = tpl.showStats && tpl.stats.length
-    ? `<table cellpadding="0" cellspacing="0" style="width:100%;margin:0 0 22px;border:1px solid #e3ddce;"><tr>${tpl.stats
-        .map((st, i) => `<td style="padding:12px 16px;${i < tpl.stats.length - 1 ? 'border-right:1px solid #e3ddce;' : ''}">
-            <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#a87a14;">${esc(st.label)}</div>
-            <div style="font-size:16px;font-weight:bold;color:#1a2d5a;margin-top:4px;">${esc(st.value)}</div>
-          </td>`)
-        .join('')}</tr></table>`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="width:100%;margin:0 0 22px;border:1px solid #e3ddce;border-collapse:collapse;" bgcolor="#f7f4ec">${tpl.stats
+        .map((st, i) => `<tr>
+            <td style="padding:10px 14px;${i < tpl.stats.length - 1 ? 'border-bottom:1px solid #e3ddce;' : ''}font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#a87a14;white-space:nowrap;vertical-align:top;width:34%;" bgcolor="#f7f4ec">${esc(st.label)}</td>
+            <td style="padding:10px 14px;${i < tpl.stats.length - 1 ? 'border-bottom:1px solid #e3ddce;' : ''}font-size:15px;line-height:1.35;font-weight:bold;color:#1a2d5a;vertical-align:top;" bgcolor="#f7f4ec">${esc(st.value)}</td>
+          </tr>`)
+        .join('')}</table>`
     : ''
   return `
 <!doctype html>
 <html lang="es">
-<body style="margin:0;padding:0;background:#f0ede6;font-family:Arial,Helvetica,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;padding:28px 16px;">
-    <div style="background:#1a2d5a;padding:26px 30px;border-radius:8px 8px 0 0;">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>${esc(opts.title)}</title>
+  <style>
+    :root { color-scheme: light; supported-color-schemes: light; }
+    body { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }
+    img { max-width: 100%; height: auto; }
+    .wrap { max-width: 600px; margin: 0 auto; padding: 28px 16px; }
+    .head, .body { padding: 26px 30px; }
+    .btn { display: inline-block; }
+    @media only screen and (max-width: 480px) {
+      .wrap { padding: 14px 8px !important; }
+      .head, .body { padding: 20px 18px !important; }
+      .title { font-size: 20px !important; }
+      .btn { display: block !important; width: auto !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f0ede6;font-family:Arial,Helvetica,sans-serif;" bgcolor="#f0ede6">
+  <div class="wrap" style="max-width:600px;margin:0 auto;padding:28px 16px;">
+    <div class="head" style="background:#1a2d5a;padding:26px 30px;border-radius:8px 8px 0 0;">
       <div style="font-size:11px;letter-spacing:3px;color:#76d6ef;text-transform:uppercase;font-weight:bold;">Algoritmo T</div>
-      <div style="font-size:22px;line-height:1.25;color:#ffffff;font-weight:800;margin-top:12px;">${esc(opts.title)}</div>
+      <div class="title" style="font-size:22px;line-height:1.25;color:#ffffff;font-weight:800;margin-top:12px;">${esc(opts.title)}</div>
     </div>
-    <div style="background:#fffdf9;padding:28px 30px;border:1px solid #d3cab6;border-top:0;">
+    <div class="body" style="background:#fffdf9;padding:28px 30px;border:1px solid #d3cab6;border-top:0;" bgcolor="#fffdf9">
       ${greeting ? `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#3b424b;">${greeting}</p>` : ''}
       ${paras(tpl.intro)}
       ${paras(tpl.note)}
       ${stats}
       <div style="text-align:center;margin:0 0 8px;">
-        <a href="${esc(opts.url)}" style="display:inline-block;background:#1a2d5a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;padding:14px 34px;border-radius:4px;">${esc(tpl.button || 'Ver la cotización')}</a>
+        <a class="btn" href="${esc(opts.url)}" style="display:inline-block;background:#1a2d5a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;padding:14px 34px;border-radius:4px;text-align:center;">${esc(tpl.button || 'Ver la cotización')}</a>
       </div>
       <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#9aa0a8;text-align:center;">
         ${esc(tpl.closing)}<br>

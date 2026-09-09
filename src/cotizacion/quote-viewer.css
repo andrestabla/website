@@ -1435,3 +1435,36 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-tplbank-own > button:first-child { flex: 1; }
 .qv-tplbank-del { flex: 0 0 32px; border: 1px solid #fecaca !important; color: #b91c1c !important; background: #fff !important; border-radius: 8px; }
 .qv-tplbank-tip { font-size: 11.5px; color: #64748b; margin: 0 0 8px; }
+/* ── esquemas: nada se sale de la hoja (los textos largos parten) ── */
+.qv-dg, .qv-dg * { min-width: 0; }
+.qv-dg b, .qv-dg span, .qv-dg li, .qv-dg-core, .qv-dg-effect, .qv-dg-syn-root { overflow-wrap: anywhere; }
+.qv-dg-synoptic { grid-template-columns: minmax(80px, fit-content(40%)) 18px minmax(0, 1fr); }
+.qv-dg-syn-group { grid-template-columns: minmax(0, fit-content(45%)) 14px minmax(0, 1fr); }
+.qv-dg-syn-group:not(:has(ul)) { grid-template-columns: minmax(0, 1fr); }
+.qv-tablewrap { max-width: 100%; }
+
+/* ── móvil: todo en una columna y sin desbordes ── */
+@media screen and (max-width: 640px) {
+  .qv-grid, .qv-htl, .qv-dg-steps, .qv-dg-fish-row, .qv-dg-map-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .qv-dg-synoptic { grid-template-columns: minmax(0, 1fr); }
+  .qv-dg-syn-root { text-align: left; padding-bottom: 6px; border-bottom: 2px solid #d3cab6; }
+  .qv-dg-synoptic > .qv-dg-syn-brace { display: none; }
+  .qv-dg-syn-group { grid-template-columns: minmax(0, 1fr); }
+  .qv-dg-syn-group .qv-dg-syn-brace.small { display: none; }
+  .qv-dg-side:first-child .qv-dg-branch { border-left: 3px solid #14b8c8; border-right: 0; padding: 4px 0 4px 10px; text-align: left; }
+  .qv-dg-side:first-child .qv-dg-branch ul { padding-left: 14px; padding-right: 0; direction: ltr; }
+  .qv-dg-core { max-width: none; border-radius: 12px; }
+  .qv-dg-step { clip-path: none; border-radius: 8px; }
+  .qv-dg-ring { max-width: 100%; }
+  .qv-dg-node { width: 34%; font-size: 10.5px; }
+  .qv-dg-level { width: 100% !important; }
+  .qv-dg-spine::before { right: 96px; } .qv-dg-spine::after { right: 88px; } .qv-dg-effect { width: 86px; }
+  .qv-dg [data-dg-item], .qv-dg [data-dg-center] { width: auto !important; }
+  .qv-htl::before { display: none; }
+  .qv-table.doc { table-layout: auto; }
+  .qv-table.doc.has-widths { table-layout: auto; width: 100%; }
+  .qv-table.doc.has-widths col { width: auto !important; }
+  .qv-shot-square, .qv-shot-portrait { max-width: 100%; }
+  .qv-spacer { max-height: 32px; }
+  .qv-page-add, .qv-col-grip { display: none !important; }
+}
