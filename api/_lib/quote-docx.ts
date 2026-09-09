@@ -152,16 +152,18 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
         origin.set(`${m.r}:${m.c}`, { cs: m.cs, rs: m.rs })
         for (let dr = 0; dr < m.rs; dr++) for (let dc = 0; dc < m.cs; dc++) if (dr || dc) covered.add(`${m.r + dr}:${m.c + dc}`)
       }
+      const SHADE_HEX: Record<string, string> = { soft: 'EEF1F5', cyan: 'E3F3F6', gold: 'F7ECD4', green: 'E5F4EA', rose: 'FBE7EA', navy: '1A2D5A' }
       rows.forEach((r, ri) => trs.push(new TableRow({
         children: Array.from({ length: cols }, (_, ci) => ci).filter((ci) => !covered.has(`${ri}:${ci}`)).map((ci) => {
           const m = origin.get(`${ri}:${ci}`)
+          const shade: string | undefined = b.cellBg?.[`${ri}:${ci}`] || b.rowBg?.[ri] || b.colBg?.[ci]
           return new TableCell({
-            shading: ri % 2 === 0 ? { type: ShadingType.CLEAR, fill: PAPER } : undefined,
+            shading: shade ? { type: ShadingType.CLEAR, fill: SHADE_HEX[shade] } : ri % 2 === 0 ? { type: ShadingType.CLEAR, fill: PAPER } : undefined,
             margins: { top: 90, bottom: 90, left: 130, right: 130 },
             ...(m && m.cs > 1 ? { columnSpan: m.cs } : {}),
             ...(m && m.rs > 1 ? { rowSpan: m.rs } : {}),
             // varias líneas y viñetas dentro de la celda
-            children: String(r[ci] || '').split('\n').filter((l) => l.trim()).map((l) => cellPara(plain(l.replace(/^\s*[-•·]\s+/, '• ')), ci === 0 && b.firstCol !== 'plain' ? { bold: true } : {})).concat(String(r[ci] || '').trim() ? [] : [cellPara('')]),
+            children: String(r[ci] || '').split('\n').filter((l) => l.trim()).map((l) => cellPara(plain(l.replace(/^\s*[-•·]\s+/, '• ')), { bold: ci === 0 && b.firstCol !== 'plain', ...(shade === 'navy' ? { color: 'FFFFFF' } : {}) })).concat(String(r[ci] || '').trim() ? [] : [cellPara('')]),
           })
         }),
       })))

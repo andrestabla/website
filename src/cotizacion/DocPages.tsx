@@ -106,6 +106,8 @@ export function useFitPages(deps: unknown[] = []) {
 
 export type Align = 'left' | 'center' | 'right' | 'justify'
 export type TableMerge = { r: number; c: number; cs: number; rs: number }
+export type TableShade = 'soft' | 'cyan' | 'gold' | 'green' | 'rose' | 'navy'
+export const TABLE_SHADES: Array<[TableShade, string, string]> = [['soft', '#eef1f5', 'Gris suave'], ['cyan', '#e3f3f6', 'Cian'], ['gold', '#f7ecd4', 'Dorado'], ['green', '#e5f4ea', 'Verde'], ['rose', '#fbe7ea', 'Rosa'], ['navy', '#1a2d5a', 'Azul marino']]
 
 /** Celdas tapadas por una combinación (no se pintan) y tamaño de cada origen. */
 export function mergeMap(merges: TableMerge[] | undefined) {
@@ -153,7 +155,7 @@ export type DocBlock =
   | { type: 'list'; items: string[]; align?: Align; style?: BlockStyle; marker?: 'number' | 'check' }
   | { type: 'box'; title?: string; body: string; align?: Align; style?: BlockStyle }
   | { type: 'note'; text: string; align?: Align; style?: BlockStyle }
-  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[]; tableStyle?: 'default' | 'striped' | 'minimal' | 'navy' | 'compact'; fontSize?: 'xs' | 'sm' | 'md'; /** celdas combinadas: origen (fila r, columna c) que abarca cs columnas y rs filas */ merges?: TableMerge[]; /** ancho de cada columna en % (null = automático) */ colWidths?: Array<number | null> }
+  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[]; tableStyle?: 'default' | 'striped' | 'minimal' | 'navy' | 'compact'; fontSize?: 'xs' | 'sm' | 'md'; /** celdas combinadas: origen (fila r, columna c) que abarca cs columnas y rs filas */ merges?: TableMerge[]; /** ancho de cada columna en % (null = automático) */ colWidths?: Array<number | null>; /** sombreado por fila, columna y celda («r:c»); la celda manda sobre la fila y esta sobre la columna */ rowBg?: Array<TableShade | null>; colBg?: Array<TableShade | null>; cellBg?: Record<string, TableShade> }
   | { type: 'cards'; cols?: 2 | 3; items: Array<{ tag?: string; title: string; body: string; foot?: string }> }
   | { type: 'phase'; id: string; name: string; when?: string; defs: Array<{ term: string; desc: string; strong?: boolean }> }
   | { type: 'img'; url: string; caption?: string; wide?: boolean; /** marco de la imagen: recorta la subida a esa proporción */ aspect?: 'square' | 'landscape' | 'wide' | 'portrait' }
@@ -412,10 +414,11 @@ export function DocBlockView({
                   {row.map((cell, ci) => {
                     if (covered.has(`${ri}:${ci}`)) return null
                     const m = origin.get(`${ri}:${ci}`)
+                    const shade = block.cellBg?.[`${ri}:${ci}`] || block.rowBg?.[ri] || block.colBg?.[ci]
                     return (
                       <td key={ci} style={al(block.colAlign?.[ci])} data-cell={`${ri}:${ci}`}
                         colSpan={m && m.cs > 1 ? m.cs : undefined} rowSpan={m && m.rs > 1 ? m.rs : undefined}
-                        className={[ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : '', m ? 'tb-merged' : '', refBase && !block.headers?.length && ri === 0 ? 'has-grip' : ''].filter(Boolean).join(' ') || undefined}>
+                        className={[ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : '', m ? 'tb-merged' : '', refBase && !block.headers?.length && ri === 0 ? 'has-grip' : '', shade ? `tb-bg-${shade}` : ''].filter(Boolean).join(' ') || undefined}>
                         <span {...r(`rows.${ri}.${ci}`)}>{cellRich(cell)}</span>{!block.headers?.length && ri === 0 && !m ? grip(ci) : null}
                       </td>
                     )

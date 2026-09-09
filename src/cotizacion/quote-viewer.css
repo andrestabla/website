@@ -1411,3 +1411,14 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-ctx-sw { flex: 0 0 24px !important; width: 24px; height: 24px; padding: 0 !important; border: 1px solid #cbd5e1 !important; border-radius: 50% !important; }
 .qv-ctx-tip { padding: 4px 10px 8px; font-size: 11px; color: #64748b; }
 @media print { .qv-ctx, .qv-table.doc td.is-sel { display: none; box-shadow: none; } }
+/* sombreado de celdas, filas y columnas (la clase ya viene resuelta: celda > fila > columna) */
+.qv-table.doc td.tb-bg-soft { background: #eef1f5 !important; }
+.qv-table.doc td.tb-bg-cyan { background: #e3f3f6 !important; }
+.qv-table.doc td.tb-bg-gold { background: #f7ecd4 !important; }
+.qv-table.doc td.tb-bg-green { background: #e5f4ea !important; }
+.qv-table.doc td.tb-bg-rose { background: #fbe7ea !important; }
+.qv-table.doc td.tb-bg-navy { background: #1a2d5a !important; color: #fff; }
+.qv-table.doc td.tb-bg-navy, .qv-table.doc td.tb-bg-navy :is(b, span, li, a):not(.qs-inline) { color: #fff; }
+.qv-ctx-shade { align-items: center; }
+.qv-ctx-shade > span { flex: 0 0 62px; font-size: 11px; color: #64748b; }
+.qv-ctx-sw.is-none { background: repeating-linear-gradient(45deg, #fff 0 4px, #e2e8f0 4px 6px) !important; }

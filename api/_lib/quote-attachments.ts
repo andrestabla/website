@@ -910,6 +910,16 @@ function sanitizeBlockInner(raw: any): PageBlock | null {
       if (Array.isArray(raw.colAlign)) out.colAlign = raw.colAlign.map((a: unknown) => (['left', 'center', 'right', 'justify'].includes(a as string) ? a : 'left'))
       if (TABLE_STYLES.has(raw.tableStyle)) out.tableStyle = raw.tableStyle
       if (STYLE_SIZES.has(raw.fontSize)) out.fontSize = raw.fontSize
+      // sombreado por fila, columna y celda
+      const SHADES = new Set(['soft', 'cyan', 'gold', 'green', 'rose', 'navy'])
+      const shades = (arr: unknown) => (Array.isArray(arr) ? arr.slice(0, 60).map((v) => (typeof v === 'string' && SHADES.has(v) ? v : null)) : null)
+      const rowBg = shades(raw.rowBg); if (rowBg && rowBg.some(Boolean)) out.rowBg = rowBg
+      const colBg = shades(raw.colBg); if (colBg && colBg.some(Boolean)) out.colBg = colBg
+      if (raw.cellBg && typeof raw.cellBg === 'object') {
+        const cellBg: Record<string, string> = {}
+        for (const [k, v] of Object.entries(raw.cellBg).slice(0, 200)) if (/^\d{1,2}:\d{1,2}$/.test(k) && typeof v === 'string' && SHADES.has(v)) cellBg[k] = v
+        if (Object.keys(cellBg).length) out.cellBg = cellBg
+      }
       // ancho de columnas en % (null = automático)
       if (Array.isArray(raw.colWidths)) {
         const cw = raw.colWidths.slice(0, 10).map((w: unknown) => (typeof w === 'number' && w >= 5 && w <= 95 ? Math.round(w * 10) / 10 : null))

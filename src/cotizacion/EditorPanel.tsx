@@ -19,7 +19,7 @@ import { BLOCK_TYPES, EMPTY, type Page, type Block } from '../cotizador/PagesEdi
 import { IconPicker } from './IconPicker'
 import { PAGE_TEMPLATES, templatesByCategory } from './pageTemplates'
 import { useDialogs } from '../cotizador/ui/dialogs'
-import { DIAGRAM_LABELS, type DiagramKind, type TableMerge, normalizeMarks } from './DocPages'
+import { DIAGRAM_LABELS, TABLE_SHADES, type DiagramKind, type TableMerge, type TableShade, normalizeMarks } from './DocPages'
 
 type Mode = 'select' | 'edit'
 type Focus = { ref: string; label: string; text: string }
@@ -663,32 +663,61 @@ export function EditorPanel(props: EditorProps) {
       return [m]
     })
   }
+  /** Reubica los sombreados por celda al insertar o quitar una fila o columna. */
+  const shiftCellBg = (cellBg: Record<string, TableShade> | undefined, axis: 'r' | 'c', at: number, delta: 1 | -1) => {
+    if (!cellBg) return undefined
+    const out: Record<string, TableShade> = {}
+    for (const [k, v] of Object.entries(cellBg)) {
+      const [r, c] = k.split(':').map(Number)
+      const i = axis === 'r' ? r : c
+      if (delta === -1 && i === at) continue
+      const j = i >= at ? i + delta : i
+      out[axis === 'r' ? `${j}:${c}` : `${r}:${j}`] = v
+    }
+    return Object.keys(out).length ? out : undefined
+  }
   const insertRow = (loc: Loc, at: number) => {
     const b = tableAt(loc); if (!b) return
     const rows: string[][] = [...b.rows]; rows.splice(at, 0, Array.from({ length: tableCols(b) }, () => ''))
-    updateBlock(loc, { rows, merges: shiftMerges(b.merges, 'r', at, 1) } as Partial<Block>); setCellSel(null)
+    updateBlock(loc, { rows, merges: shiftMerges(b.merges, 'r', at, 1), rowBg: Array.isArray(b.rowBg) ? [...b.rowBg.slice(0, at), null, ...b.rowBg.slice(at)] : undefined, cellBg: shiftCellBg(b.cellBg, 'r', at, 1) } as Partial<Block>); setCellSel(null)
   }
   const deleteRow = (loc: Loc, at: number) => {
     const b = tableAt(loc); if (!b || b.rows.length <= 1) return
-    updateBlock(loc, { rows: b.rows.filter((_: unknown, i: number) => i !== at), merges: shiftMerges(b.merges, 'r', at, -1) } as Partial<Block>); setCellSel(null)
+    updateBlock(loc, { rows: b.rows.filter((_: unknown, i: number) => i !== at), merges: shiftMerges(b.merges, 'r', at, -1), rowBg: Array.isArray(b.rowBg) ? b.rowBg.filter((_: unknown, i: number) => i !== at) : undefined, cellBg: shiftCellBg(b.cellBg, 'r', at, -1) } as Partial<Block>); setCellSel(null)
   }
   const insertCol = (loc: Loc, at: number) => {
     const b = tableAt(loc); if (!b) return
     const ins = <T,>(arr: T[] | undefined, v: T) => (Array.isArray(arr) && arr.length ? [...arr.slice(0, at), v, ...arr.slice(at)] : arr)
     updateBlock(loc, {
       headers: ins(b.headers, `Columna ${at + 1}`), rows: b.rows.map((r: string[]) => [...r.slice(0, at), '', ...r.slice(at)]),
-      colAlign: ins(b.colAlign, 'left'), colWidths: undefined, merges: shiftMerges(b.merges, 'c', at, 1),
+      colAlign: ins(b.colAlign, 'left'), colWidths: undefined, merges: shiftMerges(b.merges, 'c', at, 1), colBg: ins(b.colBg, null), cellBg: shiftCellBg(b.cellBg, 'c', at, 1),
     } as Partial<Block>); setCellSel(null)
   }
   const deleteCol = (loc: Loc, at: number) => {
     const b = tableAt(loc); if (!b || tableCols(b) <= 1) return
     const del = <T,>(arr: T[] | undefined) => (Array.isArray(arr) ? arr.filter((_, i) => i !== at) : arr)
-    updateBlock(loc, { headers: del(b.headers), rows: b.rows.map((r: string[]) => r.filter((_, i) => i !== at)), colAlign: del(b.colAlign), colWidths: del(b.colWidths), merges: shiftMerges(b.merges, 'c', at, -1) } as Partial<Block>); setCellSel(null)
+    updateBlock(loc, { headers: del(b.headers), rows: b.rows.map((r: string[]) => r.filter((_, i) => i !== at)), colAlign: del(b.colAlign), colWidths: del(b.colWidths), merges: shiftMerges(b.merges, 'c', at, -1), colBg: del(b.colBg), cellBg: shiftCellBg(b.cellBg, 'c', at, -1) } as Partial<Block>); setCellSel(null)
   }
   const alignCol = (loc: Loc, at: number, align: string) => {
     const b = tableAt(loc); if (!b) return
     const n = tableCols(b)
     updateBlock(loc, { colAlign: Array.from({ length: n }, (_, i) => (i === at ? align : b.colAlign?.[i] || 'left')) } as Partial<Block>)
+  }
+  /** Sombrea las celdas, filas o columnas del rango (null quita el color). */
+  const shadeCells = (sel: CellSel, level: 'cell' | 'row' | 'col', shade: TableShade | null) => {
+    const b = tableAt(sel.loc); if (!b) return
+    const [ra, rb] = [Math.min(sel.r1, sel.r2), Math.max(sel.r1, sel.r2)]; const [ca, cb] = [Math.min(sel.c1, sel.c2), Math.max(sel.c1, sel.c2)]
+    if (level === 'cell') {
+      const cellBg: Record<string, TableShade> = { ...(b.cellBg || {}) }
+      for (let r = ra; r <= rb; r++) for (let c = ca; c <= cb; c++) { if (shade) cellBg[`${r}:${c}`] = shade; else delete cellBg[`${r}:${c}`] }
+      updateBlock(sel.loc, { cellBg: Object.keys(cellBg).length ? cellBg : undefined } as Partial<Block>)
+      return
+    }
+    const n = level === 'row' ? b.rows.length : tableCols(b)
+    const key = level === 'row' ? 'rowBg' : 'colBg'
+    const [from, to] = level === 'row' ? [ra, rb] : [ca, cb]
+    const next = Array.from({ length: n }, (_, i) => (i >= from && i <= to ? shade : (b[key]?.[i] ?? null)))
+    updateBlock(sel.loc, { [key]: next.some(Boolean) ? next : undefined } as Partial<Block>)
   }
   /** Pone o quita la viñeta «- » en cada línea de las celdas del rango. */
   const toggleCellBullets = (sel: CellSel) => {
@@ -1060,6 +1089,14 @@ export function EditorPanel(props: EditorProps) {
               {merged && <button onClick={() => { splitCell(ctx.loc, r, c); close() }}>Separar celda ({merged.cs}×{merged.rs})</button>}
               {n === 1 && !merged && <div className="qv-ctx-tip">Arrastra sobre varias celdas (o Shift+clic) y vuelve a hacer clic derecho para combinarlas.</div>}
               <button onClick={() => { toggleCellBullets(sel); close() }}>Viñetas en la celda</button>
+              <div className="qv-ctx-h">Sombrear</div>
+              {([['cell', n > 1 ? 'Celdas' : 'Celda'], ['row', n > 1 ? 'Filas' : 'Fila'], ['col', n > 1 ? 'Columnas' : 'Columna']] as Array<['cell' | 'row' | 'col', string]>).map(([level, label]) => (
+                <div className="qv-ctx-row qv-ctx-shade" key={level}>
+                  <span>{label}</span>
+                  {TABLE_SHADES.map(([k, hex, name]) => <button key={k} className="qv-ctx-sw" style={{ background: hex }} title={name} onClick={() => { shadeCells(sel, level, k); close() }} />)}
+                  <button className="qv-ctx-sw is-none" title="Sin color" onClick={() => { shadeCells(sel, level, null); close() }} />
+                </div>
+              ))}
               <div className="qv-ctx-h">Alinear columna</div>
               <div className="qv-ctx-row">{[['left', '⬅ Izq.'], ['center', '↔ Centro'], ['right', '➡ Der.']].map(([a, l]) => <button key={a} onClick={() => { alignCol(ctx.loc, c, a); close() }}>{l}</button>)}</div>
               <div className="qv-ctx-h">Filas y columnas</div>
