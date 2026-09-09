@@ -1471,9 +1471,6 @@ function Sel({ n, value, set, label }: { n: number; value: number; set: (v: numb
  */
 function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patch: Record<string, unknown>) => void; onClose: () => void }) {
   const [idx, setIdx] = useState(0)
-  const [colIdx, setColIdx] = useState(0)
-  const [spanC, setSpanC] = useState(2)
-  const [spanR, setSpanR] = useState(1)
   if (!block) return null
   const t = block.type
   const tone = (i: number) => (['cyan', 'deep', 'gold'] as const)[i % 3]
@@ -1484,66 +1481,44 @@ function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patc
     const rows: string[][] = block.rows || []
     const headers: string[] = block.headers || []
     const cols = Math.max(headers.length, ...rows.map((r) => r.length), 1)
-    title = 'Filas y columnas de la tabla'
+    const merges: TableMerge[] = block.merges || []
+    title = 'Ajustes de la tabla'
     body = (
       <>
-        <p>{rows.length} filas · {cols} columnas. Edita el texto de cada celda directamente en la página. Para viñetas dentro de una celda, empieza cada línea con «- » (Shift+Enter hace un salto de línea; dentro de una viñeta, Enter crea otra).</p>
+        <p>{rows.length} filas · {cols} columnas. El texto se edita en cada celda. Con <b>clic derecho</b> sobre una celda: combinar o separar celdas, insertar o eliminar filas y columnas, viñetas, alineación y sombreado.</p>
+        <label>Estructura</label>
         <div className="row">
-          <button onClick={() => onChange({ rows: [...rows, Array.from({ length: cols }, () => 'Celda')] })}>＋ Fila al final</button>
-          <button onClick={() => onChange({ headers: headers.length ? [...headers, `Columna ${cols + 1}`] : headers, rows: rows.map((r) => [...r, '']) })}>＋ Columna al final</button>
-        </div>
-        <label>Eliminar fila</label>
-        <div className="row"><Sel n={rows.length} value={idx} set={setIdx} label="Fila" /><button disabled={rows.length <= 1} onClick={() => onChange({ rows: rows.filter((_, i) => i !== idx) })}>Eliminar fila</button></div>
-        <label>Eliminar columna</label>
-        <div className="row"><Sel n={cols} value={colIdx} set={setColIdx} label="Columna" /><button disabled={cols <= 1} onClick={() => onChange({ headers: headers.filter((_, i) => i !== colIdx), rows: rows.map((r) => r.filter((_, i) => i !== colIdx)), colAlign: Array.isArray(block.colAlign) ? block.colAlign.filter((_: unknown, i: number) => i !== colIdx) : undefined })}>Eliminar columna</button></div>
-        <label>Encabezados</label>
-        <div className="row">
+          <button onClick={() => onChange({ rows: [...rows, Array.from({ length: cols }, () => '')] })}>＋ Fila al final</button>
+          <button onClick={() => onChange({ headers: headers.length ? [...headers, `Columna ${cols + 1}`] : headers, rows: rows.map((r) => [...r, '']), colWidths: undefined })}>＋ Columna al final</button>
           <button onClick={() => onChange({ headers: headers.length ? [] : Array.from({ length: cols }, (_, i) => `Columna ${i + 1}`) })}>{headers.length ? 'Quitar encabezados' : 'Agregar encabezados'}</button>
-          <button onClick={() => onChange({ rows: [Array.from({ length: cols }, () => 'Celda'), ...rows] })}>＋ Fila al inicio</button>
         </div>
-        <label>Ancho de las columnas (%) · vacío = automático. También se arrastra el borde de cada columna en la página.</label>
-        <div className="row" style={{ flexWrap: 'wrap' }}>
+        <label>Ancho de las columnas (%) · vacío = automático · también se arrastra el borde de cada columna en la página</label>
+        <div className="qv-colw">
           {Array.from({ length: cols }, (_, i) => (
-            <input key={i} type="number" min={5} max={95} placeholder={`Col ${i + 1}`} title={`Columna ${i + 1}`} style={{ width: 64 }}
-              value={typeof block.colWidths?.[i] === 'number' ? block.colWidths[i] : ''}
-              onChange={(e) => { const v = Number(e.target.value); const next = Array.from({ length: cols }, (_, k) => (k === i ? (v >= 5 ? Math.min(95, v) : null) : (typeof block.colWidths?.[k] === 'number' ? block.colWidths[k] : null))); onChange({ colWidths: next.some((w) => w !== null) ? next : undefined }) }} />
+            <div key={i}>
+              <span>{headers[i] ? String(headers[i]).slice(0, 14) : `Col. ${i + 1}`}</span>
+              <input type="number" min={5} max={95} placeholder="auto"
+                value={typeof block.colWidths?.[i] === 'number' ? block.colWidths[i] : ''}
+                onChange={(e) => { const v = Number(e.target.value); const next = Array.from({ length: cols }, (_, k) => (k === i ? (v >= 5 ? Math.min(95, v) : null) : (typeof block.colWidths?.[k] === 'number' ? block.colWidths[k] : null))); onChange({ colWidths: next.some((w) => w !== null) ? next : undefined }) }} />
+            </div>
           ))}
           <button onClick={() => onChange({ colWidths: undefined })}>Automático</button>
         </div>
-        <label>Combinar celdas · desde la fila {idx + 1}, columna {colIdx + 1} (elegidas arriba)</label>
-        <div className="row">
-          <span style={{ fontSize: 11.5 }}>Abarca</span>
-          <input type="number" min={1} max={Math.max(1, cols - colIdx)} value={spanC} onChange={(e) => setSpanC(Math.max(1, Math.min(cols - colIdx, Number(e.target.value) || 1)))} style={{ width: 56 }} title="Columnas" />
-          <span style={{ fontSize: 11.5 }}>col ×</span>
-          <input type="number" min={1} max={Math.max(1, rows.length - idx)} value={spanR} onChange={(e) => setSpanR(Math.max(1, Math.min(rows.length - idx, Number(e.target.value) || 1)))} style={{ width: 56 }} title="Filas" />
-          <span style={{ fontSize: 11.5 }}>filas</span>
-          <button disabled={spanC <= 1 && spanR <= 1} onClick={() => {
-            const merges: TableMerge[] = (block.merges || []).filter((m: TableMerge) => !(m.r < idx + spanR && idx < m.r + m.rs && m.c < colIdx + spanC && colIdx < m.c + m.cs))
-            // el texto de las celdas tapadas se suma al origen para no perderlo
-            const next = rows.map((r) => [...r])
-            const extra: string[] = []
-            for (let dr = 0; dr < spanR; dr++) for (let dc = 0; dc < spanC; dc++) {
-              if (!dr && !dc) continue
-              const v = next[idx + dr]?.[colIdx + dc]
-              if (v && v.trim()) extra.push(v.trim())
-              if (next[idx + dr]) next[idx + dr][colIdx + dc] = ''
-            }
-            if (extra.length) next[idx][colIdx] = [next[idx][colIdx], ...extra].filter(Boolean).join(' ')
-            onChange({ rows: next, merges: [...merges, { r: idx, c: colIdx, cs: spanC, rs: spanR }] })
-          }}>Combinar</button>
-        </div>
-        {(block.merges || []).length > 0 && (
+        {merges.length > 0 && (
           <>
             <label>Celdas combinadas</label>
             <div className="qv-versions">
-              {(block.merges as TableMerge[]).map((m, i) => (
+              {merges.map((m, i) => (
                 <div className="qv-version" key={i}>
                   <span style={{ flex: 1, fontSize: 11.5 }}>Fila {m.r + 1}, columna {m.c + 1} · {m.cs} col × {m.rs} filas</span>
-                  <button onClick={() => onChange({ merges: (block.merges as TableMerge[]).filter((_, k) => k !== i) })}>Separar</button>
+                  <button onClick={() => onChange({ merges: merges.filter((_, k) => k !== i) })}>Separar</button>
                 </div>
               ))}
             </div>
           </>
+        )}
+        {(block.rowBg?.some(Boolean) || block.colBg?.some(Boolean) || (block.cellBg && Object.keys(block.cellBg).length > 0)) && (
+          <div className="row"><button onClick={() => onChange({ rowBg: undefined, colBg: undefined, cellBg: undefined })}>Quitar todos los sombreados</button></div>
         )}
       </>
     )

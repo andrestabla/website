@@ -1422,3 +1422,9 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-ctx-shade { align-items: center; }
 .qv-ctx-shade > span { flex: 0 0 62px; font-size: 11px; color: #64748b; }
 .qv-ctx-sw.is-none { background: repeating-linear-gradient(45deg, #fff 0 4px, #e2e8f0 4px 6px) !important; }
+/* diálogo de tabla: anchos de columna en cuadrícula compacta */
+.qv-colw { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 6px; align-items: end; margin: 4px 0 10px; }
+.qv-colw > div { display: flex; flex-direction: column; gap: 3px; }
+.qv-colw > div > span { font-size: 10.5px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qv-colw input { width: 100%; box-sizing: border-box; }
+.qv-colw > button { height: 34px; }
