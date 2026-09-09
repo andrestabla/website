@@ -164,8 +164,16 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
           })
         }),
       })))
+      // anchos de columna: los fijados en % se respetan y el resto se reparte
+      const cw: Array<number | null> = Array.isArray(b.colWidths) ? b.colWidths : []
+      const fixed = cw.reduce((a: number, w) => a + (typeof w === 'number' ? w : 0), 0)
+      const autoN = Array.from({ length: cols }, (_, i) => cw[i]).filter((w) => typeof w !== 'number').length
+      const columnWidths = cw.some((w) => typeof w === 'number')
+        ? Array.from({ length: cols }, (_, i) => Math.round(((typeof cw[i] === 'number' ? (cw[i] as number) : Math.max(5, (100 - fixed) / Math.max(1, autoN))) / 100) * 9000))
+        : undefined
       out.push(new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
+        ...(columnWidths ? { columnWidths } : {}),
         borders: { top: hairline, bottom: hairline, left: noBorders.left, right: noBorders.right, insideHorizontal: hairline, insideVertical: noBorders.left },
         rows: trs,
       }))

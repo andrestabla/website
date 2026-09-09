@@ -910,6 +910,11 @@ function sanitizeBlockInner(raw: any): PageBlock | null {
       if (Array.isArray(raw.colAlign)) out.colAlign = raw.colAlign.map((a: unknown) => (['left', 'center', 'right', 'justify'].includes(a as string) ? a : 'left'))
       if (TABLE_STYLES.has(raw.tableStyle)) out.tableStyle = raw.tableStyle
       if (STYLE_SIZES.has(raw.fontSize)) out.fontSize = raw.fontSize
+      // ancho de columnas en % (null = automático)
+      if (Array.isArray(raw.colWidths)) {
+        const cw = raw.colWidths.slice(0, 10).map((w: unknown) => (typeof w === 'number' && w >= 5 && w <= 95 ? Math.round(w * 10) / 10 : null))
+        if (cw.some((w: number | null) => w !== null)) out.colWidths = cw
+      }
       // celdas combinadas: dentro de la tabla, sin solaparse, al menos 2 celdas
       if (Array.isArray(raw.merges) && rows.length) {
         const nCols = Math.max(headers.length, ...rows.map((r: string[]) => r.length))

@@ -134,7 +134,7 @@ export type DocBlock =
   | { type: 'list'; items: string[]; align?: Align; style?: BlockStyle; marker?: 'number' | 'check' }
   | { type: 'box'; title?: string; body: string; align?: Align; style?: BlockStyle }
   | { type: 'note'; text: string; align?: Align; style?: BlockStyle }
-  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[]; tableStyle?: 'default' | 'striped' | 'minimal' | 'navy' | 'compact'; fontSize?: 'xs' | 'sm' | 'md'; /** celdas combinadas: origen (fila r, columna c) que abarca cs columnas y rs filas */ merges?: TableMerge[] }
+  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[]; tableStyle?: 'default' | 'striped' | 'minimal' | 'navy' | 'compact'; fontSize?: 'xs' | 'sm' | 'md'; /** celdas combinadas: origen (fila r, columna c) que abarca cs columnas y rs filas */ merges?: TableMerge[]; /** ancho de cada columna en % (null = automático) */ colWidths?: Array<number | null> }
   | { type: 'cards'; cols?: 2 | 3; items: Array<{ tag?: string; title: string; body: string; foot?: string }> }
   | { type: 'phase'; id: string; name: string; when?: string; defs: Array<{ term: string; desc: string; strong?: boolean }> }
   | { type: 'img'; url: string; caption?: string; wide?: boolean }
@@ -349,12 +349,17 @@ export function DocBlockView({
 
     case 'table': {
       const { covered, origin } = mergeMap(block.merges)
+      const nCols = Math.max(block.headers?.length || 0, ...block.rows.map((row) => row.length), 1)
+      const widths = Array.isArray(block.colWidths) && block.colWidths.some((w) => typeof w === 'number') ? block.colWidths : null
+      // tirador para arrastrar el ancho de la columna (solo en el editor); va en la cabecera o, si no hay, en la primera fila
+      const grip = (ci: number) => (refBase && ci < nCols - 1 ? <span className="qv-col-grip" data-col-grip={ci} contentEditable={false} aria-hidden="true" /> : null)
       return (
         <div className="qv-tablewrap">
-          <table className={`qv-table doc${block.tableStyle && block.tableStyle !== 'default' ? ` ts-${block.tableStyle}` : ''}${block.fontSize ? ` qs-size-${block.fontSize}` : ''}`}>
+          <table className={`qv-table doc${block.tableStyle && block.tableStyle !== 'default' ? ` ts-${block.tableStyle}` : ''}${block.fontSize ? ` qs-size-${block.fontSize}` : ''}${widths ? ' has-widths' : ''}`}>
+            {widths && <colgroup>{Array.from({ length: nCols }, (_, i) => <col key={i} style={typeof widths[i] === 'number' ? { width: `${widths[i]}%` } : undefined} />)}</colgroup>}
             {block.headers?.length ? (
               <thead><tr>{block.headers.map((h, i) => (
-                <th key={i} style={al(block.colAlign?.[i])} {...r(`headers.${i}`)}>{h}</th>
+                <th key={i} style={al(block.colAlign?.[i])} className={refBase ? 'has-grip' : undefined}><span {...r(`headers.${i}`)}>{h}</span>{grip(i)}</th>
               ))}</tr></thead>
             ) : null}
             <tbody>
@@ -364,9 +369,11 @@ export function DocBlockView({
                     if (covered.has(`${ri}:${ci}`)) return null
                     const m = origin.get(`${ri}:${ci}`)
                     return (
-                      <td key={ci} style={al(block.colAlign?.[ci])} {...r(`rows.${ri}.${ci}`)} data-cell={`${ri}:${ci}`}
+                      <td key={ci} style={al(block.colAlign?.[ci])} data-cell={`${ri}:${ci}`}
                         colSpan={m && m.cs > 1 ? m.cs : undefined} rowSpan={m && m.rs > 1 ? m.rs : undefined}
-                        className={[ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : '', m ? 'tb-merged' : ''].filter(Boolean).join(' ') || undefined}>{rich(cell)}</td>
+                        className={[ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : '', m ? 'tb-merged' : '', refBase && !block.headers?.length && ri === 0 ? 'has-grip' : ''].filter(Boolean).join(' ') || undefined}>
+                        <span {...r(`rows.${ri}.${ci}`)}>{rich(cell)}</span>{!block.headers?.length && ri === 0 && !m ? grip(ci) : null}
+                      </td>
                     )
                   })}
                 </tr>

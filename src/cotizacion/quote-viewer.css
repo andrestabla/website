@@ -1362,3 +1362,11 @@ body.qv-has-side .qv-bar { left: 300px; }
 /* celdas combinadas */
 .qv-table.doc td.tb-merged { vertical-align: middle; }
 .qv-mode-select .qv-table.doc td.tb-merged, .qv-mode-edit .qv-table.doc td.tb-merged { box-shadow: inset 0 0 0 1px rgba(79, 70, 229, .35); }
+/* ancho de columnas: fijado con colgroup; tirador en el borde derecho de cada columna en el editor */
+.qv-table.doc.has-widths { table-layout: fixed; width: 100%; }
+.qv-table.doc .has-grip { position: relative; }
+.qv-col-grip { display: none; position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; z-index: 2; }
+.qv-col-grip::after { content: ''; position: absolute; left: 3px; top: 15%; height: 70%; width: 2px; background: rgba(79, 70, 229, .35); border-radius: 2px; }
+.qv-col-grip:hover::after { background: #4f46e5; }
+.qv-mode-select .qv-col-grip, .qv-mode-edit .qv-col-grip { display: block; }
+@media print { .qv-col-grip { display: none !important; } }

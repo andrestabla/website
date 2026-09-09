@@ -357,6 +357,41 @@ export function EditorPanel(props: EditorProps) {
       setHover((prev) => (prev && prev.pi === loc.pi && prev.bi === loc.bi && prev.ci === loc.ci && prev.ii === loc.ii && Math.abs(prev.top - (r.top + window.scrollY)) < 2 ? prev : { ...loc, top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width }))
     }
     // al soltar el tirador de una caja de esquema, su ancho queda en el bloque
+    // arrastre del borde de una columna de tabla: al soltar, los anchos (en %) quedan en el bloque
+    const onGripDown = (e: MouseEvent) => {
+      const grip = (e.target as Element)?.closest?.('[data-col-grip]') as HTMLElement | null
+      if (!grip) return
+      e.preventDefault(); e.stopPropagation()
+      const table = grip.closest('table') as HTMLTableElement | null
+      const holder = grip.closest('[data-block]') as HTMLElement | null
+      const loc = holder ? parseLoc(holder.dataset.block || '') : null
+      if (!table || !loc) return
+      const ci = Number(grip.dataset.colGrip)
+      const firstRow = table.tHead?.rows[0] || table.tBodies[0]?.rows[0]
+      if (!firstRow) return
+      const cells = Array.from(firstRow.cells)
+      const start = cells.map((c) => c.getBoundingClientRect().width)
+      const total = start.reduce((a, b) => a + b, 0)
+      const x0 = e.clientX
+      let widths = [...start]
+      let cols = table.querySelector('colgroup')
+      if (!cols) { cols = document.createElement('colgroup'); start.forEach(() => cols!.appendChild(document.createElement('col'))); table.insertBefore(cols, table.firstChild) }
+      table.classList.add('has-widths')
+      const paint = () => Array.from(cols!.children).forEach((c, i) => { (c as HTMLElement).style.width = `${(widths[i] / total) * 100}%` })
+      const onMove = (ev: MouseEvent) => {
+        const d = Math.max(-(start[ci] - 40), Math.min(start[ci + 1] - 40, ev.clientX - x0))
+        widths = start.map((w, i) => (i === ci ? w + d : i === ci + 1 ? w - d : w))
+        paint()
+      }
+      const onDone = () => {
+        document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onDone)
+        const b = blockAt(loc) as any
+        if (!b || b.type !== 'table') return
+        const pct = widths.map((w) => Math.round((w / total) * 1000) / 10)
+        updateBlock(loc, { colWidths: pct } as Partial<Block>)
+      }
+      document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onDone)
+    }
     const onUp = (e: MouseEvent) => {
       const el = (e.target as Element)?.closest?.('[data-dg-item], [data-dg-center]') as HTMLElement | null
       if (!el) return
@@ -376,7 +411,8 @@ export function EditorPanel(props: EditorProps) {
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
-    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); window.clearTimeout(hoverTimer.current) }
+    document.addEventListener('mousedown', onGripDown, true)
+    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.removeEventListener('mousedown', onGripDown, true); window.clearTimeout(hoverTimer.current) }
   }, [preview, isPaged, pages])
 
   // ── imágenes ──
@@ -1170,6 +1206,15 @@ function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patc
         <div className="row">
           <button onClick={() => onChange({ headers: headers.length ? [] : Array.from({ length: cols }, (_, i) => `Columna ${i + 1}`) })}>{headers.length ? 'Quitar encabezados' : 'Agregar encabezados'}</button>
           <button onClick={() => onChange({ rows: [Array.from({ length: cols }, () => 'Celda'), ...rows] })}>＋ Fila al inicio</button>
+        </div>
+        <label>Ancho de las columnas (%) · vacío = automático. También se arrastra el borde de cada columna en la página.</label>
+        <div className="row" style={{ flexWrap: 'wrap' }}>
+          {Array.from({ length: cols }, (_, i) => (
+            <input key={i} type="number" min={5} max={95} placeholder={`Col ${i + 1}`} title={`Columna ${i + 1}`} style={{ width: 64 }}
+              value={typeof block.colWidths?.[i] === 'number' ? block.colWidths[i] : ''}
+              onChange={(e) => { const v = Number(e.target.value); const next = Array.from({ length: cols }, (_, k) => (k === i ? (v >= 5 ? Math.min(95, v) : null) : (typeof block.colWidths?.[k] === 'number' ? block.colWidths[k] : null))); onChange({ colWidths: next.some((w) => w !== null) ? next : undefined }) }} />
+          ))}
+          <button onClick={() => onChange({ colWidths: undefined })}>Automático</button>
         </div>
         <label>Combinar celdas · desde la fila {idx + 1}, columna {colIdx + 1} (elegidas arriba)</label>
         <div className="row">
