@@ -102,6 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       () => !!document.querySelector('.qv .qv-page') || /no está disponible|problema/i.test(document.querySelector('.qv-status')?.textContent || ''),
       { timeout: 30_000 },
     )
+    const diag = String(req.query?.diag || '') === '1'
     const missing: number = await page.evaluate(async () => {
       // cada imagen se recarga sin carga diferida y, si es grande, se reduce a 1600 px como JPEG ya
       // decodificado (en caché, Chromium la daba por completa sin decodificarla y salía en blanco)
@@ -130,13 +131,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await Promise.race([Promise.all(imgs.map(one)), new Promise((r) => setTimeout(r, 35000))])
       window.scrollTo(0, 0)
       await Promise.race([(document as any).fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 3000))])
+      ;(window as any).__pdfImages = imgs.map((img) => ({ src: (img.currentSrc || img.src).startsWith('data:') ? `data:${Math.round((img.currentSrc || img.src).length * 0.75 / 1024)}kb` : (img.currentSrc || img.src).slice(-48), w: img.naturalWidth, h: img.naturalHeight, box: `${Math.round(img.getBoundingClientRect().width)}x${Math.round(img.getBoundingClientRect().height)}` }))
       return imgs.filter((img) => img.naturalWidth === 0).length
     })
     await new Promise((r) => setTimeout(r, 900))
     const pdf: Buffer = await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true, margin: { top: 0, right: 0, bottom: 0, left: 0 } })
 
+    // diagnóstico ligero (?diag=1): qué imágenes quedaron y cuánto pesa el PDF, sin transferirlo
+    if (diag) {
+      const images = await page.evaluate(() => (window as any).__pdfImages || [])
+      return res.status(200).json({ ok: true, missing, pdfBytes: pdf.length, pages: (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length, images })
+    }
     res.setHeader('Content-Type', 'application/pdf')
     res.setHeader('X-Images-Missing', String(missing))
+    res.setHeader('X-Pdf-Bytes', String(pdf.length))
     res.setHeader('Content-Disposition', `inline; filename="${slug(quote.title)}-${slug(quote.clientName)}.pdf"`)
     res.setHeader('Cache-Control', quote.status === 'PUBLISHED' ? 'private, max-age=60' : 'no-store')
     return res.status(200).send(Buffer.from(pdf))
