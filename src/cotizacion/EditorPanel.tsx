@@ -39,6 +39,7 @@ type Dialog =
   | { kind: 'move'; loc: Loc }
   | { kind: 'items'; loc: Loc }
   | { kind: 'diagram'; target: AddTarget }
+  | { kind: 'merge'; pi: number }
   | { kind: 'versions' }
   | null
 
@@ -481,6 +482,65 @@ export function EditorPanel(props: EditorProps) {
     setDialog(null)
     setHover(null)
   }
+  /**
+   * Lleva una página entera (numeral, antetítulo, título y bloques) dentro de
+   * otra página: el encabezado se vuelve un bloque de sección numerada y los
+   * bloques van detrás. Así dos numerales comparten una hoja.
+   */
+  const mergePageInto = (pi: number, targetPi: number, after: number) => {
+    if (pi === targetPi) return
+    const src = pages[pi]
+    const head: Block = { type: 'sechead', num: src.num || '', kicker: src.kicker || '', title: src.title || '' }
+    const moved = [head, ...src.blocks]
+    const next = pages.map((p) => ({ ...p, blocks: [...p.blocks] }))
+    const target = next[targetPi]
+    target.blocks.splice(Math.min(after + 1, target.blocks.length), 0, ...moved)
+    next.splice(pi, 1)
+    onPages(next)
+    setDialog(null)
+    scrollToPage(target.id)
+  }
+  /** Rango de una sección dentro de la página: desde su encabezado hasta el siguiente encabezado. */
+  const sectionRange = (pi: number, bi: number) => {
+    const blocks = pages[pi]?.blocks || []
+    let end = bi + 1
+    while (end < blocks.length && blocks[end].type !== 'sechead') end += 1
+    return { start: bi, end }
+  }
+  /** Saca una sección numerada de la página a una página propia, justo después. */
+  const splitSectionToPage = (loc: Loc) => {
+    if (loc.ci !== undefined) return
+    const blocks = pages[loc.pi].blocks
+    const head = blocks[loc.bi] as any
+    if (head?.type !== 'sechead') return
+    const { start, end } = sectionRange(loc.pi, loc.bi)
+    const fresh: Page = { id: uid(`${pages[loc.pi].id}-${String(head.title || 'seccion').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 30)}`), num: head.num || '', kicker: head.kicker || '', title: head.title || '', blocks: blocks.slice(start + 1, end) }
+    const next = pages.map((p) => ({ ...p, blocks: [...p.blocks] }))
+    next[loc.pi].blocks.splice(start, end - start)
+    next.splice(loc.pi + 1, 0, fresh)
+    onPages(next)
+    setHover(null)
+    scrollToPage(fresh.id)
+  }
+  /** Mueve una sección completa (encabezado y bloques) a otra lista. */
+  const moveSectionTo = (loc: Loc, target: AddTarget) => {
+    const { start, end } = sectionRange(loc.pi, loc.bi)
+    const chunk = pages[loc.pi].blocks.slice(start, end)
+    const next = pages.map((p) => ({ ...p, blocks: [...p.blocks] }))
+    next[loc.pi].blocks.splice(start, end - start)
+    let at = target.after + 1
+    if (target.pi === loc.pi && target.ci === undefined && start < at) at -= end - start
+    if (target.ci !== undefined && target.bi !== undefined) {
+      const grid: any = next[target.pi].blocks[target.bi]
+      grid.cells = grid.cells.map((c: Block[]) => [...c])
+      grid.cells[target.ci].splice(Math.min(at, grid.cells[target.ci].length), 0, ...chunk)
+    } else {
+      next[target.pi].blocks.splice(Math.min(at, next[target.pi].blocks.length), 0, ...chunk)
+    }
+    onPages(next)
+    setDialog(null)
+    setHover(null)
+  }
   const loadVersions = async () => {
     setVersionsBusy(true)
     try {
@@ -649,6 +709,7 @@ export function EditorPanel(props: EditorProps) {
                         <button onClick={() => duplicatePage(pi)} title="Duplicar">⧉</button>
                         <button onClick={() => setAddMenu({ pi, after: pg.blocks.length - 1 })} title="Agregar bloque al final">＋</button>
                         <button onClick={() => setPageMenu(pi)} title="Insertar página después">＋pág</button>
+                        <button onClick={() => setDialog({ kind: 'merge', pi })} title="Llevar esta sección completa (numeral, título y bloques) dentro de otra página">⇢</button>
                         <button className="danger" onClick={() => void removePage(pi)} title="Eliminar página">✕</button>
                       </div>
                     </div>
@@ -699,6 +760,7 @@ export function EditorPanel(props: EditorProps) {
           {['lede', 'p', 'h3', 'note', 'list', 'box', 'table', 'cards'].includes(hoverBlock.type) && <button onMouseDown={(e) => { e.preventDefault(); captureSelection() }} onClick={() => setDialog({ kind: 'style', loc: hover })} title="Estilo: tamaño, color, peso, fondo · a todo el bloque o al fragmento seleccionado">Aa</button>}
           {['table', 'gantt', 'cards', 'team', 'htimeline', 'vtimeline', 'payments', 'phase', 'list', 'timeline', 'invoice', 'diagram'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'items', loc: hover })} title="Agregar o quitar filas, columnas, tarjetas, miembros o hitos">⋯</button>}
           {hoverBlock.type === 'grid' && <button onClick={() => setDialog({ kind: 'gridSettings', loc: hover })} title="Columnas">⚙</button>}
+          {hoverBlock.type === 'sechead' && hover.ci === undefined && <button onClick={() => splitSectionToPage(hover)} title="Separar esta sección en una página propia">⤴</button>}
           {hoverBlock.type === 'icon' && <button onClick={() => setDialog({ kind: 'icon', loc: hover })} title="Cambiar ícono, tamaño o color">⚙</button>}
           {hoverBlock.type === 'button' && <button onClick={() => setDialog({ kind: 'button', loc: hover })} title="Texto, enlace y estilo">⚙</button>}
           <button onClick={() => moveBlock(hover, -1)} title="Subir">↑</button>
@@ -779,7 +841,11 @@ export function EditorPanel(props: EditorProps) {
         <ItemsDialog block={blockAt(dialog.loc) as any} onClose={() => setDialog(null)} onChange={(patch) => updateBlock(dialog.loc, patch as Partial<Block>)} />
       )}
       {dialog?.kind === 'move' && (
-        <MoveDialog pages={pages} loc={dialog.loc} onClose={() => setDialog(null)} onMove={(target) => moveTo(dialog.loc, target)} />
+        <MoveDialog pages={pages} loc={dialog.loc} isSection={blockAt(dialog.loc)?.type === 'sechead' && dialog.loc.ci === undefined}
+          onClose={() => setDialog(null)} onMove={(target, whole) => (whole ? moveSectionTo(dialog.loc, target) : moveTo(dialog.loc, target))} />
+      )}
+      {dialog?.kind === 'merge' && (
+        <MergeDialog pages={pages} pi={dialog.pi} onClose={() => setDialog(null)} onMerge={(targetPi, after) => mergePageInto(dialog.pi, targetPi, after)} />
       )}
       {dialog?.kind === 'versions' && (
         <div className="qv-modal-wrap" onClick={() => setDialog(null)}>
@@ -1224,8 +1290,36 @@ function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patc
   )
 }
 
-function MoveDialog({ pages, loc, onMove, onClose }: { pages: Page[]; loc: Loc; onMove: (target: AddTarget) => void; onClose: () => void }) {
+function MergeDialog({ pages, pi, onMerge, onClose }: { pages: Page[]; pi: number; onMerge: (targetPi: number, after: number) => void; onClose: () => void }) {
+  const others = pages.map((p, i) => ({ p, i })).filter((x) => x.i !== pi)
+  const [targetPi, setTargetPi] = useState(others[0]?.i ?? -1)
+  const target = pages[targetPi]
+  if (!target) return null
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>Llevar la sección a otra página</h3>
+        <p>«{pages[pi].num || '—'} · {pages[pi].title || pages[pi].id}» entra completa en la página elegida: su numeral, antetítulo y título se vuelven un encabezado de sección y sus {pages[pi].blocks.length} bloques van detrás. La página de origen desaparece.</p>
+        <label>Página de destino</label>
+        <select value={targetPi} onChange={(e) => setTargetPi(Number(e.target.value))}>
+          {others.map(({ p, i }) => <option key={p.id} value={i}>{p.num || '—'} · {p.title || p.id}</option>)}
+        </select>
+        <label>Posición</label>
+        <div className="qv-versions">
+          <div className="qv-version"><div>Al inicio de la página</div><button onClick={() => onMerge(targetPi, -1)}>Mover aquí</button></div>
+          {target.blocks.map((b, bi) => (
+            <div className="qv-version" key={bi}><div>Después del bloque {bi + 1} ({BLOCK_LABEL[b.type] || b.type})</div><button onClick={() => onMerge(targetPi, bi)}>Mover aquí</button></div>
+          ))}
+        </div>
+        <div className="qv-modal-actions"><button onClick={onClose}>Cancelar</button></div>
+      </div>
+    </div>
+  )
+}
+
+function MoveDialog({ pages, loc, isSection, onMove, onClose }: { pages: Page[]; loc: Loc; isSection?: boolean; onMove: (target: AddTarget, wholeSection: boolean) => void; onClose: () => void }) {
   const [pi, setPi] = useState(loc.pi)
+  const [whole, setWhole] = useState(!!isSection)
   const page = pages[pi]
   const options: Array<{ key: string; label: string; target: AddTarget }> = []
   if (page) {
@@ -1242,7 +1336,12 @@ function MoveDialog({ pages, loc, onMove, onClose }: { pages: Page[]; loc: Loc; 
   return (
     <div className="qv-modal-wrap" onClick={onClose}>
       <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
-        <h3>Mover elemento</h3>
+        <h3>{whole ? 'Mover la sección completa' : 'Mover elemento'}</h3>
+        {isSection && (
+          <label style={{ display: 'flex', gap: 6, alignItems: 'center', textTransform: 'none', letterSpacing: 0 }}>
+            <input type="checkbox" checked={whole} onChange={(e) => setWhole(e.target.checked)} style={{ width: 'auto' }} /> Mover toda la sección (el encabezado y sus bloques hasta el siguiente encabezado)
+          </label>
+        )}
         <label>Página</label>
         <select value={pi} onChange={(e) => setPi(Number(e.target.value))}>
           {pages.map((p, i) => <option key={p.id} value={i}>{p.num || '—'} · {p.title || p.id}</option>)}
@@ -1252,7 +1351,7 @@ function MoveDialog({ pages, loc, onMove, onClose }: { pages: Page[]; loc: Loc; 
           {options.map((o) => (
             <div className="qv-version" key={o.key}>
               <div>{o.label}</div>
-              <button onClick={() => onMove(o.target)}>Mover aquí</button>
+              <button onClick={() => onMove(o.target, whole)}>Mover aquí</button>
             </div>
           ))}
         </div>
