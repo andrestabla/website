@@ -14,7 +14,7 @@
  *  - Panel derecho: la IA, que recibe el elemento señalado y aplica cambios en
  *    el servidor (guarda antes lo pendiente).
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BLOCK_TYPES, EMPTY, type Page, type Block } from '../cotizador/PagesEditor'
 import { IconPicker } from './IconPicker'
 import { PAGE_TEMPLATES, templatesByCategory } from './pageTemplates'
@@ -1054,13 +1054,12 @@ export function EditorPanel(props: EditorProps) {
       {/* ── menú de tipos de bloque ── */}
       {ctx && (() => {
         const close = () => setCtx(null)
-        const style = { left: Math.min(ctx.x, window.innerWidth - 260), top: Math.min(ctx.y, window.innerHeight - 320) }
         const frag = (classes: string[]) => { if (!applyFragmentStyle(classes)) flash('Selecciona primero el texto'); close() }
         const sizes = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl']
         const colors: Array<[string, string]> = [['ink', '#111827'], ['navy', '#1a2d5a'], ['cyan', '#0b6f88'], ['gold', '#a87a14'], ['muted', '#6b7280'], ['white', '#ffffff']]
         if (ctx.kind === 'text') {
           return (
-            <div className="qv-ctx" style={style} onContextMenu={(e) => e.preventDefault()}>
+            <CtxMenu x={ctx.x} y={ctx.y}>
               <div className="qv-ctx-h">Texto seleccionado</div>
               <button onClick={() => frag(['w-bold'])}><b>Negrita</b></button>
               <button onClick={() => frag(['italic'])}><i>Cursiva</i></button>
@@ -1073,7 +1072,7 @@ export function EditorPanel(props: EditorProps) {
               <div className="qv-ctx-row">{[['soft', '#eef2ff'], ['cyan', '#e3f3f6'], ['gold', '#f7ecd4'], ['navy', '#1a2d5a']].map(([k, hex]) => <button key={k} className="qv-ctx-sw" style={{ background: hex }} title={k} onClick={() => frag([`bg-${k}`])} />)}</div>
               <button onClick={() => frag([])}>Quitar estilo del fragmento</button>
               {ctx.loc.pi >= 0 && <button onClick={() => { setDialog({ kind: 'style', loc: ctx.loc }); close() }}>Estilo de todo el bloque…</button>}
-            </div>
+            </CtxMenu>
           )
         }
         if (ctx.kind === 'cell' && ctx.cell) {
@@ -1083,7 +1082,7 @@ export function EditorPanel(props: EditorProps) {
           const merged = b ? mergeAt(b, ctx.cell.r, ctx.cell.c) : undefined
           const { r, c } = ctx.cell
           return (
-            <div className="qv-ctx" style={style} onContextMenu={(e) => e.preventDefault()}>
+            <CtxMenu x={ctx.x} y={ctx.y}>
               <div className="qv-ctx-h">Celda {r + 1}·{c + 1}{n > 1 ? ` · ${n} seleccionadas` : ''}</div>
               {n > 1 && <button onClick={() => { mergeCells(ctx.loc, sel.r1, sel.c1, sel.r2, sel.c2); close() }}><b>Combinar {n} celdas</b></button>}
               {merged && <button onClick={() => { splitCell(ctx.loc, r, c); close() }}>Separar celda ({merged.cs}×{merged.rs})</button>}
@@ -1105,19 +1104,19 @@ export function EditorPanel(props: EditorProps) {
               <div className="qv-ctx-row"><button className="danger" onClick={() => { deleteRow(ctx.loc, r); close() }}>Eliminar fila</button><button className="danger" onClick={() => { deleteCol(ctx.loc, c); close() }}>Eliminar columna</button></div>
               <button onClick={() => { setDialog({ kind: 'style', loc: ctx.loc }); close() }}>Estilo de la tabla…</button>
               <button onClick={() => { setDialog({ kind: 'items', loc: ctx.loc }); close() }}>Más ajustes de la tabla…</button>
-            </div>
+            </CtxMenu>
           )
         }
         const blk = blockAt(ctx.loc)
         return (
-          <div className="qv-ctx" style={style} onContextMenu={(e) => e.preventDefault()}>
+          <CtxMenu x={ctx.x} y={ctx.y}>
             <div className="qv-ctx-h">{blk ? BLOCK_LABEL[blk.type] || blk.type : 'Bloque'}</div>
             {blk && !['img', 'toc', 'button', 'icon', 'grid', 'spacer'].includes(blk.type) && <button onClick={() => { setDialog({ kind: 'style', loc: ctx.loc }); close() }}>Estilo del bloque…</button>}
             <button onClick={() => { duplicateBlock(ctx.loc); close() }}>Duplicar</button>
             <button onClick={() => { setDialog({ kind: 'move', loc: ctx.loc }); close() }}>Mover a…</button>
             <button onClick={() => { setAddMenu({ pi: ctx.loc.pi, bi: ctx.loc.ci !== undefined ? ctx.loc.bi : undefined, ci: ctx.loc.ci, after: ctx.loc.ci !== undefined ? (ctx.loc.ii ?? 0) : ctx.loc.bi }); close() }}>＋ Agregar elemento debajo</button>
             <button className="danger" onClick={() => { void removeBlock(ctx.loc); close() }}>Eliminar</button>
-          </div>
+          </CtxMenu>
         )
       })()}
       {addMenu && (
@@ -1808,6 +1807,31 @@ function MoveDialog({ pages, loc, isSection, onMove, onClose }: { pages: Page[];
 }
 
 /** Formato de una imagen nueva: se inserta un marcador genérico con esa proporción y luego se reemplaza. */
+/**
+ * Menú contextual junto al punto del clic: se mide una vez pintado y se
+ * recoloca para que quepa entero en la ventana (a la izquierda o encima del
+ * cursor si hace falta); si es más alto que la ventana, se desplaza dentro.
+ */
+function CtxMenu({ x, y, children }: { x: number; y: number; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  // se coloca sobre el DOM (sin estado) para no repintar: medir y mover en el mismo cuadro
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const M = 8
+    const w = el.offsetWidth, h = el.offsetHeight
+    let left = x + 2, top = y + 2
+    if (left + w > window.innerWidth - M) left = Math.max(M, x - w - 2)
+    if (top + h > window.innerHeight - M) top = Math.max(M, Math.min(y - h - 2, window.innerHeight - h - M))
+    el.style.left = `${left}px`; el.style.top = `${top}px`; el.style.visibility = 'visible'
+  }, [x, y])
+  return (
+    <div ref={ref} className="qv-ctx" style={{ left: x, top: y, visibility: 'hidden' }} onContextMenu={(e) => e.preventDefault()}>
+      {children}
+    </div>
+  )
+}
+
 type ImgAspect = 'square' | 'landscape' | 'wide' | 'portrait'
 const IMG_FORMATS: Array<[ImgAspect, string, string]> = [
   ['square', 'Cuadrada', '1 : 1'], ['landscape', 'Horizontal', '4 : 3'], ['wide', 'Panorámica', '16 : 9'], ['portrait', 'Vertical', '3 : 4'],
