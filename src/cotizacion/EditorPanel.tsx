@@ -535,15 +535,28 @@ export function EditorPanel(props: EditorProps) {
     setStatus('Subiendo imagen…')
     try {
       const prepared = await prepareImage(file)
-      if (prepared.blob.size > 3 * 1024 * 1024) throw new Error('La imagen sigue pesando más de 3 MB después de reducirla; usa una más pequeña.')
-      const fileBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(String(reader.result))
-        reader.onerror = () => reject(new Error('No se pudo leer la imagen'))
-        reader.readAsDataURL(prepared.blob)
-      })
-      const up = await post('/api/quotes/upload', { fileBase64, filename: prepared.name, contentType: prepared.type })
-      if (!up?.url) throw new Error('El servidor no devolvió la URL de la imagen')
+      if (prepared.blob.size > 25 * 1024 * 1024) throw new Error('La imagen supera 25 MB incluso después de reducirla; usa una más pequeña.')
+      let url = ''
+      if (prepared.blob.size <= 3 * 1024 * 1024) {
+        // pequeña: viaja en la petición
+        const fileBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(String(reader.result))
+          reader.onerror = () => reject(new Error('No se pudo leer la imagen'))
+          reader.readAsDataURL(prepared.blob)
+        })
+        const up = await post('/api/quotes/upload', { fileBase64, filename: prepared.name, contentType: prepared.type })
+        url = up?.url || ''
+      } else {
+        // grande: el servidor firma una URL y el navegador la sube directo a R2
+        setStatus(`Subiendo imagen (${(prepared.blob.size / 1024 / 1024).toFixed(1)} MB)…`)
+        const signed = await post('/api/quotes/upload', { op: 'presign', filename: prepared.name, contentType: prepared.type, size: prepared.blob.size })
+        const put = await fetch(signed.presignedUrl, { method: 'PUT', body: prepared.blob, headers: { 'Content-Type': prepared.type } })
+        if (!put.ok) throw new Error(`El almacenamiento respondió ${put.status} al subir la imagen`)
+        url = signed.url
+      }
+      if (!url) throw new Error('El servidor no devolvió la URL de la imagen')
+      const up = { url }
       if (!onApplyRef(ref, up.url)) throw new Error('No se pudo aplicar la imagen a ese elemento')
       flash('Imagen reemplazada · guarda para publicarla')
     } catch (e) {
@@ -1503,10 +1516,7 @@ async function prepareImage(file: File): Promise<{ blob: Blob; type: string; nam
   const type = (file.type || '').toLowerCase()
   const passthrough = type === 'image/svg+xml' || type === 'image/gif'
   const small = file.size <= 900 * 1024 && ['image/png', 'image/jpeg', 'image/webp'].includes(type)
-  if (passthrough || small) {
-    if (file.size > 4 * 1024 * 1024) throw new Error('La imagen supera 4 MB')
-    return { blob: file, type, name: file.name }
-  }
+  if (passthrough || small) return { blob: file, type, name: file.name }
   const url = URL.createObjectURL(file)
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -1515,15 +1525,18 @@ async function prepareImage(file: File): Promise<{ blob: Blob; type: string; nam
       i.onerror = () => reject(new Error(`El navegador no puede leer este formato (${type || file.name.split('.').pop()}). Usa JPG, PNG, WebP, GIF o SVG.`))
       i.src = url
     })
-    const MAX = 2000
-    const k = Math.min(1, MAX / Math.max(img.naturalWidth, img.naturalHeight))
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.max(1, Math.round(img.naturalWidth * k))
-    canvas.height = Math.max(1, Math.round(img.naturalHeight * k))
-    canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-    // PNG conserva transparencia; el resto va a JPEG de buena calidad
+    // PNG conserva transparencia; el resto va a JPEG de buena calidad. Si sigue muy pesada, se reduce un poco más.
     const out = type === 'image/png' ? 'image/png' : 'image/jpeg'
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, out, 0.88))
+    const encode = async (max: number, q: number) => {
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(img.naturalWidth * k))
+      canvas.height = Math.max(1, Math.round(img.naturalHeight * k))
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, out, q))
+    }
+    let blob = await encode(2400, 0.9)
+    if (blob && blob.size > 6 * 1024 * 1024) blob = await encode(1800, 0.85)
     if (!blob) throw new Error('No se pudo procesar la imagen')
     const base = file.name.replace(/\.[a-z0-9]+$/i, '') || 'imagen'
     return { blob, type: out, name: `${base}.${out === 'image/png' ? 'png' : 'jpg'}` }
