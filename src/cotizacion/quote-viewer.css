@@ -1333,3 +1333,11 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-block.qs-bg-soft, .qv-block.qs-bg-cyan, .qv-block.qs-bg-gold, .qv-block.qs-bg-navy { padding: 12px 14px; border-radius: 10px; margin: 8px 0 14px; }
 .qv-block.qs-bg-soft { background: rgba(26, 45, 90, .06); } .qv-block.qs-bg-cyan { background: rgba(20, 184, 200, .14); } .qv-block.qs-bg-gold { background: rgba(217, 164, 65, .18); } .qv-block.qs-bg-navy { background: #1a2d5a; color: #fff; }
 .qv-block.qs-bg-navy :is(b, td, th, span, li, dt, dd, h3, h4, figcaption):not(.qs-inline):not(.qv-dg-core *):not(.qv-dg-effect *) { color: #fff; }
+/* espacio entre elementos y envoltorio de esquema */
+.qv-spacer { position: relative; }
+.qv-mode-edit .qv-spacer { outline: 1px dashed rgba(79, 70, 229, .35); outline-offset: -1px; border-radius: 4px; background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(79, 70, 229, .06) 6px 12px); }
+.qv-spacer-tag { display: none; position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font: 700 10px Inter, system-ui, sans-serif; color: #6366f1; }
+.qv-mode-edit .qv-spacer-tag, .qv-mode-select .qv-spacer-tag { display: block; }
+.qv-mode-select .qv-spacer { outline: 1px dashed rgba(79, 70, 229, .25); outline-offset: -1px; border-radius: 4px; }
+.qv-dg-wrap { max-width: 100%; }
+@media print { .qv-spacer-tag { display: none !important; } }

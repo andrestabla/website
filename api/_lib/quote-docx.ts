@@ -335,6 +335,8 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
           return [new Paragraph({ children: runs(`${i + 1}. ${it.label}${it.desc ? ` — ${it.desc}` : ''}`), spacing: { after: 40 } }), ...flat(it.children, 1)]
         })),
       ]
+    case 'spacer':
+      return [new Paragraph({ children: [], spacing: { before: Math.round((Number(b.height) || 24) * 15), after: 0 } })]
     case 'grid': {
       // en Word no hay cuadrícula libre: las celdas se vuelcan una tras otra
       const cells: any[][] = Array.isArray(b.cells) ? b.cells : []

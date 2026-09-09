@@ -194,7 +194,8 @@ REGLAS DURAS
    dentro de la página: num, kicker, title, para poner dos numerales en una misma hoja) y "diagram"
    (esquema: kind process|cycle|pyramid|matrix|mindmap|conceptmap|synoptic|causeeffect; title; center para
    mapas mentales, conceptuales y causa-efecto; items [{label, desc, children[], tone}]; en matrix van 4
-   items y axes {x:[..,..], y:[..,..]}). Los textos admiten fragmentos con estilo: {{color-cyan size-lg}}texto{{/}}.
+   items y axes {x:[..,..], y:[..,..]}; opcional align left|center|right y width full|wide|medium|narrow) y
+   "spacer" (espacio vertical entre elementos: height en píxeles, 4–400). Los textos admiten fragmentos con estilo: {{color-cyan size-lg}}texto{{/}}.
    Edítalas con "pagesPatch":
    "set" reescribe páginas por id (título, antetítulo y bloques completos), "remove" las quita,
    "insert" agrega una página nueva después de otra. Cada página es una hoja A4: unos 2.500

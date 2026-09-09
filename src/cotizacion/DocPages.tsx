@@ -161,7 +161,9 @@ export type DocBlock =
   /** Encabezado de sección numerada dentro de la página: permite dos numerales en una hoja. */
   | { type: 'sechead'; num?: string; kicker?: string; title: string }
   /** Esquema personalizable: proceso, ciclo, pirámide, matriz, mapa mental, mapa conceptual, cuadro sinóptico o causa-efecto. */
-  | { type: 'diagram'; kind: DiagramKind; title?: string; center?: string; items: Array<{ label: string; desc?: string; children?: DiagramKid[]; tone?: 'cyan' | 'deep' | 'gold' }>; axes?: { x?: string[]; y?: string[] } }
+  | { type: 'diagram'; kind: DiagramKind; title?: string; center?: string; items: Array<{ label: string; desc?: string; children?: DiagramKid[]; tone?: 'cyan' | 'deep' | 'gold' }>; axes?: { x?: string[]; y?: string[] }; align?: Align; width?: 'full' | 'wide' | 'medium' | 'narrow' }
+  /** Espacio vertical entre elementos, en píxeles. */
+  | { type: 'spacer'; height: number }
 
 /** Hijo de un elemento de esquema: texto, o nodo con subniveles propios. */
 export type DiagramKid = string | { label: string; children?: DiagramKid[] }
@@ -633,8 +635,15 @@ export function DocBlockView({
         </div>
       )
 
-    case 'diagram':
-      return <Diagram block={block} r={r} />
+    case 'diagram': {
+      const widths = { full: '100%', wide: '80%', medium: '60%', narrow: '45%' }
+      const w = widths[block.width || 'full']
+      const margin = block.align === 'center' ? '0 auto' : block.align === 'right' ? '0 0 0 auto' : '0'
+      return <div className="qv-dg-wrap" style={{ width: w, margin }}><Diagram block={block} r={r} /></div>
+    }
+
+    case 'spacer':
+      return <div className="qv-spacer" style={{ height: Math.max(4, block.height || 24) }} aria-hidden="true">{refBase ? <span className="qv-spacer-tag">Espacio · {block.height || 24} px</span> : null}</div>
 
     case 'sechead':
       return (

@@ -547,6 +547,8 @@ function blockWeight(b: PageBlock): number {
       return b.imageUrl ? 420 : 300
     case 'sechead':
       return 200
+    case 'spacer':
+      return Math.max(4, Number(b.height) || 24)
     case 'diagram': {
       const n = Array.isArray(b.items) ? b.items.length : 0
       const countKids = (list: any[]): number => (Array.isArray(list) ? list.reduce((s: number, c: any) => s + 1 + (c && typeof c === 'object' ? countKids(c.children) : 0), 0) : 0)
@@ -819,8 +821,9 @@ const num = (v: unknown, def = 1) => { const n = Math.round(Number(v)); return N
 
 export const PAGE_BLOCK_TYPES = new Set([
   'lede', 'p', 'h3', 'list', 'box', 'note', 'table', 'cards', 'phase', 'img', 'invoice', 'payments', 'toc', 'team', 'letterhead', 'timeline', 'gantt',
-  'grid', 'icon', 'button', 'htimeline', 'vtimeline', 'signature', 'sechead', 'diagram',
+  'grid', 'icon', 'button', 'htimeline', 'vtimeline', 'signature', 'sechead', 'diagram', 'spacer',
 ])
+const DIAGRAM_WIDTHS = new Set(['full', 'wide', 'medium', 'narrow'])
 export const DIAGRAM_KINDS = new Set(['process', 'cycle', 'pyramid', 'matrix', 'mindmap', 'conceptmap', 'synoptic', 'causeeffect'])
 /** Hijos de un elemento de esquema: texto plano o nodo con sus propios hijos, hasta cuatro niveles. */
 function diagramKids(raw: unknown, depth = 1): Array<string | { label: string; children: unknown[] }> {
@@ -965,10 +968,13 @@ function sanitizeBlockInner(raw: any): PageBlock | null {
           })).filter((it: any) => it.label)
         : []
       if (!items.length) return null
-      const out: PageBlock = { type, kind, items, title: s(raw.title, 160), center: s(raw.center, 160) }
+      const out: PageBlock = { type, kind, items, title: s(raw.title, 160), center: s(raw.center, 160), ...align(raw.align) }
       if (raw.axes && typeof raw.axes === 'object') out.axes = { x: sl(raw.axes.x, 2, 60), y: sl(raw.axes.y, 2, 60) }
+      if (DIAGRAM_WIDTHS.has(raw.width)) out.width = raw.width
       return out
     }
+    case 'spacer':
+      return { type, height: Math.min(400, Math.max(4, num(raw.height, 24))) }
     case 'invoice': {
       const rows = Array.isArray(raw.rows) ? raw.rows.slice(0, 30).map((r: any) => ({ concept: s(r?.concept, 300), detail: s(r?.detail, 800), amount: s(r?.amount, 60) })).filter((r: any) => r.concept) : []
       const out: PageBlock = { type, note: s(raw.note, 1000) }

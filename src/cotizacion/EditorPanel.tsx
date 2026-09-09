@@ -757,9 +757,10 @@ export function EditorPanel(props: EditorProps) {
       {hover && hoverBlock && hoverTarget && mode === 'edit' && (
         <div className="qv-blockbar" style={{ top: hover.top - 30, left: Math.max(8, hover.left + hover.width - 290) }}>
           <span className="qv-blockbar-type">{BLOCK_LABEL[hoverBlock.type] || hoverBlock.type}{blockPreview(hoverBlock) ? ` · ${blockPreview(hoverBlock)}` : ''}</span>
-          {!['img', 'toc', 'button', 'icon', 'grid'].includes(hoverBlock.type) && <button onMouseDown={(e) => { e.preventDefault(); captureSelection() }} onClick={() => setDialog({ kind: 'style', loc: hover })} title="Estilo: tamaño, color, peso, fondo · a todo el bloque o al fragmento seleccionado">Aa</button>}
-          {['table', 'gantt', 'cards', 'team', 'htimeline', 'vtimeline', 'payments', 'phase', 'list', 'timeline', 'invoice', 'diagram'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'items', loc: hover })} title="Agregar o quitar filas, columnas, tarjetas, miembros o hitos">⋯</button>}
+          {!['img', 'toc', 'button', 'icon', 'grid', 'spacer'].includes(hoverBlock.type) && <button onMouseDown={(e) => { e.preventDefault(); captureSelection() }} onClick={() => setDialog({ kind: 'style', loc: hover })} title="Estilo: tamaño, color, peso, fondo · a todo el bloque o al fragmento seleccionado">Aa</button>}
+          {['table', 'gantt', 'cards', 'team', 'htimeline', 'vtimeline', 'payments', 'phase', 'list', 'timeline', 'invoice'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'items', loc: hover })} title="Agregar o quitar filas, columnas, tarjetas, miembros o hitos">⋯</button>}
           {hoverBlock.type === 'grid' && <button onClick={() => setDialog({ kind: 'gridSettings', loc: hover })} title="Columnas">⚙</button>}
+          {(hoverBlock.type === 'spacer' || hoverBlock.type === 'diagram') && <button onClick={() => setDialog({ kind: 'items', loc: hover })} title={hoverBlock.type === 'spacer' ? 'Altura del espacio' : 'Alineación, ancho y elementos del esquema'}>⚙</button>}
           {hoverBlock.type === 'sechead' && hover.ci === undefined && <button onClick={() => splitSectionToPage(hover)} title="Separar esta sección en una página propia">⤴</button>}
           {hoverBlock.type === 'icon' && <button onClick={() => setDialog({ kind: 'icon', loc: hover })} title="Cambiar ícono, tamaño o color">⚙</button>}
           {hoverBlock.type === 'button' && <button onClick={() => setDialog({ kind: 'button', loc: hover })} title="Texto, enlace y estilo">⚙</button>}
@@ -1271,14 +1272,33 @@ function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patc
         <div className="row"><Sel n={segs.length} value={idx} set={setIdx} label="Segmento" /><input type="number" min={1} value={segs[idx]?.weight ?? 1} onChange={(e) => onChange({ segments: segs.map((x, i) => (i === idx ? { ...x, weight: Math.max(1, Number(e.target.value)) } : x)) })} /></div>
       </>
     )
+  } else if (t === 'spacer') {
+    const h = Number(block.height) || 24
+    title = 'Espacio entre elementos'
+    body = (
+      <>
+        <p>Separa dos elementos del lienzo. Define la altura en píxeles.</p>
+        <div className="row">
+          <input type="range" min={4} max={400} step={4} value={h} onChange={(e) => onChange({ height: Number(e.target.value) })} />
+          <input type="number" min={4} max={400} value={h} onChange={(e) => onChange({ height: Math.min(400, Math.max(4, Number(e.target.value) || 4)) })} />
+        </div>
+        <div className="row">
+          {[8, 16, 24, 40, 64, 100].map((v) => <button key={v} onClick={() => onChange({ height: v })}>{v} px</button>)}
+        </div>
+      </>
+    )
   } else if (t === 'diagram') {
     const items: any[] = block.items || []
     const kinds = Object.keys(DIAGRAM_LABELS) as DiagramKind[]
     const withChildren = ['mindmap', 'conceptmap', 'synoptic', 'causeeffect'].includes(block.kind)
-    title = `Elementos del esquema · ${DIAGRAM_LABELS[block.kind as DiagramKind] || block.kind}`
+    title = `Esquema · ${DIAGRAM_LABELS[block.kind as DiagramKind] || block.kind}`
     body = (
       <>
         <p>{items.length} elementos. Los textos se editan en la página.</p>
+        <div className="row">
+          <div><label>Alineación</label><select value={block.align || 'left'} onChange={(e) => onChange({ align: e.target.value === 'left' ? undefined : e.target.value })}><option value="left">Izquierda</option><option value="center">Centrado</option><option value="right">Derecha</option></select></div>
+          <div><label>Ancho</label><select value={block.width || 'full'} onChange={(e) => onChange({ width: e.target.value === 'full' ? undefined : e.target.value })}><option value="full">Completo</option><option value="wide">Amplio (80 %)</option><option value="medium">Medio (60 %)</option><option value="narrow">Estrecho (45 %)</option></select></div>
+        </div>
         <label>Tipo de esquema</label>
         <select value={block.kind} onChange={(e) => onChange({ kind: e.target.value })}>{kinds.map((k) => <option key={k} value={k}>{DIAGRAM_LABELS[k]}</option>)}</select>
         <div className="row">
