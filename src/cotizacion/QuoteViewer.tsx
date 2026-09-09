@@ -16,7 +16,7 @@ import {
   type DiscountTier,
   type QuoteItem,
 } from './pricing'
-import { DocPageView, useFitPages, type DocPage } from './DocPages'
+import { DocPageView, useFitPages, rich, type DocPage } from './DocPages'
 import { EditorPanel } from './EditorPanel'
 import { applyRef } from './refs'
 import './quote-viewer.css'
@@ -375,10 +375,13 @@ export default function QuoteViewer() {
     Array.isArray(quote?.content?.paymentSplit) && quote.content.paymentSplit.length
       ? quote.content.paymentSplit
       : undefined
-  const totals = useMemo(
-    () => computeTotals(items, { scale, minWeeks: isService ? 2 : 4, paymentSplit }),
-    [items, scale, isService, paymentSplit]
-  )
+  // inversión fijada a mano desde el builder: manda sobre el cálculo de las líneas (total y pagos)
+  const manualInvestment = (() => { const v = Number(quote?.content?.investment); return Number.isFinite(v) && v > 0 ? Math.round(v) : 0 })()
+  const totals = useMemo(() => {
+    const t = computeTotals(items, { scale, minWeeks: isService ? 2 : 4, paymentSplit })
+    if (!manualInvestment) return t
+    return { ...t, total: manualInvestment, payments: t.payments.map((p) => ({ ...p, amount: Math.round((manualInvestment * p.pct) / 100) })) }
+  }, [items, scale, isService, paymentSplit, manualInvestment])
   const currency = quote?.currency || 'COP'
   const money = useCallback((n: number) => formatMoney(n, currency), [currency])
 
@@ -605,7 +608,7 @@ export default function QuoteViewer() {
               </div>
             )
           })()}
-          <div className="tagline" {...R('content.cover.tagline')}>{cover.tagline || <>Soluciones digitales con <b>sentido humano</b></>}</div>
+          <div className="tagline" {...R('content.cover.tagline')}>{cover.tagline ? rich(cover.tagline) : <>Soluciones digitales con <b>sentido humano</b></>}</div>
         </div>
       </header>
 

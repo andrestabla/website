@@ -549,6 +549,18 @@ export function QuoteBuilder() {
 
   const published = quote.status === 'PUBLISHED'
   const content = quote.content || {}
+  /** Inversión fijada a mano: manda sobre el cálculo de las líneas en lista, portada, barra y pagos. 0 = volver al cálculo. */
+  const manualInvestment = (() => { const v = Number(content.investment); return Number.isFinite(v) && v > 0 ? Math.round(v) : 0 })()
+  const saveInvestment = async (value: number) => {
+    try {
+      // la portada deja de tener un texto fijo de inversión: sigue al número
+      const cover = { ...(content.cover || {}), investment: '' }
+      const body: Record<string, unknown> = { content: { investment: value > 0 ? value : null, cover } }
+      if (!items.length) body.documentTotal = value
+      const payload = await quotesApi.update(quoteId, body)
+      setQuote(payload.quote)
+    } catch (e: any) { setError(e.message) }
+  }
   const isDoc = content.documentUrl !== undefined
   const selectable = content.modulesSelectable !== false
   const itemsNoun: string = content.itemsNoun || 'Módulos'
@@ -914,7 +926,24 @@ export function QuoteBuilder() {
                 {/* Totales */}
                 <div className="rounded-2xl bg-slate-900 p-5 text-white">
                   <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">Inversión total · {currency}</div>
-                  <div className="mt-1 font-mono text-3xl font-black tracking-tight">{money(isDoc && !items.length ? quote.totalFinal : totals.total, currency)}</div>
+                  <div className="mt-1 font-mono text-3xl font-black tracking-tight">{money(manualInvestment || (isDoc && !items.length ? quote.totalFinal : totals.total), currency)}</div>
+                  <div className="mt-3 border-t border-white/15 pt-3" key={`inv-${quote.updatedAt}`}>
+                    <label className="block text-[10.5px] font-bold uppercase tracking-wide text-slate-400">
+                      Inversión configurada ({currency}) · es la que aparece en la lista, la portada, la barra y los pagos
+                      <div className="mt-1 flex items-center gap-2">
+                        <input type="number" min={0} step={1000} defaultValue={manualInvestment || ''} placeholder={items.length ? `Vacío = cálculo de las líneas (${money(totals.total, currency)})` : 'Escribe la inversión'}
+                          onBlur={(e) => { const v = Math.max(0, Math.round(Number(e.target.value) || 0)); if (v !== manualInvestment) void saveInvestment(v) }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                          className="w-full rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 font-mono text-[13px] text-white placeholder:text-slate-500" />
+                        {manualInvestment > 0 && items.length > 0 && (
+                          <button type="button" onClick={() => void saveInvestment(0)} className="shrink-0 rounded-lg border border-white/20 px-2.5 py-1.5 text-[11px] font-bold text-slate-200 hover:bg-white/10" title="Volver al cálculo de las líneas">Usar cálculo</button>
+                        )}
+                      </div>
+                    </label>
+                    {manualInvestment > 0 && items.length > 0 && totals.total !== manualInvestment && (
+                      <p className="mt-1.5 text-[11px] text-amber-300">Las líneas suman {money(totals.total, currency)}; la propuesta muestra la inversión configurada.</p>
+                    )}
+                  </div>
                   {!isDoc && (
                   <div className="mt-3 grid grid-cols-3 gap-3 border-t border-white/15 pt-3 text-center">
                     <div><div className="font-mono text-lg font-bold">{totals.moduleCount}</div><div className="text-[10.5px] uppercase tracking-wide text-slate-400">Módulos</div></div>
@@ -975,23 +1004,9 @@ export function QuoteBuilder() {
                         className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]"
                       />
                     </label>
-                    {items.length ? (
-                      <p className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[12px] leading-relaxed text-slate-500">
-                        La inversión total sale de las líneas de abajo:{' '}
-                        <span className="font-mono font-bold text-slate-700">{money(totals.total, currency)}</span>.
-                        Edítalas ahí y el total se recalcula solo.
-                      </p>
-                    ) : (
-                      <label className="block text-[12px] font-semibold text-slate-500">
-                        Inversión total ({currency})
-                        <input
-                          type="number" min={0}
-                          defaultValue={quote.totalFinal}
-                          onBlur={(e) => { const v = Math.round(Number(e.target.value) || 0); if (v !== quote.totalFinal) void saveDocument({ documentTotal: v }) }}
-                          className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]"
-                        />
-                      </label>
-                    )}
+                    <p className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[12px] leading-relaxed text-slate-500">
+                      La inversión se fija en la tarjeta «Inversión total» de arriba: <span className="font-mono font-bold text-slate-700">{money(manualInvestment || quote.totalFinal, currency)}</span>.
+                    </p>
                     {content.documentUrl ? (
                       <a href={content.documentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12.5px] font-bold text-indigo-600 hover:underline">
                         Abrir el documento ↗

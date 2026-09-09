@@ -31,6 +31,7 @@ import {
   loadCatalog,
   catalogMap,
   computeTotals,
+  manualInvestment,
   formatMoney,
   QUOTE_TEMPLATES,
   normalizeTemplate,
@@ -960,7 +961,8 @@ quote.subtitle, usa "title"/"subtitle".` : ''}
       "finalNote": "", "backQuote": "",
       "signature": { "name": "", "role": "", "email": "", "phone": "" }
     },
-    "content": { "sections": { "diagnostico": { "kicker": "Servicio", "title": "Descripción del servicio", "hidden": false } }, "labels": { "front": "Componente", "invComponent": "Concepto" }, "cover": { "kicker": "", "duration": "9 semanas desde el kickoff", "scope": "4 cursos virtuales", "investment": "", "tagline": "" }, "itemsNoun": "Cursos", "modulesSelectable": false },
+    "content": { "sections": { "diagnostico": { "kicker": "Servicio", "title": "Descripción del servicio", "hidden": false } }, "labels": { "front": "Componente", "invComponent": "Concepto" }, "cover": { "kicker": "", "duration": "9 semanas desde el kickoff", "scope": "4 cursos virtuales", "investment": "", "tagline": "" }, "investment": 24000000, "itemsNoun": "Cursos", "modulesSelectable": false },
+    "_inversion": "content.investment (número, sin símbolos) fija la inversión a mano: manda sobre la suma de las líneas en la lista, la portada, la barra y los pagos; 0 o ausente = se calcula de las líneas. Prefiérelo a escribir un texto en cover.investment.",
     "media": [{ "kind": "search | generate | diagram", "prompt": "qué buscar / describir / título del esquema", "caption": "pie de la imagen", "svg": "<svg …>…</svg> solo en diagram", "pageId": "id de página", "afterBlock": 1, "section": "screens" }],
     "importAttachment": { "id": "id del adjunto", "mode": "replace | append", "setTitle": true },
     "pagesPatch": {
@@ -1233,10 +1235,13 @@ REGLAS DEL PATCH
     }
 
     const nextTotals = computeTotals(nextItems, { scale: effectiveScale, minWeeks: QUOTE_TEMPLATES[effectiveTemplate].minWeeks })
-    if (nextItems !== items || nextTotals.total !== quote.totalFinal || updates.template) {
+    // la inversión fijada a mano en el builder manda sobre el cálculo de las líneas
+    const manual = manualInvestment((updates.content as any) ?? content)
+    const finalTotal = manual || nextTotals.total
+    if (nextItems !== items || finalTotal !== quote.totalFinal || updates.template) {
       updates.pricing = { items: nextItems, totals: nextTotals }
       updates.totalBase = nextTotals.subtotal
-      updates.totalFinal = nextTotals.total
+      updates.totalFinal = finalTotal
       updates.weeks = nextTotals.weeks
       updates.moduleCount = nextTotals.moduleCount
     }

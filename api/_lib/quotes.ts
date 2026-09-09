@@ -13,15 +13,19 @@
 
 import crypto from 'node:crypto'
 import { prisma } from './prisma.js'
-import { getAdminSession } from './admin-auth.js'
+import { getLiveAdminSession } from './admin-auth.js'
 
 type VercelRequest = any
 
 // ── Acceso al módulo ─────────────────────────────────────────────────────────
 
-/** SUPERADMIN/ADMIN o usuario con permiso de módulo COTIZADOR. */
-export function quoteSessionState(req: VercelRequest) {
-  const session = getAdminSession(req)
+/**
+ * SUPERADMIN/ADMIN o usuario con permiso de módulo COTIZADOR. El permiso se
+ * relee de la base de datos en cada petición, así que un cambio en
+ * /admin/users aplica de inmediato.
+ */
+export async function quoteSessionState(req: VercelRequest) {
+  const session = await getLiveAdminSession(req)
   const allowed =
     !!session &&
     (session.role === 'SUPERADMIN' ||
@@ -197,6 +201,16 @@ export type QuoteTotals = {
  * Recalcula todo a partir de los ítems. El núcleo (kind CORE) siempre suma y no
  * cuenta para la escala: el descuento premia los módulos opcionales.
  */
+/**
+ * Inversión fijada a mano desde el builder (content.investment). Cuando existe,
+ * manda sobre el cálculo de las líneas en la lista, la portada, la barra y los
+ * pagos; 0 o vacío = se calcula de las líneas.
+ */
+export function manualInvestment(content: unknown): number {
+  const v = Number((content as any)?.investment)
+  return Number.isFinite(v) && v > 0 ? Math.round(v) : 0
+}
+
 export function computeTotals(
   items: QuoteItem[],
   opts: { scale?: DiscountTier[]; paymentSplit?: number[]; minWeeks?: number } = {}

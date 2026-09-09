@@ -10,6 +10,7 @@ import {
   newPublicId,
   newRecipientToken,
   computeTotals,
+  manualInvestment,
   normalizeItems,
   itemsFromCatalog,
   loadCatalog,
@@ -310,6 +311,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         Object.assign(data, await priced(items, data.discountScale ?? quote.discountScale, normalizeTemplate(quote.template)))
       }
 
+      // la inversión fijada a mano manda sobre el cálculo de las líneas
+      const manual = manualInvestment(data.content ?? quote.content)
+      if (manual) { data.totalFinal = manual; if (data.totalBase === undefined) data.totalBase = quote.totalBase || manual }
+
       // el guardado completo del editor (contenido + líneas) deja una versión restaurable
       if (data.content !== undefined && body.items !== undefined) await snapshotQuote(quote, 'EDITOR', userId, str(body.versionLabel, 120) || undefined)
       const updated = await db().update({ where: { id: quote.id }, data })
@@ -403,6 +408,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!applied.length) return res.status(400).json({ ok: false, error: 'Ninguna referencia válida' })
       const data: Record<string, unknown> = { content, ...quoteData }
       if (items) Object.assign(data, await priced(items, quote.discountScale, normalizeTemplate(quote.template)))
+      const manualFx = manualInvestment(content)
+      if (manualFx) data.totalFinal = manualFx
       await snapshotQuote(quote, 'FIELDS', userId)
       const updated = await db().update({ where: { id: quote.id }, data })
       return res.status(200).json({ ok: true, quote: updated, applied })
