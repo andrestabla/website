@@ -1003,6 +1003,16 @@ export function QuoteBuilder() {
                 </div>
                 )}
 
+                {/* Exportar */}
+                <div className="rounded-2xl border border-slate-200 bg-white">
+                  <div className="border-b border-slate-100 px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-400">Exportar</div>
+                  <div className="flex flex-wrap items-center gap-2 p-4">
+                    <a href={quotesApi.htmlUrl(quote.publicId)} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-[12px] font-bold text-slate-700 hover:bg-slate-50" title="Un solo archivo .html con estilos en línea y rutas absolutas: se sube tal cual a S3 o a cualquier hosting estático">↓ HTML estático (S3)</a>
+                    <a href={quotesApi.pdfUrl(quote.publicId)} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-[12px] font-bold text-slate-700 hover:bg-slate-50">↓ PDF</a>
+                    <p className="w-full text-[11.5px] text-slate-500">El HTML es una foto del documento tal como se ve en el visor: hojas A4, imágenes y totales. Lo interactivo (activar líneas, chat) no viaja. Tarda unos segundos en generarse.</p>
+                  </div>
+                </div>
+
                 {/* Ajustes del documento */}
                 <div className="rounded-2xl border border-slate-200 bg-white">
                   <div className="border-b border-slate-100 px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-400">Ajustes del documento</div>
