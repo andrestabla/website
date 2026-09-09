@@ -46,6 +46,21 @@ export function useFitPages(deps: unknown[] = []) {
         return { over: bottom - limit, avail: limit - top, content: bottom - top }
       }
 
+      // editando, la letra no se reduce: la hoja crece y se marca la que desborda
+      const editing = document.body.classList.contains('qv-mode-select') || document.body.classList.contains('qv-mode-edit')
+      if (editing) {
+        sheets.forEach((el) => {
+          el.style.setProperty('--fit', '1')
+          const { over } = excess(el)
+          const sheet = el.parentElement
+          if (!sheet) return
+          sheet.classList.toggle('is-overflow', over > 0.5)
+          sheet.style.setProperty('--over', over > 0.5 ? `${Math.round(over)} px` : '')
+        })
+        return
+      }
+      sheets.forEach((el) => el.parentElement?.classList.remove('is-overflow'))
+
       // primera pasada: escala según el desborde medido
       sheets.forEach((el) => {
         el.style.setProperty('--fit', '1')
@@ -76,10 +91,14 @@ export function useFitPages(deps: unknown[] = []) {
     window.addEventListener('resize', fit)
     const imgs = Array.from(document.querySelectorAll('.qv-sheet-in img'))
     imgs.forEach((i) => i.addEventListener('load', fit))
+    // al entrar o salir del modo de edición (clase en body) se recalcula
+    const modes = new MutationObserver(fit)
+    modes.observe(document.body, { attributes: true, attributeFilter: ['class'] })
     return () => {
       window.clearTimeout(t)
       window.removeEventListener('resize', fit)
       imgs.forEach((i) => i.removeEventListener('load', fit))
+      modes.disconnect()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
@@ -137,7 +156,7 @@ export type DocBlock =
   | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[]; tableStyle?: 'default' | 'striped' | 'minimal' | 'navy' | 'compact'; fontSize?: 'xs' | 'sm' | 'md'; /** celdas combinadas: origen (fila r, columna c) que abarca cs columnas y rs filas */ merges?: TableMerge[]; /** ancho de cada columna en % (null = automático) */ colWidths?: Array<number | null> }
   | { type: 'cards'; cols?: 2 | 3; items: Array<{ tag?: string; title: string; body: string; foot?: string }> }
   | { type: 'phase'; id: string; name: string; when?: string; defs: Array<{ term: string; desc: string; strong?: boolean }> }
-  | { type: 'img'; url: string; caption?: string; wide?: boolean }
+  | { type: 'img'; url: string; caption?: string; wide?: boolean; /** marco de la imagen: recorta la subida a esa proporción */ aspect?: 'square' | 'landscape' | 'wide' | 'portrait' }
   | {
       type: 'invoice'
       note?: string
@@ -419,7 +438,7 @@ export function DocBlockView({
 
     case 'img':
       return (
-        <figure className={`qv-shot${block.wide ? ' wide' : ''}`}>
+        <figure className={`qv-shot${block.wide ? ' wide' : ''}${block.aspect ? ` qv-shot-${block.aspect}` : ''}`}>
           <img src={block.url} alt={block.caption || ''} loading="lazy" {...(refBase ? { 'data-img-ref': `${refBase}.url` } : {})} />
           {(block.caption || refBase) && <figcaption {...r('caption')}>{block.caption || ''}</figcaption>}
         </figure>

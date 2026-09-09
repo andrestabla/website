@@ -949,7 +949,10 @@ function sanitizeBlockInner(raw: any): PageBlock | null {
     }
     case 'img': {
       const url = s(raw.url, 1000)
-      return url ? { type, url, caption: s(raw.caption, 400), wide: raw.wide !== false } : null
+      if (!url) return null
+      const out: PageBlock = { type, url, caption: s(raw.caption, 400), wide: raw.wide !== false }
+      if (['square', 'landscape', 'wide', 'portrait'].includes(raw.aspect)) out.aspect = raw.aspect
+      return out
     }
     case 'grid': {
       // cuadrícula de 2 a 6 columnas; cada celda es una lista de elementos (sin cuadrículas anidadas)

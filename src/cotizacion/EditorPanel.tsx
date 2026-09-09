@@ -31,6 +31,7 @@ type Hover = (Loc & { top: number; left: number; width: number }) | null
 type AddTarget = { pi: number; bi?: number; ci?: number; after: number }
 type Dialog =
   | { kind: 'grid'; target: AddTarget }
+  | { kind: 'img'; target: AddTarget }
   | { kind: 'icon'; target?: AddTarget; loc?: Loc }
   | { kind: 'button'; target?: AddTarget; loc?: Loc }
   | { kind: 'ai'; target: AddTarget }
@@ -374,10 +375,11 @@ export function EditorPanel(props: EditorProps) {
       const total = start.reduce((a, b) => a + b, 0)
       const x0 = e.clientX
       let widths = [...start]
-      let cols = table.querySelector('colgroup')
-      if (!cols) { cols = document.createElement('colgroup'); start.forEach(() => cols!.appendChild(document.createElement('col'))); table.insertBefore(cols, table.firstChild) }
-      table.classList.add('has-widths')
-      const paint = () => Array.from(cols!.children).forEach((c, i) => { (c as HTMLElement).style.width = `${(widths[i] / total) * 100}%` })
+      // durante el arrastre los anchos van en las celdas de la primera fila; al soltar se limpian y React pinta el colgroup
+      const tableW = table.style.width
+      const layout = table.style.tableLayout
+      table.style.tableLayout = 'fixed'; table.style.width = '100%'
+      const paint = () => cells.forEach((c, i) => { c.style.width = `${(widths[i] / total) * 100}%` })
       const onMove = (ev: MouseEvent) => {
         const d = Math.max(-(start[ci] - 40), Math.min(start[ci + 1] - 40, ev.clientX - x0))
         widths = start.map((w, i) => (i === ci ? w + d : i === ci + 1 ? w - d : w))
@@ -385,8 +387,11 @@ export function EditorPanel(props: EditorProps) {
       }
       const onDone = () => {
         document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onDone)
+        cells.forEach((c) => { c.style.width = '' })
+        table.style.tableLayout = layout; table.style.width = tableW
         const b = blockAt(loc) as any
         if (!b || b.type !== 'table') return
+        // solo cambian las dos columnas intervenidas; el resto conserva su ancho actual
         const pct = widths.map((w) => Math.round((w / total) * 1000) / 10)
         updateBlock(loc, { colWidths: pct } as Partial<Block>)
       }
@@ -630,6 +635,7 @@ export function EditorPanel(props: EditorProps) {
   }
   const addBlock = (target: AddTarget, type: string) => {
     if (type === 'grid') { setDialog({ kind: 'grid', target }); setAddMenu(null); return }
+    if (type === 'img') { setDialog({ kind: 'img', target }); setAddMenu(null); return }
     if (type === 'icon') { setDialog({ kind: 'icon', target }); setAddMenu(null); return }
     if (type === 'button') { setDialog({ kind: 'button', target }); setAddMenu(null); return }
     if (type === 'ai') { setDialog({ kind: 'ai', target }); setAddMenu(null); return }
@@ -639,7 +645,6 @@ export function EditorPanel(props: EditorProps) {
     if (fresh.type === 'list') fresh.items = ['Primer punto']
     if (fresh.type === 'box') { fresh.title = 'Título de la caja'; fresh.body = 'Texto de la caja' }
     if (fresh.type === 'table') { fresh.headers = ['Columna 1', 'Columna 2']; fresh.rows = [['Celda', 'Celda']] }
-    if (fresh.type === 'img') { fresh.url = '/assets/algoritmot-mark.svg'; fresh.caption = 'Haz clic en la imagen para reemplazarla' }
     insertBlock(target, fresh)
   }
   /** Elemento IA: se pide al asistente que cree el bloque en ese lugar exacto. */
@@ -855,6 +860,9 @@ export function EditorPanel(props: EditorProps) {
 
       {dialog?.kind === 'grid' && (
         <GridDialog onClose={() => setDialog(null)} onPick={(cols) => insertBlock(dialog.target, { type: 'grid', cols, cells: Array.from({ length: cols }, () => []) } as Block)} />
+      )}
+      {dialog?.kind === 'img' && (
+        <ImgDialog onClose={() => setDialog(null)} onPick={(aspect) => insertBlock(dialog.target, { type: 'img', url: `/assets/placeholder-${aspect}.svg`, caption: '', aspect, wide: aspect === 'wide' || aspect === 'landscape' } as Block)} />
       )}
       {dialog?.kind === 'gridSettings' && (
         <GridDialog current={(blockAt(dialog.loc) as any)?.cols} onClose={() => setDialog(null)} onPick={(cols) => {
@@ -1530,6 +1538,27 @@ function MoveDialog({ pages, loc, isSection, onMove, onClose }: { pages: Page[];
               <div>{o.label}</div>
               <button onClick={() => onMove(o.target, whole)}>Mover aquí</button>
             </div>
+          ))}
+        </div>
+        <div className="qv-modal-actions"><button onClick={onClose}>Cancelar</button></div>
+      </div>
+    </div>
+  )
+}
+
+/** Formato de una imagen nueva: se inserta un marcador genérico con esa proporción y luego se reemplaza. */
+function ImgDialog({ onPick, onClose }: { onPick: (aspect: 'square' | 'landscape' | 'wide' | 'portrait') => void; onClose: () => void }) {
+  const opts: Array<['square' | 'landscape' | 'wide' | 'portrait', string, string]> = [
+    ['square', 'Cuadrada', '1 : 1'], ['landscape', 'Horizontal', '4 : 3'], ['wide', 'Panorámica', '16 : 9'], ['portrait', 'Vertical', '3 : 4'],
+  ]
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>Nueva imagen</h3>
+        <p>Elige el formato. Se inserta una imagen genérica con esa proporción; haz clic sobre ella para subir la tuya o pídesela a la IA.</p>
+        <div className="qv-addmenu-grid qv-img-formats">
+          {opts.map(([k, label, ratio]) => (
+            <button key={k} onClick={() => onPick(k)}><span className={`qv-img-fmt is-${k}`} aria-hidden="true" />{label}<small>{ratio}</small></button>
           ))}
         </div>
         <div className="qv-modal-actions"><button onClick={onClose}>Cancelar</button></div>

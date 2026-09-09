@@ -1370,3 +1370,23 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-col-grip:hover::after { background: #4f46e5; }
 .qv-mode-select .qv-col-grip, .qv-mode-edit .qv-col-grip { display: block; }
 @media print { .qv-col-grip { display: none !important; } }
+/* imágenes con formato: el marco recorta la imagen a la proporción elegida */
+.qv-shot-square img, .qv-shot-landscape img, .qv-shot-wide img, .qv-shot-portrait img { object-fit: cover; width: 100%; }
+.qv-shot-square { max-width: 360px; margin-left: auto; margin-right: auto; } .qv-shot-square img { aspect-ratio: 1 / 1; }
+.qv-shot-landscape img { aspect-ratio: 4 / 3; }
+.qv-shot-wide img { aspect-ratio: 16 / 9; }
+.qv-shot-portrait { max-width: 320px; margin-left: auto; margin-right: auto; } .qv-shot-portrait img { aspect-ratio: 3 / 4; }
+.qv-img-formats button { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.qv-img-formats small { color: #64748b; font-weight: 500; }
+.qv-img-fmt { display: block; background: #cbd5e1; border-radius: 3px; }
+.qv-img-fmt.is-square { width: 40px; height: 40px; } .qv-img-fmt.is-landscape { width: 48px; height: 36px; }
+.qv-img-fmt.is-wide { width: 56px; height: 32px; } .qv-img-fmt.is-portrait { width: 33px; height: 44px; }
+/* editando, la hoja no se reduce: crece y avisa cuánto desborda (en vista previa y PDF sí se ajusta) */
+.qv-mode-select .qv.is-paged .qv-section, .qv-mode-edit .qv.is-paged .qv-section { height: auto; min-height: 1273px; overflow: visible; }
+.qv-mode-select .qv.is-paged .qv-sheet-in, .qv-mode-edit .qv.is-paged .qv-sheet-in { height: auto; min-height: 100%; }
+.qv.is-paged .qv-section.is-overflow { box-shadow: 0 0 0 2px #f59e0b, 0 10px 30px rgba(15, 23, 42, .12); }
+.qv-mode-select .qv.is-paged .qv-section.is-overflow::after, .qv-mode-edit .qv.is-paged .qv-section.is-overflow::after {
+  content: 'Desborda la hoja A4 por ' var(--over) ' · mueve o reduce elementos; en vista previa y PDF se ajusta a la hoja';
+  position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); white-space: nowrap;
+  background: #f59e0b; color: #fff; font: 700 11px Inter, system-ui, sans-serif; padding: 5px 10px; border-radius: 999px; z-index: 5;
+}

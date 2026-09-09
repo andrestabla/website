@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#e2e8f0" stroke-width="1"/></pattern></defs>
+  <rect width="800" height="800" fill="#f1f5f9"/><rect width="800" height="800" fill="url(#g)"/>
+  <g transform="translate(312.0 312.0)" fill="none" stroke="#94a3b8" stroke-width="10.6" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="0" y="0" width="176" height="176" rx="18"/>
+    <circle cx="56" cy="56" r="16" fill="#94a3b8" stroke="none"/>
+    <path d="M14 141 L63 88 L97 120 L120 99 L162 141"/>
+  </g>
+  <text x="400.0" y="532" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#64748b">Imagen cuadrada · 800×800</text>
+  <text x="400.0" y="574" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="21" fill="#94a3b8">Haz clic para reemplazarla</text>
+</svg>
