@@ -89,16 +89,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // se fuerzan y se espera de verdad a que carguen (las de la propuesta pueden pesar varios MB);
       // el tope evita que un recurso caído bloquee el PDF
       const imgs = Array.from(document.images)
-      const settle = (img: HTMLImageElement) => (img.complete ? Promise.resolve() : new Promise<void>((r) => { img.addEventListener('load', () => r(), { once: true }); img.addEventListener('error', () => r(), { once: true }) }))
-      for (const img of imgs) { img.loading = 'eager'; if (!img.complete && img.src) { const src = img.src; img.src = ''; img.src = src } }
+      // con la imagen en cache, Chrome la da por «completa» sin haberla decodificado para
+      // imprimir y el PDF sale con el recuadro vacio: se recarga y se decodifica cada una
+      const ready = async (img: HTMLImageElement) => {
+        img.removeAttribute('loading')
+        const src = img.currentSrc || img.src
+        if (!src) return
+        await new Promise<void>((r) => { img.addEventListener('load', () => r(), { once: true }); img.addEventListener('error', () => r(), { once: true }); img.src = ''; img.src = src })
+        await img.decode().catch(() => undefined)
+      }
       window.scrollTo(0, document.body.scrollHeight)
-      await Promise.race([Promise.all(imgs.map(settle)), new Promise((r) => setTimeout(r, 30000))])
+      await Promise.race([Promise.all(imgs.map(ready)), new Promise((r) => setTimeout(r, 30000))])
       // las que fallaron (red, tiempo) reciben un segundo intento corto
       const failed = imgs.filter((img) => !img.complete || img.naturalWidth === 0)
-      if (failed.length) {
-        for (const img of failed) { const src = img.src; img.src = ''; img.src = src }
-        await Promise.race([Promise.all(failed.map(settle)), new Promise((r) => setTimeout(r, 8000))])
-      }
+      if (failed.length) await Promise.race([Promise.all(failed.map(ready)), new Promise((r) => setTimeout(r, 8000))])
       window.scrollTo(0, 0)
       await Promise.race([(document as any).fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 3000))])
       return imgs.filter((img) => img.naturalWidth === 0).length
