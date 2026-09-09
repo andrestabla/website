@@ -87,14 +87,29 @@ export function useFitPages(deps: unknown[] = []) {
 
 export type Align = 'left' | 'center' | 'right' | 'justify'
 
+/** Estilo visual editable de un bloque de texto. */
+export type BlockStyle = { size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'; color?: 'ink' | 'navy' | 'cyan' | 'gold' | 'muted' | 'white'; weight?: 'bold' | 'normal'; bg?: 'none' | 'soft' | 'cyan' | 'gold' | 'navy'; italic?: string | boolean; uppercase?: string | boolean }
+/** Clases CSS que aplican el estilo de un bloque. */
+export const styleClass = (st?: BlockStyle) => {
+  if (!st) return ''
+  const c: string[] = []
+  if (st.size) c.push(`qs-size-${st.size}`)
+  if (st.color) c.push(`qs-color-${st.color}`)
+  if (st.weight) c.push(`qs-w-${st.weight}`)
+  if (st.bg && st.bg !== 'none') c.push(`qs-bg-${st.bg}`)
+  if (st.italic === true || st.italic === 'true') c.push('qs-italic')
+  if (st.uppercase === true || st.uppercase === 'true') c.push('qs-upper')
+  return c.length ? ` ${c.join(' ')}` : ''
+}
+
 export type DocBlock =
-  | { type: 'lede'; text: string; align?: Align }
-  | { type: 'p'; text: string; align?: Align }
-  | { type: 'h3'; text: string; align?: Align }
-  | { type: 'list'; items: string[]; align?: Align }
-  | { type: 'box'; title?: string; body: string; align?: Align }
-  | { type: 'note'; text: string; align?: Align }
-  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[] }
+  | { type: 'lede'; text: string; align?: Align; style?: BlockStyle }
+  | { type: 'p'; text: string; align?: Align; style?: BlockStyle }
+  | { type: 'h3'; text: string; align?: Align; style?: BlockStyle }
+  | { type: 'list'; items: string[]; align?: Align; style?: BlockStyle; marker?: 'number' | 'check' }
+  | { type: 'box'; title?: string; body: string; align?: Align; style?: BlockStyle }
+  | { type: 'note'; text: string; align?: Align; style?: BlockStyle }
+  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[]; tableStyle?: 'default' | 'striped' | 'minimal' | 'navy' | 'compact'; fontSize?: 'xs' | 'sm' | 'md' }
   | { type: 'cards'; cols?: 2 | 3; items: Array<{ tag?: string; title: string; body: string; foot?: string }> }
   | { type: 'phase'; id: string; name: string; when?: string; defs: Array<{ term: string; desc: string; strong?: boolean }> }
   | { type: 'img'; url: string; caption?: string; wide?: boolean }
@@ -239,36 +254,38 @@ export function DocBlockView({
   const r = (field: string) => (refBase ? { 'data-ref': `${refBase}.${field}` } : {})
   switch (block.type) {
     case 'lede':
-      return <div {...r('text')}>{paras(block.text).map((t, i) => <p className="qv-lede" style={al(block.align)} key={i}>{lines(t)}</p>)}</div>
+      return <div className={`qv-styled${styleClass(block.style)}`} {...r('text')}>{paras(block.text).map((t, i) => <p className="qv-lede" style={al(block.align)} key={i}>{lines(t)}</p>)}</div>
 
     case 'p':
-      return <div {...r('text')}><Prose text={block.text} align={block.align} /></div>
+      return <div className={`qv-styled${styleClass(block.style)}`} {...r('text')}><Prose text={block.text} align={block.align} /></div>
 
     case 'h3':
-      return <h3 className="qv-subtitle" style={al(block.align)} {...r('text')}>{rich(block.text)}</h3>
+      return <h3 className={`qv-subtitle qv-styled${styleClass(block.style)}`} style={al(block.align)} {...r('text')}>{rich(block.text)}</h3>
 
-    case 'list':
+    case 'list': {
+      const Tag = block.marker === 'number' ? 'ol' : 'ul'
       return (
-        <ul className="qv-deliv one" style={al(block.align)}>
+        <Tag className={`qv-deliv one qv-styled${styleClass(block.style)}${block.marker === 'number' ? ' is-numbered' : block.marker === 'check' ? ' is-check' : ''}`} style={al(block.align)}>
           {block.items.map((it, i) => (it ? <li key={i} {...r(`items.${i}`)}>{rich(it)}</li> : null))}
-        </ul>
+        </Tag>
       )
+    }
 
     case 'box':
       return (
-        <div className="qv-scopebox" style={al(block.align)}>
+        <div className={`qv-scopebox qv-styled${styleClass(block.style)}`} style={al(block.align)}>
           {block.title && <div className="sb-h" {...r('title')}>{rich(block.title)}</div>}
           <div {...r('body')}><Prose text={block.body} /></div>
         </div>
       )
 
     case 'note':
-      return <p className="qv-note" style={al(block.align)} {...r('text')}>{rich(block.text)}</p>
+      return <p className={`qv-note qv-styled${styleClass(block.style)}`} style={al(block.align)} {...r('text')}>{rich(block.text)}</p>
 
     case 'table':
       return (
         <div className="qv-tablewrap">
-          <table className="qv-table doc">
+          <table className={`qv-table doc${block.tableStyle && block.tableStyle !== 'default' ? ` ts-${block.tableStyle}` : ''}${block.fontSize ? ` qs-size-${block.fontSize}` : ''}`}>
             {block.headers?.length ? (
               <thead><tr>{block.headers.map((h, i) => (
                 <th key={i} style={al(block.colAlign?.[i])} {...r(`headers.${i}`)}>{h}</th>

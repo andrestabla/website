@@ -32,6 +32,7 @@ type Dialog =
   | { kind: 'button'; target?: AddTarget; loc?: Loc }
   | { kind: 'ai'; target: AddTarget }
   | { kind: 'gridSettings'; loc: Loc }
+  | { kind: 'style'; loc: Loc }
   | null
 
 const parseLoc = (raw: string): Loc | null => {
@@ -133,10 +134,14 @@ export type EditorProps = {
   onSave: () => Promise<void>
   onDiscard: () => Promise<void>
   onReload: () => Promise<void>
+  onUndo?: () => void
+  onRedo?: () => void
+  canUndo?: boolean
+  canRedo?: boolean
 }
 
 export function EditorPanel(props: EditorProps) {
-  const { publicId, pages, sections, dirty, preview, onPreview, onApplyRef, onPages, onSections, onSave, onDiscard, onReload } = props
+  const { publicId, pages, sections, dirty, preview, onPreview, onApplyRef, onPages, onSections, onSave, onDiscard, onReload, onUndo, onRedo, canUndo, canRedo } = props
   const [mode, setMode] = useState<Mode>('edit')
   const [focus, setFocus] = useState<Focus | null>(null)
   const [draft, setDraft] = useState('')
@@ -164,17 +169,25 @@ export function EditorPanel(props: EditorProps) {
   const flash = useCallback((text: string) => { setStatus(text); window.setTimeout(() => setStatus(''), 2500) }, [])
   const clearSelectedClass = () => document.querySelectorAll('.qv-ref-selected').forEach((el) => el.classList.remove('qv-ref-selected'))
 
-  // Esc cierra menús y modal
+  // atajos: Esc cierra; Ctrl/Cmd+S guarda; Ctrl/Cmd+Z deshace; Ctrl/Cmd+Shift+Z rehace
   useEffect(() => {
-    const onEsc = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      if (addMenu) setAddMenu(null)
-      if (pageMenu !== null) setPageMenu(null)
-      if (saveModal && !saving) setSaveModal(false)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (addMenu) setAddMenu(null)
+        if (pageMenu !== null) setPageMenu(null)
+        if (dialog) setDialog(null)
+        if (saveModal && !saving) setSaveModal(false)
+        return
+      }
+      const mod = e.metaKey || e.ctrlKey
+      if (!mod) return
+      const editing = (e.target as HTMLElement)?.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test((e.target as HTMLElement)?.tagName || '')
+      if (e.key.toLowerCase() === 's') { e.preventDefault(); if (dirty) setSaveModal(true) }
+      if (e.key.toLowerCase() === 'z' && !editing) { e.preventDefault(); if (e.shiftKey) onRedo?.(); else onUndo?.() }
     }
-    document.addEventListener('keydown', onEsc)
-    return () => document.removeEventListener('keydown', onEsc)
-  }, [addMenu, pageMenu, saveModal, saving])
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [addMenu, pageMenu, dialog, saveModal, saving, dirty, onUndo, onRedo])
 
   // avisar antes de cerrar con cambios sin guardar
   useEffect(() => {
@@ -518,7 +531,13 @@ export function EditorPanel(props: EditorProps) {
             <button onClick={() => onPreview(true)} title="Ver el documento limpio, tal como lo verá el cliente">Vista previa</button>
             <button disabled={!dirty} onClick={() => { if (confirm('¿Descartar los cambios sin guardar?')) void onDiscard() }}>Descartar</button>
           </div>
-          <div className={`qv-side-state${dirty ? ' is-dirty' : ''}`}>{dirty ? '● Cambios sin guardar' : '○ Todo guardado'}{status ? ` · ${status}` : ''}</div>
+          <div className={`qv-side-state${dirty ? ' is-dirty' : ''}`}>
+            <span>{dirty ? '● Cambios sin guardar' : '○ Todo guardado'}{status ? ` · ${status}` : ''}</span>
+            <span className="qv-side-hist">
+              <button onClick={onUndo} disabled={!canUndo} title="Deshacer (Ctrl+Z)">↶</button>
+              <button onClick={onRedo} disabled={!canRedo} title="Rehacer (Ctrl+Shift+Z)">↷</button>
+            </span>
+          </div>
 
           {isPaged ? (
             <>
@@ -584,6 +603,7 @@ export function EditorPanel(props: EditorProps) {
       {hover && hoverBlock && hoverTarget && mode === 'edit' && (
         <div className="qv-blockbar" style={{ top: hover.top - 30, left: Math.max(8, hover.left + hover.width - 290) }}>
           <span className="qv-blockbar-type">{BLOCK_LABEL[hoverBlock.type] || hoverBlock.type}{blockPreview(hoverBlock) ? ` · ${blockPreview(hoverBlock)}` : ''}</span>
+          {['lede', 'p', 'h3', 'note', 'list', 'box', 'table'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'style', loc: hover })} title="Estilo: tamaño, color, peso, fondo">Aa</button>}
           {hoverBlock.type === 'grid' && <button onClick={() => setDialog({ kind: 'gridSettings', loc: hover })} title="Columnas">⚙</button>}
           {hoverBlock.type === 'icon' && <button onClick={() => setDialog({ kind: 'icon', loc: hover })} title="Cambiar ícono, tamaño o color">⚙</button>}
           {hoverBlock.type === 'button' && <button onClick={() => setDialog({ kind: 'button', loc: hover })} title="Texto, enlace y estilo">⚙</button>}
@@ -651,6 +671,9 @@ export function EditorPanel(props: EditorProps) {
           }}
         />
       )}
+      {dialog?.kind === 'style' && (
+        <StyleDialog block={blockAt(dialog.loc) as any} onClose={() => setDialog(null)} onSave={(patch) => { updateBlock(dialog.loc, patch as Partial<Block>); setDialog(null) }} />
+      )}
       {dialog?.kind === 'ai' && (
         <AiDialog onClose={() => setDialog(null)} onAsk={(kind, prompt) => void askAiElement(dialog.target, kind, prompt)} />
       )}
@@ -705,6 +728,77 @@ export function EditorPanel(props: EditorProps) {
         <button className="qv-editor qv-editor-fab" onClick={() => setPanelOpen(true)} title="Abrir el asistente">✦ IA</button>
       )}
     </>
+  )
+}
+
+function StyleDialog({ block, onSave, onClose }: { block: any; onSave: (patch: Record<string, unknown>) => void; onClose: () => void }) {
+  const isTable = block?.type === 'table'
+  const [size, setSize] = useState<string>(isTable ? block?.fontSize || 'md' : block?.style?.size || 'md')
+  const [color, setColor] = useState<string>(block?.style?.color || '')
+  const [weight, setWeight] = useState<string>(block?.style?.weight || '')
+  const [bg, setBg] = useState<string>(block?.style?.bg || 'none')
+  const [italic, setItalic] = useState<boolean>(block?.style?.italic === true || block?.style?.italic === 'true')
+  const [upper, setUpper] = useState<boolean>(block?.style?.uppercase === true || block?.style?.uppercase === 'true')
+  const [align, setAlign] = useState<string>(block?.align || 'left')
+  const [marker, setMarker] = useState<string>(block?.marker || 'bullet')
+  const [tableStyle, setTableStyle] = useState<string>(block?.tableStyle || 'default')
+  const [firstCol, setFirstCol] = useState<string>(block?.firstCol || 'key')
+  const apply = () => {
+    if (isTable) { onSave({ tableStyle, fontSize: size, firstCol }); return }
+    const style: Record<string, unknown> = {}
+    if (size && size !== 'md') style.size = size
+    if (color) style.color = color
+    if (weight) style.weight = weight
+    if (bg && bg !== 'none') style.bg = bg
+    if (italic) style.italic = true
+    if (upper) style.uppercase = true
+    const patch: Record<string, unknown> = { style: Object.keys(style).length ? style : undefined, align: align === 'left' ? undefined : align }
+    if (block?.type === 'list') patch.marker = marker === 'bullet' ? undefined : marker
+    onSave(patch)
+  }
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>{isTable ? 'Estilo de la tabla' : 'Estilo del texto'}</h3>
+        {isTable ? (
+          <>
+            <label>Apariencia</label>
+            <select value={tableStyle} onChange={(e) => setTableStyle(e.target.value)}>
+              <option value="default">Estándar</option><option value="striped">Filas alternadas</option><option value="minimal">Mínima (solo líneas)</option><option value="navy">Cabecera azul marino</option><option value="compact">Compacta</option>
+            </select>
+            <div className="row">
+              <div><label>Tamaño de letra</label><select value={size} onChange={(e) => setSize(e.target.value)}><option value="xs">Muy pequeña</option><option value="sm">Pequeña</option><option value="md">Normal</option></select></div>
+              <div><label>Primera columna</label><select value={firstCol} onChange={(e) => setFirstCol(e.target.value)}><option value="key">Destacada</option><option value="plain">Normal</option></select></div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="row">
+              <div><label>Tamaño</label><select value={size} onChange={(e) => setSize(e.target.value)}><option value="xs">Muy pequeño</option><option value="sm">Pequeño</option><option value="md">Normal</option><option value="lg">Grande</option><option value="xl">Muy grande</option><option value="xxl">Titular</option></select></div>
+              <div><label>Color</label><select value={color} onChange={(e) => setColor(e.target.value)}><option value="">Por defecto</option><option value="ink">Tinta</option><option value="navy">Azul marino</option><option value="cyan">Cian</option><option value="gold">Dorado</option><option value="muted">Gris</option><option value="white">Blanco</option></select></div>
+            </div>
+            <div className="row">
+              <div><label>Peso</label><select value={weight} onChange={(e) => setWeight(e.target.value)}><option value="">Por defecto</option><option value="bold">Negrita</option><option value="normal">Normal</option></select></div>
+              <div><label>Fondo</label><select value={bg} onChange={(e) => setBg(e.target.value)}><option value="none">Sin fondo</option><option value="soft">Suave</option><option value="cyan">Cian</option><option value="gold">Dorado</option><option value="navy">Azul marino (texto blanco)</option></select></div>
+            </div>
+            <div className="row">
+              <div><label>Alineación</label><select value={align} onChange={(e) => setAlign(e.target.value)}><option value="left">Izquierda</option><option value="center">Centrado</option><option value="right">Derecha</option><option value="justify">Justificado</option></select></div>
+              {block?.type === 'list' ? (
+                <div><label>Marcador</label><select value={marker} onChange={(e) => setMarker(e.target.value)}><option value="bullet">Viñeta</option><option value="number">Numerada</option><option value="check">Chulos</option></select></div>
+              ) : <div />}
+            </div>
+            <div className="row" style={{ marginTop: 8 }}>
+              <label style={{ display: 'flex', gap: 6, alignItems: 'center', textTransform: 'none', letterSpacing: 0 }}><input type="checkbox" checked={italic} onChange={(e) => setItalic(e.target.checked)} style={{ width: 'auto' }} /> Cursiva</label>
+              <label style={{ display: 'flex', gap: 6, alignItems: 'center', textTransform: 'none', letterSpacing: 0 }}><input type="checkbox" checked={upper} onChange={(e) => setUpper(e.target.checked)} style={{ width: 'auto' }} /> Mayúsculas</label>
+            </div>
+          </>
+        )}
+        <div className="qv-modal-actions">
+          <button onClick={onClose}>Cancelar</button>
+          <button className="primary" onClick={apply}>Aplicar</button>
+        </div>
+      </div>
+    </div>
   )
 }
 

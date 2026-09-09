@@ -1132,3 +1132,44 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-dialog label { display: block; margin: 8px 0 4px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #64748b; }
 .qv-dialog input, .qv-dialog select, .qv-dialog textarea { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font: inherit; }
 .qv-dialog .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── Estilos editables por bloque ─────────────────────────────────────── */
+.qv-styled.qs-size-xs, .qv-table.qs-size-xs { font-size: .82em; }
+.qv-styled.qs-size-sm, .qv-table.qs-size-sm { font-size: .92em; }
+.qv-styled.qs-size-md, .qv-table.qs-size-md { font-size: 1em; }
+.qv-styled.qs-size-lg { font-size: 1.18em; }
+.qv-styled.qs-size-xl { font-size: 1.42em; line-height: 1.3; }
+.qv-styled.qs-size-xxl { font-size: 1.9em; line-height: 1.2; }
+.qv-styled.qs-size-lg p, .qv-styled.qs-size-xl p, .qv-styled.qs-size-xxl p, .qv-styled.qs-size-xs p, .qv-styled.qs-size-sm p { font-size: inherit; line-height: inherit; }
+.qv-styled.qs-color-ink, .qv-styled.qs-color-ink p, .qv-styled.qs-color-ink li { color: #1f2430; }
+.qv-styled.qs-color-navy, .qv-styled.qs-color-navy p, .qv-styled.qs-color-navy li { color: #1a2d5a; }
+.qv-styled.qs-color-cyan, .qv-styled.qs-color-cyan p, .qv-styled.qs-color-cyan li { color: #0b6f88; }
+.qv-styled.qs-color-gold, .qv-styled.qs-color-gold p, .qv-styled.qs-color-gold li { color: #a87a14; }
+.qv-styled.qs-color-muted, .qv-styled.qs-color-muted p, .qv-styled.qs-color-muted li { color: #6b7280; }
+.qv-styled.qs-color-white, .qv-styled.qs-color-white p, .qv-styled.qs-color-white li, .qv-styled.qs-color-white .sb-h { color: #fff; }
+.qv-styled.qs-w-bold, .qv-styled.qs-w-bold p, .qv-styled.qs-w-bold li { font-weight: 700; }
+.qv-styled.qs-w-normal, .qv-styled.qs-w-normal p, .qv-styled.qs-w-normal li { font-weight: 400; }
+.qv-styled.qs-italic, .qv-styled.qs-italic p, .qv-styled.qs-italic li { font-style: italic; }
+.qv-styled.qs-upper, .qv-styled.qs-upper p, .qv-styled.qs-upper li { text-transform: uppercase; letter-spacing: .06em; }
+.qv-styled.qs-bg-soft { background: rgba(26, 45, 90, .06); padding: 14px 18px; border-radius: 10px; }
+.qv-styled.qs-bg-cyan { background: rgba(20, 184, 200, .14); padding: 14px 18px; border-radius: 10px; }
+.qv-styled.qs-bg-gold { background: rgba(217, 164, 65, .18); padding: 14px 18px; border-radius: 10px; }
+.qv-styled.qs-bg-navy { background: #1a2d5a; padding: 16px 20px; border-radius: 10px; color: #fff; }
+.qv-styled.qs-bg-navy p, .qv-styled.qs-bg-navy li, .qv-styled.qs-bg-navy .sb-h { color: #fff; }
+.qv-styled.qs-bg-navy, .qv-styled.qs-bg-soft, .qv-styled.qs-bg-cyan, .qv-styled.qs-bg-gold { margin: 8px 0 14px; }
+.qv-styled.qs-bg-navy p:last-child, .qv-styled.qs-bg-soft p:last-child, .qv-styled.qs-bg-cyan p:last-child, .qv-styled.qs-bg-gold p:last-child { margin-bottom: 0; }
+/* listas */
+.qv-deliv.is-numbered { counter-reset: qvn; list-style: none; }
+.qv-deliv.is-numbered li::before { content: counter(qvn) '.'; counter-increment: qvn; width: auto; height: auto; background: none; border: 0; font-family: var(--mono); font-weight: 700; color: var(--cyan-deep, #0b6f88); top: 0; }
+.qv-deliv.is-check li::before { content: '✓'; width: auto; height: auto; background: none; border: 0; font-weight: 800; color: #0b6f88; top: 0; }
+/* tablas */
+.qv-table.doc.ts-striped tbody tr:nth-child(even) td { background: rgba(26, 45, 90, .045); }
+.qv-table.doc.ts-minimal th, .qv-table.doc.ts-minimal td { border-left: 0; border-right: 0; background: transparent; }
+.qv-table.doc.ts-minimal thead th { border-bottom: 2px solid #1a2d5a; background: transparent; color: #1a2d5a; }
+.qv-table.doc.ts-navy thead th { background: #1a2d5a; color: #fff; }
+.qv-table.doc.ts-navy tbody tr:nth-child(even) td { background: rgba(26, 45, 90, .05); }
+.qv-table.doc.ts-compact th, .qv-table.doc.ts-compact td { padding: 4px 8px; font-size: .9em; }
+.qv-side-state { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.qv-side-hist { display: inline-flex; gap: 3px; }
+.qv-side-hist button { border: 1px solid #e2e8f0; background: #fff; border-radius: 6px; width: 24px; height: 22px; cursor: pointer; color: #475569; font-size: 13px; line-height: 1; }
+.qv-side-hist button:disabled { opacity: .3; cursor: default; }

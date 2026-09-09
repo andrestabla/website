@@ -277,18 +277,43 @@ export default function QuoteViewer() {
   const flatScale = scale.every((tier: DiscountTier) => tier.pct === 0)
   useFitPages([state, items.length, quote?.content])
 
-  // ── editor: edición local, guardado y descarte ──
+  // ── editor: edición local, historial (deshacer/rehacer), guardado y descarte ──
   const dirty = !!quote && editor && snapshot(quote, items) !== baseline.current
+  const history = useRef<Array<{ quote: PublicQuote; items: QuoteItem[] }>>([])
+  const future = useRef<Array<{ quote: PublicQuote; items: QuoteItem[] }>>([])
+  // tamaño del historial como estado: las refs no se leen durante el render
+  const [hist, setHist] = useState({ undo: 0, redo: 0 })
+  const syncHist = () => setHist({ undo: history.current.length, redo: future.current.length })
+  const remember = useCallback(() => {
+    if (!quote) return
+    history.current.push({ quote, items })
+    if (history.current.length > 60) history.current.shift()
+    future.current = []
+    syncHist()
+  }, [quote, items])
+  const onUndo = useCallback(() => {
+    const prev = history.current.pop()
+    if (!prev || !quote) return
+    future.current.push({ quote, items })
+    setQuote(prev.quote); setItems(prev.items); syncHist()
+  }, [quote, items])
+  const onRedo = useCallback(() => {
+    const next = future.current.pop()
+    if (!next || !quote) return
+    history.current.push({ quote, items })
+    setQuote(next.quote); setItems(next.items); syncHist()
+  }, [quote, items])
   const onApplyRef = useCallback((ref: string, value: string) => {
     if (!quote) return false
     const next = applyRef({ title: quote.title, subtitle: quote.subtitle ?? null, clientName: quote.clientName, sector: quote.sector ?? null, content: quote.content, items }, ref, value)
     if (!next) return false
+    remember()
     setQuote({ ...quote, title: next.title, subtitle: next.subtitle, clientName: next.clientName, sector: next.sector, content: next.content })
     setItems(next.items)
     return true
-  }, [quote, items])
-  const onPages = useCallback((pages: DocPage[]) => setQuote((q) => (q ? { ...q, content: { ...q.content, pages } } : q)), [])
-  const onSections = useCallback((sections: any) => setQuote((q) => (q ? { ...q, content: { ...q.content, sections } } : q)), [])
+  }, [quote, items, remember])
+  const onPages = useCallback((pages: DocPage[]) => { remember(); setQuote((q) => (q ? { ...q, content: { ...q.content, pages } } : q)) }, [remember])
+  const onSections = useCallback((sections: any) => { remember(); setQuote((q) => (q ? { ...q, content: { ...q.content, sections } } : q)) }, [remember])
   const saveDraft = useCallback(async () => {
     if (!quote) return
     const res = await fetch('/api/quotes/manage', {
@@ -298,6 +323,7 @@ export default function QuoteViewer() {
     })
     const payload = await res.json().catch(() => null)
     if (!res.ok || payload?.ok === false) throw new Error(payload?.error || `Error ${res.status}`)
+    history.current = []; future.current = []; setHist({ undo: 0, redo: 0 })
     await load(true)
   }, [quote, items, load])
 
@@ -1109,8 +1135,12 @@ export default function QuoteViewer() {
           onPages={onPages as any}
           onSections={onSections}
           onSave={saveDraft}
-          onDiscard={() => load(true)}
+          onDiscard={() => { history.current = []; future.current = []; setHist({ undo: 0, redo: 0 }); return load(true) }}
           onReload={() => load(true)}
+          onUndo={onUndo}
+          onRedo={onRedo}
+          canUndo={hist.undo > 0}
+          canRedo={hist.redo > 0}
         />
       )}
     </div>

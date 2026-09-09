@@ -967,6 +967,7 @@ quote.subtitle, usa "title"/"subtitle".` : ''}
                            { "type": "gantt", "cols": ["Mes 1"], "rows": [{ "label": "", "from": 1, "to": 1, "tone": "cyan" }] },
                            { "type": "grid", "cols": 3, "cells": [[{ "type": "icon", "name": "rocket", "size": 40, "color": "cyan", "label": "Arranque" }, { "type": "p", "text": "" }], [], []] },
                            { "type": "button", "label": "Agendar reunión", "url": "https://…", "style": "primary", "align": "center" }] }],
+      "_estilo": "cualquier bloque de texto (lede, p, h3, note, list, box) admite \"style\": { \"size\": \"xs|sm|md|lg|xl|xxl\", \"color\": \"ink|navy|cyan|gold|muted|white\", \"weight\": \"bold|normal\", \"bg\": \"none|soft|cyan|gold|navy\", \"italic\": true, \"uppercase\": true }; list admite \"marker\": \"number|check\"; table admite \"tableStyle\": \"default|striped|minimal|navy|compact\" y \"fontSize\": \"xs|sm|md\",
       "remove": ["id de página"],
       "insert": [{ "after": "id de página existente o vacío para el inicio", "page": { "id": "nuevo-id", "title": "", "kicker": "", "blocks": [] } }]
     }

@@ -808,6 +808,27 @@ export const PAGE_BLOCK_TYPES = new Set([
   'grid', 'icon', 'button',
 ])
 const ICON_COLORS = new Set(['navy', 'cyan', 'gold', 'muted'])
+const STYLE_SIZES = new Set(['xs', 'sm', 'md', 'lg', 'xl', 'xxl'])
+const STYLE_COLORS = new Set(['ink', 'navy', 'cyan', 'gold', 'muted', 'white'])
+const STYLE_BG = new Set(['none', 'soft', 'cyan', 'gold', 'navy'])
+const TABLE_STYLES = new Set(['default', 'striped', 'minimal', 'navy', 'compact'])
+/** Estilo visual de un bloque de texto: tamaño, color, peso, fondo y alineación. */
+function styleOf(raw: unknown): Record<string, string> | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const out: Record<string, string> = {}
+  if (STYLE_SIZES.has(r.size as string)) out.size = r.size as string
+  if (STYLE_COLORS.has(r.color as string)) out.color = r.color as string
+  if (r.weight === 'bold' || r.weight === 'normal') out.weight = r.weight
+  if (STYLE_BG.has(r.bg as string)) out.bg = r.bg as string
+  if (r.italic === true) out.italic = 'true'
+  if (r.uppercase === true) out.uppercase = 'true'
+  return Object.keys(out).length ? out : null
+}
+const withStyle = (block: PageBlock, raw: any): PageBlock => {
+  const st = styleOf(raw?.style)
+  return st ? { ...block, style: st } : block
+}
 const safeUrl = (v: unknown) => {
   const u = s(v, 1000)
   return /^(https?:\/\/|mailto:|tel:|\/)/i.test(u) ? u : ''
@@ -822,15 +843,15 @@ export function sanitizeBlock(raw: any): PageBlock | null {
     case 'h3':
     case 'note': {
       const text = s(raw.text, type === 'p' || type === 'lede' ? 8000 : 600)
-      return text ? { type, text, ...align(raw.align) } : null
+      return text ? withStyle({ type, text, ...align(raw.align) }, raw) : null
     }
     case 'list': {
       const items = sl(raw.items, 40, 800)
-      return items.length ? { type, items, ...align(raw.align) } : null
+      return items.length ? withStyle({ type, items, ...align(raw.align), ...(raw.marker === 'number' || raw.marker === 'check' ? { marker: raw.marker } : {}) }, raw) : null
     }
     case 'box': {
       const body = s(raw.body, 4000)
-      return body ? { type, title: s(raw.title, 200), body, ...align(raw.align) } : null
+      return body ? withStyle({ type, title: s(raw.title, 200), body, ...align(raw.align) }, raw) : null
     }
     case 'table': {
       const rows = Array.isArray(raw.rows) ? raw.rows.slice(0, 60).map((r: any) => sl(Array.isArray(r) ? r : [], 10, 600)).filter((r: string[]) => r.length) : []
@@ -840,6 +861,8 @@ export function sanitizeBlock(raw: any): PageBlock | null {
       if (headers.length) out.headers = headers
       if (raw.firstCol === 'plain' || raw.firstCol === 'key') out.firstCol = raw.firstCol
       if (Array.isArray(raw.colAlign)) out.colAlign = raw.colAlign.map((a: unknown) => (['left', 'center', 'right', 'justify'].includes(a as string) ? a : 'left'))
+      if (TABLE_STYLES.has(raw.tableStyle)) out.tableStyle = raw.tableStyle
+      if (STYLE_SIZES.has(raw.fontSize)) out.fontSize = raw.fontSize
       return out
     }
     case 'cards': {
