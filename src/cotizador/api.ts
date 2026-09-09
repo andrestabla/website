@@ -97,8 +97,6 @@ export const quotesApi = {
     save: (quoteId: string, name: string, description?: string) => post('/api/quotes/manage', { op: 'save-template', quoteId, name, description }),
     remove: (templateId: string) => post('/api/quotes/manage', { op: 'delete-template', templateId }),
   },
-  /** HTML estático autocontenido de la propuesta (para S3 u otro hosting). */
-  htmlUrl: (publicId: string) => `/api/quotes/html?id=${encodeURIComponent(publicId)}`,
   pdfUrl: (publicId: string, recipientToken?: string) => `/api/quotes/pdf?id=${encodeURIComponent(publicId)}${recipientToken ? `&d=${encodeURIComponent(recipientToken)}` : ''}`,
   update: (quoteId: string, data: Record<string, unknown>) =>
     post('/api/quotes/manage', { op: 'update', quoteId, ...data }),

@@ -25,10 +25,6 @@
     "api/quotes/pdf.ts": {
       "memory": 1024,
       "maxDuration": 60
-    },
-    "api/quotes/html.ts": {
-      "memory": 1024,
-      "maxDuration": 60
     }
   }
 }
