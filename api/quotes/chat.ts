@@ -967,7 +967,7 @@ quote.subtitle, usa "title"/"subtitle".` : ''}
       "set": [{ "id": "id de página existente", "num": "02", "kicker": "opcional", "title": "Título de la sección", "tocHidden": false,
                 "blocks": [{ "type": "lede", "text": "" }, { "type": "p", "text": "párrafos separados por \\n\\n; viñetas con '- '" }, { "type": "h3", "text": "" },
                            { "type": "list", "items": [""] }, { "type": "box", "title": "", "body": "" }, { "type": "note", "text": "" },
-                           { "type": "table", "headers": [""], "rows": [[""]] }, { "type": "cards", "cols": 2, "items": [{ "tag": "", "title": "", "body": "", "foot": "" }] },
+                           { "type": "table", "headers": [""], "rows": [["celda; admite varias líneas y viñetas con «- » al inicio de línea"]] }, { "type": "cards", "cols": 2, "items": [{ "tag": "", "title": "", "body": "", "foot": "" }] },
                            { "type": "phase", "id": "FASE 1", "name": "", "when": "", "defs": [{ "term": "", "desc": "" }] },
                            { "type": "img", "url": "solo URLs que ya existan en el documento o que el usuario haya pegado en el chat", "caption": "", "aspect": "square|landscape|wide|portrait" },
                            { "type": "invoice", "note": "" }, { "type": "payments", "items": [{ "pct": "30 %", "label": "" }] }, { "type": "toc" },

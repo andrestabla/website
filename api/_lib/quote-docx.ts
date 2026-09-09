@@ -160,7 +160,8 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
             margins: { top: 90, bottom: 90, left: 130, right: 130 },
             ...(m && m.cs > 1 ? { columnSpan: m.cs } : {}),
             ...(m && m.rs > 1 ? { rowSpan: m.rs } : {}),
-            children: [cellPara(plain(r[ci] || ''), ci === 0 && b.firstCol !== 'plain' ? { bold: true } : {})],
+            // varias líneas y viñetas dentro de la celda
+            children: String(r[ci] || '').split('\n').filter((l) => l.trim()).map((l) => cellPara(plain(l.replace(/^\s*[-•·]\s+/, '• ')), ci === 0 && b.firstCol !== 'plain' ? { bold: true } : {})).concat(String(r[ci] || '').trim() ? [] : [cellPara('')]),
           })
         }),
       })))

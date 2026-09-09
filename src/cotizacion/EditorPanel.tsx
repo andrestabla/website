@@ -303,7 +303,10 @@ export function EditorPanel(props: EditorProps) {
       const el = (e.target as Element)?.closest?.('[data-ref][contenteditable]') as HTMLElement | null
       if (!el) return
       if (e.key === 'Escape') el.blur()
-      if (e.key === 'Enter' && !e.shiftKey && /^(H1|H2|H3|H4|TD|TH|SPAN|LI|FIGCAPTION|DT|DD|B)$/.test(el.tagName)) { e.preventDefault(); el.blur() }
+      // Enter cierra la edición de un campo de una línea, salvo dentro de una viñeta (crea otra) o con Shift (salto de línea)
+      const anchor = window.getSelection()?.anchorNode
+      const inBullet = !!(anchor instanceof Element ? anchor : anchor?.parentElement)?.closest?.('li')
+      if (e.key === 'Enter' && !e.shiftKey && !inBullet && /^(H1|H2|H3|H4|TD|TH|SPAN|LI|FIGCAPTION|DT|DD|B)$/.test(el.tagName)) { e.preventDefault(); el.blur() }
     }
     const onImgClick = (e: MouseEvent) => {
       const pageAdd = (e.target as Element).closest('[data-page-add]') as HTMLElement | null
@@ -1208,7 +1211,7 @@ function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patc
     title = 'Filas y columnas de la tabla'
     body = (
       <>
-        <p>{rows.length} filas · {cols} columnas. Edita el texto de cada celda directamente en la página.</p>
+        <p>{rows.length} filas · {cols} columnas. Edita el texto de cada celda directamente en la página. Para viñetas dentro de una celda, empieza cada línea con «- » (Shift+Enter hace un salto de línea; dentro de una viñeta, Enter crea otra).</p>
         <div className="row">
           <button onClick={() => onChange({ rows: [...rows, Array.from({ length: cols }, () => 'Celda')] })}>＋ Fila al final</button>
           <button onClick={() => onChange({ headers: headers.length ? [...headers, `Columna ${cols + 1}`] : headers, rows: rows.map((r) => [...r, '']) })}>＋ Columna al final</button>

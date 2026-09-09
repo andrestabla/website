@@ -217,6 +217,31 @@ export type DocPage = {
 /** Divide en párrafos por línea en blanco, como el editor. */
 const paras = (text: string) => String(text || '').split(/\n{2,}/).filter(Boolean)
 
+/** Texto de una celda: varias líneas y viñetas («- » al inicio de línea) dentro de la celda. */
+export function cellRich(text: string): React.ReactNode {
+  const t = String(text || '')
+  if (!t.includes('\n') && !/^\s*[-•·]\s+/.test(t)) return rich(t)
+  const out: React.ReactNode[] = []
+  let bullets: string[] = []
+  let prevLine = false
+  const flush = (k: number) => {
+    if (!bullets.length) return
+    out.push(<ul className="qv-cell-list" key={`ul-${k}`}>{bullets.map((b, i) => <li key={i}>{rich(b)}</li>)}</ul>)
+    bullets = []
+    prevLine = false
+  }
+  t.split('\n').forEach((line, i) => {
+    const m = /^\s*[-•·]\s+(.*)$/.exec(line)
+    if (m) { bullets.push(m[1]); return }
+    flush(i)
+    if (!line.trim()) return
+    out.push(<React.Fragment key={i}>{prevLine ? <br /> : null}{rich(line)}</React.Fragment>)
+    prevLine = true
+  })
+  flush(t.length)
+  return out
+}
+
 /**
  * Marcas de texto que el builder inserta al dar formato sobre la selección:
  *   **negrita** · *cursiva* · `monoespaciada` · [texto](url)
@@ -391,7 +416,7 @@ export function DocBlockView({
                       <td key={ci} style={al(block.colAlign?.[ci])} data-cell={`${ri}:${ci}`}
                         colSpan={m && m.cs > 1 ? m.cs : undefined} rowSpan={m && m.rs > 1 ? m.rs : undefined}
                         className={[ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : '', m ? 'tb-merged' : '', refBase && !block.headers?.length && ri === 0 ? 'has-grip' : ''].filter(Boolean).join(' ') || undefined}>
-                        <span {...r(`rows.${ri}.${ci}`)}>{rich(cell)}</span>{!block.headers?.length && ri === 0 && !m ? grip(ci) : null}
+                        <span {...r(`rows.${ri}.${ci}`)}>{cellRich(cell)}</span>{!block.headers?.length && ri === 0 && !m ? grip(ci) : null}
                       </td>
                     )
                   })}
