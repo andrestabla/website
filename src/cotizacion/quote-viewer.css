@@ -1341,3 +1341,14 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-mode-select .qv-spacer { outline: 1px dashed rgba(79, 70, 229, .25); outline-offset: -1px; border-radius: 4px; }
 .qv-dg-wrap { max-width: 100%; }
 @media print { .qv-spacer-tag { display: none !important; } }
+/* cajas de esquema: crecen con el texto si hay espacio; en el editor se redimensionan con el tirador */
+.qv-dg-synoptic { grid-template-columns: fit-content(45%) 18px 1fr; }
+.qv-dg-syn-root { max-width: 100%; }
+.qv-dg-syn-group { grid-template-columns: fit-content(45%) 14px 1fr; }
+.qv-dg-map-grid { grid-template-columns: 1fr minmax(120px, auto) 1fr; }
+.qv-dg-core { max-width: 240px; margin: 0 auto; }
+.qv-dg [data-dg-item], .qv-dg [data-dg-center] { box-sizing: border-box; max-width: 100%; }
+.qv-mode-select .qv-dg [data-dg-item], .qv-mode-edit .qv-dg [data-dg-item],
+.qv-mode-select .qv-dg [data-dg-center], .qv-mode-edit .qv-dg [data-dg-center] { resize: horizontal; overflow: hidden; min-width: 40px; }
+.qv-mode-select .qv-dg-synoptic b[data-dg-item], .qv-mode-edit .qv-dg-synoptic b[data-dg-item] { display: block; }
+.qv-mode-select .qv-dg-step, .qv-mode-edit .qv-dg-step { clip-path: none; border-radius: 8px 4px 4px 8px; }

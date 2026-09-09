@@ -127,7 +127,7 @@ function domToMarks(root: Element): string {
       default: return inner()
     }
   }
-  return walk(root).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/^\s+|\s+$/g, '')
+  return Array.from(root.childNodes).map(walk).join('').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/^\s+|\s+$/g, '')
 }
 
 const blockPreview = (b: Block) => {
@@ -349,8 +349,27 @@ export function EditorPanel(props: EditorProps) {
       const r = block.getBoundingClientRect()
       setHover((prev) => (prev && prev.pi === loc.pi && prev.bi === loc.bi && prev.ci === loc.ci && prev.ii === loc.ii && Math.abs(prev.top - (r.top + window.scrollY)) < 2 ? prev : { ...loc, top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width }))
     }
+    // al soltar el tirador de una caja de esquema, su ancho queda en el bloque
+    const onUp = (e: MouseEvent) => {
+      const el = (e.target as Element)?.closest?.('[data-dg-item], [data-dg-center]') as HTMLElement | null
+      if (!el) return
+      if (!/px$/.test(el.style.width || '')) return
+      const px = Math.round(parseFloat(el.style.width))
+      if (!Number.isFinite(px) || px < 40) return
+      const holder = el.closest('[data-block]') as HTMLElement | null
+      const loc = holder ? parseLoc(holder.dataset.block || '') : null
+      if (!loc) return
+      const b = blockAt(loc) as any
+      if (!b || b.type !== 'diagram') return
+      if (el.dataset.dgCenter) { if (b.centerW !== px) updateBlock(loc, { centerW: px } as Partial<Block>) ; return }
+      const i = Number(el.dataset.dgItem)
+      const items: any[] = b.items || []
+      if (!items[i] || items[i].w === px) return
+      updateBlock(loc, { items: items.map((x, k) => (k === i ? { ...x, w: px } : x)) } as Partial<Block>)
+    }
     document.addEventListener('mousemove', onMove)
-    return () => { document.removeEventListener('mousemove', onMove); window.clearTimeout(hoverTimer.current) }
+    document.addEventListener('mouseup', onUp)
+    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); window.clearTimeout(hoverTimer.current) }
   }, [preview, isPaged, pages])
 
   // ── imágenes ──
@@ -1308,6 +1327,11 @@ function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patc
         <div className="row">
           <button disabled={items.length <= 1} onClick={() => onChange({ items: items.filter((_, i) => i !== idx) })}>Eliminar elemento</button>
           <select value={items[idx]?.tone || 'cyan'} onChange={(e) => onChange({ items: items.map((x, i) => (i === idx ? { ...x, tone: e.target.value } : x)) })}><option value="cyan">Cian</option><option value="deep">Profundo</option><option value="gold">Dorado</option></select>
+        </div>
+        <label>Ancho de la caja {idx + 1} (px) · vacío = automático. También se puede arrastrar el tirador de la esquina en la página.</label>
+        <div className="row">
+          <input type="number" min={40} max={800} placeholder="auto" value={items[idx]?.w || ''} onChange={(e) => { const v = Number(e.target.value); onChange({ items: items.map((x, i) => (i === idx ? { ...x, w: v >= 40 ? Math.min(800, v) : undefined } : x)) }) }} />
+          <button onClick={() => onChange({ items: items.map((x) => ({ ...x, w: undefined })), centerW: undefined })}>Restablecer anchos</button>
         </div>
         {withChildren && (
           <>

@@ -965,12 +965,14 @@ function sanitizeBlockInner(raw: any): PageBlock | null {
             desc: s(it?.desc, 300),
             children: diagramKids(it?.children),
             tone: tone(it?.tone),
+            ...(Number(it?.w) >= 40 ? { w: Math.min(800, Math.round(Number(it.w))) } : {}),
           })).filter((it: any) => it.label)
         : []
       if (!items.length) return null
       const out: PageBlock = { type, kind, items, title: s(raw.title, 160), center: s(raw.center, 160), ...align(raw.align) }
       if (raw.axes && typeof raw.axes === 'object') out.axes = { x: sl(raw.axes.x, 2, 60), y: sl(raw.axes.y, 2, 60) }
       if (DIAGRAM_WIDTHS.has(raw.width)) out.width = raw.width
+      if (Number(raw.centerW) >= 40) out.centerW = Math.min(800, Math.round(Number(raw.centerW)))
       return out
     }
     case 'spacer':

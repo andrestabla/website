@@ -161,7 +161,7 @@ export type DocBlock =
   /** Encabezado de sección numerada dentro de la página: permite dos numerales en una hoja. */
   | { type: 'sechead'; num?: string; kicker?: string; title: string }
   /** Esquema personalizable: proceso, ciclo, pirámide, matriz, mapa mental, mapa conceptual, cuadro sinóptico o causa-efecto. */
-  | { type: 'diagram'; kind: DiagramKind; title?: string; center?: string; items: Array<{ label: string; desc?: string; children?: DiagramKid[]; tone?: 'cyan' | 'deep' | 'gold' }>; axes?: { x?: string[]; y?: string[] }; align?: Align; width?: 'full' | 'wide' | 'medium' | 'narrow' }
+  | { type: 'diagram'; kind: DiagramKind; title?: string; center?: string; items: Array<{ label: string; desc?: string; children?: DiagramKid[]; tone?: 'cyan' | 'deep' | 'gold'; /** ancho fijado a mano, en px */ w?: number }>; axes?: { x?: string[]; y?: string[] }; align?: Align; width?: 'full' | 'wide' | 'medium' | 'narrow'; /** ancho del nodo central, en px */ centerW?: number }
   /** Espacio vertical entre elementos, en píxeles. */
   | { type: 'spacer'; height: number }
 
@@ -213,8 +213,8 @@ export function rich(text: string): React.ReactNode {
       const classes = styled[1].split(/\s+/).filter((c) => INLINE_CLASS.test(c)).map((c) => `qs-${c}`).join(' ')
       return <span key={i} className={`qs-inline ${classes}`}>{rich(styled[2])}</span>
     }
-    if (part.startsWith('**') && part.endsWith('**')) return <b key={i}>{part.slice(2, -2)}</b>
-    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) return <em key={i}>{part.slice(1, -1)}</em>
+    if (part.startsWith('**') && part.endsWith('**')) return <b key={i}>{rich(part.slice(2, -2))}</b>
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) return <em key={i}>{rich(part.slice(1, -1))}</em>
     if (part.startsWith('`') && part.endsWith('`')) return <code key={i}>{part.slice(1, -1)}</code>
     const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part)
     if (link) return <a key={i} href={href(link[2])} target="_blank" rel="noreferrer">{link[1]}</a>
@@ -687,14 +687,18 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
       </ul>
     ) : null
   const title = (block.title || r('title')['data-ref']) ? <div className="qv-dg-title" {...r('title')}>{block.title || ''}</div> : null
+  /** Caja redimensionable en el editor: ancho fijado por el autor y marca para capturar el arrastre. */
+  const box = (i: number, extra?: React.CSSProperties) => ({ 'data-dg-item': String(i), style: { ...(extra || {}), ...(items[i]?.w ? { width: items[i].w } : {}) } })
+  const centerBox = (extra?: React.CSSProperties) => ({ 'data-dg-center': '1', style: { ...(extra || {}), ...(block.centerW ? { width: block.centerW } : {}) } })
+  const cols = (list: typeof items) => list.map((it) => (it.w ? `${it.w}px` : 'minmax(0, 1fr)')).join(' ') || 'minmax(0, 1fr)'
 
   if (block.kind === 'process') {
     return (
       <div className="qv-dg qv-dg-process">
         {title}
-        <div className="qv-dg-steps" style={{ gridTemplateColumns: `repeat(${Math.max(1, items.length)}, minmax(0, 1fr))` }}>
+        <div className="qv-dg-steps" style={{ gridTemplateColumns: cols(items) }}>
           {items.map((it, i) => (
-            <div className={`qv-dg-step ${toneCls(it.tone)}`} key={i}>
+            <div className={`qv-dg-step ${toneCls(it.tone)}`} key={i} {...box(i)}>
               <div className="qv-dg-step-n">{i + 1}</div>
               <div className="qv-dg-step-l" {...r(`items.${i}.label`)}>{rich(it.label)}</div>
               {(it.desc || r('x')['data-ref']) && <div className="qv-dg-step-d" {...r(`items.${i}.desc`)}>{rich(it.desc || '')}</div>}
@@ -719,11 +723,11 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
               return <polygon key={i} points="0,-6 10,0 0,6" fill="#14b8c8" transform={`translate(${160 + Math.cos(a) * R} ${160 + Math.sin(a) * R}) rotate(${(a * 180) / Math.PI + 90})`} />
             })}
           </svg>
-          {block.center !== undefined && (block.center || r('x')['data-ref']) && <div className="qv-dg-center" {...r('center')}>{rich(block.center || '')}</div>}
+          {block.center !== undefined && (block.center || r('x')['data-ref']) && <div className="qv-dg-center" {...centerBox()} {...r('center')}>{rich(block.center || '')}</div>}
           {items.map((it, i) => {
             const a = (i / n) * Math.PI * 2 - Math.PI / 2
             return (
-              <div className={`qv-dg-node ${toneCls(it.tone)}`} key={i} style={{ left: `${50 + Math.cos(a) * 37}%`, top: `${50 + Math.sin(a) * 37}%` }}>
+              <div className={`qv-dg-node ${toneCls(it.tone)}`} key={i} {...box(i, { left: `${50 + Math.cos(a) * 37}%`, top: `${50 + Math.sin(a) * 37}%` })}>
                 <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
                 {it.desc && <span {...r(`items.${i}.desc`)}>{rich(it.desc)}</span>}
               </div>
@@ -740,7 +744,7 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
       <div className="qv-dg qv-dg-pyramid">
         {title}
         {items.map((it, i) => (
-          <div className={`qv-dg-level ${toneCls(it.tone)}`} key={i} style={{ width: `${40 + (60 * (i + 1)) / n}%` }}>
+          <div className={`qv-dg-level ${toneCls(it.tone)}`} key={i} {...box(i, { width: `${40 + (60 * (i + 1)) / n}%` })}>
             <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
             {(it.desc || r('x')['data-ref']) && <span {...r(`items.${i}.desc`)}>{rich(it.desc || '')}</span>}
           </div>
@@ -760,7 +764,7 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
           <div className="qv-dg-axis-y"><span {...r('axes.y.0')}>{ay[0] || ''}</span><span {...r('axes.y.1')}>{ay[1] || ''}</span></div>
           <div className="qv-dg-quads">
             {q.map((it, i) => (
-              <div className={`qv-dg-quad ${toneCls(items[i]?.tone)}`} key={i}>
+              <div className={`qv-dg-quad ${toneCls(items[i]?.tone)}`} key={i} {...box(i)}>
                 <b {...r(`items.${i}.label`)}>{rich(it.label || '')}</b>
                 <span {...r(`items.${i}.desc`)}>{rich(it.desc || '')}</span>
               </div>
@@ -776,7 +780,7 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
     const left = items.filter((_, i) => i % 2 === 0)
     const right = items.filter((_, i) => i % 2 === 1)
     const branch = (it: (typeof items)[number], i: number) => (
-      <div className={`qv-dg-branch ${toneCls(it.tone)}`} key={i}>
+      <div className={`qv-dg-branch ${toneCls(it.tone)}`} key={i} {...box(i)}>
         <div className="qv-dg-branch-h">
           {block.kind === 'conceptmap' && (it.desc || r('x')['data-ref']) && <em className="qv-dg-link" {...r(`items.${i}.desc`)}>{it.desc || ''}</em>}
           <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
@@ -789,7 +793,7 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
         {title}
         <div className="qv-dg-map-grid">
           <div className="qv-dg-side">{left.map((it) => branch(it, items.indexOf(it)))}</div>
-          <div className="qv-dg-core" {...r('center')}>{rich(block.center || 'Idea central')}</div>
+          <div className="qv-dg-core" {...centerBox()} {...r('center')}>{rich(block.center || 'Idea central')}</div>
           <div className="qv-dg-side">{right.map((it) => branch(it, items.indexOf(it)))}</div>
         </div>
       </div>
@@ -799,12 +803,12 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
   if (block.kind === 'synoptic') {
     return (
       <div className="qv-dg qv-dg-synoptic">
-        <div className="qv-dg-syn-root" {...r('center')}>{rich(block.center || block.title || 'Tema')}</div>
+        <div className="qv-dg-syn-root" {...centerBox()} {...r('center')}>{rich(block.center || block.title || 'Tema')}</div>
         <div className="qv-dg-syn-brace" aria-hidden="true" />
         <div className="qv-dg-syn-groups">
           {items.map((it, i) => (
             <div className={`qv-dg-syn-group ${toneCls(it.tone)}`} key={i}>
-              <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
+              <b {...box(i)} {...r(`items.${i}.label`)}>{rich(it.label)}</b>
               {(it.children || []).length > 0 && (
                 <>
                   <div className="qv-dg-syn-brace small" aria-hidden="true" />
@@ -822,7 +826,7 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
   const top = items.filter((_, i) => i % 2 === 0)
   const bottom = items.filter((_, i) => i % 2 === 1)
   const bone = (it: (typeof items)[number], i: number) => (
-    <div className={`qv-dg-bone ${toneCls(it.tone)}`} key={i}>
+    <div className={`qv-dg-bone ${toneCls(it.tone)}`} key={i} {...box(i)}>
       <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
       {kids(it.children, `items.${i}.children`)}
     </div>
@@ -830,9 +834,9 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
   return (
     <div className="qv-dg qv-dg-fish">
       {title}
-      <div className="qv-dg-fish-row top" style={{ gridTemplateColumns: `repeat(${Math.max(1, top.length)}, minmax(0, 1fr))` }}>{top.map((it) => bone(it, items.indexOf(it)))}</div>
-      <div className="qv-dg-spine"><span className="qv-dg-effect" {...r('center')}>{rich(block.center || 'Efecto')}</span></div>
-      <div className="qv-dg-fish-row bottom" style={{ gridTemplateColumns: `repeat(${Math.max(1, bottom.length)}, minmax(0, 1fr))` }}>{bottom.map((it) => bone(it, items.indexOf(it)))}</div>
+      <div className="qv-dg-fish-row top" style={{ gridTemplateColumns: cols(top) }}>{top.map((it) => bone(it, items.indexOf(it)))}</div>
+      <div className="qv-dg-spine"><span className="qv-dg-effect" {...centerBox()} {...r('center')}>{rich(block.center || 'Efecto')}</span></div>
+      <div className="qv-dg-fish-row bottom" style={{ gridTemplateColumns: cols(bottom) }}>{bottom.map((it) => bone(it, items.indexOf(it)))}</div>
     </div>
   )
 }
