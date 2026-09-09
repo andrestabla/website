@@ -79,30 +79,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const host = new URL(origin).hostname
       await page.setCookie({ name: 'admin_session', value: sessionCookie, domain: host, path: '/', httpOnly: true })
     }
+    // Las imágenes de otros dominios (R2, S3) se sirven al navegador interno con cabecera CORS:
+    // así la página puede reducirlas en un canvas antes de imprimir (PDF liviano, imagen ya decodificada).
+    await page.setRequestInterception(true)
+    page.on('request', async (req: any) => {
+      const u: string = req.url()
+      if (req.resourceType() === 'image' && /^https?:/.test(u) && !u.startsWith(origin)) {
+        try {
+          const r = await fetch(u, { signal: AbortSignal.timeout(25_000) })
+          const body = Buffer.from(await r.arrayBuffer())
+          await req.respond({ status: r.status, headers: { 'Content-Type': r.headers.get('content-type') || 'image/png', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' }, body })
+          return
+        } catch { /* sin CORS: la imagen se imprime como venga */ }
+      }
+      await req.continue().catch(() => undefined)
+    })
     await page.emulateMediaType('print')
     // 'load' y no 'networkidle': un websocket abierto (analítica, HMR) no debe bloquear el PDF
     await page.goto(url, { waitUntil: 'load', timeout: 40_000 })
-    // el visor ajusta cada hoja al alto A4 y las imágenes cargan en diferido
-    await page.waitForSelector('.qv .qv-page, .qv-status', { timeout: 25_000 })
+    // el documento se pinta cuando llega la cotización: se espera a las hojas (o a un estado final), no al «Cargando…»
+    await page.waitForFunction(
+      () => !!document.querySelector('.qv .qv-page') || /no está disponible|problema/i.test(document.querySelector('.qv-status')?.textContent || ''),
+      { timeout: 30_000 },
+    )
     const missing: number = await page.evaluate(async () => {
-      // las imágenes con carga diferida no entran nunca en pantalla en un navegador sin cabeza:
-      // se fuerzan y se espera de verdad a que carguen (las de la propuesta pueden pesar varios MB);
-      // el tope evita que un recurso caído bloquee el PDF
+      // cada imagen se recarga sin carga diferida y, si es grande, se reduce a 1600 px como JPEG ya
+      // decodificado (en caché, Chromium la daba por completa sin decodificarla y salía en blanco)
       const imgs = Array.from(document.images)
-      // con la imagen en cache, Chrome la da por «completa» sin haberla decodificado para
-      // imprimir y el PDF sale con el recuadro vacio: se recarga y se decodifica cada una
-      const ready = async (img: HTMLImageElement) => {
+      const wait = (img: HTMLImageElement, set: () => void) => new Promise<void>((r) => { img.addEventListener('load', () => r(), { once: true }); img.addEventListener('error', () => r(), { once: true }); set() })
+      const one = async (img: HTMLImageElement) => {
         img.removeAttribute('loading')
         const src = img.currentSrc || img.src
-        if (!src) return
-        await new Promise<void>((r) => { img.addEventListener('load', () => r(), { once: true }); img.addEventListener('error', () => r(), { once: true }); img.src = ''; img.src = src })
+        if (!src || /\.svg(\?|$)/i.test(src) || src.startsWith('data:')) return
+        img.crossOrigin = 'anonymous'
+        await wait(img, () => { img.src = ''; img.src = src })
+        if (!img.naturalWidth) { img.removeAttribute('crossorigin'); await wait(img, () => { img.src = ''; img.src = src }); return }
+        const MAX = 1600
+        if (Math.max(img.naturalWidth, img.naturalHeight) <= MAX) { await img.decode().catch(() => undefined); return }
+        try {
+          const k = MAX / Math.max(img.naturalWidth, img.naturalHeight)
+          const c = document.createElement('canvas')
+          c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k)
+          c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height)
+          const data = c.toDataURL('image/jpeg', 0.86)
+          await wait(img, () => { img.src = data })
+        } catch { /* canvas contaminado (sin CORS): se deja la original */ }
         await img.decode().catch(() => undefined)
       }
       window.scrollTo(0, document.body.scrollHeight)
-      await Promise.race([Promise.all(imgs.map(ready)), new Promise((r) => setTimeout(r, 30000))])
-      // las que fallaron (red, tiempo) reciben un segundo intento corto
-      const failed = imgs.filter((img) => !img.complete || img.naturalWidth === 0)
-      if (failed.length) await Promise.race([Promise.all(failed.map(ready)), new Promise((r) => setTimeout(r, 8000))])
+      await Promise.race([Promise.all(imgs.map(one)), new Promise((r) => setTimeout(r, 35000))])
       window.scrollTo(0, 0)
       await Promise.race([(document as any).fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 3000))])
       return imgs.filter((img) => img.naturalWidth === 0).length
