@@ -147,6 +147,13 @@ export type DocBlock =
   | { type: 'signature'; name: string; role?: string; org?: string; email?: string; phone?: string; place?: string; date?: string; note?: string; imageUrl?: string; accept?: boolean }
   /** Encabezado de sección numerada dentro de la página: permite dos numerales en una hoja. */
   | { type: 'sechead'; num?: string; kicker?: string; title: string }
+  /** Esquema personalizable: proceso, ciclo, pirámide, matriz, mapa mental, mapa conceptual, cuadro sinóptico o causa-efecto. */
+  | { type: 'diagram'; kind: DiagramKind; title?: string; center?: string; items: Array<{ label: string; desc?: string; children?: string[]; tone?: 'cyan' | 'deep' | 'gold' }>; axes?: { x?: string[]; y?: string[] } }
+
+export type DiagramKind = 'process' | 'cycle' | 'pyramid' | 'matrix' | 'mindmap' | 'conceptmap' | 'synoptic' | 'causeeffect'
+export const DIAGRAM_LABELS: Record<DiagramKind, string> = {
+  process: 'Proceso', cycle: 'Ciclo', pyramid: 'Pirámide', matrix: 'Matriz 2×2', mindmap: 'Mapa mental', conceptmap: 'Mapa conceptual', synoptic: 'Cuadro sinóptico', causeeffect: 'Causa-efecto',
+}
 
 export type DocPage = {
   id: string
@@ -166,7 +173,9 @@ const paras = (text: string) => String(text || '').split(/\n{2,}/).filter(Boolea
  *   **negrita** · *cursiva* · `monoespaciada` · [texto](url)
  * Se resuelven a nodos de React (nunca a HTML crudo).
  */
-const RICH = /(\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\)|[\w.+-]+@[\w-]+\.[\w.]+|(?:https?:\/\/|www\.)[^\s,;)\]\[]+)/g
+const RICH = /(\{\{[a-z0-9 -]+\}\}[\s\S]*?\{\{\/\}\}|\*\*[^*]+\*\*|\*[^*\n]+\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\)|[\w.+-]+@[\w-]+\.[\w.]+|(?:https?:\/\/|www\.)[^\s,;)\]\[]+)/g
+/** Clases de estilo permitidas en un fragmento: {{color-cyan size-lg}}…{{/}} */
+const INLINE_CLASS = /^(color-(ink|navy|cyan|gold|muted|white)|size-(xs|sm|md|lg|xl|xxl)|w-(bold|normal)|italic|upper|bg-(soft|cyan|gold|navy))$/
 
 /** Destino seguro: correo → mailto, dominio suelto → https, nunca ruta relativa. */
 function href(url: string): string {
@@ -180,6 +189,12 @@ export function rich(text: string): React.ReactNode {
   const parts = String(text || '').split(RICH)
   return parts.map((part, i) => {
     if (!part) return null
+    // fragmento con estilo propio (color, tamaño, peso, fondo): se anida con el resto de marcas
+    const styled = /^\{\{([a-z0-9 -]+)\}\}([\s\S]*?)\{\{\/\}\}$/.exec(part)
+    if (styled) {
+      const classes = styled[1].split(/\s+/).filter((c) => INLINE_CLASS.test(c)).map((c) => `qs-${c}`).join(' ')
+      return <span key={i} className={`qs-inline ${classes}`}>{rich(styled[2])}</span>
+    }
     if (part.startsWith('**') && part.endsWith('**')) return <b key={i}>{part.slice(2, -2)}</b>
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) return <em key={i}>{part.slice(1, -1)}</em>
     if (part.startsWith('`') && part.endsWith('`')) return <code key={i}>{part.slice(1, -1)}</code>
@@ -602,6 +617,9 @@ export function DocBlockView({
         </div>
       )
 
+    case 'diagram':
+      return <Diagram block={block} r={r} />
+
     case 'sechead':
       return (
         <div className="qv-sechead qv-sechead-inline">
@@ -626,6 +644,163 @@ export function DocBlockView({
     default:
       return null
   }
+}
+
+/** Esquemas dibujados con CSS y SVG; cada texto lleva su referencia editable. */
+function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; r: (field: string) => { 'data-ref'?: string } }) {
+  const items = block.items || []
+  const toneCls = (t?: string) => `tone-${t || 'cyan'}`
+  const title = (block.title || r('title')['data-ref']) ? <div className="qv-dg-title" {...r('title')}>{block.title || ''}</div> : null
+
+  if (block.kind === 'process') {
+    return (
+      <div className="qv-dg qv-dg-process">
+        {title}
+        <div className="qv-dg-steps" style={{ gridTemplateColumns: `repeat(${Math.max(1, items.length)}, minmax(0, 1fr))` }}>
+          {items.map((it, i) => (
+            <div className={`qv-dg-step ${toneCls(it.tone)}`} key={i}>
+              <div className="qv-dg-step-n">{i + 1}</div>
+              <div className="qv-dg-step-l" {...r(`items.${i}.label`)}>{rich(it.label)}</div>
+              {(it.desc || r('x')['data-ref']) && <div className="qv-dg-step-d" {...r(`items.${i}.desc`)}>{rich(it.desc || '')}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (block.kind === 'cycle') {
+    const n = Math.max(1, items.length)
+    const R = 118
+    return (
+      <div className="qv-dg qv-dg-cycle">
+        {title}
+        <div className="qv-dg-ring">
+          <svg viewBox="0 0 320 320" aria-hidden="true">
+            <circle cx="160" cy="160" r={R} fill="none" stroke="#d3cab6" strokeWidth="2" strokeDasharray="6 6" />
+            {items.map((_, i) => {
+              const a = ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2
+              return <polygon key={i} points="0,-6 10,0 0,6" fill="#14b8c8" transform={`translate(${160 + Math.cos(a) * R} ${160 + Math.sin(a) * R}) rotate(${(a * 180) / Math.PI + 90})`} />
+            })}
+          </svg>
+          {block.center !== undefined && (block.center || r('x')['data-ref']) && <div className="qv-dg-center" {...r('center')}>{rich(block.center || '')}</div>}
+          {items.map((it, i) => {
+            const a = (i / n) * Math.PI * 2 - Math.PI / 2
+            return (
+              <div className={`qv-dg-node ${toneCls(it.tone)}`} key={i} style={{ left: `${50 + Math.cos(a) * 37}%`, top: `${50 + Math.sin(a) * 37}%` }}>
+                <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
+                {it.desc && <span {...r(`items.${i}.desc`)}>{rich(it.desc)}</span>}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  if (block.kind === 'pyramid') {
+    const n = Math.max(1, items.length)
+    return (
+      <div className="qv-dg qv-dg-pyramid">
+        {title}
+        {items.map((it, i) => (
+          <div className={`qv-dg-level ${toneCls(it.tone)}`} key={i} style={{ width: `${40 + (60 * (i + 1)) / n}%` }}>
+            <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
+            {(it.desc || r('x')['data-ref']) && <span {...r(`items.${i}.desc`)}>{rich(it.desc || '')}</span>}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (block.kind === 'matrix') {
+    const ax = block.axes?.x || ['', '']
+    const ay = block.axes?.y || ['', '']
+    const q = [0, 1, 2, 3].map((i) => items[i] || { label: '', desc: '' })
+    return (
+      <div className="qv-dg qv-dg-matrix">
+        {title}
+        <div className="qv-dg-matrix-grid">
+          <div className="qv-dg-axis-y"><span {...r('axes.y.0')}>{ay[0] || ''}</span><span {...r('axes.y.1')}>{ay[1] || ''}</span></div>
+          <div className="qv-dg-quads">
+            {q.map((it, i) => (
+              <div className={`qv-dg-quad ${toneCls(items[i]?.tone)}`} key={i}>
+                <b {...r(`items.${i}.label`)}>{rich(it.label || '')}</b>
+                <span {...r(`items.${i}.desc`)}>{rich(it.desc || '')}</span>
+              </div>
+            ))}
+          </div>
+          <div className="qv-dg-axis-x"><span {...r('axes.x.0')}>{ax[0] || ''}</span><span {...r('axes.x.1')}>{ax[1] || ''}</span></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (block.kind === 'mindmap' || block.kind === 'conceptmap') {
+    const left = items.filter((_, i) => i % 2 === 0)
+    const right = items.filter((_, i) => i % 2 === 1)
+    const branch = (it: (typeof items)[number], i: number) => (
+      <div className={`qv-dg-branch ${toneCls(it.tone)}`} key={i}>
+        <div className="qv-dg-branch-h">
+          {block.kind === 'conceptmap' && (it.desc || r('x')['data-ref']) && <em className="qv-dg-link" {...r(`items.${i}.desc`)}>{it.desc || ''}</em>}
+          <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
+        </div>
+        {(it.children || []).length > 0 && (
+          <ul>{(it.children || []).map((c, k) => <li key={k} {...r(`items.${i}.children.${k}`)}>{rich(c)}</li>)}</ul>
+        )}
+      </div>
+    )
+    return (
+      <div className={`qv-dg qv-dg-map is-${block.kind}`}>
+        {title}
+        <div className="qv-dg-map-grid">
+          <div className="qv-dg-side">{left.map((it) => branch(it, items.indexOf(it)))}</div>
+          <div className="qv-dg-core" {...r('center')}>{rich(block.center || 'Idea central')}</div>
+          <div className="qv-dg-side">{right.map((it) => branch(it, items.indexOf(it)))}</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (block.kind === 'synoptic') {
+    return (
+      <div className="qv-dg qv-dg-synoptic">
+        <div className="qv-dg-syn-root" {...r('center')}>{rich(block.center || block.title || 'Tema')}</div>
+        <div className="qv-dg-syn-brace" aria-hidden="true" />
+        <div className="qv-dg-syn-groups">
+          {items.map((it, i) => (
+            <div className={`qv-dg-syn-group ${toneCls(it.tone)}`} key={i}>
+              <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
+              {(it.children || []).length > 0 && (
+                <>
+                  <div className="qv-dg-syn-brace small" aria-hidden="true" />
+                  <ul>{(it.children || []).map((c, k) => <li key={k} {...r(`items.${i}.children.${k}`)}>{rich(c)}</li>)}</ul>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // causa-efecto (espina de pescado)
+  const top = items.filter((_, i) => i % 2 === 0)
+  const bottom = items.filter((_, i) => i % 2 === 1)
+  const bone = (it: (typeof items)[number], i: number) => (
+    <div className={`qv-dg-bone ${toneCls(it.tone)}`} key={i}>
+      <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
+      <ul>{(it.children || []).map((c, k) => <li key={k} {...r(`items.${i}.children.${k}`)}>{rich(c)}</li>)}</ul>
+    </div>
+  )
+  return (
+    <div className="qv-dg qv-dg-fish">
+      {title}
+      <div className="qv-dg-fish-row top" style={{ gridTemplateColumns: `repeat(${Math.max(1, top.length)}, minmax(0, 1fr))` }}>{top.map((it) => bone(it, items.indexOf(it)))}</div>
+      <div className="qv-dg-spine"><span className="qv-dg-effect" {...r('center')}>{rich(block.center || 'Efecto')}</span></div>
+      <div className="qv-dg-fish-row bottom" style={{ gridTemplateColumns: `repeat(${Math.max(1, bottom.length)}, minmax(0, 1fr))` }}>{bottom.map((it) => bone(it, items.indexOf(it)))}</div>
+    </div>
+  )
 }
 
 export function DocPageView({

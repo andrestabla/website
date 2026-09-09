@@ -18,6 +18,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { BLOCK_TYPES, EMPTY, type Page, type Block } from '../cotizador/PagesEditor'
 import { IconPicker } from './IconPicker'
 import { PAGE_TEMPLATES, templatesByCategory } from './pageTemplates'
+import { useDialogs } from '../cotizador/ui/dialogs'
+import { DIAGRAM_LABELS, type DiagramKind } from './DocPages'
 
 type Mode = 'select' | 'edit'
 type Focus = { ref: string; label: string; text: string }
@@ -36,6 +38,7 @@ type Dialog =
   | { kind: 'style'; loc: Loc }
   | { kind: 'move'; loc: Loc }
   | { kind: 'items'; loc: Loc }
+  | { kind: 'diagram'; target: AddTarget }
   | { kind: 'versions' }
   | null
 
@@ -100,6 +103,15 @@ function domToMarks(root: Element): string {
       case 'b': case 'strong': { const t = inner().trim(); return t ? `**${t}**` : '' }
       case 'em': case 'i': { const t = inner().trim(); return t ? `*${t}*` : '' }
       case 'code': { const t = inner().trim(); return t ? `\`${t}\`` : '' }
+      case 'span': {
+        // fragmento con estilo propio → {{clases}}texto{{/}}
+        if (el.classList.contains('qs-inline')) {
+          const classes = Array.from(el.classList).filter((c) => c.startsWith('qs-') && c !== 'qs-inline').map((c) => c.slice(3))
+          const t = inner()
+          return classes.length && t.trim() ? `{{${classes.join(' ')}}}${t}{{/}}` : t
+        }
+        return inner()
+      }
       case 'a': {
         const t = inner().trim()
         const href = el.getAttribute('href') || ''
@@ -147,6 +159,7 @@ export type EditorProps = {
 export function EditorPanel(props: EditorProps) {
   const { publicId, pages, sections, dirty, preview, onPreview, onApplyRef, onPages, onSections, onSave, onDiscard, onReload, onUndo, onRedo, canUndo, canRedo } = props
   const [mode, setMode] = useState<Mode>('edit')
+  const { confirm, dialogs } = useDialogs()
   const [focus, setFocus] = useState<Focus | null>(null)
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState<Msg[]>([])
@@ -165,6 +178,35 @@ export function EditorPanel(props: EditorProps) {
   const [versionsBusy, setVersionsBusy] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  /** Selección de texto viva al abrir el diálogo de estilo: permite aplicar solo al fragmento. */
+  const savedRange = useRef<{ range: Range; el: HTMLElement; text: string } | null>(null)
+  const captureSelection = () => {
+    const sel = window.getSelection()
+    savedRange.current = null
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return
+    const range = sel.getRangeAt(0)
+    const el = (range.commonAncestorContainer instanceof Element ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement)?.closest('[data-ref]') as HTMLElement | null
+    if (!el || el.closest('.qv-editor, .qv-side')) return
+    savedRange.current = { range: range.cloneRange(), el, text: range.toString() }
+  }
+  /** Envuelve el fragmento seleccionado con las clases de estilo y guarda el texto del campo. */
+  const applyFragmentStyle = (classes: string[]) => {
+    const saved = savedRange.current
+    if (!saved) return false
+    const span = document.createElement('span')
+    span.className = ['qs-inline', ...classes.map((c) => `qs-${c}`)].join(' ')
+    try {
+      saved.range.surroundContents(span)
+    } catch {
+      const frag = saved.range.extractContents()
+      span.appendChild(frag)
+      saved.range.insertNode(span)
+    }
+    const value = domToMarks(saved.el)
+    saved.el.dataset.orig = value
+    savedRange.current = null
+    return onApplyRef(saved.el.dataset.ref || '', value)
+  }
   const imgTarget = useRef<string>('')
   const hoverTimer = useRef<number>(0)
   const pagesRef = useRef<Page[]>(pages)
@@ -348,8 +390,8 @@ export function EditorPanel(props: EditorProps) {
     const next = [...pages]; [next[pi], next[j]] = [next[j], next[pi]]
     onPages(next)
   }
-  const removePage = (pi: number) => {
-    if (!confirm(`¿Eliminar la página «${pages[pi].title || pages[pi].id}» con sus ${pages[pi].blocks.length} bloques?`)) return
+  const removePage = async (pi: number) => {
+    if (!(await confirm(`¿Eliminar la página «${pages[pi].title || pages[pi].id}» con sus ${pages[pi].blocks.length} bloques?`, { title: 'Eliminar página', okLabel: 'Eliminar', danger: true }))) return
     onPages(pages.filter((_, i) => i !== pi))
   }
   const duplicatePage = (pi: number) => {
@@ -397,12 +439,13 @@ export function EditorPanel(props: EditorProps) {
     ;[next[idx], next[j]] = [next[j], next[idx]]
     writeList(pi, bi, ci, next)
   }
-  const removeBlock = (loc: Loc) => {
+  const removeBlock = async (loc: Loc) => {
     const { list, idx, pi, bi, ci } = locate(loc)
     const b = list[idx]
-    if (!b || !confirm(`¿Eliminar este bloque (${BLOCK_LABEL[b.type] || b.type})?`)) return
-    writeList(pi, bi, ci, list.filter((_, i) => i !== idx))
+    if (!b) return
     setHover(null)
+    if (!(await confirm(`¿Eliminar este bloque (${BLOCK_LABEL[b.type] || b.type})?`, { title: 'Eliminar bloque', okLabel: 'Eliminar', danger: true }))) return
+    writeList(pi, bi, ci, list.filter((_, i) => i !== idx))
   }
   const duplicateBlock = (loc: Loc) => {
     const { list, idx, pi, bi, ci } = locate(loc)
@@ -446,7 +489,7 @@ export function EditorPanel(props: EditorProps) {
     } catch (e) { flash((e as Error).message) } finally { setVersionsBusy(false) }
   }
   const restoreVersion = async (id: string, when: string) => {
-    if (!confirm(`¿Restaurar la versión del ${when}? El estado actual queda guardado como otra versión.`)) return
+    if (!(await confirm(`¿Restaurar la versión del ${when}? El estado actual queda guardado como otra versión.`, { title: 'Restaurar versión', okLabel: 'Restaurar' }))) return
     setVersionsBusy(true)
     try {
       if (dirty) await onSave()
@@ -468,6 +511,7 @@ export function EditorPanel(props: EditorProps) {
     if (type === 'icon') { setDialog({ kind: 'icon', target }); setAddMenu(null); return }
     if (type === 'button') { setDialog({ kind: 'button', target }); setAddMenu(null); return }
     if (type === 'ai') { setDialog({ kind: 'ai', target }); setAddMenu(null); return }
+    if (type === 'diagram') { setDialog({ kind: 'diagram', target }); setAddMenu(null); return }
     const fresh = structuredClone(EMPTY[type] || EMPTY.p) as Block
     if (fresh.type === 'p' || fresh.type === 'lede' || fresh.type === 'h3' || fresh.type === 'note') fresh.text = fresh.text || 'Escribe aquí…'
     if (fresh.type === 'list') fresh.items = ['Primer punto']
@@ -507,7 +551,7 @@ export function EditorPanel(props: EditorProps) {
     try { await onSave(); setSaveModal(false); flash('Cambios guardados') } catch (e) { flash(`No se guardó: ${(e as Error).message}`) } finally { setSaving(false) }
   }
   const convert = async () => {
-    if (!confirm('El documento pasa a componerse por páginas libres: cada sección actual se vuelve una página con bloques que puedes mover, editar y borrar. Los cambios sin guardar se guardan antes. ¿Continuar?')) return
+    if (!(await confirm('El documento pasa a componerse por páginas libres: cada sección actual se vuelve una página con bloques que puedes mover, editar y borrar. Los cambios sin guardar se guardan antes.', { title: 'Pasar a páginas libres', okLabel: 'Convertir' }))) return
     setConverting(true)
     try {
       if (dirty) await onSave()
@@ -547,6 +591,7 @@ export function EditorPanel(props: EditorProps) {
   if (preview) {
     return (
       <div className="qv-editor qv-editor-pill">
+        {dialogs}
         <b>Vista previa</b>
         {dirty && <span className="qv-editor-dirty">cambios sin guardar</span>}
         <button onClick={() => onPreview(false)}>Volver a editar</button>
@@ -564,6 +609,7 @@ export function EditorPanel(props: EditorProps) {
   return (
     <>
       <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden onChange={(e) => void replaceImage(e.target.files?.[0])} />
+      {dialogs}
 
       {/* ── barra lateral: páginas o secciones ── */}
       {sideOpen ? (
@@ -575,7 +621,7 @@ export function EditorPanel(props: EditorProps) {
           <div className="qv-side-actions">
             <button className="primary" disabled={!dirty || saving} onClick={() => setSaveModal(true)}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
             <button onClick={() => onPreview(true)} title="Ver el documento limpio, tal como lo verá el cliente">Vista previa</button>
-            <button disabled={!dirty} onClick={() => { if (confirm('¿Descartar los cambios sin guardar?')) void onDiscard() }}>Descartar</button>
+            <button disabled={!dirty} onClick={() => { void confirm('¿Descartar los cambios sin guardar?', { title: 'Descartar cambios', okLabel: 'Descartar', danger: true }).then((ok) => { if (ok) void onDiscard() }) }}>Descartar</button>
             <button onClick={() => { setDialog({ kind: 'versions' }); void loadVersions() }} title="Versiones guardadas de esta cotización">Historial</button>
           </div>
           <div className={`qv-side-state${dirty ? ' is-dirty' : ''}`}>
@@ -603,7 +649,7 @@ export function EditorPanel(props: EditorProps) {
                         <button onClick={() => duplicatePage(pi)} title="Duplicar">⧉</button>
                         <button onClick={() => setAddMenu({ pi, after: pg.blocks.length - 1 })} title="Agregar bloque al final">＋</button>
                         <button onClick={() => setPageMenu(pi)} title="Insertar página después">＋pág</button>
-                        <button className="danger" onClick={() => removePage(pi)} title="Eliminar página">✕</button>
+                        <button className="danger" onClick={() => void removePage(pi)} title="Eliminar página">✕</button>
                       </div>
                     </div>
                   </li>
@@ -650,8 +696,8 @@ export function EditorPanel(props: EditorProps) {
       {hover && hoverBlock && hoverTarget && mode === 'edit' && (
         <div className="qv-blockbar" style={{ top: hover.top - 30, left: Math.max(8, hover.left + hover.width - 290) }}>
           <span className="qv-blockbar-type">{BLOCK_LABEL[hoverBlock.type] || hoverBlock.type}{blockPreview(hoverBlock) ? ` · ${blockPreview(hoverBlock)}` : ''}</span>
-          {['lede', 'p', 'h3', 'note', 'list', 'box', 'table'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'style', loc: hover })} title="Estilo: tamaño, color, peso, fondo">Aa</button>}
-          {['table', 'gantt', 'cards', 'team', 'htimeline', 'vtimeline', 'payments', 'phase', 'list', 'timeline', 'invoice'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'items', loc: hover })} title="Agregar o quitar filas, columnas, tarjetas, miembros o hitos">⋯</button>}
+          {['lede', 'p', 'h3', 'note', 'list', 'box', 'table', 'cards'].includes(hoverBlock.type) && <button onMouseDown={(e) => { e.preventDefault(); captureSelection() }} onClick={() => setDialog({ kind: 'style', loc: hover })} title="Estilo: tamaño, color, peso, fondo · a todo el bloque o al fragmento seleccionado">Aa</button>}
+          {['table', 'gantt', 'cards', 'team', 'htimeline', 'vtimeline', 'payments', 'phase', 'list', 'timeline', 'invoice', 'diagram'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'items', loc: hover })} title="Agregar o quitar filas, columnas, tarjetas, miembros o hitos">⋯</button>}
           {hoverBlock.type === 'grid' && <button onClick={() => setDialog({ kind: 'gridSettings', loc: hover })} title="Columnas">⚙</button>}
           {hoverBlock.type === 'icon' && <button onClick={() => setDialog({ kind: 'icon', loc: hover })} title="Cambiar ícono, tamaño o color">⚙</button>}
           {hoverBlock.type === 'button' && <button onClick={() => setDialog({ kind: 'button', loc: hover })} title="Texto, enlace y estilo">⚙</button>}
@@ -660,7 +706,7 @@ export function EditorPanel(props: EditorProps) {
           <button onClick={() => duplicateBlock(hover)} title="Duplicar">⧉</button>
           <button onClick={() => setDialog({ kind: 'move', loc: hover })} title="Mover a otra página, cuadrícula o celda">⇄</button>
           <button onClick={() => setAddMenu(hoverTarget)} title="Agregar bloque debajo">＋</button>
-          <button className="danger" onClick={() => removeBlock(hover)} title="Eliminar">✕</button>
+          <button className="danger" onClick={() => void removeBlock(hover)} title="Eliminar">✕</button>
         </div>
       )}
 
@@ -721,7 +767,13 @@ export function EditorPanel(props: EditorProps) {
         />
       )}
       {dialog?.kind === 'style' && (
-        <StyleDialog block={blockAt(dialog.loc) as any} onClose={() => setDialog(null)} onSave={(patch) => { updateBlock(dialog.loc, patch as Partial<Block>); setDialog(null) }} />
+        <StyleDialog
+          block={blockAt(dialog.loc) as any}
+          selection={savedRange.current?.text || ''}
+          onClose={() => { savedRange.current = null; setDialog(null) }}
+          onSave={(patch) => { updateBlock(dialog.loc, patch as Partial<Block>); setDialog(null) }}
+          onSaveFragment={(classes) => { if (!applyFragmentStyle(classes)) flash('No se pudo aplicar al fragmento'); setDialog(null) }}
+        />
       )}
       {dialog?.kind === 'items' && (
         <ItemsDialog block={blockAt(dialog.loc) as any} onClose={() => setDialog(null)} onChange={(patch) => updateBlock(dialog.loc, patch as Partial<Block>)} />
@@ -754,6 +806,9 @@ export function EditorPanel(props: EditorProps) {
             <div className="qv-modal-actions"><button onClick={() => setDialog(null)}>Cerrar</button></div>
           </div>
         </div>
+      )}
+      {dialog?.kind === 'diagram' && (
+        <DiagramDialog onClose={() => setDialog(null)} onPick={(kind) => insertBlock(dialog.target, diagramSeed(kind))} />
       )}
       {dialog?.kind === 'ai' && (
         <AiDialog onClose={() => setDialog(null)} onAsk={(kind, prompt) => void askAiElement(dialog.target, kind, prompt)} />
@@ -812,8 +867,9 @@ export function EditorPanel(props: EditorProps) {
   )
 }
 
-function StyleDialog({ block, onSave, onClose }: { block: any; onSave: (patch: Record<string, unknown>) => void; onClose: () => void }) {
+function StyleDialog({ block, selection, onSave, onSaveFragment, onClose }: { block: any; selection?: string; onSave: (patch: Record<string, unknown>) => void; onSaveFragment?: (classes: string[]) => void; onClose: () => void }) {
   const isTable = block?.type === 'table'
+  const [scope, setScope] = useState<'block' | 'fragment'>(selection ? 'fragment' : 'block')
   const [size, setSize] = useState<string>(isTable ? block?.fontSize || 'md' : block?.style?.size || 'md')
   const [color, setColor] = useState<string>(block?.style?.color || '')
   const [weight, setWeight] = useState<string>(block?.style?.weight || '')
@@ -826,6 +882,17 @@ function StyleDialog({ block, onSave, onClose }: { block: any; onSave: (patch: R
   const [firstCol, setFirstCol] = useState<string>(block?.firstCol || 'key')
   const apply = () => {
     if (isTable) { onSave({ tableStyle, fontSize: size, firstCol }); return }
+    if (scope === 'fragment' && onSaveFragment) {
+      const classes: string[] = []
+      if (size && size !== 'md') classes.push(`size-${size}`)
+      if (color) classes.push(`color-${color}`)
+      if (weight) classes.push(`w-${weight}`)
+      if (bg && bg !== 'none') classes.push(`bg-${bg}`)
+      if (italic) classes.push('italic')
+      if (upper) classes.push('upper')
+      onSaveFragment(classes)
+      return
+    }
     const style: Record<string, unknown> = {}
     if (size && size !== 'md') style.size = size
     if (color) style.color = color
@@ -841,6 +908,12 @@ function StyleDialog({ block, onSave, onClose }: { block: any; onSave: (patch: R
     <div className="qv-modal-wrap" onClick={onClose}>
       <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
         <h3>{isTable ? 'Estilo de la tabla' : 'Estilo del texto'}</h3>
+        {!isTable && selection && (
+          <div className="row" style={{ marginBottom: 6 }}>
+            <button className={scope === 'fragment' ? 'is-active' : ''} onClick={() => setScope('fragment')}>Solo el fragmento «{selection.slice(0, 28)}{selection.length > 28 ? '…' : ''}»</button>
+            <button className={scope === 'block' ? 'is-active' : ''} onClick={() => setScope('block')}>Todo el bloque</button>
+          </div>
+        )}
         {isTable ? (
           <>
             <label>Apariencia</label>
@@ -878,6 +951,43 @@ function StyleDialog({ block, onSave, onClose }: { block: any; onSave: (patch: R
           <button onClick={onClose}>Cancelar</button>
           <button className="primary" onClick={apply}>Aplicar</button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+/** Esquema de arranque por tipo, con contenido demo editable. */
+function diagramSeed(kind: DiagramKind): Block {
+  const it = (label: string, desc = '', tone: 'cyan' | 'deep' | 'gold' = 'cyan', children: string[] = []) => ({ label, desc, tone, children })
+  const seeds: Record<DiagramKind, Block> = {
+    process: { type: 'diagram', kind, title: 'Proceso', items: [it('Diagnóstico', 'Punto de partida'), it('Diseño', 'Qué se construye'), it('Construcción', 'En producción', 'deep'), it('Apropiación', 'Equipo formado', 'deep'), it('Mejora', 'Soporte y evolución', 'gold')] },
+    cycle: { type: 'diagram', kind, title: 'Ciclo de mejora', center: 'Mejora continua', items: [it('Planear'), it('Hacer', '', 'deep'), it('Verificar', '', 'deep'), it('Actuar', '', 'gold')] },
+    pyramid: { type: 'diagram', kind, title: 'Pirámide', items: [it('Visión', 'Hacia dónde vamos', 'gold'), it('Estrategia', 'Cómo llegamos', 'deep'), it('Procesos', 'Qué hacemos cada día'), it('Datos y tecnología', 'Lo que sostiene todo')] },
+    matrix: { type: 'diagram', kind, title: 'Matriz de priorización', axes: { x: ['Menor esfuerzo', 'Mayor esfuerzo'], y: ['Mayor valor', 'Menor valor'] }, items: [it('Ganancias rápidas', 'Hacer primero', 'gold'), it('Apuestas mayores', 'Planear con cuidado', 'deep'), it('Relleno', 'Solo si sobra tiempo'), it('Descartar', 'No vale el esfuerzo')] },
+    mindmap: { type: 'diagram', kind, title: 'Mapa mental', center: 'Transformación digital', items: [it('Personas', '', 'cyan', ['Roles', 'Competencias']), it('Procesos', '', 'deep', ['Mapeo BPMN', 'Automatización']), it('Datos', '', 'gold', ['Tableros', 'Indicadores']), it('Tecnología', '', 'cyan', ['Plataforma', 'IA'])] },
+    conceptmap: { type: 'diagram', kind, title: 'Mapa conceptual', center: 'Learning Analytics', items: [it('Tablero', 'se muestra en', 'cyan', ['Dirección', 'Programa', 'Aula']), it('Indicadores', 'se define con', 'deep', ['Permanencia', 'Riesgo', 'Avance']), it('LMS', 'lee datos del', 'gold', ['Sesiones', 'Entregas'])] },
+    synoptic: { type: 'diagram', kind, center: 'Producción de un curso', items: [it('Diseño', '', 'cyan', ['Ruta de aprendizaje', 'Guiones']), it('Producción', '', 'deep', ['Recursos digitales', 'Actividades']), it('Montaje', '', 'deep', ['Aula en el LMS', 'Navegación']), it('Calidad', '', 'gold', ['Rúbrica QM', 'Informe'])] },
+    causeeffect: { type: 'diagram', kind, title: 'Causa y efecto', center: 'Deserción temprana', items: [it('Personas', '', 'cyan', ['Sin acompañamiento', 'Carga laboral']), it('Procesos', '', 'deep', ['Alertas tardías', 'Reportes manuales']), it('Tecnología', '', 'gold', ['Datos dispersos', 'Sin tablero']), it('Contenido', '', 'cyan', ['Actividades poco claras', 'Sin retroalimentación'])] },
+  }
+  return seeds[kind]
+}
+
+function DiagramDialog({ onPick, onClose }: { onPick: (kind: DiagramKind) => void; onClose: () => void }) {
+  const hints: Record<DiagramKind, string> = {
+    process: 'Pasos encadenados de izquierda a derecha.', cycle: 'Etapas que se repiten alrededor de un centro.', pyramid: 'Niveles apilados, de la base a la cima.', matrix: 'Cuatro cuadrantes con dos ejes.',
+    mindmap: 'Idea central con ramas y subramas.', conceptmap: 'Conceptos unidos por relaciones nombradas.', synoptic: 'Tema, grupos y detalles con llaves.', causeeffect: 'Espina de pescado: causas por categoría y efecto.',
+  }
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>Nuevo esquema</h3>
+        <p>Elige el tipo. Llega con contenido demo; los textos se editan en la página y con «⋯» se agregan o quitan elementos.</p>
+        <div className="qv-addmenu-grid">
+          {(Object.keys(DIAGRAM_LABELS) as DiagramKind[]).map((k) => (
+            <button key={k} onClick={() => onPick(k)}><b>{DIAGRAM_LABELS[k]}</b><br /><span style={{ fontSize: 11, color: '#64748b' }}>{hints[k]}</span></button>
+          ))}
+        </div>
+        <div className="qv-modal-actions"><button onClick={onClose}>Cancelar</button></div>
       </div>
     </div>
   )
@@ -1054,6 +1164,36 @@ function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patc
         </div>
         <label>Peso del segmento (ancho proporcional)</label>
         <div className="row"><Sel n={segs.length} value={idx} set={setIdx} label="Segmento" /><input type="number" min={1} value={segs[idx]?.weight ?? 1} onChange={(e) => onChange({ segments: segs.map((x, i) => (i === idx ? { ...x, weight: Math.max(1, Number(e.target.value)) } : x)) })} /></div>
+      </>
+    )
+  } else if (t === 'diagram') {
+    const items: any[] = block.items || []
+    const kinds = Object.keys(DIAGRAM_LABELS) as DiagramKind[]
+    const withChildren = ['mindmap', 'conceptmap', 'synoptic', 'causeeffect'].includes(block.kind)
+    title = `Elementos del esquema · ${DIAGRAM_LABELS[block.kind as DiagramKind] || block.kind}`
+    body = (
+      <>
+        <p>{items.length} elementos. Los textos se editan en la página.</p>
+        <label>Tipo de esquema</label>
+        <select value={block.kind} onChange={(e) => onChange({ kind: e.target.value })}>{kinds.map((k) => <option key={k} value={k}>{DIAGRAM_LABELS[k]}</option>)}</select>
+        <div className="row">
+          <button disabled={block.kind === 'matrix' && items.length >= 4} onClick={() => onChange({ items: [...items, { label: 'Nuevo elemento', desc: '', tone: tone(items.length), children: withChildren ? ['Detalle'] : [] }] })}>＋ Elemento</button>
+          <Sel n={items.length} value={idx} set={setIdx} label="Elemento" />
+        </div>
+        <div className="row">
+          <button disabled={items.length <= 1} onClick={() => onChange({ items: items.filter((_, i) => i !== idx) })}>Eliminar elemento</button>
+          <select value={items[idx]?.tone || 'cyan'} onChange={(e) => onChange({ items: items.map((x, i) => (i === idx ? { ...x, tone: e.target.value } : x)) })}><option value="cyan">Cian</option><option value="deep">Profundo</option><option value="gold">Dorado</option></select>
+        </div>
+        {withChildren && (
+          <div className="row">
+            <button onClick={() => onChange({ items: items.map((x, i) => (i === idx ? { ...x, children: [...(x.children || []), 'Nuevo detalle'] } : x)) })}>＋ Detalle al elemento {idx + 1}</button>
+            <button disabled={!(items[idx]?.children?.length)} onClick={() => onChange({ items: items.map((x, i) => (i === idx ? { ...x, children: (x.children || []).slice(0, -1) } : x)) })}>− Último detalle</button>
+          </div>
+        )}
+        <div className="row">
+          <button disabled={idx === 0} onClick={() => { const n = [...items]; [n[idx - 1], n[idx]] = [n[idx], n[idx - 1]]; onChange({ items: n }); setIdx(idx - 1) }}>↑ Subir</button>
+          <button disabled={idx >= items.length - 1} onClick={() => { const n = [...items]; [n[idx + 1], n[idx]] = [n[idx], n[idx + 1]]; onChange({ items: n }); setIdx(idx + 1) }}>↓ Bajar</button>
+        </div>
       </>
     )
   } else if (t === 'invoice') {

@@ -1391,3 +1391,15 @@ a,
 button {
   @apply transition-all duration-300;
 }
+
+/* ── Diálogos de la plataforma (confirmar, preguntar, avisar) ─────────── */
+.at-dialog-wrap { position: fixed; inset: 0; z-index: 90; background: rgba(15, 23, 42, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.at-dialog { width: min(440px, 100%); background: #fff; color: #0f172a; border-radius: 14px; padding: 20px; box-shadow: 0 24px 60px rgba(15, 23, 42, .3); font: 13.5px/1.5 Inter, system-ui, sans-serif; }
+.at-dialog h3 { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
+.at-dialog p { margin: 0 0 14px; color: #334155; white-space: pre-wrap; }
+.at-dialog input { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font: inherit; margin-bottom: 14px; outline: none; }
+.at-dialog input:focus { border-color: #4f46e5; }
+.at-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.at-dialog-actions button { border: 1px solid #cbd5e1; background: #fff; color: #334155; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.at-dialog-actions button.primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.at-dialog-actions button.primary.danger { background: #e11d48; border-color: #e11d48; }

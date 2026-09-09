@@ -547,6 +547,11 @@ function blockWeight(b: PageBlock): number {
       return b.imageUrl ? 420 : 300
     case 'sechead':
       return 200
+    case 'diagram': {
+      const n = Array.isArray(b.items) ? b.items.length : 0
+      const kids = Array.isArray(b.items) ? b.items.reduce((s: number, it: any) => s + (Array.isArray(it?.children) ? it.children.length : 0), 0) : 0
+      return 500 + n * 70 + kids * 40
+    }
     default:
       return 300
   }
@@ -813,8 +818,9 @@ const num = (v: unknown, def = 1) => { const n = Math.round(Number(v)); return N
 
 export const PAGE_BLOCK_TYPES = new Set([
   'lede', 'p', 'h3', 'list', 'box', 'note', 'table', 'cards', 'phase', 'img', 'invoice', 'payments', 'toc', 'team', 'letterhead', 'timeline', 'gantt',
-  'grid', 'icon', 'button', 'htimeline', 'vtimeline', 'signature', 'sechead',
+  'grid', 'icon', 'button', 'htimeline', 'vtimeline', 'signature', 'sechead', 'diagram',
 ])
+export const DIAGRAM_KINDS = new Set(['process', 'cycle', 'pyramid', 'matrix', 'mindmap', 'conceptmap', 'synoptic', 'causeeffect'])
 const ICON_COLORS = new Set(['navy', 'cyan', 'gold', 'muted'])
 const STYLE_SIZES = new Set(['xs', 'sm', 'md', 'lg', 'xl', 'xxl'])
 const STYLE_COLORS = new Set(['ink', 'navy', 'cyan', 'gold', 'muted', 'white'])
@@ -925,6 +931,22 @@ export function sanitizeBlock(raw: any): PageBlock | null {
     case 'sechead': {
       const title = s(raw.title, 200)
       return title ? { type, num: s(raw.num, 8), kicker: s(raw.kicker, 120), title } : null
+    }
+    case 'diagram': {
+      // esquemas: proceso, ciclo, pirámide, matriz, mapa mental, mapa conceptual, cuadro sinóptico, causa-efecto
+      const kind = DIAGRAM_KINDS.has(raw.kind) ? raw.kind : 'process'
+      const items = Array.isArray(raw.items)
+        ? raw.items.slice(0, 12).map((it: any) => ({
+            label: s(it?.label, 160),
+            desc: s(it?.desc, 300),
+            children: sl(it?.children, 8, 160),
+            tone: tone(it?.tone),
+          })).filter((it: any) => it.label)
+        : []
+      if (!items.length) return null
+      const out: PageBlock = { type, kind, items, title: s(raw.title, 160), center: s(raw.center, 160) }
+      if (raw.axes && typeof raw.axes === 'object') out.axes = { x: sl(raw.axes.x, 2, 60), y: sl(raw.axes.y, 2, 60) }
+      return out
     }
     case 'invoice': {
       const rows = Array.isArray(raw.rows) ? raw.rows.slice(0, 30).map((r: any) => ({ concept: s(r?.concept, 300), detail: s(r?.detail, 800), amount: s(r?.amount, 60) })).filter((r: any) => r.concept) : []

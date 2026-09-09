@@ -8,6 +8,7 @@ import {
   ArrowLeft, Plus, FileText, Eye, Copy, BookOpen, Trash2, UploadCloud, X, Loader2, CheckCircle2, CopyPlus,
 } from 'lucide-react'
 import { quotesApi, money, timeAgo, type QuoteListItem } from './api'
+import { useDialogs } from './ui/dialogs'
 
 const STATUS_STYLE: Record<string, string> = {
   DRAFT: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -63,6 +64,7 @@ const KIND_LABEL: Record<string, string> = {
 
 function KnowledgePanel({ onClose }: { onClose: () => void }) {
   const [docs, setDocs] = useState<KnowledgeDoc[]>([])
+  const { confirm: confirmDlg, dialogs: knowledgeDialogs } = useDialogs()
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -116,6 +118,7 @@ function KnowledgePanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40" onClick={onClose}>
+      {knowledgeDialogs}
       <div className="h-full w-full max-w-xl overflow-y-auto bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-1 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-black tracking-tight"><BookOpen size={18} className="text-indigo-600" /> Base de contexto</h2>
@@ -186,7 +189,7 @@ function KnowledgePanel({ onClose }: { onClose: () => void }) {
                   {doc.active ? 'Activo' : 'Inactivo'}
                 </button>
                 <button
-                  onClick={async () => { if (confirm(`¿Eliminar «${doc.title}»?`)) { await quotesApi.knowledge.remove(doc.id); await load() } }}
+                  onClick={async () => { if (await confirmDlg(`¿Eliminar «${doc.title}»?`, { title: 'Eliminar documento', okLabel: 'Eliminar', danger: true })) { await quotesApi.knowledge.remove(doc.id); await load() } }}
                   className="grid h-7 w-7 place-items-center rounded-full text-slate-300 hover:bg-rose-50 hover:text-rose-600"
                 >
                   <Trash2 size={14} />
@@ -203,6 +206,7 @@ function KnowledgePanel({ onClose }: { onClose: () => void }) {
 export function CotizadorList() {
   const navigate = useNavigate()
   const [quotes, setQuotes] = useState<QuoteListItem[]>([])
+  const { confirm, dialogs } = useDialogs()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showKnowledge, setShowKnowledge] = useState(false)
@@ -251,7 +255,7 @@ export function CotizadorList() {
   }
 
   const deleteQuote = async (quote: QuoteListItem) => {
-    const ok = confirm(
+    const ok = await confirm(
       `¿Eliminar la cotización de «${quote.clientName}»?\n\nSe borran su URL pública, sus destinatarios y todas sus métricas. Esta acción no se puede deshacer.`
     )
     if (!ok) return
@@ -263,6 +267,7 @@ export function CotizadorList() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      {dialogs}
       <header className="flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
         <Link to="/ecosistema" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600">
           <ArrowLeft size={16} /> Ecosistema
@@ -310,7 +315,7 @@ export function CotizadorList() {
                       className={`rounded-l-md border px-2.5 py-1 text-[12px] font-semibold ${fromTemplateId === t.id ? 'border-indigo-500 bg-white text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
                       {t.name}
                     </button>
-                    <button onClick={async () => { if (confirm(`¿Eliminar la plantilla «${t.name}»?`)) { try { await quotesApi.templates.remove(t.id); setOwnTemplates((prev) => prev.filter((x) => x.id !== t.id)); if (fromTemplateId === t.id) setFromTemplateId('') } catch (e) { setError((e as Error).message) } } }}
+                    <button onClick={async () => { if (await confirm(`¿Eliminar la plantilla «${t.name}»?`, { title: 'Eliminar plantilla', okLabel: 'Eliminar', danger: true })) { try { await quotesApi.templates.remove(t.id); setOwnTemplates((prev) => prev.filter((x) => x.id !== t.id)); if (fromTemplateId === t.id) setFromTemplateId('') } catch (e) { setError((e as Error).message) } } }}
                       className="rounded-r-md border border-l-0 border-slate-200 bg-white px-1.5 py-1 text-[12px] text-slate-300 hover:text-rose-600" title="Eliminar plantilla">×</button>
                   </span>
                 ))}

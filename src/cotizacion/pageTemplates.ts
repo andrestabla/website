@@ -577,6 +577,27 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
     ]),
   },
   {
+    id: 'esquemas', category: 'Método', label: 'Esquemas: proceso y matriz',
+    description: 'Un proceso en cinco pasos y una matriz de priorización 2×2, ambos editables y con elementos agregables.',
+    make: (n) => page('esquemas', n, 'Método', 'Cómo se prioriza y se ejecuta', [
+      lede('Primero se ordena lo que hay que hacer según su valor y su esfuerzo; después se ejecuta en cinco pasos encadenados.'),
+      { type: 'diagram', kind: 'matrix', title: 'Matriz de priorización', axes: { x: ['Menor esfuerzo', 'Mayor esfuerzo'], y: ['Mayor valor', 'Menor valor'] }, items: [
+        { label: 'Ganancias rápidas', desc: 'Se hacen primero: alto valor con poco esfuerzo.', tone: 'gold' },
+        { label: 'Apuestas mayores', desc: 'Alto valor y alto esfuerzo: se planean por fases.', tone: 'deep' },
+        { label: 'Relleno', desc: 'Bajo valor y poco esfuerzo: solo si sobra tiempo.', tone: 'cyan' },
+        { label: 'Descartar', desc: 'Bajo valor y alto esfuerzo: fuera del alcance.', tone: 'cyan' },
+      ] },
+      { type: 'diagram', kind: 'process', title: 'Ruta de ejecución', items: [
+        { label: 'Diagnóstico', desc: 'Punto de partida y catálogo', tone: 'cyan' },
+        { label: 'Diseño', desc: 'Qué se construye y cómo', tone: 'cyan' },
+        { label: 'Construcción', desc: 'Solución en producción', tone: 'deep' },
+        { label: 'Apropiación', desc: 'Equipo formado', tone: 'deep' },
+        { label: 'Mejora', desc: 'Soporte y evolución', tone: 'gold' },
+      ] },
+      note('Cada esquema se cambia de tipo desde «⋯»: ciclo, pirámide, mapa mental, mapa conceptual, cuadro sinóptico o causa-efecto.'),
+    ]),
+  },
+  {
     id: 'libre', category: 'Anexos', label: 'Página en blanco',
     description: 'Solo un título y un párrafo, para empezar desde cero.',
     make: (n) => page('pagina', n, '', 'Nueva página', [p('Escribe aquí…')]),

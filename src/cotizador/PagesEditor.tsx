@@ -44,6 +44,7 @@ export const BLOCK_TYPES: Array<[string, string]> = [
   ['vtimeline', 'Línea de tiempo vertical'],
   ['signature', 'Firma'],
   ['sechead', 'Sección numerada (en la misma hoja)'],
+  ['diagram', 'Esquema (proceso, ciclo, pirámide, matriz, mapas…)'],
 ]
 const BLOCK_LABEL: Record<string, string> = Object.fromEntries(BLOCK_TYPES)
 
@@ -94,6 +95,13 @@ export const EMPTY: Record<string, Block> = {
   ] },
   signature: { type: 'signature', name: 'Ana Milena Diazgranados', role: 'Directora de Relacionamiento', org: 'Algoritmo T S.A.S.', email: 'anadiazgranados@algoritmot.com', phone: '+57 300 659 0161', place: 'Bogotá D. C.', date: '', note: '' },
   sechead: { type: 'sechead', num: '00', kicker: 'Antetítulo', title: 'Título de la sección' },
+  diagram: { type: 'diagram', kind: 'process', title: '', center: '', items: [
+    { label: 'Diagnóstico', desc: 'Punto de partida y catálogo', tone: 'cyan' },
+    { label: 'Diseño', desc: 'Qué se construye y cómo', tone: 'cyan' },
+    { label: 'Construcción', desc: 'Solución en producción', tone: 'deep' },
+    { label: 'Apropiación', desc: 'Equipo formado', tone: 'deep' },
+    { label: 'Mejora continua', desc: 'Soporte y evolución', tone: 'gold' },
+  ] },
 }
 
 /**

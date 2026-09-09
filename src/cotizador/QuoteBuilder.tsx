@@ -13,6 +13,7 @@ import {
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
 import { quotesApi, money, timeAgo, fmtDuration, expiresAt, type QuoteMessageRow, type QuoteRecipient, type QuoteAttachmentRow, type EmailTemplate } from './api'
 import { TEMPLATE_LABEL } from './CotizadorList'
+import { useDialogs } from './ui/dialogs'
 
 type Tab = 'propuesta' | 'vista' | 'destinatarios' | 'metricas'
 /** Disposición del builder: las dos columnas, solo el chat o solo el panel. Se recuerda por navegador. */
@@ -61,6 +62,7 @@ export function QuoteBuilder() {
   const { quoteId = '' } = useParams<{ quoteId: string }>()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const { confirm, prompt, dialogs } = useDialogs()
   const [quote, setQuote] = useState<any>(null)
   const [items, setItems] = useState<QuoteItem[]>([])
   const [messages, setMessages] = useState<QuoteMessageRow[]>([])
@@ -248,7 +250,7 @@ export function QuoteBuilder() {
 
   const importAttachment = async (row: QuoteAttachmentRow, mode: 'replace' | 'append') => {
     setImportMenu('')
-    if (mode === 'replace' && pagesCount > 0 && !confirm(`El documento ya tiene ${pagesCount} páginas. ¿Reemplazarlas por el contenido de «${row.name}»? Los cambios sin guardar del editor de contenido se pierden.`)) return
+    if (mode === 'replace' && pagesCount > 0 && !(await confirm(`El documento ya tiene ${pagesCount} páginas. ¿Reemplazarlas por el contenido de «${row.name}»?`, { title: 'Volcar adjunto', okLabel: 'Reemplazar', danger: true }))) return
     setImporting(row.id)
     setError('')
     try {
@@ -281,7 +283,7 @@ export function QuoteBuilder() {
   }
 
   const removeAttachment = async (row: QuoteAttachmentRow) => {
-    if (!confirm(`¿Eliminar el adjunto «${row.name}»? La IA dejará de leerlo; las páginas ya importadas se conservan.`)) return
+    if (!(await confirm(`¿Eliminar el adjunto «${row.name}»? La IA dejará de leerlo; las páginas ya importadas se conservan.`, { title: 'Eliminar adjunto', okLabel: 'Eliminar', danger: true }))) return
     try {
       await quotesApi.attachments.remove(quoteId, row.id)
       setAttachments((prev) => prev.filter((a) => a.id !== row.id))
@@ -413,8 +415,7 @@ export function QuoteBuilder() {
   const removeItem = (code: string) => {
     if (items.length <= 1) { setError('La cotización necesita al menos una línea'); return }
     const target = items.find((i) => i.code === code)
-    if (!window.confirm(`¿Eliminar la línea «${target?.name ?? code}» de la cotización?`)) return
-    void saveItems(items.filter((i) => i.code !== code))
+    void confirm(`¿Eliminar la línea «${target?.name ?? code}» de la cotización?`, { title: 'Eliminar línea', okLabel: 'Eliminar', danger: true }).then((ok) => { if (ok) void saveItems(items.filter((i) => i.code !== code)) })
   }
 
   const duplicateQuote = async () => {
@@ -428,7 +429,7 @@ export function QuoteBuilder() {
 
   const saveAsTemplate = async () => {
     setMenuOpen(false)
-    const name = prompt('Nombre de la plantilla (páginas, líneas y ajustes de esta cotización):', `${quote.title}`.slice(0, 80))
+    const name = await prompt('Nombre de la plantilla (páginas, líneas y ajustes de esta cotización):', `${quote.title}`.slice(0, 80), { title: 'Guardar como plantilla', okLabel: 'Guardar' })
     if (!name?.trim()) return
     try {
       await quotesApi.templates.save(quoteId, name.trim())
@@ -448,8 +449,9 @@ export function QuoteBuilder() {
 
   const deleteQuote = async () => {
     setMenuOpen(false)
-    const ok = confirm(
-      `¿Eliminar la cotización de «${quote.clientName}»?\n\nSe borran su URL pública, sus destinatarios y todas sus métricas. Esta acción no se puede deshacer.`
+    const ok = await confirm(
+      `¿Eliminar la cotización de «${quote.clientName}»?\n\nSe borran su URL pública, sus destinatarios y todas sus métricas. Esta acción no se puede deshacer.`,
+      { title: 'Eliminar cotización', okLabel: 'Eliminar', danger: true }
     )
     if (!ok) return
     try {
@@ -485,7 +487,7 @@ export function QuoteBuilder() {
 
   const sendTo = async (recipient: QuoteRecipient) => {
     if (!emailTpl) return
-    if (!confirm(`¿Enviar la cotización a ${recipient.name} (${recipient.email}) con el correo tal como se ve en la vista previa?`)) return
+    if (!(await confirm(`¿Enviar la cotización a ${recipient.name} (${recipient.email}) con el correo tal como se ve en la vista previa?`, { title: 'Enviar correo', okLabel: 'Enviar' }))) return
     setSendingId(recipient.id); setError('')
     try {
       const payload = await quotesApi.send(quoteId, recipient.id, emailTpl)
@@ -663,6 +665,7 @@ export function QuoteBuilder() {
         </div>
       </header>
 
+      {dialogs}
       {error && <div className="border-b border-rose-200 bg-rose-50 px-6 py-2 text-[13px] text-rose-700">{error}</div>}
 
       <div
@@ -863,7 +866,7 @@ export function QuoteBuilder() {
 
         {/* ── Editor de Markdown de un adjunto ── */}
         {mdEditor && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => { if (!mdEditor.dirty || confirm('Hay cambios sin guardar en el Markdown. ¿Cerrar de todos modos?')) setMdEditor(null) }}>
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-4" onClick={() => { if (!mdEditor.dirty) { setMdEditor(null); return } void confirm('Hay cambios sin guardar en el Markdown. ¿Cerrar de todos modos?', { title: 'Cerrar sin guardar', okLabel: 'Cerrar', danger: true }).then((ok) => { if (ok) setMdEditor(null) }) }}>
             <div className="flex h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
                 <Code2 size={16} className="text-indigo-600" />
@@ -875,7 +878,7 @@ export function QuoteBuilder() {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[12.5px] font-bold text-white disabled:opacity-40">
                   {mdEditor.saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Guardar
                 </button>
-                <button onClick={() => { if (!mdEditor.dirty || confirm('Hay cambios sin guardar. ¿Cerrar?')) setMdEditor(null) }} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100" aria-label="Cerrar"><X size={16} /></button>
+                <button onClick={() => { if (!mdEditor.dirty) { setMdEditor(null); return } void confirm('Hay cambios sin guardar. ¿Cerrar?', { title: 'Cerrar sin guardar', okLabel: 'Cerrar', danger: true }).then((ok) => { if (ok) setMdEditor(null) }) }} className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-100" aria-label="Cerrar"><X size={16} /></button>
               </div>
               <textarea
                 value={mdEditor.markdown}
@@ -1309,7 +1312,7 @@ export function QuoteBuilder() {
                               {recipient.sentAt ? 'Reenviar' : 'Enviar'}
                             </button>
                             <button
-                              onClick={async () => { if (confirm(`¿Quitar a ${recipient.name}? Su enlace dejará de rastrearse.`)) { await quotesApi.removeRecipient(quoteId, recipient.id); setRecipients((prev) => prev.filter((r) => r.id !== recipient.id)) } }}
+                              onClick={async () => { if (await confirm(`¿Quitar a ${recipient.name}? Su enlace dejará de rastrearse.`, { title: 'Quitar destinatario', okLabel: 'Quitar', danger: true })) { await quotesApi.removeRecipient(quoteId, recipient.id); setRecipients((prev) => prev.filter((r) => r.id !== recipient.id)) } }}
                               className="grid h-8 w-8 place-items-center rounded-full text-slate-300 hover:bg-rose-50 hover:text-rose-600"
                             >
                               <Trash2 size={14} />

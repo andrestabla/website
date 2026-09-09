@@ -191,7 +191,11 @@ REGLAS DURAS
    "button" (label, url, style primary|outline), "htimeline" y "vtimeline" (línea de tiempo horizontal o
    vertical: items [{title, date, desc, tone}]), "signature" (firma: name, role, org, email, phone, place,
    date; accept true para una firma de aceptación del cliente) y "sechead" (encabezado de sección numerada
-   dentro de la página: num, kicker, title, para poner dos numerales en una misma hoja). Edítalas con "pagesPatch":
+   dentro de la página: num, kicker, title, para poner dos numerales en una misma hoja) y "diagram"
+   (esquema: kind process|cycle|pyramid|matrix|mindmap|conceptmap|synoptic|causeeffect; title; center para
+   mapas mentales, conceptuales y causa-efecto; items [{label, desc, children[], tone}]; en matrix van 4
+   items y axes {x:[..,..], y:[..,..]}). Los textos admiten fragmentos con estilo: {{color-cyan size-lg}}texto{{/}}.
+   Edítalas con "pagesPatch":
    "set" reescribe páginas por id (título, antetítulo y bloques completos), "remove" las quita,
    "insert" agrega una página nueva después de otra. Cada página es una hoja A4: unos 2.500
    caracteres de texto por página; si un capítulo es más largo, continúalo en otra página con el

@@ -324,6 +324,14 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
       ]
     case 'sechead':
       return [new Paragraph({ children: runs(`${b.num ? `${b.num} · ` : ''}${b.kicker ? `${b.kicker} · ` : ''}${b.title}`, { bold: true, size: 30, color: '1A2D5A' }), spacing: { before: 360, after: 160 } })]
+    case 'diagram':
+      return [
+        ...(b.title || b.center ? [new Paragraph({ children: runs(String(b.title || b.center), { bold: true, color: '1A2D5A' }), spacing: { before: 120, after: 60 } })] : []),
+        ...((Array.isArray(b.items) ? b.items : []).flatMap((it: any, i: number) => [
+          new Paragraph({ children: runs(`${i + 1}. ${it.label}${it.desc ? ` — ${it.desc}` : ''}`), spacing: { after: 40 } }),
+          ...((it.children || []).map((c: string) => new Paragraph({ children: runs(`   · ${c}`), spacing: { after: 20 } }))),
+        ])),
+      ]
     case 'grid': {
       // en Word no hay cuadrícula libre: las celdas se vuelcan una tras otra
       const cells: any[][] = Array.isArray(b.cells) ? b.cells : []
