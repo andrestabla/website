@@ -812,7 +812,16 @@ function chunkList(items: string[], max: number): string[][] {
 
 // ── Saneado de páginas (lo que llega de la IA o del cliente) ─────────────────
 
-const s = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
+const s = (v: unknown, max: number) => (typeof v === 'string' ? normalizeMarks(v.trim()).slice(0, max) : '')
+/** Marcas de fragmento duplicadas o sobrantes ({{a}}{{a}}x{{/}}{{/}}) → una sola. */
+function normalizeMarks(t: string): string {
+  if (!t.includes('{{')) return t
+  t = t.replace(/(\{\{[a-z0-9 -]+\}\})(?:\1)+/g, '$1')
+  const opens = (t.match(/\{\{[a-z0-9 -]+\}\}/g) || []).length
+  let closes = (t.match(/\{\{\/\}\}/g) || []).length
+  while (closes > opens) { t = t.replace(/\{\{\/\}\}(?![\s\S]*\{\{\/\}\})/, ''); closes-- }
+  return t
+}
 const sl = (v: unknown, max: number, each: number) =>
   Array.isArray(v) ? v.map((x) => s(x, each)).filter(Boolean).slice(0, max) : []
 const align = (v: unknown) => (['left', 'center', 'right', 'justify'].includes(v as string) ? { align: v } : {})

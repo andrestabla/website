@@ -19,7 +19,7 @@ import { BLOCK_TYPES, EMPTY, type Page, type Block } from '../cotizador/PagesEdi
 import { IconPicker } from './IconPicker'
 import { PAGE_TEMPLATES, templatesByCategory } from './pageTemplates'
 import { useDialogs } from '../cotizador/ui/dialogs'
-import { DIAGRAM_LABELS, type DiagramKind } from './DocPages'
+import { DIAGRAM_LABELS, type DiagramKind, normalizeMarks } from './DocPages'
 
 type Mode = 'select' | 'edit'
 type Focus = { ref: string; label: string; text: string }
@@ -127,7 +127,7 @@ function domToMarks(root: Element): string {
       default: return inner()
     }
   }
-  return Array.from(root.childNodes).map(walk).join('').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/^\s+|\s+$/g, '')
+  return normalizeMarks(Array.from(root.childNodes).map(walk).join('')).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/^\s+|\s+$/g, '')
 }
 
 const blockPreview = (b: Block) => {
@@ -304,6 +304,13 @@ export function EditorPanel(props: EditorProps) {
       if (e.key === 'Enter' && !e.shiftKey && /^(H1|H2|H3|H4|TD|TH|SPAN|LI|FIGCAPTION|DT|DD|B)$/.test(el.tagName)) { e.preventDefault(); el.blur() }
     }
     const onImgClick = (e: MouseEvent) => {
+      const pageAdd = (e.target as Element).closest('[data-page-add]') as HTMLElement | null
+      if (pageAdd) {
+        e.preventDefault(); e.stopPropagation()
+        const n = (pageAdd.dataset.pageAdd || '').split(':').map(Number)
+        if (n.length === 2 && Number.isFinite(n[0])) setAddMenu({ pi: n[0], after: n[1] })
+        return
+      }
       const cellAdd = (e.target as Element).closest('[data-cell-add]') as HTMLElement | null
       if (cellAdd) {
         e.preventDefault(); e.stopPropagation()

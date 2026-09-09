@@ -203,10 +203,22 @@ function href(url: string): string {
   return `https://${u.replace(/^\/+/, '')}`
 }
 
+/**
+ * Marcas de fragmento duplicadas o sobrantes por una edición antigua:
+ * {{a}}{{a}}x{{/}}{{/}} → {{a}}x{{/}}; un {{/}} de más se descarta.
+ */
+export function normalizeMarks(text: string): string {
+  let t = String(text || '')
+  if (!t.includes('{{')) return t
+  t = t.replace(/(\{\{[a-z0-9 -]+\}\})(?:\1)+/g, '$1')
+  const opens = (t.match(/\{\{[a-z0-9 -]+\}\}/g) || []).length
+  let closes = (t.match(/\{\{\/\}\}/g) || []).length
+  while (closes > opens) { t = t.replace(/\{\{\/\}\}(?![\s\S]*\{\{\/\}\})/, ''); closes-- }
+  return t
+}
+
 export function rich(text: string): React.ReactNode {
-  // marcas de fragmento duplicadas por una edición antigua: {{a}}{{a}}x{{/}}{{/}} → {{a}}x{{/}}
-  const clean = String(text || '').replace(/(\{\{[a-z0-9 -]+\}\})\1([\s\S]*?)\{\{\/\}\}\{\{\/\}\}/g, '$1$2{{/}}')
-  const parts = clean.split(RICH)
+  const parts = normalizeMarks(text).split(RICH)
   return parts.map((part, i) => {
     if (!part) return null
     // fragmento con estilo propio (color, tamaño, peso, fondo): se anida con el resto de marcas
@@ -902,8 +914,10 @@ export function DocPageView({
             {page.kicker && <div className="kicker" {...ref('kicker')}>{page.kicker}</div>}
             {page.title && <h2 {...ref('title')}>{page.title}</h2>}
           </div>
+          {base && <button type="button" className="qv-page-add qv-page-add-top" data-page-add={`${pageIndex}:-1`} title="Agregar un elemento al inicio de la página">＋</button>}
         </div>
       )}
+      {base && !(page.title || page.kicker) && <button type="button" className="qv-page-add" data-page-add={`${pageIndex}:-1`}>＋ Agregar elemento al inicio</button>}
       {page.blocks.map((block, i) => (
         base ? (
           <div className={`qv-block${wrapperStyleClass(block)}`} data-block={`${pageIndex}:${i}`} key={i}>
@@ -917,6 +931,7 @@ export function DocPageView({
           <DocBlockView key={i} block={block} items={items} totals={totals} money={money} pages={pages} />
         )
       ))}
+      {base && <button type="button" className="qv-page-add" data-page-add={`${pageIndex}:${page.blocks.length - 1}`}>＋ Agregar elemento{page.blocks.length ? ' al final' : ''}</button>}
       </div>
     </section>
   )

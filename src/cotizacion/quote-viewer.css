@@ -1352,3 +1352,10 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-mode-select .qv-dg [data-dg-center], .qv-mode-edit .qv-dg [data-dg-center] { resize: horizontal; overflow: hidden; min-width: 40px; }
 .qv-mode-select .qv-dg-synoptic b[data-dg-item], .qv-mode-edit .qv-dg-synoptic b[data-dg-item] { display: block; }
 .qv-mode-select .qv-dg-step, .qv-mode-edit .qv-dg-step { clip-path: none; border-radius: 8px 4px 4px 8px; }
+/* agregar elementos desde la página: al inicio (junto al título) y al final */
+.qv-page-add { display: none; width: 100%; margin: 10px 0 0; padding: 7px; border: 1px dashed #c7d2fe; border-radius: 6px; background: #eef2ff; color: #4f46e5; font: 700 11px Inter, system-ui, sans-serif; cursor: pointer; }
+.qv-page-add:hover { background: #e0e7ff; }
+.qv-page-add-top { width: 28px; height: 28px; margin: 0; padding: 0; align-self: center; font-size: 16px; line-height: 1; }
+.qv-mode-select .qv-page-add, .qv-mode-edit .qv-page-add { display: block; }
+.qv-sechead:has(.qv-page-add-top) { grid-template-columns: auto 1fr auto; }
+@media print { .qv-page-add { display: none !important; } }
