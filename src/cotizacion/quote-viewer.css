@@ -1189,3 +1189,14 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-version button { border: 1px solid #cbd5e1; background: #fff; border-radius: 7px; padding: 5px 10px; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .qv-version button:hover { border-color: #4f46e5; color: #3730a3; }
 .qv-version-label { font-size: 11.5px; color: #64748b; }
+/* banco de páginas plantilla */
+.qv-tplbank { width: min(760px, 100%); }
+.qv-tplbank input { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font: inherit; margin-bottom: 10px; }
+.qv-tplbank-list { max-height: 58vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.qv-tplbank-cat { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #4f46e5; margin: 4px 0 6px; }
+.qv-tplbank-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.qv-tplbank-group .qv-tplbank-cat { grid-column: 1 / -1; }
+.qv-tplbank-group button { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 9px 11px; border: 1px solid #e2e8f0; border-radius: 9px; background: #f8fafc; text-align: left; cursor: pointer; color: #1e293b; }
+.qv-tplbank-group button:hover { border-color: #4f46e5; background: #eef2ff; }
+.qv-tplbank-group button b { font-size: 12.5px; }
+.qv-tplbank-group button span { font-size: 11px; color: #64748b; line-height: 1.35; }

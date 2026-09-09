@@ -15,8 +15,9 @@
  *    el servidor (guarda antes lo pendiente).
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BLOCK_TYPES, EMPTY, TEMPLATES, type Page, type Block } from '../cotizador/PagesEditor'
+import { BLOCK_TYPES, EMPTY, type Page, type Block } from '../cotizador/PagesEditor'
 import { IconPicker } from './IconPicker'
+import { PAGE_TEMPLATES, templatesByCategory } from './pageTemplates'
 
 type Mode = 'select' | 'edit'
 type Focus = { ref: string; label: string; text: string }
@@ -357,8 +358,8 @@ export function EditorPanel(props: EditorProps) {
     scrollToPage(copy.id)
   }
   const addPage = (templateId: string, after: number) => {
-    const tpl = TEMPLATES.find((t) => t.id === templateId) ?? TEMPLATES[0]
-    const page = tpl.make(pages.length + 1)
+    const tpl = PAGE_TEMPLATES.find((t) => t.id === templateId) ?? PAGE_TEMPLATES[PAGE_TEMPLATES.length - 1]
+    const page = tpl.make(after + 2)
     page.id = uid(page.id)
     const at = after + 1
     onPages([...pages.slice(0, at), page, ...pages.slice(at)])
@@ -587,7 +588,6 @@ export function EditorPanel(props: EditorProps) {
           {isPaged ? (
             <>
               <ol className="qv-side-pages">
-                {pageMenu === -1 && <TemplateMenu onPick={(id) => addPage(id, -1)} onClose={() => setPageMenu(null)} />}
                 {pages.map((pg, pi) => (
                   <li key={pg.id}>
                     <div className="qv-side-page">
@@ -605,7 +605,6 @@ export function EditorPanel(props: EditorProps) {
                         <button className="danger" onClick={() => removePage(pi)} title="Eliminar página">✕</button>
                       </div>
                     </div>
-                    {pageMenu === pi && <TemplateMenu onPick={(id) => addPage(id, pi)} onClose={() => setPageMenu(null)} />}
                   </li>
                 ))}
               </ol>
@@ -643,6 +642,8 @@ export function EditorPanel(props: EditorProps) {
       ) : (
         <button className="qv-side-fab" onClick={() => setSideOpen(true)} title="Mostrar páginas">☰ Páginas{dirty ? ' ●' : ''}</button>
       )}
+
+      {pageMenu !== null && <TemplateMenu onPick={(id) => addPage(id, pageMenu)} onClose={() => setPageMenu(null)} />}
 
       {/* ── barra flotante sobre el bloque ── */}
       {hover && hoverBlock && hoverTarget && mode === 'edit' && (
@@ -1018,11 +1019,35 @@ function AiDialog({ onAsk, onClose }: { onAsk: (kind: string, prompt: string) =>
   )
 }
 
+/** Banco de páginas plantilla: agrupado por momento de la propuesta, con búsqueda. */
 function TemplateMenu({ onPick, onClose }: { onPick: (id: string) => void; onClose: () => void }) {
+  const [q, setQ] = useState('')
+  const term = q.trim().toLowerCase()
+  const groups = templatesByCategory()
+    .map((g) => ({ ...g, items: g.items.filter((t) => !term || `${t.label} ${t.description} ${t.category}`.toLowerCase().includes(term)) }))
+    .filter((g) => g.items.length)
   return (
-    <div className="qv-tplmenu">
-      <div className="qv-tplmenu-head">Insertar página <button onClick={onClose} aria-label="Cerrar">×</button></div>
-      {TEMPLATES.map((t) => <button key={t.id} onClick={() => onPick(t.id)}>{t.label}</button>)}
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-tplbank" onClick={(e) => e.stopPropagation()}>
+        <h3>Insertar página del banco</h3>
+        <p>Páginas A4 completas, con contenido demo construido sobre las propuestas de la casa. Sirven tal cual o editándolas; la IA las adapta al cliente si se lo pides.</p>
+        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar: carta, cronograma, inversión, riesgos, FAQ…" />
+        <div className="qv-tplbank-list">
+          {groups.map((g) => (
+            <div key={g.category} className="qv-tplbank-group">
+              <div className="qv-tplbank-cat">{g.category}</div>
+              {g.items.map((t) => (
+                <button key={t.id} onClick={() => onPick(t.id)}>
+                  <b>{t.label}</b>
+                  <span>{t.description}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+          {groups.length === 0 && <p>Sin resultados para «{q}».</p>}
+        </div>
+        <div className="qv-modal-actions"><button onClick={onClose}>Cancelar</button></div>
+      </div>
     </div>
   )
 }
