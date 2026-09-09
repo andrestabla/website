@@ -1398,3 +1398,16 @@ body.qv-has-side .qv-bar { left: 300px; }
 /* viñetas dentro de una celda */
 .qv-table.doc td .qv-cell-list { margin: 2px 0; padding-left: 14px; }
 .qv-table.doc td .qv-cell-list li { margin: 1px 0; }
+/* selección de celdas y menú contextual */
+.qv-table.doc td.is-sel { box-shadow: inset 0 0 0 2px #4f46e5; background: rgba(79, 70, 229, .10) !important; }
+.qv-cell-dragging, .qv-cell-dragging * { user-select: none !important; cursor: cell; }
+.qv-ctx { position: fixed; z-index: 80; width: 250px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 14px 40px rgba(15, 23, 42, .18); padding: 6px; font: 500 12.5px Inter, system-ui, sans-serif; color: #0f172a; }
+.qv-ctx > button { display: block; width: 100%; text-align: left; padding: 7px 10px; border: 0; background: transparent; border-radius: 6px; cursor: pointer; font: inherit; color: inherit; }
+.qv-ctx > button:hover, .qv-ctx-row > button:hover { background: #eef2ff; color: #3730a3; }
+.qv-ctx button.danger { color: #b91c1c; } .qv-ctx button.danger:hover { background: #fee2e2; color: #991b1b; }
+.qv-ctx-h { padding: 6px 10px 3px; font: 700 10px Inter, system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #64748b; }
+.qv-ctx-row { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 6px 6px; }
+.qv-ctx-row > button { flex: 1 1 auto; padding: 5px 8px; border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 6px; cursor: pointer; font: 600 11.5px Inter, system-ui, sans-serif; color: inherit; }
+.qv-ctx-sw { flex: 0 0 24px !important; width: 24px; height: 24px; padding: 0 !important; border: 1px solid #cbd5e1 !important; border-radius: 50% !important; }
+.qv-ctx-tip { padding: 4px 10px 8px; font-size: 11px; color: #64748b; }
+@media print { .qv-ctx, .qv-table.doc td.is-sel { display: none; box-shadow: none; } }

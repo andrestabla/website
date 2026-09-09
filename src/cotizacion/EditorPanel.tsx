@@ -27,6 +27,10 @@ type Msg = { role: 'user' | 'assistant'; text: string; changes?: string[] }
 /** Posición de un bloque: en la página (pi, bi) o dentro de una celda de cuadrícula (pi, bi, ci, ii). */
 type Loc = { pi: number; bi: number; ci?: number; ii?: number }
 type Hover = (Loc & { top: number; left: number; width: number }) | null
+/** Rango de celdas seleccionado en una tabla (filas y columnas del cuerpo, inclusive). */
+type CellSel = { loc: Loc; r1: number; c1: number; r2: number; c2: number }
+/** Menú contextual (clic derecho) sobre una celda, un fragmento de texto o un bloque. */
+type Ctx = { x: number; y: number; kind: 'cell' | 'text' | 'block'; loc: Loc; cell?: { r: number; c: number } }
 /** Destino de un bloque nuevo: después del índice `after` de la lista de la página o de la celda. */
 type AddTarget = { pi: number; bi?: number; ci?: number; after: number }
 type Dialog =
@@ -171,6 +175,8 @@ export function EditorPanel(props: EditorProps) {
   const [panelOpen, setPanelOpen] = useState(true)
   const [sideOpen, setSideOpen] = useState(true)
   const [hover, setHover] = useState<Hover>(null)
+  const [cellSel, setCellSel] = useState<CellSel | null>(null)
+  const [ctx, setCtx] = useState<Ctx | null>(null)
   const [addMenu, setAddMenu] = useState<AddTarget | null>(null)
   const [dialog, setDialog] = useState<Dialog>(null)
   const [pageMenu, setPageMenu] = useState<number | null>(null) // insertar plantilla después de la página N (-1 al inicio)
@@ -225,6 +231,7 @@ export function EditorPanel(props: EditorProps) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (addMenu) setAddMenu(null)
+        if (ctx) setCtx(null)
         if (pageMenu !== null) setPageMenu(null)
         if (dialog) setDialog(null)
         if (saveModal && !saving) setSaveModal(false)
@@ -423,6 +430,98 @@ export function EditorPanel(props: EditorProps) {
     return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.removeEventListener('mousedown', onGripDown, true); window.clearTimeout(hoverTimer.current) }
   }, [preview, isPaged, pages])
 
+  // ── selección de celdas (arrastre o Shift+clic) y menú contextual ──
+  useEffect(() => {
+    if (preview || !isPaged) { setCellSel(null); setCtx(null); return }
+    const cellOf = (t: Element | null) => {
+      const td = t?.closest?.('td[data-cell]') as HTMLElement | null
+      if (!td || td.closest('.qv-editor, .qv-side')) return null
+      const holder = td.closest('[data-block]') as HTMLElement | null
+      const loc = holder ? parseLoc(holder.dataset.block || '') : null
+      if (!loc) return null
+      const [r, c] = (td.dataset.cell || '').split(':').map(Number)
+      return { loc, r, c, holder: holder as HTMLElement }
+    }
+    let drag: { loc: Loc; r: number; c: number; holder: HTMLElement; moved: boolean } | null = null
+    const sameLoc = (a: Loc, b: Loc) => a.pi === b.pi && a.bi === b.bi && a.ci === b.ci && a.ii === b.ii
+    const onDown = (e: MouseEvent) => {
+      if (e.button !== 0) return
+      const cell = cellOf(e.target as Element)
+      if (!cell) { if (!(e.target as Element).closest('.qv-ctx, .qv-blockbar, .qv-editor, .qv-side')) setCellSel(null); return }
+      if (e.shiftKey) {
+        setCellSel((prev) => (prev && sameLoc(prev.loc, cell.loc) ? { ...prev, r2: cell.r, c2: cell.c } : { loc: cell.loc, r1: cell.r, c1: cell.c, r2: cell.r, c2: cell.c }))
+        e.preventDefault()
+        return
+      }
+      drag = { ...cell, moved: false }
+      setCellSel({ loc: cell.loc, r1: cell.r, c1: cell.c, r2: cell.r, c2: cell.c })
+    }
+    const onMove = (e: MouseEvent) => {
+      if (!drag) return
+      const cell = cellOf(document.elementFromPoint(e.clientX, e.clientY))
+      if (!cell || cell.holder !== drag.holder) return
+      if (cell.r === drag.r && cell.c === drag.c) return
+      if (!drag.moved) { drag.moved = true; document.body.classList.add('qv-cell-dragging'); window.getSelection()?.removeAllRanges() }
+      setCellSel({ loc: drag.loc, r1: drag.r, c1: drag.c, r2: cell.r, c2: cell.c })
+    }
+    const onUp = () => { if (drag?.moved) document.body.classList.remove('qv-cell-dragging'); drag = null }
+    const onMenu = (e: MouseEvent) => {
+      const t = e.target as Element
+      if (t.closest('.qv-editor, .qv-side, .qv-blockbar, .qv-modal-wrap, .qv-addmenu-wrap')) return
+      const cell = cellOf(t)
+      if (cell) {
+        e.preventDefault()
+        setCellSel((prev) => {
+          const inside = prev && sameLoc(prev.loc, cell.loc) && cell.r >= Math.min(prev.r1, prev.r2) && cell.r <= Math.max(prev.r1, prev.r2) && cell.c >= Math.min(prev.c1, prev.c2) && cell.c <= Math.max(prev.c1, prev.c2)
+          return inside ? prev : { loc: cell.loc, r1: cell.r, c1: cell.c, r2: cell.r, c2: cell.c }
+        })
+        setCtx({ x: e.clientX, y: e.clientY, kind: 'cell', loc: cell.loc, cell: { r: cell.r, c: cell.c } })
+        return
+      }
+      const sel = window.getSelection()
+      const field = t.closest('[data-ref]')
+      if (field && sel && !sel.isCollapsed && sel.rangeCount && field.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+        const holder = t.closest('[data-block]') as HTMLElement | null
+        const loc = holder ? parseLoc(holder.dataset.block || '') : null
+        e.preventDefault()
+        captureSelection()
+        setCtx({ x: e.clientX, y: e.clientY, kind: 'text', loc: loc || { pi: -1, bi: -1 } })
+        return
+      }
+      const holder = t.closest('[data-block]') as HTMLElement | null
+      const loc = holder ? parseLoc(holder.dataset.block || '') : null
+      if (!loc) return
+      e.preventDefault()
+      setCtx({ x: e.clientX, y: e.clientY, kind: 'block', loc })
+    }
+    const onAnyDown = (e: MouseEvent) => { if (!(e.target as Element).closest('.qv-ctx')) setCtx(null) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('mousedown', onAnyDown, true)
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    document.addEventListener('contextmenu', onMenu)
+    return () => {
+      document.removeEventListener('mousedown', onDown); document.removeEventListener('mousedown', onAnyDown, true)
+      document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.removeEventListener('contextmenu', onMenu)
+      document.body.classList.remove('qv-cell-dragging')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preview, isPaged])
+
+  // resaltado de las celdas seleccionadas (sobre el DOM, que React vuelve a pintar tras cada cambio)
+  useEffect(() => {
+    document.querySelectorAll('td.is-sel').forEach((td) => td.classList.remove('is-sel'))
+    if (!cellSel) return
+    const key = [cellSel.loc.pi, cellSel.loc.bi, ...(cellSel.loc.ci !== undefined ? [cellSel.loc.ci, cellSel.loc.ii] : [])].join(':')
+    const holder = document.querySelector(`[data-block="${key}"]`)
+    if (!holder) return
+    const [ra, rb] = [Math.min(cellSel.r1, cellSel.r2), Math.max(cellSel.r1, cellSel.r2)]; const [ca, cb] = [Math.min(cellSel.c1, cellSel.c2), Math.max(cellSel.c1, cellSel.c2)]
+    holder.querySelectorAll<HTMLElement>('td[data-cell]').forEach((td) => {
+      const [r, c] = (td.dataset.cell || '').split(':').map(Number)
+      if (r >= ra && r <= rb && c >= ca && c <= cb) td.classList.add('is-sel')
+    })
+  }, [cellSel, pages, mode, preview])
+
   // ── imágenes ──
   const replaceImage = async (file: File | undefined) => {
     const ref = imgTarget.current
@@ -523,6 +622,86 @@ export function EditorPanel(props: EditorProps) {
     const next = [...list]
     next.splice(idx + 1, 0, structuredClone(next[idx]))
     writeList(pi, bi, ci, next)
+  }
+  // ── tablas: combinar, separar, insertar y eliminar desde el menú contextual ──
+  const tableAt = (loc: Loc) => { const b = blockAt(loc) as any; return b && b.type === 'table' ? b : null }
+  const tableCols = (b: any) => Math.max((b.headers || []).length, ...(b.rows || []).map((r: string[]) => r.length), 1)
+  const mergeCells = (loc: Loc, r1: number, c1: number, r2: number, c2: number) => {
+    const b = tableAt(loc); if (!b) return
+    const [ra, rb] = [Math.min(r1, r2), Math.max(r1, r2)]; const [ca, cb] = [Math.min(c1, c2), Math.max(c1, c2)]
+    // una combinación que toque otra la absorbe
+    const merges: TableMerge[] = (b.merges || []).filter((m: TableMerge) => !(m.r <= rb && ra <= m.r + m.rs - 1 && m.c <= cb && ca <= m.c + m.cs - 1))
+    const rows: string[][] = b.rows.map((r: string[]) => [...r])
+    const extra: string[] = []
+    for (let r = ra; r <= rb; r++) for (let c = ca; c <= cb; c++) {
+      if (r === ra && c === ca) continue
+      const v = rows[r]?.[c]; if (v && v.trim()) extra.push(v.trim())
+      if (rows[r]) rows[r][c] = ''
+    }
+    if (extra.length) rows[ra][ca] = [rows[ra][ca], ...extra].filter(Boolean).join(' ')
+    updateBlock(loc, { rows, merges: [...merges, { r: ra, c: ca, cs: cb - ca + 1, rs: rb - ra + 1 }] } as Partial<Block>)
+    setCellSel({ loc, r1: ra, c1: ca, r2: ra, c2: ca })
+  }
+  const mergeAt = (b: any, r: number, c: number): TableMerge | undefined => (b.merges || []).find((m: TableMerge) => r >= m.r && r < m.r + m.rs && c >= m.c && c < m.c + m.cs)
+  const splitCell = (loc: Loc, r: number, c: number) => {
+    const b = tableAt(loc); if (!b) return
+    const m = mergeAt(b, r, c); if (!m) return
+    updateBlock(loc, { merges: (b.merges as TableMerge[]).filter((x) => x !== m) } as Partial<Block>)
+  }
+  /** Reubica las combinaciones al insertar (delta +1) o quitar (delta −1) una fila o columna en «at». */
+  const shiftMerges = (merges: TableMerge[] | undefined, axis: 'r' | 'c', at: number, delta: 1 | -1): TableMerge[] => {
+    const span = axis === 'r' ? 'rs' : 'cs'
+    return (merges || []).flatMap((m) => {
+      const start = m[axis], len = m[span]
+      if (delta === 1) {
+        if (at <= start) return [{ ...m, [axis]: start + 1 }]
+        if (at < start + len) return [{ ...m, [span]: len + 1 }]
+        return [m]
+      }
+      if (at < start) return [{ ...m, [axis]: start - 1 }]
+      if (at < start + len) { const next = { ...m, [span]: len - 1 }; return next.rs > 1 || next.cs > 1 ? [next] : [] }
+      return [m]
+    })
+  }
+  const insertRow = (loc: Loc, at: number) => {
+    const b = tableAt(loc); if (!b) return
+    const rows: string[][] = [...b.rows]; rows.splice(at, 0, Array.from({ length: tableCols(b) }, () => ''))
+    updateBlock(loc, { rows, merges: shiftMerges(b.merges, 'r', at, 1) } as Partial<Block>); setCellSel(null)
+  }
+  const deleteRow = (loc: Loc, at: number) => {
+    const b = tableAt(loc); if (!b || b.rows.length <= 1) return
+    updateBlock(loc, { rows: b.rows.filter((_: unknown, i: number) => i !== at), merges: shiftMerges(b.merges, 'r', at, -1) } as Partial<Block>); setCellSel(null)
+  }
+  const insertCol = (loc: Loc, at: number) => {
+    const b = tableAt(loc); if (!b) return
+    const ins = <T,>(arr: T[] | undefined, v: T) => (Array.isArray(arr) && arr.length ? [...arr.slice(0, at), v, ...arr.slice(at)] : arr)
+    updateBlock(loc, {
+      headers: ins(b.headers, `Columna ${at + 1}`), rows: b.rows.map((r: string[]) => [...r.slice(0, at), '', ...r.slice(at)]),
+      colAlign: ins(b.colAlign, 'left'), colWidths: undefined, merges: shiftMerges(b.merges, 'c', at, 1),
+    } as Partial<Block>); setCellSel(null)
+  }
+  const deleteCol = (loc: Loc, at: number) => {
+    const b = tableAt(loc); if (!b || tableCols(b) <= 1) return
+    const del = <T,>(arr: T[] | undefined) => (Array.isArray(arr) ? arr.filter((_, i) => i !== at) : arr)
+    updateBlock(loc, { headers: del(b.headers), rows: b.rows.map((r: string[]) => r.filter((_, i) => i !== at)), colAlign: del(b.colAlign), colWidths: del(b.colWidths), merges: shiftMerges(b.merges, 'c', at, -1) } as Partial<Block>); setCellSel(null)
+  }
+  const alignCol = (loc: Loc, at: number, align: string) => {
+    const b = tableAt(loc); if (!b) return
+    const n = tableCols(b)
+    updateBlock(loc, { colAlign: Array.from({ length: n }, (_, i) => (i === at ? align : b.colAlign?.[i] || 'left')) } as Partial<Block>)
+  }
+  /** Pone o quita la viñeta «- » en cada línea de las celdas del rango. */
+  const toggleCellBullets = (sel: CellSel) => {
+    const b = tableAt(sel.loc); if (!b) return
+    const [ra, rb] = [Math.min(sel.r1, sel.r2), Math.max(sel.r1, sel.r2)]; const [ca, cb] = [Math.min(sel.c1, sel.c2), Math.max(sel.c1, sel.c2)]
+    const first = String(b.rows[ra]?.[ca] || '')
+    const on = /^\s*[-•·]\s+/m.test(first)
+    const rows = b.rows.map((row: string[], r: number) => row.map((v, c) => {
+      if (r < ra || r > rb || c < ca || c > cb) return v
+      const lines = String(v || '').split('\n')
+      return lines.map((l) => (on ? l.replace(/^\s*[-•·]\s+/, '') : (l.trim() ? `- ${l.replace(/^\s*[-•·]\s+/, '')}` : l))).join('\n')
+    }))
+    updateBlock(sel.loc, { rows } as Partial<Block>)
   }
   const updateBlock = (loc: Loc, patch: Partial<Block>) => {
     const { list, idx, pi, bi, ci } = locate(loc)
@@ -844,6 +1023,66 @@ export function EditorPanel(props: EditorProps) {
       )}
 
       {/* ── menú de tipos de bloque ── */}
+      {ctx && (() => {
+        const close = () => setCtx(null)
+        const style = { left: Math.min(ctx.x, window.innerWidth - 260), top: Math.min(ctx.y, window.innerHeight - 320) }
+        const frag = (classes: string[]) => { if (!applyFragmentStyle(classes)) flash('Selecciona primero el texto'); close() }
+        const sizes = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl']
+        const colors: Array<[string, string]> = [['ink', '#111827'], ['navy', '#1a2d5a'], ['cyan', '#0b6f88'], ['gold', '#a87a14'], ['muted', '#6b7280'], ['white', '#ffffff']]
+        if (ctx.kind === 'text') {
+          return (
+            <div className="qv-ctx" style={style} onContextMenu={(e) => e.preventDefault()}>
+              <div className="qv-ctx-h">Texto seleccionado</div>
+              <button onClick={() => frag(['w-bold'])}><b>Negrita</b></button>
+              <button onClick={() => frag(['italic'])}><i>Cursiva</i></button>
+              <button onClick={() => frag(['upper'])}>MAYÚSCULAS</button>
+              <div className="qv-ctx-h">Tamaño</div>
+              <div className="qv-ctx-row">{sizes.map((s) => <button key={s} onClick={() => frag([`size-${s}`])}>{s}</button>)}</div>
+              <div className="qv-ctx-h">Color</div>
+              <div className="qv-ctx-row">{colors.map(([k, hex]) => <button key={k} className="qv-ctx-sw" style={{ background: hex }} title={k} onClick={() => frag([`color-${k}`])} />)}</div>
+              <div className="qv-ctx-h">Fondo</div>
+              <div className="qv-ctx-row">{[['soft', '#eef2ff'], ['cyan', '#e3f3f6'], ['gold', '#f7ecd4'], ['navy', '#1a2d5a']].map(([k, hex]) => <button key={k} className="qv-ctx-sw" style={{ background: hex }} title={k} onClick={() => frag([`bg-${k}`])} />)}</div>
+              <button onClick={() => frag([])}>Quitar estilo del fragmento</button>
+              {ctx.loc.pi >= 0 && <button onClick={() => { setDialog({ kind: 'style', loc: ctx.loc }); close() }}>Estilo de todo el bloque…</button>}
+            </div>
+          )
+        }
+        if (ctx.kind === 'cell' && ctx.cell) {
+          const b = tableAt(ctx.loc)
+          const sel = cellSel && cellSel.loc.pi === ctx.loc.pi && cellSel.loc.bi === ctx.loc.bi && cellSel.loc.ci === ctx.loc.ci && cellSel.loc.ii === ctx.loc.ii ? cellSel : { loc: ctx.loc, r1: ctx.cell.r, c1: ctx.cell.c, r2: ctx.cell.r, c2: ctx.cell.c }
+          const n = (Math.abs(sel.r2 - sel.r1) + 1) * (Math.abs(sel.c2 - sel.c1) + 1)
+          const merged = b ? mergeAt(b, ctx.cell.r, ctx.cell.c) : undefined
+          const { r, c } = ctx.cell
+          return (
+            <div className="qv-ctx" style={style} onContextMenu={(e) => e.preventDefault()}>
+              <div className="qv-ctx-h">Celda {r + 1}·{c + 1}{n > 1 ? ` · ${n} seleccionadas` : ''}</div>
+              {n > 1 && <button onClick={() => { mergeCells(ctx.loc, sel.r1, sel.c1, sel.r2, sel.c2); close() }}><b>Combinar {n} celdas</b></button>}
+              {merged && <button onClick={() => { splitCell(ctx.loc, r, c); close() }}>Separar celda ({merged.cs}×{merged.rs})</button>}
+              {n === 1 && !merged && <div className="qv-ctx-tip">Arrastra sobre varias celdas (o Shift+clic) y vuelve a hacer clic derecho para combinarlas.</div>}
+              <button onClick={() => { toggleCellBullets(sel); close() }}>Viñetas en la celda</button>
+              <div className="qv-ctx-h">Alinear columna</div>
+              <div className="qv-ctx-row">{[['left', '⬅ Izq.'], ['center', '↔ Centro'], ['right', '➡ Der.']].map(([a, l]) => <button key={a} onClick={() => { alignCol(ctx.loc, c, a); close() }}>{l}</button>)}</div>
+              <div className="qv-ctx-h">Filas y columnas</div>
+              <div className="qv-ctx-row"><button onClick={() => { insertRow(ctx.loc, r); close() }}>＋ Fila arriba</button><button onClick={() => { insertRow(ctx.loc, r + 1); close() }}>＋ Fila abajo</button></div>
+              <div className="qv-ctx-row"><button onClick={() => { insertCol(ctx.loc, c); close() }}>＋ Col. izq.</button><button onClick={() => { insertCol(ctx.loc, c + 1); close() }}>＋ Col. der.</button></div>
+              <div className="qv-ctx-row"><button className="danger" onClick={() => { deleteRow(ctx.loc, r); close() }}>Eliminar fila</button><button className="danger" onClick={() => { deleteCol(ctx.loc, c); close() }}>Eliminar columna</button></div>
+              <button onClick={() => { setDialog({ kind: 'style', loc: ctx.loc }); close() }}>Estilo de la tabla…</button>
+              <button onClick={() => { setDialog({ kind: 'items', loc: ctx.loc }); close() }}>Más ajustes de la tabla…</button>
+            </div>
+          )
+        }
+        const blk = blockAt(ctx.loc)
+        return (
+          <div className="qv-ctx" style={style} onContextMenu={(e) => e.preventDefault()}>
+            <div className="qv-ctx-h">{blk ? BLOCK_LABEL[blk.type] || blk.type : 'Bloque'}</div>
+            {blk && !['img', 'toc', 'button', 'icon', 'grid', 'spacer'].includes(blk.type) && <button onClick={() => { setDialog({ kind: 'style', loc: ctx.loc }); close() }}>Estilo del bloque…</button>}
+            <button onClick={() => { duplicateBlock(ctx.loc); close() }}>Duplicar</button>
+            <button onClick={() => { setDialog({ kind: 'move', loc: ctx.loc }); close() }}>Mover a…</button>
+            <button onClick={() => { setAddMenu({ pi: ctx.loc.pi, bi: ctx.loc.ci !== undefined ? ctx.loc.bi : undefined, ci: ctx.loc.ci, after: ctx.loc.ci !== undefined ? (ctx.loc.ii ?? 0) : ctx.loc.bi }); close() }}>＋ Agregar elemento debajo</button>
+            <button className="danger" onClick={() => { void removeBlock(ctx.loc); close() }}>Eliminar</button>
+          </div>
+        )
+      })()}
       {addMenu && (
         <div className="qv-addmenu-wrap" onClick={() => setAddMenu(null)}>
           <div className="qv-addmenu" onClick={(e) => e.stopPropagation()}>
