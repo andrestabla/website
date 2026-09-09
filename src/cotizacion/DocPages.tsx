@@ -8,6 +8,7 @@
  * el esquema clásico.
  */
 import React, { useEffect } from 'react'
+import { DynamicIcon } from 'lucide-react/dynamic'
 import type { QuoteItem, QuoteTotals } from './pricing'
 
 /** Hoja del documento: 900 × 1273 px = proporción A4 exacta (210 × 297 mm). */
@@ -121,6 +122,10 @@ export type DocBlock =
       rows: Array<{ label: string; from: number; to: number; tone?: 'cyan' | 'deep' | 'gold'; bold?: boolean }>
       note?: string
     }
+  /** Cuadrícula de 2 a 6 columnas; cada celda es una lista de elementos. */
+  | { type: 'grid'; cols: number; cells: DocBlock[][]; gap?: 'sm' }
+  | { type: 'icon'; name: string; size?: number; color?: 'navy' | 'cyan' | 'gold' | 'muted'; label?: string; align?: Align }
+  | { type: 'button'; label: string; url?: string; style?: 'primary' | 'outline'; align?: Align }
 
 export type DocPage = {
   id: string
@@ -218,6 +223,7 @@ export function DocBlockView({
   money,
   pages = [],
   refBase,
+  bpath,
 }: {
   block: DocBlock
   items: QuoteItem[]
@@ -226,6 +232,8 @@ export function DocBlockView({
   pages?: DocPage[]
   /** Referencia del bloque (content.pages.N.blocks.M) para el editor en sitio. */
   refBase?: string
+  /** Posición del bloque para la barra del editor: "P:B" o "P:B:C:I" dentro de una cuadrícula. */
+  bpath?: string
 }) {
   // data-ref de un campo del bloque; sin refBase el visor es de solo lectura
   const r = (field: string) => (refBase ? { 'data-ref': `${refBase}.${field}` } : {})
@@ -469,6 +477,44 @@ export function DocBlockView({
       )
     }
 
+    case 'grid': {
+      const cells: DocBlock[][] = Array.isArray(block.cells) ? block.cells : []
+      return (
+        <div className={`qv-grid${block.gap === 'sm' ? ' gap-sm' : ''}`} style={{ gridTemplateColumns: `repeat(${Math.min(6, Math.max(2, block.cols || 2))}, minmax(0, 1fr))` }}>
+          {cells.map((cell, ci) => (
+            <div className="qv-grid-cell" key={ci} {...(bpath ? { 'data-cell': `${bpath}:${ci}` } : {})}>
+              {cell.map((inner, ii) => (
+                bpath ? (
+                  <div className="qv-block qv-block-nested" data-block={`${bpath}:${ci}:${ii}`} key={ii}>
+                    <DocBlockView block={inner} items={items} totals={totals} money={money} pages={pages}
+                      refBase={refBase ? `${refBase}.cells.${ci}.${ii}` : undefined} bpath={`${bpath}:${ci}:${ii}`} />
+                  </div>
+                ) : (
+                  <DocBlockView key={ii} block={inner} items={items} totals={totals} money={money} pages={pages} />
+                )
+              ))}
+              {bpath && <button type="button" className="qv-cell-add" data-cell-add={`${bpath}:${ci}`}>＋ Elemento</button>}
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    case 'icon':
+      return (
+        <div className={`qv-icon tone-${block.color || 'navy'}`} style={al(block.align)}>
+          <span className="qv-icon-glyph"><DynamicIcon name={block.name as never} size={block.size || 40} strokeWidth={1.75} /></span>
+          {(block.label || refBase) && <span className="qv-icon-label" {...r('label')}>{block.label || ''}</span>}
+        </div>
+      )
+
+    case 'button':
+      return (
+        <div className="qv-btnwrap" style={al(block.align)}>
+          <a className={`qv-btn ${block.style || 'primary'}`} href={block.url || '#'} target="_blank" rel="noreferrer" {...r('label')}>{block.label}</a>
+        </div>
+      )
+
     case 'letterhead':
       return (
         <div className="qv-letterhead">
@@ -548,7 +594,7 @@ export function DocPageView({
       {page.blocks.map((block, i) => (
         base ? (
           <div className="qv-block" data-block={`${pageIndex}:${i}`} key={i}>
-            <DocBlockView block={block} items={items} totals={totals} money={money} pages={pages} refBase={`${base}.blocks.${i}`} />
+            <DocBlockView block={block} items={items} totals={totals} money={money} pages={pages} refBase={`${base}.blocks.${i}`} bpath={`${pageIndex}:${i}`} />
           </div>
         ) : (
           <DocBlockView key={i} block={block} items={items} totals={totals} money={money} pages={pages} />

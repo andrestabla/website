@@ -8,14 +8,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Send, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, Sparkles,
   Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw, PenSquare, MoreVertical, CopyPlus, Archive,
-  Mic, Square, Eye, Paperclip, X, FileInput, Code2, Save, ChevronDown, ChevronRight, PanelLeft, PanelRight,
+  Mic, Square, Paperclip, X, FileInput, Code2, Save, ChevronDown, ChevronRight, PanelLeft, PanelRight,
 } from 'lucide-react'
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
-import { ContentEditor } from './ContentEditor'
 import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type QuoteRecipient, type QuoteAttachmentRow, type EmailTemplate } from './api'
 import { TEMPLATE_LABEL } from './CotizadorList'
 
-type Tab = 'propuesta' | 'contenido' | 'vista' | 'destinatarios' | 'metricas'
+type Tab = 'propuesta' | 'vista' | 'destinatarios' | 'metricas'
 /** Disposición del builder: las dos columnas, solo el chat o solo el panel. Se recuerda por navegador. */
 type Layout = 'both' | 'chat' | 'panel'
 const LAYOUT_KEY = 'cotizador:layout'
@@ -121,8 +120,6 @@ export function QuoteBuilder() {
   const [importMenu, setImportMenu] = useState('')
   const [mdEditor, setMdEditor] = useState<{ id: string; name: string; markdown: string; dirty: boolean; saving: boolean } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  // al volcar un adjunto, el editor de contenido se reabre con las páginas nuevas
-  const [editorRev, setEditorRev] = useState(0)
 
   // dictado por voz
   const [recording, setRecording] = useState(false)
@@ -257,9 +254,8 @@ export function QuoteBuilder() {
     try {
       const payload = await quotesApi.attachments.import(quoteId, row.id, mode, mode === 'replace' && !!row.docTitle)
       setQuote(payload.quote)
-      setEditorRev((v) => v + 1)
       setNotice(`«${row.name}» quedó volcado en ${payload.pagesCount} páginas editables${mode === 'append' ? ' al final del documento' : ''} (${payload.totalPages} en total). Revisa y edita cada título y bloque en Contenido › Páginas del documento.`)
-      setTab('contenido')
+      setTab('vista')
     } catch (e) { setError((e as Error).message) } finally { setImporting('') }
   }
 
@@ -873,7 +869,7 @@ export function QuoteBuilder() {
         {layout !== 'chat' && (
         <section className="flex min-w-0 flex-col">
           <nav className="flex gap-1 border-b border-slate-200 bg-white px-4 pt-2 sm:px-6">
-            {([['propuesta', 'Propuesta', FileText], ['contenido', 'Contenido', PenSquare], ['vista', 'Vista previa', Eye], ['destinatarios', 'Destinatarios', Users], ['metricas', 'Métricas', BarChart2]] as const).map(([key, label, Icon]) => (
+            {([['propuesta', 'Propuesta', FileText], ['vista', 'Editor del documento', PenSquare], ['destinatarios', 'Destinatarios', Users], ['metricas', 'Métricas', BarChart2]] as const).map(([key, label, Icon]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
@@ -914,7 +910,7 @@ export function QuoteBuilder() {
                 <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <div className="text-[12px] font-bold uppercase tracking-wide text-slate-400">Documento por páginas · {pagesCount}</div>
                   <p className="mt-2 text-[12.5px] leading-relaxed text-slate-500">
-                    La vista pública muestra estas páginas. Edita títulos y bloques en <button onClick={() => setTab('contenido')} className="font-semibold text-indigo-600 hover:underline">Contenido</button>,
+                    La vista pública muestra estas páginas. Edita títulos y bloques en <button onClick={() => setTab('vista')} className="font-semibold text-indigo-600 hover:underline">Contenido</button>,
                     o pídele a la IA que traduzca, renombre o reescriba una página.
                   </p>
                 </div>
@@ -981,6 +977,52 @@ export function QuoteBuilder() {
                   </div>
                 </div>
                 )}
+
+                {/* Ajustes del documento */}
+                <div className="rounded-2xl border border-slate-200 bg-white">
+                  <div className="border-b border-slate-100 px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-400">Ajustes del documento</div>
+                  <div className="grid gap-3 p-4 sm:grid-cols-2" key={`settings-${quote.updatedAt}`}>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Validez de la propuesta (días)
+                      <input type="number" min={1} max={365} defaultValue={quote.validDays}
+                        onBlur={(e) => { const v = Math.round(Number(e.target.value) || 45); if (v !== quote.validDays) void quotesApi.update(quoteId, { validDays: v }).then((p) => setQuote(p.quote)).catch((err) => setError((err as Error).message)) }}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]" />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Word para descarga (URL, opcional)
+                      <input defaultValue={content.docxUrl || ''}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (v !== (content.docxUrl || '')) void quotesApi.update(quoteId, { content: { docxUrl: v } }).then((p) => setQuote(p.quote)).catch((err) => setError((err as Error).message)) }}
+                        placeholder="/cotizaciones/…/propuesta.docx" className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]" />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Aliado (cobranding) · nombre
+                      <input defaultValue={content.cobrand?.name || ''}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (v !== (content.cobrand?.name || '')) void quotesApi.update(quoteId, { content: { cobrand: { ...(content.cobrand || {}), name: v } } }).then((p) => setQuote(p.quote)).catch((err) => setError((err as Error).message)) }}
+                        placeholder="Internnova Solutions" className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[12px]" />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Aliado · rótulo bajo la marca
+                      <input defaultValue={content.cobrand?.role || ''}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (v !== (content.cobrand?.role || '')) void quotesApi.update(quoteId, { content: { cobrand: { ...(content.cobrand || {}), role: v } } }).then((p) => setQuote(p.quote)).catch((err) => setError((err as Error).message)) }}
+                        placeholder="Presentada en alianza con…" className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[12px]" />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Aliado · logo para fondos oscuros (URL)
+                      <input defaultValue={content.cobrand?.logoLight || ''}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (v !== (content.cobrand?.logoLight || '')) void quotesApi.update(quoteId, { content: { cobrand: { ...(content.cobrand || {}), logoLight: v } } }).then((p) => setQuote(p.quote)).catch((err) => setError((err as Error).message)) }}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]" />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Aliado · logo para fondos claros (URL)
+                      <input defaultValue={content.cobrand?.logoDark || ''}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (v !== (content.cobrand?.logoDark || '')) void quotesApi.update(quoteId, { content: { cobrand: { ...(content.cobrand || {}), logoDark: v } } }).then((p) => setQuote(p.quote)).catch((err) => setError((err as Error).message)) }}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 font-mono text-[12px]" />
+                    </label>
+                  </div>
+                  <p className="border-t border-slate-100 px-4 py-2 text-[11.5px] leading-relaxed text-slate-400">
+                    Los textos, la portada, las páginas y las imágenes se editan en la pestaña Editor del documento. Los logos se pueden reemplazar allí con un clic.
+                  </p>
+                </div>
 
                 {/* Módulos y valores */}
                 <div className="rounded-2xl border border-slate-200 bg-white">
@@ -1114,8 +1156,8 @@ export function QuoteBuilder() {
             {tab === 'vista' && (
               <div className="flex h-full flex-col">
                 <p className="mb-2 text-[12px] text-slate-400">
-                  El documento tal como lo verá el cliente, con el editor con IA encima: señala un texto y pide el cambio,
-                  o activa «Editar texto» y escribe directamente sobre el documento.{' '}
+                  Aquí se compone el documento: páginas A4, bloques, textos, imágenes, íconos y botones, con la IA al lado.
+                  Los cambios se guardan desde el propio editor.{' '}
                   <a href={`${publicUrl}?editor=1`} target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">Abrir a pantalla completa ↗</a>
                 </p>
                 <iframe
@@ -1127,17 +1169,6 @@ export function QuoteBuilder() {
               </div>
             )}
 
-            {tab === 'contenido' && (
-              <ContentEditor
-                key={`${quote.id}-${editorRev}`}
-                quoteId={quoteId}
-                quote={quote}
-                onSaved={(saved) => {
-                  setQuote(saved)
-                  setItems(Array.isArray(saved?.pricing?.items) ? saved.pricing.items : items)
-                }}
-              />
-            )}
 
             {tab === 'destinatarios' && (
               <div className="space-y-4">

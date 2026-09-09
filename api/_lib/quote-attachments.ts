@@ -526,9 +526,70 @@ function blockWeight(b: PageBlock): number {
     }
     case 'img':
       return b.wide ? 900 : 600
+    case 'grid': {
+      const cells: PageBlock[][] = Array.isArray(b.cells) ? b.cells : []
+      const cols = Math.max(1, Number(b.cols) || cells.length || 1)
+      const heights = cells.map((cell) => cell.reduce((s, x) => s + blockWeight(x), 0))
+      // las celdas van en paralelo: pesa la fila más alta, por filas de `cols` celdas
+      let total = 0
+      for (let i = 0; i < heights.length; i += cols) total += Math.max(0, ...heights.slice(i, i + cols))
+      return total + 120
+    }
+    case 'icon':
+      return 160
+    case 'button':
+      return 120
     default:
       return 300
   }
+}
+
+/**
+ * Parte en hojas A4 las páginas que desbordan: la continuación conserva el
+ * título y se oculta del índice. Lo usan el conversor del esquema clásico y
+ * el guardado de páginas que la IA o el editor dejan demasiado largas.
+ */
+export function splitPagesByCapacity(pages: DocPage[]): DocPage[] {
+  const out: DocPage[] = []
+  const ids = new Set<string>()
+  for (const page of pages) {
+    const pieces: PageBlock[] = []
+    for (const b of page.blocks) {
+      const w = blockWeight(b)
+      if (w <= PAGE_CAPACITY) { pieces.push(b); continue }
+      if (b.type === 'table') {
+        const rows: string[][] = b.rows
+        const per = Math.max(3, Math.floor(rows.length * (PAGE_CAPACITY / w)))
+        for (let k = 0; k < rows.length; k += per) pieces.push({ ...b, rows: rows.slice(k, k + per) })
+      } else if (b.type === 'p' || b.type === 'lede') {
+        for (const piece of splitLongText(String(b.text), PAGE_CAPACITY - 300)) pieces.push({ ...b, text: piece })
+      } else if (b.type === 'list') {
+        for (const piece of chunkList(b.items as string[], PAGE_CAPACITY - 300)) pieces.push({ ...b, items: piece })
+      } else {
+        pieces.push(b)
+      }
+    }
+    let chunk: PageBlock[] = []
+    let acc = 0
+    let part = 0
+    const emit = () => {
+      let id = part === 0 ? page.id : `${page.id}-${part + 1}`
+      while (ids.has(id)) id = `${id}-${Math.random().toString(36).slice(2, 5)}`
+      ids.add(id)
+      out.push({ ...page, id, ...(part > 0 ? { tocHidden: true } : {}), blocks: chunk })
+      part += 1
+      chunk = []
+      acc = 0
+    }
+    for (const b of pieces) {
+      const w = blockWeight(b)
+      if (chunk.length && acc + w > PAGE_CAPACITY) emit()
+      chunk.push(b)
+      acc += w
+    }
+    if (chunk.length || part === 0) emit()
+  }
+  return out
 }
 
 /** Cuánto contenido cabe en una hoja A4 del visor sin que se reduzca la letra. */
@@ -744,7 +805,13 @@ const num = (v: unknown, def = 1) => { const n = Math.round(Number(v)); return N
 
 export const PAGE_BLOCK_TYPES = new Set([
   'lede', 'p', 'h3', 'list', 'box', 'note', 'table', 'cards', 'phase', 'img', 'invoice', 'payments', 'toc', 'team', 'letterhead', 'timeline', 'gantt',
+  'grid', 'icon', 'button',
 ])
+const ICON_COLORS = new Set(['navy', 'cyan', 'gold', 'muted'])
+const safeUrl = (v: unknown) => {
+  const u = s(v, 1000)
+  return /^(https?:\/\/|mailto:|tel:|\/)/i.test(u) ? u : ''
+}
 
 export function sanitizeBlock(raw: any): PageBlock | null {
   if (!raw || typeof raw !== 'object') return null
@@ -789,6 +856,24 @@ export function sanitizeBlock(raw: any): PageBlock | null {
     case 'img': {
       const url = s(raw.url, 1000)
       return url ? { type, url, caption: s(raw.caption, 400), wide: raw.wide !== false } : null
+    }
+    case 'grid': {
+      // cuadrícula de 2 a 6 columnas; cada celda es una lista de elementos (sin cuadrículas anidadas)
+      const cols = Math.min(6, Math.max(2, num(raw.cols, 2)))
+      const rawCells: unknown[] = Array.isArray(raw.cells) ? raw.cells.slice(0, 12) : []
+      const cells = rawCells.map((cell) => (Array.isArray(cell) ? cell.map((b) => (b && typeof b === 'object' && (b as any).type !== 'grid' ? sanitizeBlock(b) : null)).filter(Boolean).slice(0, 12) : []))
+      while (cells.length < cols) cells.push([])
+      return { type, cols, cells, ...(raw.gap === 'sm' ? { gap: 'sm' } : {}) }
+    }
+    case 'icon': {
+      const name = s(raw.name, 60).toLowerCase()
+      if (!/^[a-z0-9-]+$/.test(name)) return null
+      return { type, name, size: Math.min(160, Math.max(16, num(raw.size, 40))), color: ICON_COLORS.has(raw.color) ? raw.color : 'navy', label: s(raw.label, 160), ...align(raw.align) }
+    }
+    case 'button': {
+      const label = s(raw.label, 120)
+      const url = safeUrl(raw.url)
+      return label ? { type, label, url, style: raw.style === 'outline' ? 'outline' : 'primary', ...align(raw.align) } : null
     }
     case 'invoice': {
       const rows = Array.isArray(raw.rows) ? raw.rows.slice(0, 30).map((r: any) => ({ concept: s(r?.concept, 300), detail: s(r?.detail, 800), amount: s(r?.amount, 60) })).filter((r: any) => r.concept) : []

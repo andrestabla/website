@@ -24,6 +24,7 @@ import {
   type DocPage,
 } from '../_lib/quote-attachments.js'
 import { resolveMedia, type MediaRequest } from '../_lib/quote-media.js'
+import { legacyToPages } from '../_lib/quote-legacy-pages.js'
 import {
   quoteSessionState,
   loadCatalog,
@@ -178,8 +179,15 @@ REGLAS DURAS
       editables, sin resumir: no reescribas tú el archivo entero en el patch.
    Después de importar, cualquier ajuste (traducir al español, renombrar secciones, cambiar el
    tono, quitar o agregar párrafos) lo haces con "pagesPatch" página por página.
-13. DOCUMENTO POR PÁGINAS: cuando la cotización tiene páginas (content.pages, bloque ESTADO),
-   la vista pública muestra esas páginas y no las secciones clásicas. Edítalas con "pagesPatch":
+13. DOCUMENTO POR PÁGINAS (formato estándar, hojas A4): cuando la cotización tiene páginas
+   (content.pages, bloque ESTADO), la vista pública muestra esas páginas y NO las secciones clásicas:
+   en ese caso no escribas intro, diagnosis, architecture, schedule, milestones, team, assumptions,
+   exclusions ni guarantees (se ignoran); todo cambio de contenido va por "pagesPatch". Si el documento
+   aún no tiene páginas, redacta con las secciones clásicas y el servidor las convierte a páginas A4 en
+   ese mismo turno. Además de los bloques de texto hay "grid" (cuadrícula de 2 a 6 columnas: cols y
+   cells, cada celda una lista de bloques), "icon" (ícono de la biblioteca lucide por nombre en inglés y
+   minúsculas, p. ej. "rocket", "graduation-cap", "chart-line"; size, color navy|cyan|gold|muted, label) y
+   "button" (label, url, style primary|outline). Edítalas con "pagesPatch":
    "set" reescribe páginas por id (título, antetítulo y bloques completos), "remove" las quita,
    "insert" agrega una página nueva después de otra. Cada página es una hoja A4: unos 2.500
    caracteres de texto por página; si un capítulo es más largo, continúalo en otra página con el
@@ -956,7 +964,9 @@ quote.subtitle, usa "title"/"subtitle".` : ''}
                            { "type": "invoice", "note": "" }, { "type": "payments", "items": [{ "pct": "30 %", "label": "" }] }, { "type": "toc" },
                            { "type": "team", "items": [{ "role": "", "dedication": "", "functions": [""] }] },
                            { "type": "letterhead", "date": "", "addressee": "", "subject": "", "salutation": "" },
-                           { "type": "gantt", "cols": ["Mes 1"], "rows": [{ "label": "", "from": 1, "to": 1, "tone": "cyan" }] }] }],
+                           { "type": "gantt", "cols": ["Mes 1"], "rows": [{ "label": "", "from": 1, "to": 1, "tone": "cyan" }] },
+                           { "type": "grid", "cols": 3, "cells": [[{ "type": "icon", "name": "rocket", "size": 40, "color": "cyan", "label": "Arranque" }, { "type": "p", "text": "" }], [], []] },
+                           { "type": "button", "label": "Agendar reunión", "url": "https://…", "style": "primary", "align": "center" }] }],
       "remove": ["id de página"],
       "insert": [{ "after": "id de página existente o vacío para el inicio", "page": { "id": "nuevo-id", "title": "", "kicker": "", "blocks": [] } }]
     }
@@ -1178,10 +1188,6 @@ REGLAS DEL PATCH
       updates.content = { ...(updates.content as object ?? content), screens }
     }
 
-    if (pagesChanged) {
-      updates.content = { ...(updates.content as object ?? content), pages: renumberPages(pages) }
-    }
-
     let nextItems = items
     if (patch.modules && typeof patch.modules === 'object') {
       const result = applyModulePatch(nextItems, patch.modules, effectiveCatalog)
@@ -1196,6 +1202,24 @@ REGLAS DEL PATCH
         nextItems = result.items
         changes.push(...result.applied)
       }
+    }
+
+    // Formato estándar A4: si el documento sigue en el esquema clásico y ya tiene contenido
+    // redactado, se convierte a páginas en este mismo turno.
+    if (!pages.length) {
+      const merged: any = (updates.content as object) ?? content
+      const hasLegacy = !!(merged?.intro || merged?.diagnosis?.fronts?.length || merged?.architecture?.layers?.length || merged?.schedule?.groups?.length || merged?.team?.length)
+      if (hasLegacy) {
+        const converted = legacyToPages({ ...quote, content: merged, pricing: { items: nextItems }, template: effectiveTemplate, discountScale: effectiveScale })
+        if (converted.length) {
+          pages = converted
+          pagesChanged = true
+          changes.push(`→ ${converted.length} páginas A4`)
+        }
+      }
+    }
+    if (pagesChanged) {
+      updates.content = { ...(updates.content as object ?? content), pages: renumberPages(pages) }
     }
 
     const nextTotals = computeTotals(nextItems, { scale: effectiveScale, minWeeks: QUOTE_TEMPLATES[effectiveTemplate].minWeeks })

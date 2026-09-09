@@ -16,11 +16,31 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BLOCK_TYPES, EMPTY, TEMPLATES, type Page, type Block } from '../cotizador/PagesEditor'
+import { IconPicker } from './IconPicker'
 
 type Mode = 'select' | 'edit'
 type Focus = { ref: string; label: string; text: string }
 type Msg = { role: 'user' | 'assistant'; text: string; changes?: string[] }
-type Hover = { pi: number; bi: number; top: number; left: number; width: number } | null
+/** Posición de un bloque: en la página (pi, bi) o dentro de una celda de cuadrícula (pi, bi, ci, ii). */
+type Loc = { pi: number; bi: number; ci?: number; ii?: number }
+type Hover = (Loc & { top: number; left: number; width: number }) | null
+/** Destino de un bloque nuevo: después del índice `after` de la lista de la página o de la celda. */
+type AddTarget = { pi: number; bi?: number; ci?: number; after: number }
+type Dialog =
+  | { kind: 'grid'; target: AddTarget }
+  | { kind: 'icon'; target?: AddTarget; loc?: Loc }
+  | { kind: 'button'; target?: AddTarget; loc?: Loc }
+  | { kind: 'ai'; target: AddTarget }
+  | { kind: 'gridSettings'; loc: Loc }
+  | null
+
+const parseLoc = (raw: string): Loc | null => {
+  const n = raw.split(':').map(Number)
+  if (n.some((x) => !Number.isInteger(x))) return null
+  if (n.length === 2) return { pi: n[0], bi: n[1] }
+  if (n.length === 4) return { pi: n[0], bi: n[1], ci: n[2], ii: n[3] }
+  return null
+}
 
 export const LEGACY_SECTIONS: Array<[string, string]> = [
   ['presentacion', 'Presentación'], ['diagnostico', 'Diagnóstico'], ['arquitectura', 'Método / Arquitectura'], ['enfoque', 'Enfoque'],
@@ -126,7 +146,8 @@ export function EditorPanel(props: EditorProps) {
   const [panelOpen, setPanelOpen] = useState(true)
   const [sideOpen, setSideOpen] = useState(true)
   const [hover, setHover] = useState<Hover>(null)
-  const [addMenu, setAddMenu] = useState<{ pi: number; bi: number } | null>(null) // bi = -1: al inicio
+  const [addMenu, setAddMenu] = useState<AddTarget | null>(null)
+  const [dialog, setDialog] = useState<Dialog>(null)
   const [pageMenu, setPageMenu] = useState<number | null>(null) // insertar plantilla después de la página N (-1 al inicio)
   const [saveModal, setSaveModal] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -135,6 +156,8 @@ export function EditorPanel(props: EditorProps) {
   const fileRef = useRef<HTMLInputElement>(null)
   const imgTarget = useRef<string>('')
   const hoverTimer = useRef<number>(0)
+  const pagesRef = useRef<Page[]>(pages)
+  pagesRef.current = pages
   const isPaged = pages.length > 0
 
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight }) }, [messages, busy])
@@ -219,6 +242,18 @@ export function EditorPanel(props: EditorProps) {
       if (e.key === 'Enter' && !e.shiftKey && /^(H1|H2|H3|H4|TD|TH|SPAN|LI|FIGCAPTION|DT|DD|B)$/.test(el.tagName)) { e.preventDefault(); el.blur() }
     }
     const onImgClick = (e: MouseEvent) => {
+      const cellAdd = (e.target as Element).closest('[data-cell-add]') as HTMLElement | null
+      if (cellAdd) {
+        e.preventDefault(); e.stopPropagation()
+        const n = (cellAdd.dataset.cellAdd || '').split(':').map(Number)
+        if (n.length === 3) {
+          const cell = (pagesRef.current[n[0]]?.blocks[n[1]] as any)?.cells?.[n[2]]
+          setAddMenu({ pi: n[0], bi: n[1], ci: n[2], after: Array.isArray(cell) ? cell.length - 1 : -1 })
+        }
+        return
+      }
+      // un enlace dentro de un texto editable se edita, no navega
+      if ((e.target as Element).closest('[data-ref] a, a[data-ref]') && !(e.target as Element).closest('.qv-editor, .qv-side')) e.preventDefault()
       const img = (e.target as Element).closest('[data-img-ref]') as HTMLElement | null
       if (!img || img.closest('.qv-editor, .qv-side')) return
       e.preventDefault(); e.stopPropagation()
@@ -247,9 +282,10 @@ export function EditorPanel(props: EditorProps) {
       const block = t.closest('[data-block]') as HTMLElement | null
       window.clearTimeout(hoverTimer.current)
       if (!block) { hoverTimer.current = window.setTimeout(() => setHover(null), 250); return }
-      const [pi, bi] = (block.dataset.block || '').split(':').map(Number)
+      const loc = parseLoc(block.dataset.block || '')
+      if (!loc) return
       const r = block.getBoundingClientRect()
-      setHover((prev) => (prev && prev.pi === pi && prev.bi === bi && Math.abs(prev.top - (r.top + window.scrollY)) < 2 ? prev : { pi, bi, top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width }))
+      setHover((prev) => (prev && prev.pi === loc.pi && prev.bi === loc.bi && prev.ci === loc.ci && prev.ii === loc.ii && Math.abs(prev.top - (r.top + window.scrollY)) < 2 ? prev : { ...loc, top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width }))
     }
     document.addEventListener('mousemove', onMove)
     return () => { document.removeEventListener('mousemove', onMove); window.clearTimeout(hoverTimer.current) }
@@ -313,35 +349,97 @@ export function EditorPanel(props: EditorProps) {
     scrollToPage(page.id)
   }
   const setBlocks = (pi: number, blocks: Block[]) => onPages(pages.map((p, i) => (i === pi ? { ...p, blocks } : p)))
-  const moveBlock = (pi: number, bi: number, dir: -1 | 1) => {
+  /** Lista donde vive un bloque: la de la página o la de una celda de cuadrícula. */
+  const listAt = (pi: number, bi?: number, ci?: number): Block[] => {
+    if (ci === undefined || bi === undefined) return pages[pi]?.blocks ?? []
+    const grid = pages[pi]?.blocks[bi] as any
+    return Array.isArray(grid?.cells?.[ci]) ? grid.cells[ci] : []
+  }
+  const writeList = (pi: number, bi: number | undefined, ci: number | undefined, list: Block[]) => {
+    if (ci === undefined || bi === undefined) { setBlocks(pi, list); return }
     const blocks = [...pages[pi].blocks]
-    const j = bi + dir
-    if (j < 0 || j >= blocks.length) return
-    ;[blocks[bi], blocks[j]] = [blocks[j], blocks[bi]]
+    const grid = { ...(blocks[bi] as any) }
+    const cells = Array.isArray(grid.cells) ? grid.cells.map((c: Block[]) => [...c]) : []
+    while (cells.length <= ci) cells.push([])
+    cells[ci] = list
+    blocks[bi] = { ...grid, cells }
     setBlocks(pi, blocks)
   }
-  const removeBlock = (pi: number, bi: number) => {
-    const b = pages[pi].blocks[bi]
-    if (!confirm(`¿Eliminar este bloque (${BLOCK_LABEL[b.type] || b.type})?`)) return
-    setBlocks(pi, pages[pi].blocks.filter((_, i) => i !== bi))
+  /** Índice del bloque dentro de su lista y la lista misma, según su posición. */
+  const locate = (loc: Loc) => (loc.ci !== undefined && loc.ii !== undefined
+    ? { list: listAt(loc.pi, loc.bi, loc.ci), idx: loc.ii, pi: loc.pi, bi: loc.bi, ci: loc.ci }
+    : { list: listAt(loc.pi), idx: loc.bi, pi: loc.pi, bi: undefined as number | undefined, ci: undefined as number | undefined })
+  const blockAt = (loc: Loc): Block | undefined => locate(loc).list[locate(loc).idx]
+  const moveBlock = (loc: Loc, dir: -1 | 1) => {
+    const { list, idx, pi, bi, ci } = locate(loc)
+    const next = [...list]
+    const j = idx + dir
+    if (j < 0 || j >= next.length) return
+    ;[next[idx], next[j]] = [next[j], next[idx]]
+    writeList(pi, bi, ci, next)
+  }
+  const removeBlock = (loc: Loc) => {
+    const { list, idx, pi, bi, ci } = locate(loc)
+    const b = list[idx]
+    if (!b || !confirm(`¿Eliminar este bloque (${BLOCK_LABEL[b.type] || b.type})?`)) return
+    writeList(pi, bi, ci, list.filter((_, i) => i !== idx))
     setHover(null)
   }
-  const duplicateBlock = (pi: number, bi: number) => {
-    const blocks = [...pages[pi].blocks]
-    blocks.splice(bi + 1, 0, structuredClone(blocks[bi]))
-    setBlocks(pi, blocks)
+  const duplicateBlock = (loc: Loc) => {
+    const { list, idx, pi, bi, ci } = locate(loc)
+    const next = [...list]
+    next.splice(idx + 1, 0, structuredClone(next[idx]))
+    writeList(pi, bi, ci, next)
   }
-  const addBlock = (pi: number, afterBi: number, type: string) => {
-    const blocks = [...pages[pi].blocks]
+  const updateBlock = (loc: Loc, patch: Partial<Block>) => {
+    const { list, idx, pi, bi, ci } = locate(loc)
+    const next = [...list]
+    next[idx] = { ...next[idx], ...patch } as Block
+    writeList(pi, bi, ci, next)
+  }
+  const insertBlock = (target: AddTarget, fresh: Block) => {
+    const list = [...listAt(target.pi, target.bi, target.ci)]
+    list.splice(target.after + 1, 0, fresh)
+    writeList(target.pi, target.bi, target.ci, list)
+    setAddMenu(null)
+    setDialog(null)
+  }
+  const addBlock = (target: AddTarget, type: string) => {
+    if (type === 'grid') { setDialog({ kind: 'grid', target }); setAddMenu(null); return }
+    if (type === 'icon') { setDialog({ kind: 'icon', target }); setAddMenu(null); return }
+    if (type === 'button') { setDialog({ kind: 'button', target }); setAddMenu(null); return }
+    if (type === 'ai') { setDialog({ kind: 'ai', target }); setAddMenu(null); return }
     const fresh = structuredClone(EMPTY[type] || EMPTY.p) as Block
     if (fresh.type === 'p' || fresh.type === 'lede' || fresh.type === 'h3' || fresh.type === 'note') fresh.text = fresh.text || 'Escribe aquí…'
     if (fresh.type === 'list') fresh.items = ['Primer punto']
     if (fresh.type === 'box') { fresh.title = 'Título de la caja'; fresh.body = 'Texto de la caja' }
     if (fresh.type === 'table') { fresh.headers = ['Columna 1', 'Columna 2']; fresh.rows = [['Celda', 'Celda']] }
     if (fresh.type === 'img') { fresh.url = '/assets/algoritmot-mark.svg'; fresh.caption = 'Haz clic en la imagen para reemplazarla' }
-    blocks.splice(afterBi + 1, 0, fresh)
-    setBlocks(pi, blocks)
-    setAddMenu(null)
+    insertBlock(target, fresh)
+  }
+  /** Elemento IA: se pide al asistente que cree el bloque en ese lugar exacto. */
+  const askAiElement = async (target: AddTarget, kind: string, prompt: string) => {
+    const page = pages[target.pi]
+    const where = target.ci !== undefined && target.bi !== undefined
+      ? `dentro de la cuadrícula que es el bloque ${target.bi + 1} de la página "${page.title || page.id}" (id ${page.id}), en la celda ${target.ci + 1}`
+      : `en la página "${page?.title || page?.id}" (id ${page?.id}), ${target.after >= 0 ? `después del bloque ${target.after + 1}` : 'al inicio'}`
+    const kinds: Record<string, string> = { text: 'un bloque de texto (p o lede)', list: 'un bloque de viñetas', table: 'una tabla', cards: 'tarjetas', image: 'una imagen (media kind generate o search)', diagram: 'un esquema (media kind diagram, SVG)', icon: 'un ícono con rótulo (icon)' }
+    setDialog(null)
+    setDraft('')
+    const text = `Crea ${kinds[kind] || 'un bloque'} ${where}. Contenido pedido: ${prompt}`
+    setMessages((prev) => [...prev, { role: 'user', text }])
+    setBusy(true)
+    try {
+      if (dirty) await onSave()
+      const payload = await post('/api/quotes/chat', { publicId, message: text, focus: { ref: `content.pages.${target.pi}`, label: `Página ${target.pi + 1}`, text: page?.title || '' } })
+      setMessages((prev) => [...prev, { role: 'assistant', text: payload.reply, changes: payload.changes }])
+      await onReload()
+    } catch (e) {
+      setMessages((prev) => [...prev, { role: 'assistant', text: `No se pudo crear: ${(e as Error).message}` }])
+    } finally {
+      setBusy(false)
+      setPanelOpen(true)
+    }
   }
 
   // ── guardar / descartar / vista previa ──
@@ -399,7 +497,10 @@ export function EditorPanel(props: EditorProps) {
     )
   }
 
-  const hoverBlock = hover && pages[hover.pi]?.blocks[hover.bi]
+  const hoverBlock = hover ? blockAt(hover) : undefined
+  const hoverTarget: AddTarget | null = hover
+    ? (hover.ci !== undefined && hover.ii !== undefined ? { pi: hover.pi, bi: hover.bi, ci: hover.ci, after: hover.ii } : { pi: hover.pi, after: hover.bi })
+    : null
 
   return (
     <>
@@ -435,7 +536,7 @@ export function EditorPanel(props: EditorProps) {
                         <button onClick={() => movePage(pi, -1)} disabled={pi === 0} title="Subir">↑</button>
                         <button onClick={() => movePage(pi, 1)} disabled={pi === pages.length - 1} title="Bajar">↓</button>
                         <button onClick={() => duplicatePage(pi)} title="Duplicar">⧉</button>
-                        <button onClick={() => setAddMenu({ pi, bi: pg.blocks.length - 1 })} title="Agregar bloque al final">＋</button>
+                        <button onClick={() => setAddMenu({ pi, after: pg.blocks.length - 1 })} title="Agregar bloque al final">＋</button>
                         <button onClick={() => setPageMenu(pi)} title="Insertar página después">＋pág</button>
                         <button className="danger" onClick={() => removePage(pi)} title="Eliminar página">✕</button>
                       </div>
@@ -480,14 +581,17 @@ export function EditorPanel(props: EditorProps) {
       )}
 
       {/* ── barra flotante sobre el bloque ── */}
-      {hover && hoverBlock && mode === 'edit' && (
-        <div className="qv-blockbar" style={{ top: hover.top - 30, left: Math.max(8, hover.left + hover.width - 250) }}>
+      {hover && hoverBlock && hoverTarget && mode === 'edit' && (
+        <div className="qv-blockbar" style={{ top: hover.top - 30, left: Math.max(8, hover.left + hover.width - 290) }}>
           <span className="qv-blockbar-type">{BLOCK_LABEL[hoverBlock.type] || hoverBlock.type}{blockPreview(hoverBlock) ? ` · ${blockPreview(hoverBlock)}` : ''}</span>
-          <button onClick={() => moveBlock(hover.pi, hover.bi, -1)} title="Subir">↑</button>
-          <button onClick={() => moveBlock(hover.pi, hover.bi, 1)} title="Bajar">↓</button>
-          <button onClick={() => duplicateBlock(hover.pi, hover.bi)} title="Duplicar">⧉</button>
-          <button onClick={() => setAddMenu({ pi: hover.pi, bi: hover.bi })} title="Agregar bloque debajo">＋</button>
-          <button className="danger" onClick={() => removeBlock(hover.pi, hover.bi)} title="Eliminar">✕</button>
+          {hoverBlock.type === 'grid' && <button onClick={() => setDialog({ kind: 'gridSettings', loc: hover })} title="Columnas">⚙</button>}
+          {hoverBlock.type === 'icon' && <button onClick={() => setDialog({ kind: 'icon', loc: hover })} title="Cambiar ícono, tamaño o color">⚙</button>}
+          {hoverBlock.type === 'button' && <button onClick={() => setDialog({ kind: 'button', loc: hover })} title="Texto, enlace y estilo">⚙</button>}
+          <button onClick={() => moveBlock(hover, -1)} title="Subir">↑</button>
+          <button onClick={() => moveBlock(hover, 1)} title="Bajar">↓</button>
+          <button onClick={() => duplicateBlock(hover)} title="Duplicar">⧉</button>
+          <button onClick={() => setAddMenu(hoverTarget)} title="Agregar bloque debajo">＋</button>
+          <button className="danger" onClick={() => removeBlock(hover)} title="Eliminar">✕</button>
         </div>
       )}
 
@@ -495,14 +599,60 @@ export function EditorPanel(props: EditorProps) {
       {addMenu && (
         <div className="qv-addmenu-wrap" onClick={() => setAddMenu(null)}>
           <div className="qv-addmenu" onClick={(e) => e.stopPropagation()}>
-            <div className="qv-addmenu-head">Agregar bloque en «{pages[addMenu.pi]?.title || pages[addMenu.pi]?.id}»{addMenu.bi >= 0 ? ` después del bloque ${addMenu.bi + 1}` : ' al inicio'}</div>
+            <div className="qv-addmenu-head">
+              Agregar en «{pages[addMenu.pi]?.title || pages[addMenu.pi]?.id}»
+              {addMenu.ci !== undefined ? ` · celda ${addMenu.ci + 1} de la cuadrícula` : addMenu.after >= 0 ? ` · después del bloque ${addMenu.after + 1}` : ' · al inicio'}
+            </div>
             <div className="qv-addmenu-grid">
-              {BLOCK_TYPES.map(([type, label]) => (
-                <button key={type} onClick={() => addBlock(addMenu.pi, addMenu.bi, type)}>{label}</button>
+              <button className="is-ai" onClick={() => addBlock(addMenu, 'ai')}>✦ Elemento IA</button>
+              {BLOCK_TYPES.filter(([type]) => !(addMenu.ci !== undefined && type === 'grid')).map(([type, label]) => (
+                <button key={type} onClick={() => addBlock(addMenu, type)}>{label}</button>
               ))}
             </div>
           </div>
         </div>
+      )}
+
+      {dialog?.kind === 'grid' && (
+        <GridDialog onClose={() => setDialog(null)} onPick={(cols) => insertBlock(dialog.target, { type: 'grid', cols, cells: Array.from({ length: cols }, () => []) } as Block)} />
+      )}
+      {dialog?.kind === 'gridSettings' && (
+        <GridDialog current={(blockAt(dialog.loc) as any)?.cols} onClose={() => setDialog(null)} onPick={(cols) => {
+          const b = blockAt(dialog.loc) as any
+          const cells: Block[][] = Array.isArray(b?.cells) ? [...b.cells] : []
+          while (cells.length < cols) cells.push([])
+          // al reducir columnas, los elementos de las celdas sobrantes pasan a la última
+          const kept = cells.slice(0, cols)
+          const extra = cells.slice(cols).flat()
+          if (extra.length) kept[cols - 1] = [...kept[cols - 1], ...extra]
+          updateBlock(dialog.loc, { cols, cells: kept } as Partial<Block>)
+          setDialog(null)
+        }} />
+      )}
+      {dialog?.kind === 'icon' && (
+        <IconDialog
+          initial={dialog.loc ? (blockAt(dialog.loc) as any) : undefined}
+          onClose={() => setDialog(null)}
+          onSave={(patch) => {
+            if (dialog.loc) updateBlock(dialog.loc, patch as Partial<Block>)
+            else if (dialog.target) insertBlock(dialog.target, { type: 'icon', size: 40, color: 'navy', label: '', ...patch } as Block)
+            setDialog(null)
+          }}
+        />
+      )}
+      {dialog?.kind === 'button' && (
+        <ButtonDialog
+          initial={dialog.loc ? (blockAt(dialog.loc) as any) : undefined}
+          onClose={() => setDialog(null)}
+          onSave={(patch) => {
+            if (dialog.loc) updateBlock(dialog.loc, patch as Partial<Block>)
+            else if (dialog.target) insertBlock(dialog.target, { type: 'button', style: 'primary', align: 'left', ...patch } as Block)
+            setDialog(null)
+          }}
+        />
+      )}
+      {dialog?.kind === 'ai' && (
+        <AiDialog onClose={() => setDialog(null)} onAsk={(kind, prompt) => void askAiElement(dialog.target, kind, prompt)} />
       )}
 
       {saveModal && <SaveModal title={props.quoteTitle} published={props.published} saving={saving} onCancel={() => setSaveModal(false)} onConfirm={doSave} />}
@@ -555,6 +705,109 @@ export function EditorPanel(props: EditorProps) {
         <button className="qv-editor qv-editor-fab" onClick={() => setPanelOpen(true)} title="Abrir el asistente">✦ IA</button>
       )}
     </>
+  )
+}
+
+function GridDialog({ current, onPick, onClose }: { current?: number; onPick: (cols: number) => void; onClose: () => void }) {
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>{current ? 'Columnas de la cuadrícula' : 'Nueva cuadrícula'}</h3>
+        <p>Elige cuántas columnas. En cada celda se agregan elementos: texto, imagen, ícono, botón, tabla…</p>
+        <div className="qv-addmenu-grid">
+          {[2, 3, 4, 5, 6].map((n) => (
+            <button key={n} className={n === current ? 'is-active' : ''} onClick={() => onPick(n)}>{n} columnas</button>
+          ))}
+        </div>
+        <div className="qv-modal-actions"><button onClick={onClose}>Cancelar</button></div>
+      </div>
+    </div>
+  )
+}
+
+function IconDialog({ initial, onSave, onClose }: { initial?: { name?: string; size?: number; color?: string; label?: string; align?: string }; onSave: (patch: Record<string, unknown>) => void; onClose: () => void }) {
+  const [name, setName] = useState(initial?.name || 'sparkles')
+  const [size, setSize] = useState(initial?.size || 40)
+  const [color, setColor] = useState(initial?.color || 'navy')
+  const [label, setLabel] = useState(initial?.label || '')
+  const [align, setAlign] = useState(initial?.align || 'left')
+  const [picking, setPicking] = useState(!initial)
+  if (picking) return <IconPicker value={name} onPick={(n) => { setName(n); setPicking(false) }} onClose={() => (initial ? setPicking(false) : onClose())} />
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>Ícono</h3>
+        <label>Ícono</label>
+        <button onClick={() => setPicking(true)} style={{ width: '100%', textAlign: 'left' }}>{name} · cambiar…</button>
+        <div className="row">
+          <div><label>Tamaño</label><select value={size} onChange={(e) => setSize(Number(e.target.value))}>{[24, 32, 40, 56, 72, 96, 128].map((n) => <option key={n} value={n}>{n} px</option>)}</select></div>
+          <div><label>Color</label><select value={color} onChange={(e) => setColor(e.target.value)}><option value="navy">Azul marino</option><option value="cyan">Cian</option><option value="gold">Dorado</option><option value="muted">Gris</option></select></div>
+        </div>
+        <label>Rótulo (opcional)</label>
+        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Texto junto al ícono" />
+        <label>Alineación</label>
+        <select value={align} onChange={(e) => setAlign(e.target.value)}><option value="left">Izquierda</option><option value="center">Centrado</option></select>
+        <div className="qv-modal-actions">
+          <button onClick={onClose}>Cancelar</button>
+          <button className="primary" onClick={() => onSave({ name, size, color, label, align })}>Aplicar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ButtonDialog({ initial, onSave, onClose }: { initial?: { label?: string; url?: string; style?: string; align?: string }; onSave: (patch: Record<string, unknown>) => void; onClose: () => void }) {
+  const [label, setLabel] = useState(initial?.label || 'Ver más')
+  const [url, setUrl] = useState(initial?.url || 'https://')
+  const [style, setStyle] = useState(initial?.style || 'primary')
+  const [align, setAlign] = useState(initial?.align || 'left')
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>Botón con enlace</h3>
+        <label>Texto</label>
+        <input value={label} onChange={(e) => setLabel(e.target.value)} />
+        <label>Enlace (https://, mailto: o tel:)</label>
+        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
+        <div className="row">
+          <div><label>Estilo</label><select value={style} onChange={(e) => setStyle(e.target.value)}><option value="primary">Relleno</option><option value="outline">Contorno</option></select></div>
+          <div><label>Alineación</label><select value={align} onChange={(e) => setAlign(e.target.value)}><option value="left">Izquierda</option><option value="center">Centrado</option><option value="right">Derecha</option></select></div>
+        </div>
+        <div className="qv-modal-actions">
+          <button onClick={onClose}>Cancelar</button>
+          <button className="primary" disabled={!label.trim()} onClick={() => onSave({ label: label.trim(), url: url.trim(), style, align })}>Aplicar</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AiDialog({ onAsk, onClose }: { onAsk: (kind: string, prompt: string) => void; onClose: () => void }) {
+  const [kind, setKind] = useState('text')
+  const [prompt, setPrompt] = useState('')
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>✦ Elemento IA</h3>
+        <p>La IA crea el elemento en este lugar de la página con lo que le pidas. Los cambios pendientes se guardan antes.</p>
+        <label>Qué crear</label>
+        <select value={kind} onChange={(e) => setKind(e.target.value)}>
+          <option value="text">Texto (párrafo o entradilla)</option>
+          <option value="list">Viñetas</option>
+          <option value="table">Tabla</option>
+          <option value="cards">Tarjetas</option>
+          <option value="icon">Ícono con rótulo</option>
+          <option value="image">Imagen (buscar o generar)</option>
+          <option value="diagram">Esquema (SVG)</option>
+        </select>
+        <label>Qué debe decir o mostrar</label>
+        <textarea rows={4} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ej.: las cuatro fases de producción del diplomado, con una frase por fase" />
+        <div className="qv-modal-actions">
+          <button onClick={onClose}>Cancelar</button>
+          <button className="primary" disabled={!prompt.trim()} onClick={() => onAsk(kind, prompt.trim())}>Crear con IA</button>
+        </div>
+      </div>
+    </div>
   )
 }
 

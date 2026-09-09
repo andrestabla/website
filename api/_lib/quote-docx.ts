@@ -310,6 +310,15 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
       // el índice se arma más abajo con los títulos reales de las páginas
       break
 
+    case 'grid': {
+      // en Word no hay cuadrícula libre: las celdas se vuelcan una tras otra
+      const cells: any[][] = Array.isArray(b.cells) ? b.cells : []
+      return cells.flatMap((cell) => (Array.isArray(cell) ? cell.flatMap((x: any) => blockToDocx(x, assets)) : []))
+    }
+    case 'icon':
+      return b.label ? [new Paragraph({ children: runs(String(b.label), { bold: true }), spacing: { after: 120 } })] : []
+    case 'button':
+      return [new Paragraph({ children: runs(`${b.label}${b.url ? ` — ${b.url}` : ''}`, { bold: true, color: '1A2D5A' }), spacing: { after: 160 } })]
     default:
       break
   }

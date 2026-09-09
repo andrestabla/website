@@ -1086,7 +1086,8 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-addmenu-head { font-weight: 800; margin-bottom: 10px; }
 .qv-addmenu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
 .qv-addmenu-grid button { border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 8px; padding: 9px 10px; text-align: left; font-weight: 600; cursor: pointer; }
-.qv-addmenu-grid button:hover { border-color: #4f46e5; background: #eef2ff; color: #3730a3; }
+.qv-addmenu-grid button:hover, .qv-addmenu-grid button.is-active { border-color: #4f46e5; background: #eef2ff; color: #3730a3; }
+.qv-addmenu-grid button.is-ai { border-color: #c7d2fe; background: #eef2ff; color: #3730a3; font-weight: 800; }
 .qv-modal { width: min(440px, 100%); padding: 20px; }
 .qv-modal h3 { margin: 0 0 8px; font-size: 16px; }
 .qv-modal p { margin: 0 0 16px; color: #475569; }
@@ -1097,3 +1098,37 @@ body.qv-has-side .qv-bar { left: 300px; }
   .qv-side, .qv-side-fab, .qv-blockbar, .qv-addmenu-wrap, .qv-modal-wrap { display: none !important; }
   body.qv-has-side .qv { padding-left: 0; }
 }
+
+/* ── Cuadrícula, ícono y botón ─────────────────────────────────────────── */
+.qv-grid { display: grid; gap: 18px; margin: 10px 0 16px; }
+.qv-grid.gap-sm { gap: 10px; }
+.qv-grid-cell { min-width: 0; }
+.qv-grid-cell > .qv-block > *:first-child, .qv-grid-cell > *:first-child { margin-top: 0; }
+.qv-cell-add { display: none; width: 100%; margin-top: 6px; padding: 6px; border: 1px dashed #c7d2fe; border-radius: 6px; background: #eef2ff; color: #4f46e5; font: 700 11px Inter, system-ui, sans-serif; cursor: pointer; }
+.qv-mode-edit .qv-cell-add { display: block; }
+.qv-mode-edit .qv-grid-cell { min-height: 40px; outline: 1px dashed rgba(79, 70, 229, .25); outline-offset: 4px; border-radius: 4px; }
+.qv-icon { display: flex; align-items: center; gap: 12px; margin: 8px 0 12px; }
+.qv-icon[style*="center"] { justify-content: center; text-align: center; flex-direction: column; gap: 6px; }
+.qv-icon-glyph { display: inline-flex; align-items: center; justify-content: center; padding: 12px; border-radius: 14px; background: rgba(26, 45, 90, .06); }
+.qv-icon.tone-navy .qv-icon-glyph { color: #1a2d5a; }
+.qv-icon.tone-cyan .qv-icon-glyph { color: #0b6f88; background: rgba(20, 184, 200, .12); }
+.qv-icon.tone-gold .qv-icon-glyph { color: #a87a14; background: rgba(217, 164, 65, .16); }
+.qv-icon.tone-muted .qv-icon-glyph { color: #64748b; background: rgba(100, 116, 139, .1); }
+.qv-icon-label { font-weight: 700; color: #1a2d5a; font-size: 14px; }
+.qv-btnwrap { margin: 10px 0 16px; }
+.qv-btn { display: inline-block; padding: 11px 22px; border-radius: 8px; font-weight: 800; font-size: 13px; letter-spacing: .04em; text-decoration: none; }
+.qv-btn.primary { background: #1a2d5a; color: #fff; }
+.qv-btn.outline { border: 2px solid #1a2d5a; color: #1a2d5a; background: transparent; }
+.qv-mode-edit .qv-btn { cursor: text; }
+/* A4: una imagen nunca desborda la hoja */
+.qv.is-paged .qv-shot img { max-height: 620px; width: auto; max-width: 100%; margin: 0 auto; display: block; object-fit: contain; }
+/* selector de íconos */
+.qv-iconpicker { width: min(680px, 100%); }
+.qv-iconpicker input { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font: inherit; margin-bottom: 10px; }
+.qv-icongrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; max-height: 50vh; overflow-y: auto; margin-bottom: 12px; }
+.qv-icongrid button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; cursor: pointer; color: #1e293b; }
+.qv-icongrid button span { font-size: 10px; color: #64748b; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qv-icongrid button:hover, .qv-icongrid button.is-active { border-color: #4f46e5; background: #eef2ff; }
+.qv-dialog label { display: block; margin: 8px 0 4px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #64748b; }
+.qv-dialog input, .qv-dialog select, .qv-dialog textarea { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; font: inherit; }
+.qv-dialog .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

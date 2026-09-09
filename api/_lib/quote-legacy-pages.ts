@@ -9,7 +9,7 @@
  * como bloques que siguen leyendo las líneas de la cotización.
  */
 import { computeTotals, formatMoney, QUOTE_TEMPLATES, normalizeTemplate, type QuoteItem } from './quotes.js'
-import { renumberPages, type DocPage, type PageBlock } from './quote-attachments.js'
+import { renumberPages, splitPagesByCapacity, type DocPage, type PageBlock } from './quote-attachments.js'
 
 const DEFAULT_TITLES: Record<string, [string, string]> = {
   presentacion: ['Presentación', 'Una propuesta que se lee y se configura'],
@@ -177,5 +177,5 @@ export function legacyToPages(quote: any): DocPage[] {
     note(c.finalNote || `Propuesta válida por ${quote.validDays} días.`),
   ] as PageBlock[])
 
-  return renumberPages(pages)
+  return renumberPages(splitPagesByCapacity(pages))
 }

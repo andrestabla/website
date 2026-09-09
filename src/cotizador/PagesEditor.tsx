@@ -37,6 +37,9 @@ export const BLOCK_TYPES: Array<[string, string]> = [
   ['letterhead', 'Encabezado de carta'],
   ['gantt', 'Cronograma de barras'],
   ['timeline', 'Banda de periodos'],
+  ['grid', 'Cuadrícula (2–6 columnas)'],
+  ['icon', 'Ícono'],
+  ['button', 'Botón con enlace'],
 ]
 const BLOCK_LABEL: Record<string, string> = Object.fromEntries(BLOCK_TYPES)
 
@@ -68,6 +71,9 @@ export const EMPTY: Record<string, Block> = {
     rows: [{ label: '', from: 1, to: 2, tone: 'cyan' }],
     note: '',
   },
+  grid: { type: 'grid', cols: 3, cells: [[], [], []] },
+  icon: { type: 'icon', name: 'sparkles', size: 40, color: 'navy', label: '' },
+  button: { type: 'button', label: 'Ver más', url: 'https://www.algoritmot.com', style: 'primary', align: 'left' },
 }
 
 /**
