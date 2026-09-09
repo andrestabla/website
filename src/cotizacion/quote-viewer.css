@@ -1324,3 +1324,12 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-kid-row button, .qv-kid-add { border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 700; cursor: pointer; color: #475569; }
 .qv-kid-row button:hover, .qv-kid-add:hover { border-color: #4f46e5; color: #3730a3; }
 .qv-kid-add { align-self: flex-start; }
+
+/* ── Escala y tinte de bloques compuestos (tablas, esquemas, líneas de tiempo…) ── */
+.qv-block.qs-scale-xs { zoom: .82; } .qv-block.qs-scale-sm { zoom: .92; } .qv-block.qs-scale-lg { zoom: 1.18; } .qv-block.qs-scale-xl { zoom: 1.35; } .qv-block.qs-scale-xxl { zoom: 1.6; }
+.qv-block[class*="qs-tint-"] :is(b, strong, td, th, span, li, dt, dd, h3, h4, em, figcaption, .qv-dg-title, .qv-dg-link, .qv-htl-title, .qv-htl-desc, .qv-htl-date, .qv-vtl-title, .qv-vtl-desc, .qv-vtl-date, .qv-sign-name, .qv-sign-role, .qv-sign-org, .qv-sign-when, .f-n, .f-o, .id, .when):not(.qs-inline):not(.qv-dg-core):not(.qv-dg-core *):not(.qv-dg-effect):not(.qv-dg-effect *):not(.qv-htl-dot):not(.qv-vtl-dot):not(.qv-dg-step-n):not(.qv-btn):not(.qv-table.doc.ts-navy thead th) { color: inherit; }
+.qv-block.qs-tint-ink { color: #1f2430; } .qv-block.qs-tint-navy { color: #1a2d5a; } .qv-block.qs-tint-cyan { color: #0b6f88; } .qv-block.qs-tint-gold { color: #a87a14; } .qv-block.qs-tint-muted { color: #6b7280; } .qv-block.qs-tint-white { color: #fff; }
+.qv-block.qs-tint-bold :is(td, li, span, dd, .qv-htl-desc, .qv-vtl-desc):not(.qs-inline) { font-weight: 700; }
+.qv-block.qs-bg-soft, .qv-block.qs-bg-cyan, .qv-block.qs-bg-gold, .qv-block.qs-bg-navy { padding: 12px 14px; border-radius: 10px; margin: 8px 0 14px; }
+.qv-block.qs-bg-soft { background: rgba(26, 45, 90, .06); } .qv-block.qs-bg-cyan { background: rgba(20, 184, 200, .14); } .qv-block.qs-bg-gold { background: rgba(217, 164, 65, .18); } .qv-block.qs-bg-navy { background: #1a2d5a; color: #fff; }
+.qv-block.qs-bg-navy :is(b, td, th, span, li, dt, dd, h3, h4, figcaption):not(.qs-inline):not(.qv-dg-core *):not(.qv-dg-effect *) { color: #fff; }

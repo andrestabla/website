@@ -864,6 +864,12 @@ const safeUrl = (v: unknown) => {
 }
 
 export function sanitizeBlock(raw: any): PageBlock | null {
+  const block = sanitizeBlockInner(raw)
+  // tamaño, color y fondo del bloque entero valen para cualquier tipo (esquemas, tablas, líneas de tiempo…)
+  return block ? withStyle(block, raw) : null
+}
+
+function sanitizeBlockInner(raw: any): PageBlock | null {
   if (!raw || typeof raw !== 'object') return null
   const type = String(raw.type || '')
   switch (type) {

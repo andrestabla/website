@@ -102,6 +102,19 @@ export const styleClass = (st?: BlockStyle) => {
   return c.length ? ` ${c.join(' ')}` : ''
 }
 
+/** Bloques cuyo texto se escala y tiñe desde el envoltorio (los de texto llevan su propia clase). */
+const TEXT_BLOCKS = new Set(['lede', 'p', 'h3', 'note', 'list', 'box'])
+export const wrapperStyleClass = (block: DocBlock) => {
+  const st = (block as { style?: BlockStyle }).style
+  if (!st || TEXT_BLOCKS.has(block.type)) return ''
+  const c: string[] = []
+  if (st.size) c.push(`qs-scale-${st.size}`)
+  if (st.color) c.push(`qs-tint-${st.color}`)
+  if (st.weight === 'bold') c.push('qs-tint-bold')
+  if (st.bg && st.bg !== 'none') c.push(`qs-bg-${st.bg}`)
+  return c.length ? ` ${c.join(' ')}` : ''
+}
+
 export type DocBlock =
   | { type: 'lede'; text: string; align?: Align; style?: BlockStyle }
   | { type: 'p'; text: string; align?: Align; style?: BlockStyle }
@@ -530,12 +543,12 @@ export function DocBlockView({
             <div className="qv-grid-cell" key={ci} {...(bpath ? { 'data-cell': `${bpath}:${ci}` } : {})}>
               {cell.map((inner, ii) => (
                 bpath ? (
-                  <div className="qv-block qv-block-nested" data-block={`${bpath}:${ci}:${ii}`} key={ii}>
+                  <div className={`qv-block qv-block-nested${wrapperStyleClass(inner)}`} data-block={`${bpath}:${ci}:${ii}`} key={ii}>
                     <DocBlockView block={inner} items={items} totals={totals} money={money} pages={pages}
                       refBase={refBase ? `${refBase}.cells.${ci}.${ii}` : undefined} bpath={`${bpath}:${ci}:${ii}`} />
                   </div>
                 ) : (
-                  <DocBlockView key={ii} block={inner} items={items} totals={totals} money={money} pages={pages} />
+                  <div className={`qv-block${wrapperStyleClass(inner)}`} key={ii}><DocBlockView block={inner} items={items} totals={totals} money={money} pages={pages} /></div>
                 )
               ))}
               {bpath && <button type="button" className="qv-cell-add" data-cell-add={`${bpath}:${ci}`}>＋ Elemento</button>}
@@ -878,8 +891,12 @@ export function DocPageView({
       )}
       {page.blocks.map((block, i) => (
         base ? (
-          <div className="qv-block" data-block={`${pageIndex}:${i}`} key={i}>
+          <div className={`qv-block${wrapperStyleClass(block)}`} data-block={`${pageIndex}:${i}`} key={i}>
             <DocBlockView block={block} items={items} totals={totals} money={money} pages={pages} refBase={`${base}.blocks.${i}`} bpath={`${pageIndex}:${i}`} />
+          </div>
+        ) : wrapperStyleClass(block) ? (
+          <div className={`qv-block${wrapperStyleClass(block)}`} key={i}>
+            <DocBlockView block={block} items={items} totals={totals} money={money} pages={pages} />
           </div>
         ) : (
           <DocBlockView key={i} block={block} items={items} totals={totals} money={money} pages={pages} />

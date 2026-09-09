@@ -757,7 +757,7 @@ export function EditorPanel(props: EditorProps) {
       {hover && hoverBlock && hoverTarget && mode === 'edit' && (
         <div className="qv-blockbar" style={{ top: hover.top - 30, left: Math.max(8, hover.left + hover.width - 290) }}>
           <span className="qv-blockbar-type">{BLOCK_LABEL[hoverBlock.type] || hoverBlock.type}{blockPreview(hoverBlock) ? ` · ${blockPreview(hoverBlock)}` : ''}</span>
-          {['lede', 'p', 'h3', 'note', 'list', 'box', 'table', 'cards'].includes(hoverBlock.type) && <button onMouseDown={(e) => { e.preventDefault(); captureSelection() }} onClick={() => setDialog({ kind: 'style', loc: hover })} title="Estilo: tamaño, color, peso, fondo · a todo el bloque o al fragmento seleccionado">Aa</button>}
+          {!['img', 'toc', 'button', 'icon', 'grid'].includes(hoverBlock.type) && <button onMouseDown={(e) => { e.preventDefault(); captureSelection() }} onClick={() => setDialog({ kind: 'style', loc: hover })} title="Estilo: tamaño, color, peso, fondo · a todo el bloque o al fragmento seleccionado">Aa</button>}
           {['table', 'gantt', 'cards', 'team', 'htimeline', 'vtimeline', 'payments', 'phase', 'list', 'timeline', 'invoice', 'diagram'].includes(hoverBlock.type) && <button onClick={() => setDialog({ kind: 'items', loc: hover })} title="Agregar o quitar filas, columnas, tarjetas, miembros o hitos">⋯</button>}
           {hoverBlock.type === 'grid' && <button onClick={() => setDialog({ kind: 'gridSettings', loc: hover })} title="Columnas">⚙</button>}
           {hoverBlock.type === 'sechead' && hover.ci === undefined && <button onClick={() => splitSectionToPage(hover)} title="Separar esta sección en una página propia">⤴</button>}
@@ -935,8 +935,9 @@ export function EditorPanel(props: EditorProps) {
 
 function StyleDialog({ block, selection, onSave, onSaveFragment, onClose }: { block: any; selection?: string; onSave: (patch: Record<string, unknown>) => void; onSaveFragment?: (classes: string[]) => void; onClose: () => void }) {
   const isTable = block?.type === 'table'
+  const isText = ['lede', 'p', 'h3', 'note', 'list', 'box'].includes(block?.type)
   const [scope, setScope] = useState<'block' | 'fragment'>(selection ? 'fragment' : 'block')
-  const [size, setSize] = useState<string>(isTable ? block?.fontSize || 'md' : block?.style?.size || 'md')
+  const [size, setSize] = useState<string>(block?.style?.size || (isTable ? block?.fontSize : '') || 'md')
   const [color, setColor] = useState<string>(block?.style?.color || '')
   const [weight, setWeight] = useState<string>(block?.style?.weight || '')
   const [bg, setBg] = useState<string>(block?.style?.bg || 'none')
@@ -947,7 +948,6 @@ function StyleDialog({ block, selection, onSave, onSaveFragment, onClose }: { bl
   const [tableStyle, setTableStyle] = useState<string>(block?.tableStyle || 'default')
   const [firstCol, setFirstCol] = useState<string>(block?.firstCol || 'key')
   const apply = () => {
-    if (isTable) { onSave({ tableStyle, fontSize: size, firstCol }); return }
     if (scope === 'fragment' && onSaveFragment) {
       const classes: string[] = []
       if (size && size !== 'md') classes.push(`size-${size}`)
@@ -964,32 +964,45 @@ function StyleDialog({ block, selection, onSave, onSaveFragment, onClose }: { bl
     if (color) style.color = color
     if (weight) style.weight = weight
     if (bg && bg !== 'none') style.bg = bg
-    if (italic) style.italic = true
-    if (upper) style.uppercase = true
-    const patch: Record<string, unknown> = { style: Object.keys(style).length ? style : undefined, align: align === 'left' ? undefined : align }
+    if (isText && italic) style.italic = true
+    if (isText && upper) style.uppercase = true
+    const patch: Record<string, unknown> = { style: Object.keys(style).length ? style : undefined }
+    if (isText) patch.align = align === 'left' ? undefined : align
     if (block?.type === 'list') patch.marker = marker === 'bullet' ? undefined : marker
+    if (isTable) { patch.tableStyle = tableStyle; patch.firstCol = firstCol; patch.fontSize = undefined }
     onSave(patch)
   }
   return (
     <div className="qv-modal-wrap" onClick={onClose}>
       <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
-        <h3>{isTable ? 'Estilo de la tabla' : 'Estilo del texto'}</h3>
-        {!isTable && selection && (
+        <h3>{isTable ? 'Estilo de la tabla' : isText ? 'Estilo del texto' : 'Estilo del bloque'}</h3>
+        {selection && (
           <div className="row" style={{ marginBottom: 6 }}>
             <button className={scope === 'fragment' ? 'is-active' : ''} onClick={() => setScope('fragment')}>Solo el fragmento «{selection.slice(0, 28)}{selection.length > 28 ? '…' : ''}»</button>
             <button className={scope === 'block' ? 'is-active' : ''} onClick={() => setScope('block')}>Todo el bloque</button>
           </div>
         )}
-        {isTable ? (
+        {isTable && scope === 'block' && (
           <>
-            <label>Apariencia</label>
+            <label>Apariencia de la tabla</label>
             <select value={tableStyle} onChange={(e) => setTableStyle(e.target.value)}>
               <option value="default">Estándar</option><option value="striped">Filas alternadas</option><option value="minimal">Mínima (solo líneas)</option><option value="navy">Cabecera azul marino</option><option value="compact">Compacta</option>
             </select>
+            <label>Primera columna</label>
+            <select value={firstCol} onChange={(e) => setFirstCol(e.target.value)}><option value="key">Destacada</option><option value="plain">Normal</option></select>
+          </>
+        )}
+        {(!isText && scope === 'block') ? (
+          <>
             <div className="row">
-              <div><label>Tamaño de letra</label><select value={size} onChange={(e) => setSize(e.target.value)}><option value="xs">Muy pequeña</option><option value="sm">Pequeña</option><option value="md">Normal</option></select></div>
-              <div><label>Primera columna</label><select value={firstCol} onChange={(e) => setFirstCol(e.target.value)}><option value="key">Destacada</option><option value="plain">Normal</option></select></div>
+              <div><label>Tamaño del texto</label><select value={size} onChange={(e) => setSize(e.target.value)}><option value="xs">Muy pequeño</option><option value="sm">Pequeño</option><option value="md">Normal</option><option value="lg">Grande</option><option value="xl">Muy grande</option><option value="xxl">Titular</option></select></div>
+              <div><label>Color del texto</label><select value={color} onChange={(e) => setColor(e.target.value)}><option value="">Por defecto</option><option value="ink">Tinta</option><option value="navy">Azul marino</option><option value="cyan">Cian</option><option value="gold">Dorado</option><option value="muted">Gris</option><option value="white">Blanco</option></select></div>
             </div>
+            <div className="row">
+              <div><label>Peso</label><select value={weight} onChange={(e) => setWeight(e.target.value)}><option value="">Por defecto</option><option value="bold">Negrita</option><option value="normal">Normal</option></select></div>
+              <div><label>Fondo</label><select value={bg} onChange={(e) => setBg(e.target.value)}><option value="none">Sin fondo</option><option value="soft">Suave</option><option value="cyan">Cian</option><option value="gold">Dorado</option><option value="navy">Azul marino (texto blanco)</option></select></div>
+            </div>
+            <p style={{ margin: '8px 0 0', fontSize: 11.5, color: '#64748b' }}>Aplica a todos los textos del bloque. Para un solo texto, selecciónalo en la página y vuelve a pulsar «Aa».</p>
           </>
         ) : (
           <>
