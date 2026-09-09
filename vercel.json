@@ -20,5 +20,11 @@
       "source": "/((?!api/)(?!@)(?!__)(?!.*\\..*).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/quotes/pdf.ts": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
 }

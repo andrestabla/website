@@ -212,6 +212,7 @@ enum AdminModule {
   COTIZADOR
   PROFE_TABLA
   MIS_PROYECTOS
+  LICENCES
   ADMIN_BRIDGE
 }
 
@@ -687,6 +688,7 @@ model Quote {
   events      QuoteEvent[]
   messages    QuoteMessage[]
   attachments QuoteAttachment[]
+  versions    QuoteVersion[]
 
   @@index([ownerId, updatedAt(sort: Desc)])
   @@index([status, updatedAt(sort: Desc)])
@@ -744,6 +746,40 @@ model QuoteMessage {
   quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
   @@index([quoteId, createdAt])
+}
+
+/// Versión guardada de una cotización: foto del contenido y las líneas antes
+/// de cada cambio (guardado del editor, turno de la IA, restauración).
+model QuoteVersion {
+  id        String   @id @default(cuid())
+  quoteId   String
+  reason    String // EDITOR | AI | FIELDS | PAGES | RESTORE | TEMPLATE
+  label     String?
+  title     String
+  content   Json
+  pricing   Json
+  createdBy String?
+  createdAt DateTime @default(now())
+  quote     Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId, createdAt(sort: Desc)])
+}
+
+/// Plantilla propia: una cotización guardada como punto de partida.
+model QuoteTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  template    String   @default("SOLUCIONES") // línea de servicio
+  currency    String   @default("COP")
+  content     Json
+  pricing     Json
+  discountScale Json?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([updatedAt(sort: Desc)])
 }
 
 /// Archivo que el consultor adjunta al chat de una cotización. Se guarda ya

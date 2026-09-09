@@ -36,7 +36,15 @@ type PublicQuote = {
   discountScale?: DiscountTier[] | null
   validDays: number
   publishedAt?: string | null
+  updatedAt?: string
 }
+
+/** Fecha límite: publicación (o última edición) más los días de validez. */
+function expiryOf(q: PublicQuote): Date {
+  const base = new Date(q.publishedAt || q.updatedAt || Date.now())
+  return new Date(base.getTime() + (Number(q.validDays) || 45) * 86_400_000)
+}
+const fmtDate = (d: Date) => d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
 
 // ── Identidad del visitante (métricas) ──────────────────────────────────────
 function stableId(storage: Storage, key: string) {
@@ -173,6 +181,8 @@ export default function QuoteViewer() {
   const recipientToken = search.get('d') || ''
   // ?editor=1: panel de edición con IA sobre el documento (requiere sesión del dueño)
   const editor = search.get('editor') === '1'
+  // ?print=1: la abre el Chromium del servidor para el PDF; sin barra ni interacción
+  const printMode = search.get('print') === '1'
 
   const [state, setState] = useState<'loading' | 'ready' | 'notfound' | 'error'>('loading')
   const [quote, setQuote] = useState<PublicQuote | null>(null)
@@ -222,6 +232,22 @@ export default function QuoteViewer() {
   }, [publicId, recipientToken])
 
   useEffect(() => { void load() }, [load])
+
+  // ── borrador local: los cambios sin guardar sobreviven a un cierre accidental ──
+  const draftKey = `qv-draft:${publicId}`
+  const [draftOffer, setDraftOffer] = useState<{ at: string; draft: any } | null>(null)
+  useEffect(() => {
+    if (!editor || state !== 'ready' || !quote) return
+    try {
+      const raw = localStorage.getItem(draftKey)
+      if (!raw) return
+      const saved = JSON.parse(raw)
+      // solo si el servidor no cambió desde que se hizo el borrador
+      if (saved?.base === quote.updatedAt && saved?.draft) setDraftOffer({ at: saved.at, draft: saved.draft })
+      else localStorage.removeItem(draftKey)
+    } catch { /* sin almacenamiento */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, state])
 
   // Título del documento. El SEO global del sitio (SiteSEO) escribe el suyo al
   // hidratar el CMS; se reafirma un par de veces para ganar esa carrera.
@@ -279,6 +305,14 @@ export default function QuoteViewer() {
 
   // ── editor: edición local, historial (deshacer/rehacer), guardado y descarte ──
   const dirty = !!quote && editor && snapshot(quote, items) !== baseline.current
+  useEffect(() => {
+    if (!editor || !quote) return
+    try {
+      if (dirty) localStorage.setItem(draftKey, JSON.stringify({ base: quote.updatedAt, at: new Date().toISOString(), draft: { title: quote.title, subtitle: quote.subtitle, clientName: quote.clientName, sector: quote.sector, content: quote.content, items } }))
+      else localStorage.removeItem(draftKey)
+    } catch { /* sin almacenamiento */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, quote, items, editor])
   const history = useRef<Array<{ quote: PublicQuote; items: QuoteItem[] }>>([])
   const future = useRef<Array<{ quote: PublicQuote; items: QuoteItem[] }>>([])
   // tamaño del historial como estado: las refs no se leen durante el render
@@ -324,8 +358,9 @@ export default function QuoteViewer() {
     const payload = await res.json().catch(() => null)
     if (!res.ok || payload?.ok === false) throw new Error(payload?.error || `Error ${res.status}`)
     history.current = []; future.current = []; setHist({ undo: 0, redo: 0 })
+    try { localStorage.removeItem(draftKey) } catch { /* sin almacenamiento */ }
     await load(true)
-  }, [quote, items, load])
+  }, [quote, items, load, draftKey])
 
   const paymentSplit: number[] | undefined =
     Array.isArray(quote?.content?.paymentSplit) && quote.content.paymentSplit.length
@@ -480,16 +515,39 @@ export default function QuoteViewer() {
   const nextNum = () => String(++sectionNumber).padStart(2, '0')
 
   return (
-    <div className={`qv${docPages.length ? ' is-paged' : ''}${editor ? ' is-editor' : ''}`}>
+    <div className={`qv${docPages.length ? ' is-paged' : ''}${editor ? ' is-editor' : ''}${printMode ? ' is-print' : ''}`}>
+      {!printMode && !editor && expiryOf(quote).getTime() < Date.now() && quote.status === 'PUBLISHED' && (
+        <div className="qv-expired-banner">Esta propuesta venció el {fmtDate(expiryOf(quote))}. Las condiciones y valores pueden haber cambiado; escríbenos para actualizarla.</div>
+      )}
+      {draftOffer && editor && (
+        <div className="qv-draft-offer">
+          <span>Hay cambios sin guardar de {new Date(draftOffer.at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })} en este navegador.</span>
+          <button className="primary" onClick={() => {
+            const d = draftOffer.draft
+            remember()
+            setQuote((q) => (q ? { ...q, title: d.title, subtitle: d.subtitle, clientName: d.clientName, sector: d.sector, content: d.content } : q))
+            if (Array.isArray(d.items)) setItems(d.items)
+            setDraftOffer(null)
+          }}>Recuperar</button>
+          <button onClick={() => { try { localStorage.removeItem(draftKey) } catch { /* sin almacenamiento */ } setDraftOffer(null) }}>Descartar</button>
+        </div>
+      )}
       <div className="qv-bar">
         <span className="b-brand"><img src={brandLogo} alt="" {...IMG('content.brand.logo')} /><span {...lab('barBrand')}>{L('barBrand', 'Algoritmo\u00a0T')}</span></span>
         <div className="b-total">
           <div className="t-l"><span {...lab('barInvestment')}>{L('barInvestment', 'Inversión')}</span>{!isService && totals.moduleCount > 0 ? ` · ${totals.moduleCount} ${itemsNoun.toLowerCase()}` : ''}</div>
           <div className="t-v" {...lab('barTotal')}>{L('barTotal', money(totals.total))}</div>
         </div>
-        <button className="qv-pdfbtn" onClick={() => { void printPdf() }} disabled={printing}>
-          {printing ? 'Preparando…' : <span {...lab('pdfButton')}>{L('pdfButton', '↓ PDF')}</span>}
-        </button>
+        {quote.status === 'PUBLISHED' && !editor ? (
+          <a className="qv-pdfbtn" href={`/api/quotes/pdf?id=${encodeURIComponent(quote.publicId)}${recipientToken ? `&d=${encodeURIComponent(recipientToken)}` : ''}`} target="_blank" rel="noreferrer"
+            onClick={() => track({ type: 'pdf' })}>
+            <span {...lab('pdfButton')}>{L('pdfButton', '↓ PDF')}</span>
+          </a>
+        ) : (
+          <button className="qv-pdfbtn" onClick={() => { void printPdf() }} disabled={printing}>
+            {printing ? 'Preparando…' : <span {...lab('pdfButton')}>{L('pdfButton', '↓ PDF')}</span>}
+          </button>
+        )}
         {content.docxUrl && (
           <a className="qv-docxbtn" href={content.docxUrl} download>↓ Word</a>
         )}
@@ -528,6 +586,16 @@ export default function QuoteViewer() {
             {/* formatMoney ya antepone "USD" en dólares; solo COP necesita el sufijo */}
             <div className="m"><div className="ml" {...lab('coverInvestment')}>{L('coverInvestment', 'Inversión')}</div><div className="mv" {...R('content.cover.investment')}>{cover.investment || <>{money(totals.total)}{currency === 'USD' ? '' : ` ${currency}`}</>}</div></div>
           </div>
+          {(() => {
+            const exp = expiryOf(quote)
+            const expired = exp.getTime() < Date.now()
+            return content.cover?.hideExpiry ? null : (
+              <div className={`cv-expiry${expired ? ' is-expired' : ''}`}>
+                <span {...lab('coverValid')}>{L('coverValid', expired ? 'Propuesta vencida el' : 'Propuesta válida hasta el')}</span> {fmtDate(exp)}
+                {!expired && <span className="cv-expiry-days"> · {Math.max(1, Math.ceil((exp.getTime() - Date.now()) / 86_400_000))} días</span>}
+              </div>
+            )
+          })()}
           <div className="tagline" {...R('content.cover.tagline')}>{cover.tagline || <>Soluciones digitales con <b>sentido humano</b></>}</div>
         </div>
       </header>

@@ -11,7 +11,7 @@ import {
   Mic, Square, Paperclip, X, FileInput, Code2, Save, ChevronDown, ChevronRight, PanelLeft, PanelRight,
 } from 'lucide-react'
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
-import { quotesApi, money, timeAgo, fmtDuration, type QuoteMessageRow, type QuoteRecipient, type QuoteAttachmentRow, type EmailTemplate } from './api'
+import { quotesApi, money, timeAgo, fmtDuration, expiresAt, type QuoteMessageRow, type QuoteRecipient, type QuoteAttachmentRow, type EmailTemplate } from './api'
 import { TEMPLATE_LABEL } from './CotizadorList'
 
 type Tab = 'propuesta' | 'vista' | 'destinatarios' | 'metricas'
@@ -426,6 +426,16 @@ export function QuoteBuilder() {
     } catch (e: any) { setError(e.message) }
   }
 
+  const saveAsTemplate = async () => {
+    setMenuOpen(false)
+    const name = prompt('Nombre de la plantilla (páginas, líneas y ajustes de esta cotización):', `${quote.title}`.slice(0, 80))
+    if (!name?.trim()) return
+    try {
+      await quotesApi.templates.save(quoteId, name.trim())
+      setNotice(`Plantilla «${name.trim()}» guardada. Aparece al crear una cotización nueva.`)
+    } catch (e) { setError((e as Error).message) }
+  }
+
   const archiveQuote = async () => {
     setMenuOpen(false)
     try {
@@ -575,6 +585,15 @@ export function QuoteBuilder() {
             {TEMPLATE_LABEL[quote.template] ?? quote.template}
           </span>
         )}
+        {published && (() => {
+          const days = Math.ceil((expiresAt(quote.publishedAt, quote.updatedAt, quote.validDays).getTime() - Date.now()) / 86_400_000)
+          return (
+            <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${days < 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : days <= 5 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
+              title="Validez de la propuesta: se ajusta en Propuesta › Ajustes del documento">
+              {days < 0 ? `Vencida hace ${Math.abs(days)} d` : days === 0 ? 'Vence hoy' : `Vence en ${days} d`}
+            </span>
+          )
+        })()}
         <div className="flex-1" />
         <div className="mr-1 hidden items-center gap-0.5 rounded-lg border border-slate-200 p-0.5 lg:flex" title="Mostrar u ocultar columnas">
           <button
@@ -627,6 +646,9 @@ export function QuoteBuilder() {
               <div className="absolute right-0 top-9 z-20 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
                 <button onClick={duplicateQuote} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-slate-700 hover:bg-slate-50">
                   <CopyPlus size={14} className="text-slate-400" /> Duplicar cotización
+                </button>
+                <button onClick={saveAsTemplate} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-slate-700 hover:bg-slate-50">
+                  <Save size={14} className="text-slate-400" /> Guardar como plantilla…
                 </button>
                 <button onClick={archiveQuote} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-slate-700 hover:bg-slate-50">
                   <Archive size={14} className="text-slate-400" /> {quote.status === 'ARCHIVED' ? 'Reactivar (borrador)' : 'Archivar'}

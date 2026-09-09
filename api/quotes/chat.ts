@@ -25,6 +25,7 @@ import {
 } from '../_lib/quote-attachments.js'
 import { resolveMedia, type MediaRequest } from '../_lib/quote-media.js'
 import { legacyToPages } from '../_lib/quote-legacy-pages.js'
+import { snapshotQuote } from './manage.js'
 import {
   quoteSessionState,
   loadCatalog,
@@ -1238,6 +1239,8 @@ REGLAS DEL PATCH
       reply += `\n\n⚠ En este turno no se aplicó ningún cambio al documento${patchKeys.length ? ` (el patch traía: ${[...patchKeys, ...patchContentKeys].join(', ')} y el servidor no lo reconoció)` : ''}. Pídelo de nuevo señalando el elemento, o dime qué sección exacta quieres tocar.`
     }
 
+    // cada turno que cambia el documento deja la versión anterior restaurable
+    if (Object.keys(updates).length) await snapshotQuote(quote, 'AI', 'ai', message.slice(0, 100))
     const [updated] = await Promise.all([
       Object.keys(updates).length
         ? quoteDb().update({ where: { id: quoteId }, data: updates })

@@ -210,6 +210,10 @@ export function CotizadorList() {
   const [clientName, setClientName] = useState('')
   const [sector, setSector] = useState('')
   const [template, setTemplate] = useState('SOLUCIONES')
+  // plantillas propias (cotizaciones guardadas como punto de partida)
+  const [ownTemplates, setOwnTemplates] = useState<Array<{ id: string; name: string; description?: string | null; template: string; updatedAt: string }>>([])
+  const [fromTemplateId, setFromTemplateId] = useState('')
+  useEffect(() => { quotesApi.templates.list().then((p) => setOwnTemplates(p.templates || [])).catch(() => undefined) }, [])
   const [copied, setCopied] = useState('')
 
   const load = useCallback(async () => {
@@ -224,7 +228,9 @@ export function CotizadorList() {
     if (!clientName.trim()) return
     setCreating(true); setError('')
     try {
-      const payload = template === 'DOCUMENTO'
+      const payload = fromTemplateId
+        ? await quotesApi.create({ clientName: clientName.trim(), sector: sector.trim() || undefined, fromTemplateId })
+        : template === 'DOCUMENTO'
         ? await quotesApi.create({ clientName: clientName.trim(), sector: sector.trim() || undefined, documentUrl: '' })
         : await quotesApi.create({ clientName: clientName.trim(), sector: sector.trim() || undefined, template })
       navigate(`/ecosistema/cotizador/${payload.quote.id}`)
@@ -293,6 +299,25 @@ export function CotizadorList() {
             ))}
           </div>
           <p className="mb-3 text-[12px] text-slate-500">{TEMPLATE_DESC[template]}</p>
+          {ownTemplates.length > 0 && (
+            <div className="mb-3 rounded-lg border border-indigo-100 bg-indigo-50/40 p-2.5">
+              <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-wide text-indigo-500">O parte de una plantilla propia</div>
+              <div className="flex flex-wrap gap-1.5">
+                <button onClick={() => setFromTemplateId('')} className={`rounded-md border px-2.5 py-1 text-[12px] font-semibold ${!fromTemplateId ? 'border-indigo-500 bg-white text-indigo-700' : 'border-slate-200 bg-white text-slate-500'}`}>Ninguna</button>
+                {ownTemplates.map((t) => (
+                  <span key={t.id} className="inline-flex items-center">
+                    <button onClick={() => setFromTemplateId(t.id)} title={t.description || TEMPLATE_LABEL[t.template] || t.template}
+                      className={`rounded-l-md border px-2.5 py-1 text-[12px] font-semibold ${fromTemplateId === t.id ? 'border-indigo-500 bg-white text-indigo-700' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>
+                      {t.name}
+                    </button>
+                    <button onClick={async () => { if (confirm(`¿Eliminar la plantilla «${t.name}»?`)) { try { await quotesApi.templates.remove(t.id); setOwnTemplates((prev) => prev.filter((x) => x.id !== t.id)); if (fromTemplateId === t.id) setFromTemplateId('') } catch (e) { setError((e as Error).message) } } }}
+                      className="rounded-r-md border border-l-0 border-slate-200 bg-white px-1.5 py-1 text-[12px] text-slate-300 hover:text-rose-600" title="Eliminar plantilla">×</button>
+                  </span>
+                ))}
+              </div>
+              {fromTemplateId && <p className="mt-1.5 text-[11.5px] text-indigo-700">La cotización nueva copia las páginas, líneas y ajustes de la plantilla; la línea de servicio la define la plantilla.</p>}
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-2">
           <input
             value={clientName} onChange={(e) => setClientName(e.target.value)}

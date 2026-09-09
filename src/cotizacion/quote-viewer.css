@@ -1173,3 +1173,19 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-side-hist { display: inline-flex; gap: 3px; }
 .qv-side-hist button { border: 1px solid #e2e8f0; background: #fff; border-radius: 6px; width: 24px; height: 22px; cursor: pointer; color: #475569; font-size: 13px; line-height: 1; }
 .qv-side-hist button:disabled { opacity: .3; cursor: default; }
+
+/* ── Vencimiento, borrador local y modo impresión en servidor ─────────── */
+.cv-expiry { margin: 14px 0 0; font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #9fb0d8; }
+.cv-expiry.is-expired { color: #f3b8b8; }
+.cv-expiry-days { color: #d9a441; }
+.qv-expired-banner { position: sticky; top: 0; z-index: 30; background: #7f1d1d; color: #fff; text-align: center; font: 600 12.5px/1.5 Inter, system-ui, sans-serif; padding: 8px 14px; }
+.qv-draft-offer { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 80; display: flex; align-items: center; gap: 8px; background: #fff7ed; border: 1px solid #fdba74; color: #7c2d12; border-radius: 10px; padding: 8px 12px; font: 12.5px Inter, system-ui, sans-serif; box-shadow: 0 10px 30px rgba(15, 23, 42, .2); }
+.qv-draft-offer button { border: 1px solid #cbd5e1; background: #fff; border-radius: 7px; padding: 5px 10px; font-weight: 700; cursor: pointer; }
+.qv-draft-offer button.primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.qv.is-print .qv-bar, .qv.is-print .qv-preview-flag, .qv.is-print .qv-presets, .qv.is-print .qv-livehint { display: none !important; }
+@media print { .qv-expired-banner, .qv-draft-offer { display: none !important; } }
+.qv-versions { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin: 6px 0 12px; }
+.qv-version { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12.5px; }
+.qv-version button { border: 1px solid #cbd5e1; background: #fff; border-radius: 7px; padding: 5px 10px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.qv-version button:hover { border-color: #4f46e5; color: #3730a3; }
+.qv-version-label { font-size: 11.5px; color: #64748b; }

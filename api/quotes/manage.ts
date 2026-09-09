@@ -30,6 +30,29 @@ type VercelResponse = any
 const db = () => (prisma as any).quote
 const recipientDb = () => (prisma as any).quoteRecipient
 const eventDb = () => (prisma as any).quoteEvent
+const versionDb = () => (prisma as any).quoteVersion
+const templateDb = () => (prisma as any).quoteTemplate
+
+/** Versiones que se conservan por cotización; las más antiguas se van borrando. */
+const MAX_VERSIONS = 60
+
+/**
+ * Foto de la cotización ANTES de un cambio, para poder volver a ella. Se llama
+ * desde el guardado del editor, la edición por referencia, la conversión a
+ * páginas, la restauración y el turno de la IA (api/quotes/chat.ts).
+ */
+export async function snapshotQuote(quote: any, reason: string, userId?: string, label?: string) {
+  try {
+    await versionDb().create({
+      data: { quoteId: quote.id, reason, label: label || null, title: quote.title, content: quote.content ?? {}, pricing: quote.pricing ?? {}, createdBy: userId || null },
+    })
+    const old = await versionDb().findMany({ where: { quoteId: quote.id }, orderBy: { createdAt: 'desc' }, skip: MAX_VERSIONS, select: { id: true } })
+    if (old.length) await versionDb().deleteMany({ where: { id: { in: old.map((v: any) => v.id) } } })
+  } catch (error) {
+    // sin tabla de versiones aún: el cambio sigue adelante
+    console.error('quotes/manage: no se pudo guardar la versión', error)
+  }
+}
 
 const str = (v: unknown, max = 400) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
 
@@ -184,6 +207,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ ok: true, quote })
       }
 
+      // Desde una plantilla propia: copia contenido, líneas, moneda y línea de servicio.
+      const fromTemplateId = str(body.fromTemplateId, 40)
+      if (fromTemplateId) {
+        const tpl = await templateDb().findUnique({ where: { id: fromTemplateId } })
+        if (!tpl) return res.status(404).json({ ok: false, error: 'Plantilla no encontrada' })
+        const tplKey = normalizeTemplate(tpl.template)
+        const tplItems: QuoteItem[] = Array.isArray(tpl.pricing?.items) ? tpl.pricing.items : []
+        const p = await priced(tplItems, tpl.discountScale, tplKey)
+        const content = structuredClone(tpl.content ?? emptyContent())
+        delete content.email
+        const quote = await db().create({
+          data: {
+            publicId: newPublicId(),
+            ownerId: userId,
+            template: tplKey,
+            clientName,
+            clientContact: str(body.clientContact, 160) || null,
+            clientEmail: str(body.clientEmail, 200) || null,
+            sector: str(body.sector, 120) || null,
+            title: str(body.title, 200) || `${QUOTE_TEMPLATES[tplKey].titlePrefix} para ${clientName}`,
+            subtitle: str(body.subtitle, 400) || null,
+            currency: tpl.currency || 'COP',
+            content,
+            discountScale: tpl.discountScale ?? (QUOTE_TEMPLATES[tplKey].kind === 'MODULAR' ? DEFAULT_DISCOUNT_SCALE : FLAT_DISCOUNT_SCALE),
+            ...p,
+          },
+        })
+        return res.status(200).json({ ok: true, quote })
+      }
+
       const template = normalizeTemplate(body.template)
       const catalog = await loadCatalog(template)
       if (!catalog.length) {
@@ -253,8 +306,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         Object.assign(data, await priced(items, data.discountScale ?? quote.discountScale, normalizeTemplate(quote.template)))
       }
 
+      // el guardado completo del editor (contenido + líneas) deja una versión restaurable
+      if (data.content !== undefined && body.items !== undefined) await snapshotQuote(quote, 'EDITOR', userId, str(body.versionLabel, 120) || undefined)
       const updated = await db().update({ where: { id: quote.id }, data })
       return res.status(200).json({ ok: true, quote: updated })
+    }
+
+    // ── Versiones ──
+    if (op === 'versions') {
+      const quote = await own()
+      const rows = await versionDb().findMany({ where: { quoteId: quote.id }, orderBy: { createdAt: 'desc' }, take: MAX_VERSIONS, select: { id: true, reason: true, label: true, title: true, createdBy: true, createdAt: true } })
+      const userIds = [...new Set(rows.map((r: any) => r.createdBy).filter(Boolean))]
+      const users = userIds.length ? await (prisma as any).adminUser.findMany({ where: { id: { in: userIds } }, select: { id: true, displayName: true, username: true } }) : []
+      const nameBy = new Map(users.map((u: any) => [u.id, u.displayName || u.username]))
+      return res.status(200).json({ ok: true, versions: rows.map((r: any) => ({ ...r, createdByName: r.createdBy === 'ai' ? 'Asistente IA' : nameBy.get(r.createdBy) ?? null })) })
+    }
+
+    if (op === 'restore') {
+      const quote = await own()
+      const versionId = str(body.versionId, 40)
+      const version = await versionDb().findFirst({ where: { id: versionId, quoteId: quote.id } })
+      if (!version) return res.status(404).json({ ok: false, error: 'Versión no encontrada' })
+      await snapshotQuote(quote, 'RESTORE', userId, 'Antes de restaurar')
+      const items: QuoteItem[] = Array.isArray(version.pricing?.items) ? version.pricing.items : []
+      const p = items.length ? await priced(items, quote.discountScale, normalizeTemplate(quote.template)) : {}
+      const updated = await db().update({ where: { id: quote.id }, data: { title: version.title, content: version.content, ...p } })
+      return res.status(200).json({ ok: true, quote: updated })
+    }
+
+    // ── Plantillas propias ──
+    if (op === 'list-templates') {
+      const rows = await templateDb().findMany({ orderBy: { updatedAt: 'desc' }, take: 100, select: { id: true, name: true, description: true, template: true, currency: true, createdBy: true, createdAt: true, updatedAt: true } })
+      return res.status(200).json({ ok: true, templates: rows })
+    }
+
+    if (op === 'save-template') {
+      const quote = await own()
+      const name = str(body.name, 120)
+      if (!name) return res.status(400).json({ ok: false, error: 'Falta el nombre de la plantilla' })
+      const content = structuredClone(quote.content ?? {})
+      delete content.email
+      const tpl = await templateDb().create({
+        data: { name, description: str(body.description, 400) || null, template: quote.template || 'SOLUCIONES', currency: quote.currency, content, pricing: { items: quote.pricing?.items ?? [] }, discountScale: quote.discountScale ?? undefined, createdBy: userId },
+      })
+      return res.status(200).json({ ok: true, template: { id: tpl.id, name: tpl.name } })
+    }
+
+    if (op === 'delete-template') {
+      const id = str(body.templateId, 40)
+      const tpl = await templateDb().findUnique({ where: { id } })
+      if (!tpl) return res.status(404).json({ ok: false, error: 'Plantilla no encontrada' })
+      if (tpl.createdBy !== userId && !isAdmin) return res.status(403).json({ ok: false, error: 'Esta plantilla es de otro usuario' })
+      await templateDb().delete({ where: { id } })
+      return res.status(200).json({ ok: true })
     }
 
     // Esquema clásico → páginas libres (para el editor por páginas del visor).
@@ -265,6 +369,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const pages = legacyToPages(quote)
       if (!pages.length) return res.status(400).json({ ok: false, error: 'No hay contenido que convertir' })
+      await snapshotQuote(quote, 'PAGES', userId, 'Antes de pasar a páginas')
       const updated = await db().update({ where: { id: quote.id }, data: { content: { ...(quote.content as object), pages } } })
       return res.status(200).json({ ok: true, quote: updated, pagesCount: pages.length })
     }
@@ -278,6 +383,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!applied.length) return res.status(400).json({ ok: false, error: 'Ninguna referencia válida' })
       const data: Record<string, unknown> = { content, ...quoteData }
       if (items) Object.assign(data, await priced(items, quote.discountScale, normalizeTemplate(quote.template)))
+      await snapshotQuote(quote, 'FIELDS', userId)
       const updated = await db().update({ where: { id: quote.id }, data })
       return res.status(200).json({ ok: true, quote: updated, applied })
     }

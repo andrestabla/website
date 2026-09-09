@@ -33,6 +33,8 @@ type Dialog =
   | { kind: 'ai'; target: AddTarget }
   | { kind: 'gridSettings'; loc: Loc }
   | { kind: 'style'; loc: Loc }
+  | { kind: 'move'; loc: Loc }
+  | { kind: 'versions' }
   | null
 
 const parseLoc = (raw: string): Loc | null => {
@@ -157,6 +159,8 @@ export function EditorPanel(props: EditorProps) {
   const [saveModal, setSaveModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [converting, setConverting] = useState(false)
+  const [versions, setVersions] = useState<Array<{ id: string; reason: string; label?: string | null; title: string; createdByName?: string | null; createdAt: string }>>([])
+  const [versionsBusy, setVersionsBusy] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const imgTarget = useRef<string>('')
@@ -410,6 +414,46 @@ export function EditorPanel(props: EditorProps) {
     next[idx] = { ...next[idx], ...patch } as Block
     writeList(pi, bi, ci, next)
   }
+  /** Mueve un bloque a otra lista: nivel de página, celda de una cuadrícula u otra página. */
+  const moveTo = (loc: Loc, target: AddTarget) => {
+    const src = locate(loc)
+    const block = src.list[src.idx]
+    if (!block) return
+    if (block.type === 'grid' && target.ci !== undefined) { flash('Una cuadrícula no va dentro de otra'); return }
+    let next = pages.map((p) => ({ ...p, blocks: p.blocks.map((b) => (b.type === 'grid' ? { ...b, cells: (b as any).cells.map((c: Block[]) => [...c]) } : b)) }))
+    const getList = (pi: number, bi?: number, ci?: number): Block[] => (ci === undefined || bi === undefined ? next[pi].blocks : ((next[pi].blocks[bi] as any).cells[ci] as Block[]))
+    // quitar del origen
+    const srcList = getList(loc.pi, loc.ci !== undefined ? loc.bi : undefined, loc.ci)
+    srcList.splice(src.idx, 1)
+    // insertar en el destino (si es la misma lista y el destino está después, el índice baja uno)
+    const sameList = loc.pi === target.pi && (loc.ci === undefined ? target.ci === undefined : (target.ci === loc.ci && target.bi === loc.bi))
+    let at = target.after + 1
+    if (sameList && src.idx < at) at -= 1
+    const dstList = getList(target.pi, target.bi, target.ci)
+    dstList.splice(Math.min(at, dstList.length), 0, block)
+    next = next.map((p) => ({ ...p, blocks: [...p.blocks] }))
+    onPages(next)
+    setDialog(null)
+    setHover(null)
+  }
+  const loadVersions = async () => {
+    setVersionsBusy(true)
+    try {
+      const payload = await post('/api/quotes/manage', { op: 'versions', publicId })
+      setVersions(payload.versions || [])
+    } catch (e) { flash((e as Error).message) } finally { setVersionsBusy(false) }
+  }
+  const restoreVersion = async (id: string, when: string) => {
+    if (!confirm(`¿Restaurar la versión del ${when}? El estado actual queda guardado como otra versión.`)) return
+    setVersionsBusy(true)
+    try {
+      if (dirty) await onSave()
+      await post('/api/quotes/manage', { op: 'restore', publicId, versionId: id })
+      await onReload()
+      setDialog(null)
+      flash('Versión restaurada')
+    } catch (e) { flash(`No se restauró: ${(e as Error).message}`) } finally { setVersionsBusy(false) }
+  }
   const insertBlock = (target: AddTarget, fresh: Block) => {
     const list = [...listAt(target.pi, target.bi, target.ci)]
     list.splice(target.after + 1, 0, fresh)
@@ -530,6 +574,7 @@ export function EditorPanel(props: EditorProps) {
             <button className="primary" disabled={!dirty || saving} onClick={() => setSaveModal(true)}>{saving ? 'Guardando…' : 'Guardar cambios'}</button>
             <button onClick={() => onPreview(true)} title="Ver el documento limpio, tal como lo verá el cliente">Vista previa</button>
             <button disabled={!dirty} onClick={() => { if (confirm('¿Descartar los cambios sin guardar?')) void onDiscard() }}>Descartar</button>
+            <button onClick={() => { setDialog({ kind: 'versions' }); void loadVersions() }} title="Versiones guardadas de esta cotización">Historial</button>
           </div>
           <div className={`qv-side-state${dirty ? ' is-dirty' : ''}`}>
             <span>{dirty ? '● Cambios sin guardar' : '○ Todo guardado'}{status ? ` · ${status}` : ''}</span>
@@ -610,6 +655,7 @@ export function EditorPanel(props: EditorProps) {
           <button onClick={() => moveBlock(hover, -1)} title="Subir">↑</button>
           <button onClick={() => moveBlock(hover, 1)} title="Bajar">↓</button>
           <button onClick={() => duplicateBlock(hover)} title="Duplicar">⧉</button>
+          <button onClick={() => setDialog({ kind: 'move', loc: hover })} title="Mover a otra página, cuadrícula o celda">⇄</button>
           <button onClick={() => setAddMenu(hoverTarget)} title="Agregar bloque debajo">＋</button>
           <button className="danger" onClick={() => removeBlock(hover)} title="Eliminar">✕</button>
         </div>
@@ -673,6 +719,35 @@ export function EditorPanel(props: EditorProps) {
       )}
       {dialog?.kind === 'style' && (
         <StyleDialog block={blockAt(dialog.loc) as any} onClose={() => setDialog(null)} onSave={(patch) => { updateBlock(dialog.loc, patch as Partial<Block>); setDialog(null) }} />
+      )}
+      {dialog?.kind === 'move' && (
+        <MoveDialog pages={pages} loc={dialog.loc} onClose={() => setDialog(null)} onMove={(target) => moveTo(dialog.loc, target)} />
+      )}
+      {dialog?.kind === 'versions' && (
+        <div className="qv-modal-wrap" onClick={() => setDialog(null)}>
+          <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+            <h3>Historial de versiones</h3>
+            <p>Cada guardado, turno de la IA o restauración deja una versión. Restaurar vuelve el documento a ese punto y guarda el actual como otra versión.</p>
+            <div className="qv-versions">
+              {versionsBusy && versions.length === 0 && <p>Cargando…</p>}
+              {!versionsBusy && versions.length === 0 && <p>Todavía no hay versiones guardadas.</p>}
+              {versions.map((v) => {
+                const when = new Date(v.createdAt).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+                const reason: Record<string, string> = { EDITOR: 'Editor', AI: 'Asistente IA', FIELDS: 'Edición en sitio', PAGES: 'Paso a páginas', RESTORE: 'Restauración', TEMPLATE: 'Plantilla' }
+                return (
+                  <div className="qv-version" key={v.id}>
+                    <div>
+                      <b>{when}</b> · {reason[v.reason] || v.reason}{v.createdByName ? ` · ${v.createdByName}` : ''}
+                      {v.label && <div className="qv-version-label">{v.label}</div>}
+                    </div>
+                    <button disabled={versionsBusy} onClick={() => void restoreVersion(v.id, when)}>Restaurar</button>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="qv-modal-actions"><button onClick={() => setDialog(null)}>Cerrar</button></div>
+          </div>
+        </div>
       )}
       {dialog?.kind === 'ai' && (
         <AiDialog onClose={() => setDialog(null)} onAsk={(kind, prompt) => void askAiElement(dialog.target, kind, prompt)} />
@@ -797,6 +872,44 @@ function StyleDialog({ block, onSave, onClose }: { block: any; onSave: (patch: R
           <button onClick={onClose}>Cancelar</button>
           <button className="primary" onClick={apply}>Aplicar</button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function MoveDialog({ pages, loc, onMove, onClose }: { pages: Page[]; loc: Loc; onMove: (target: AddTarget) => void; onClose: () => void }) {
+  const [pi, setPi] = useState(loc.pi)
+  const page = pages[pi]
+  const options: Array<{ key: string; label: string; target: AddTarget }> = []
+  if (page) {
+    options.push({ key: 'top', label: 'Nivel de página · al inicio', target: { pi, after: -1 } })
+    page.blocks.forEach((b, bi) => {
+      const isSelf = pi === loc.pi && loc.ci === undefined && bi === loc.bi
+      if (!isSelf) options.push({ key: `b${bi}`, label: `Nivel de página · después del bloque ${bi + 1} (${BLOCK_LABEL[b.type] || b.type})`, target: { pi, after: bi } })
+      if (b.type === 'grid' && !(pi === loc.pi && loc.ci === undefined && bi === loc.bi)) {
+        const cells: Block[][] = (b as any).cells || []
+        cells.forEach((cell, ci) => options.push({ key: `g${bi}c${ci}`, label: `Cuadrícula (bloque ${bi + 1}) · celda ${ci + 1}${cell.length ? ` · al final de ${cell.length} elemento(s)` : ' · vacía'}`, target: { pi, bi, ci, after: cell.length - 1 } }))
+      }
+    })
+  }
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>Mover elemento</h3>
+        <label>Página</label>
+        <select value={pi} onChange={(e) => setPi(Number(e.target.value))}>
+          {pages.map((p, i) => <option key={p.id} value={i}>{p.num || '—'} · {p.title || p.id}</option>)}
+        </select>
+        <label>Destino</label>
+        <div className="qv-versions">
+          {options.map((o) => (
+            <div className="qv-version" key={o.key}>
+              <div>{o.label}</div>
+              <button onClick={() => onMove(o.target)}>Mover aquí</button>
+            </div>
+          ))}
+        </div>
+        <div className="qv-modal-actions"><button onClick={onClose}>Cancelar</button></div>
       </div>
     </div>
   )

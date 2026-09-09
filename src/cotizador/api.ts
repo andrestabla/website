@@ -1,5 +1,14 @@
 /** Cliente de la API del Cotizador (sesión por cookie del sitio). */
 
+export type QuoteTemplateRow = { id: string; name: string; description?: string | null; template: string; currency: string; createdBy?: string | null; updatedAt: string }
+export type QuoteVersionRow = { id: string; reason: string; label?: string | null; title: string; createdByName?: string | null; createdAt: string }
+
+/** Fecha límite de una propuesta: publicación (o última edición) más los días de validez. */
+export function expiresAt(publishedAt: string | null | undefined, updatedAt: string | undefined, validDays: number): Date {
+  const base = new Date(publishedAt || updatedAt || Date.now())
+  return new Date(base.getTime() + (Number(validDays) || 45) * 86_400_000)
+}
+
 export type QuoteListItem = {
   id: string
   publicId: string
@@ -79,8 +88,16 @@ async function post(path: string, body: Record<string, unknown>) {
 export const quotesApi = {
   list: () => post('/api/quotes/manage', { op: 'list' }),
   get: (quoteId: string) => post('/api/quotes/manage', { op: 'get', quoteId }),
-  create: (data: { clientName: string; sector?: string; template?: string; clientContact?: string; clientEmail?: string; documentUrl?: string; title?: string; total?: number }) =>
+  create: (data: { clientName: string; sector?: string; template?: string; clientContact?: string; clientEmail?: string; documentUrl?: string; title?: string; total?: number; fromTemplateId?: string }) =>
     post('/api/quotes/manage', { op: 'create', ...data }),
+  versions: (quoteId: string) => post('/api/quotes/manage', { op: 'versions', quoteId }),
+  restore: (quoteId: string, versionId: string) => post('/api/quotes/manage', { op: 'restore', quoteId, versionId }),
+  templates: {
+    list: () => post('/api/quotes/manage', { op: 'list-templates' }),
+    save: (quoteId: string, name: string, description?: string) => post('/api/quotes/manage', { op: 'save-template', quoteId, name, description }),
+    remove: (templateId: string) => post('/api/quotes/manage', { op: 'delete-template', templateId }),
+  },
+  pdfUrl: (publicId: string, recipientToken?: string) => `/api/quotes/pdf?id=${encodeURIComponent(publicId)}${recipientToken ? `&d=${encodeURIComponent(recipientToken)}` : ''}`,
   update: (quoteId: string, data: Record<string, unknown>) =>
     post('/api/quotes/manage', { op: 'update', quoteId, ...data }),
   publish: (quoteId: string) => post('/api/quotes/manage', { op: 'publish', quoteId }),
