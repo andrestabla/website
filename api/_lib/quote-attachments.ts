@@ -910,6 +910,25 @@ function sanitizeBlockInner(raw: any): PageBlock | null {
       if (Array.isArray(raw.colAlign)) out.colAlign = raw.colAlign.map((a: unknown) => (['left', 'center', 'right', 'justify'].includes(a as string) ? a : 'left'))
       if (TABLE_STYLES.has(raw.tableStyle)) out.tableStyle = raw.tableStyle
       if (STYLE_SIZES.has(raw.fontSize)) out.fontSize = raw.fontSize
+      // celdas combinadas: dentro de la tabla, sin solaparse, al menos 2 celdas
+      if (Array.isArray(raw.merges) && rows.length) {
+        const nCols = Math.max(headers.length, ...rows.map((r: string[]) => r.length))
+        const taken = new Set<string>()
+        const merges: Array<{ r: number; c: number; cs: number; rs: number }> = []
+        for (const m of raw.merges.slice(0, 40)) {
+          const r = num(m?.r, -1), c = num(m?.c, -1)
+          if (r < 0 || c < 0 || r >= rows.length || c >= nCols) continue
+          const cs = Math.max(1, Math.min(nCols - c, num(m?.cs, 1)))
+          const rs = Math.max(1, Math.min(rows.length - r, num(m?.rs, 1)))
+          if (cs === 1 && rs === 1) continue
+          const cells: string[] = []
+          for (let dr = 0; dr < rs; dr++) for (let dc = 0; dc < cs; dc++) cells.push(`${r + dr}:${c + dc}`)
+          if (cells.some((k) => taken.has(k))) continue
+          cells.forEach((k) => taken.add(k))
+          merges.push({ r, c, cs, rs })
+        }
+        if (merges.length) out.merges = merges
+      }
       return out
     }
     case 'cards': {

@@ -86,6 +86,18 @@ export function useFitPages(deps: unknown[] = []) {
 }
 
 export type Align = 'left' | 'center' | 'right' | 'justify'
+export type TableMerge = { r: number; c: number; cs: number; rs: number }
+
+/** Celdas tapadas por una combinación (no se pintan) y tamaño de cada origen. */
+export function mergeMap(merges: TableMerge[] | undefined) {
+  const covered = new Set<string>()
+  const origin = new Map<string, TableMerge>()
+  for (const m of merges || []) {
+    origin.set(`${m.r}:${m.c}`, m)
+    for (let dr = 0; dr < m.rs; dr++) for (let dc = 0; dc < m.cs; dc++) if (dr || dc) covered.add(`${m.r + dr}:${m.c + dc}`)
+  }
+  return { covered, origin }
+}
 
 /** Estilo visual editable de un bloque de texto. */
 export type BlockStyle = { size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'; color?: 'ink' | 'navy' | 'cyan' | 'gold' | 'muted' | 'white'; weight?: 'bold' | 'normal'; bg?: 'none' | 'soft' | 'cyan' | 'gold' | 'navy'; italic?: string | boolean; uppercase?: string | boolean }
@@ -122,7 +134,7 @@ export type DocBlock =
   | { type: 'list'; items: string[]; align?: Align; style?: BlockStyle; marker?: 'number' | 'check' }
   | { type: 'box'; title?: string; body: string; align?: Align; style?: BlockStyle }
   | { type: 'note'; text: string; align?: Align; style?: BlockStyle }
-  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[]; tableStyle?: 'default' | 'striped' | 'minimal' | 'navy' | 'compact'; fontSize?: 'xs' | 'sm' | 'md' }
+  | { type: 'table'; headers?: string[]; rows: string[][]; firstCol?: 'key' | 'plain'; colAlign?: Align[]; tableStyle?: 'default' | 'striped' | 'minimal' | 'navy' | 'compact'; fontSize?: 'xs' | 'sm' | 'md'; /** celdas combinadas: origen (fila r, columna c) que abarca cs columnas y rs filas */ merges?: TableMerge[] }
   | { type: 'cards'; cols?: 2 | 3; items: Array<{ tag?: string; title: string; body: string; foot?: string }> }
   | { type: 'phase'; id: string; name: string; when?: string; defs: Array<{ term: string; desc: string; strong?: boolean }> }
   | { type: 'img'; url: string; caption?: string; wide?: boolean }
@@ -335,7 +347,8 @@ export function DocBlockView({
     case 'note':
       return <p className={`qv-note qv-styled${styleClass(block.style)}`} style={al(block.align)} {...r('text')}>{rich(block.text)}</p>
 
-    case 'table':
+    case 'table': {
+      const { covered, origin } = mergeMap(block.merges)
       return (
         <div className="qv-tablewrap">
           <table className={`qv-table doc${block.tableStyle && block.tableStyle !== 'default' ? ` ts-${block.tableStyle}` : ''}${block.fontSize ? ` qs-size-${block.fontSize}` : ''}`}>
@@ -347,16 +360,22 @@ export function DocBlockView({
             <tbody>
               {block.rows.map((row, ri) => (
                 <tr key={ri}>
-                  {row.map((cell, ci) => (
-                    <td key={ci} style={al(block.colAlign?.[ci])} {...r(`rows.${ri}.${ci}`)}
-                      className={ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : undefined}>{rich(cell)}</td>
-                  ))}
+                  {row.map((cell, ci) => {
+                    if (covered.has(`${ri}:${ci}`)) return null
+                    const m = origin.get(`${ri}:${ci}`)
+                    return (
+                      <td key={ci} style={al(block.colAlign?.[ci])} {...r(`rows.${ri}.${ci}`)} data-cell={`${ri}:${ci}`}
+                        colSpan={m && m.cs > 1 ? m.cs : undefined} rowSpan={m && m.rs > 1 ? m.rs : undefined}
+                        className={[ci === 0 && block.firstCol !== 'plain' ? 'tb-k' : '', m ? 'tb-merged' : ''].filter(Boolean).join(' ') || undefined}>{rich(cell)}</td>
+                    )
+                  })}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )
+    }
 
     case 'cards':
       return (

@@ -145,12 +145,24 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
           })),
         }))
       }
+      // celdas combinadas: las tapadas se omiten y el origen lleva columnSpan / rowSpan
+      const covered = new Set<string>()
+      const origin = new Map<string, { cs: number; rs: number }>()
+      for (const m of (b.merges || []) as Array<{ r: number; c: number; cs: number; rs: number }>) {
+        origin.set(`${m.r}:${m.c}`, { cs: m.cs, rs: m.rs })
+        for (let dr = 0; dr < m.rs; dr++) for (let dc = 0; dc < m.cs; dc++) if (dr || dc) covered.add(`${m.r + dr}:${m.c + dc}`)
+      }
       rows.forEach((r, ri) => trs.push(new TableRow({
-        children: Array.from({ length: cols }, (_, ci) => new TableCell({
-          shading: ri % 2 === 0 ? { type: ShadingType.CLEAR, fill: PAPER } : undefined,
-          margins: { top: 90, bottom: 90, left: 130, right: 130 },
-          children: [cellPara(plain(r[ci] || ''), ci === 0 && b.firstCol !== 'plain' ? { bold: true } : {})],
-        })),
+        children: Array.from({ length: cols }, (_, ci) => ci).filter((ci) => !covered.has(`${ri}:${ci}`)).map((ci) => {
+          const m = origin.get(`${ri}:${ci}`)
+          return new TableCell({
+            shading: ri % 2 === 0 ? { type: ShadingType.CLEAR, fill: PAPER } : undefined,
+            margins: { top: 90, bottom: 90, left: 130, right: 130 },
+            ...(m && m.cs > 1 ? { columnSpan: m.cs } : {}),
+            ...(m && m.rs > 1 ? { rowSpan: m.rs } : {}),
+            children: [cellPara(plain(r[ci] || ''), ci === 0 && b.firstCol !== 'plain' ? { bold: true } : {})],
+          })
+        }),
       })))
       out.push(new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },

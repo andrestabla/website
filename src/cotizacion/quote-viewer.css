@@ -1359,3 +1359,6 @@ body.qv-has-side .qv-bar { left: 300px; }
 .qv-mode-select .qv-page-add, .qv-mode-edit .qv-page-add { display: block; }
 .qv-sechead:has(.qv-page-add-top) { grid-template-columns: auto 1fr auto; }
 @media print { .qv-page-add { display: none !important; } }
+/* celdas combinadas */
+.qv-table.doc td.tb-merged { vertical-align: middle; }
+.qv-mode-select .qv-table.doc td.tb-merged, .qv-mode-edit .qv-table.doc td.tb-merged { box-shadow: inset 0 0 0 1px rgba(79, 70, 229, .35); }

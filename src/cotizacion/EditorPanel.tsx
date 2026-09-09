@@ -19,7 +19,7 @@ import { BLOCK_TYPES, EMPTY, type Page, type Block } from '../cotizador/PagesEdi
 import { IconPicker } from './IconPicker'
 import { PAGE_TEMPLATES, templatesByCategory } from './pageTemplates'
 import { useDialogs } from '../cotizador/ui/dialogs'
-import { DIAGRAM_LABELS, type DiagramKind, normalizeMarks } from './DocPages'
+import { DIAGRAM_LABELS, type DiagramKind, type TableMerge, normalizeMarks } from './DocPages'
 
 type Mode = 'select' | 'edit'
 type Focus = { ref: string; label: string; text: string }
@@ -1142,6 +1142,8 @@ function Sel({ n, value, set, label }: { n: number; value: number; set: (v: numb
 function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patch: Record<string, unknown>) => void; onClose: () => void }) {
   const [idx, setIdx] = useState(0)
   const [colIdx, setColIdx] = useState(0)
+  const [spanC, setSpanC] = useState(2)
+  const [spanR, setSpanR] = useState(1)
   if (!block) return null
   const t = block.type
   const tone = (i: number) => (['cyan', 'deep', 'gold'] as const)[i % 3]
@@ -1169,6 +1171,41 @@ function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patc
           <button onClick={() => onChange({ headers: headers.length ? [] : Array.from({ length: cols }, (_, i) => `Columna ${i + 1}`) })}>{headers.length ? 'Quitar encabezados' : 'Agregar encabezados'}</button>
           <button onClick={() => onChange({ rows: [Array.from({ length: cols }, () => 'Celda'), ...rows] })}>＋ Fila al inicio</button>
         </div>
+        <label>Combinar celdas · desde la fila {idx + 1}, columna {colIdx + 1} (elegidas arriba)</label>
+        <div className="row">
+          <span style={{ fontSize: 11.5 }}>Abarca</span>
+          <input type="number" min={1} max={Math.max(1, cols - colIdx)} value={spanC} onChange={(e) => setSpanC(Math.max(1, Math.min(cols - colIdx, Number(e.target.value) || 1)))} style={{ width: 56 }} title="Columnas" />
+          <span style={{ fontSize: 11.5 }}>col ×</span>
+          <input type="number" min={1} max={Math.max(1, rows.length - idx)} value={spanR} onChange={(e) => setSpanR(Math.max(1, Math.min(rows.length - idx, Number(e.target.value) || 1)))} style={{ width: 56 }} title="Filas" />
+          <span style={{ fontSize: 11.5 }}>filas</span>
+          <button disabled={spanC <= 1 && spanR <= 1} onClick={() => {
+            const merges: TableMerge[] = (block.merges || []).filter((m: TableMerge) => !(m.r < idx + spanR && idx < m.r + m.rs && m.c < colIdx + spanC && colIdx < m.c + m.cs))
+            // el texto de las celdas tapadas se suma al origen para no perderlo
+            const next = rows.map((r) => [...r])
+            const extra: string[] = []
+            for (let dr = 0; dr < spanR; dr++) for (let dc = 0; dc < spanC; dc++) {
+              if (!dr && !dc) continue
+              const v = next[idx + dr]?.[colIdx + dc]
+              if (v && v.trim()) extra.push(v.trim())
+              if (next[idx + dr]) next[idx + dr][colIdx + dc] = ''
+            }
+            if (extra.length) next[idx][colIdx] = [next[idx][colIdx], ...extra].filter(Boolean).join(' ')
+            onChange({ rows: next, merges: [...merges, { r: idx, c: colIdx, cs: spanC, rs: spanR }] })
+          }}>Combinar</button>
+        </div>
+        {(block.merges || []).length > 0 && (
+          <>
+            <label>Celdas combinadas</label>
+            <div className="qv-versions">
+              {(block.merges as TableMerge[]).map((m, i) => (
+                <div className="qv-version" key={i}>
+                  <span style={{ flex: 1, fontSize: 11.5 }}>Fila {m.r + 1}, columna {m.c + 1} · {m.cs} col × {m.rs} filas</span>
+                  <button onClick={() => onChange({ merges: (block.merges as TableMerge[]).filter((_, k) => k !== i) })}>Separar</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </>
     )
   } else if (t === 'gantt') {
