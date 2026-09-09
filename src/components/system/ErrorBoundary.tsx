@@ -2,7 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { isChunkLoadError, reloadOnceForChunkError } from '../../lib/lazyWithRetry'
 
 type Props = { children: ReactNode }
-type State = { hasError: boolean; isChunk: boolean }
+type State = { hasError: boolean; isChunk: boolean; message?: string }
 
 /**
  * Red de seguridad global: captura errores de render (incluidos fallos de carga de
@@ -16,7 +16,7 @@ export class ErrorBoundary extends Component<Props, State> {
   static getDerivedStateFromError(error: unknown): State {
     const isChunk = isChunkLoadError(error)
     if (isChunk) reloadOnceForChunkError()
-    return { hasError: true, isChunk }
+    return { hasError: true, isChunk, message: error instanceof Error ? `${error.name}: ${error.message}` : String(error) }
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo) {
@@ -36,6 +36,9 @@ export class ErrorBoundary extends Component<Props, State> {
               ? 'Se detectó una versión nueva del sitio. Recargando para continuar.'
               : 'Ocurrió un error inesperado. Recarga la página para continuar.'}
           </p>
+          {!this.state.isChunk && this.state.message && (
+            <p className="text-[11px] font-mono text-slate-400 mb-6 break-words">{this.state.message}</p>
+          )}
           <button
             onClick={() => window.location.reload()}
             className="h-11 px-6 bg-brand-primary text-white text-xs font-black uppercase tracking-[0.25em] hover:bg-blue-800 transition-colors"

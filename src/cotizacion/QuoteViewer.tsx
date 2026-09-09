@@ -337,6 +337,13 @@ export default function QuoteViewer() {
     history.current.push({ quote, items })
     setQuote(next.quote); setItems(next.items); syncHist()
   }, [quote, items])
+  /**
+   * Tras editar en sitio, el DOM del campo lo cambió el navegador (o el envoltorio
+   * de un fragmento) y ya no coincide con lo que React cree tener: reconciliarlo
+   * termina en «removeChild» sobre nodos que no existen. Se remonta la página
+   * tocada (o todo el documento) para que React vuelva a pintar desde los datos.
+   */
+  const [epoch, setEpoch] = useState<{ all: number; pages: Record<number, number> }>({ all: 0, pages: {} })
   const onApplyRef = useCallback((ref: string, value: string) => {
     if (!quote) return false
     const next = applyRef({ title: quote.title, subtitle: quote.subtitle ?? null, clientName: quote.clientName, sector: quote.sector ?? null, content: quote.content, items }, ref, value)
@@ -344,6 +351,8 @@ export default function QuoteViewer() {
     remember()
     setQuote({ ...quote, title: next.title, subtitle: next.subtitle, clientName: next.clientName, sector: next.sector, content: next.content })
     setItems(next.items)
+    const m = /^content\.pages\.(\d+)\./.exec(ref)
+    setEpoch((e) => (m ? { ...e, pages: { ...e.pages, [Number(m[1])]: (e.pages[Number(m[1])] || 0) + 1 } } : { ...e, all: e.all + 1 }))
     return true
   }, [quote, items, remember])
   const onPages = useCallback((pages: DocPage[]) => { remember(); setQuote((q) => (q ? { ...q, content: { ...q.content, pages } } : q)) }, [remember])
@@ -554,7 +563,7 @@ export default function QuoteViewer() {
       </div>
 
       {/* Portada */}
-      <header className="qv-cover" data-qsec="portada">
+      <header className="qv-cover" data-qsec="portada" key={`h${epoch.all}`}>
         <div className="qv-page">
           <div className="cv-top">
             <span className="brandmark">
@@ -600,10 +609,10 @@ export default function QuoteViewer() {
         </div>
       </header>
 
-      <main className="qv-page">
+      <main className="qv-page" key={`m${epoch.all}`}>
         {docPages.length > 0 ? (
           docPages.map((page, pi) => (
-            <DocPageView key={page.id} page={page} client={quote.clientName}
+            <DocPageView key={`${page.id}:${epoch.pages[pi] || 0}`} page={page} client={quote.clientName}
               items={items} totals={totals} money={money} pages={docPages}
               pageIndex={editor ? pi : undefined}
               headLeft={labels.rheadLeft} headRight={labels.rheadRight} pageFooter={pageFooter}
@@ -1157,7 +1166,7 @@ export default function QuoteViewer() {
 
       {/* Cierre */}
       {show('cierre') && (
-      <footer className="qv-back" data-qsec="cierre">
+      <footer className="qv-back" data-qsec="cierre" key={`f${epoch.all}`}>
         <div className="qv-page">
           <div className="bk-top">
             <b {...lab('brandName')}>{L('brandName', 'Algoritmo')}</b><img src={brandLogo} alt="Algoritmo T" {...IMG('content.brand.logo')} />

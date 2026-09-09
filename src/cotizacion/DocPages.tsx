@@ -204,7 +204,9 @@ function href(url: string): string {
 }
 
 export function rich(text: string): React.ReactNode {
-  const parts = String(text || '').split(RICH)
+  // marcas de fragmento duplicadas por una edición antigua: {{a}}{{a}}x{{/}}{{/}} → {{a}}x{{/}}
+  const clean = String(text || '').replace(/(\{\{[a-z0-9 -]+\}\})\1([\s\S]*?)\{\{\/\}\}\{\{\/\}\}/g, '$1$2{{/}}')
+  const parts = clean.split(RICH)
   return parts.map((part, i) => {
     if (!part) return null
     // fragmento con estilo propio (color, tamaño, peso, fondo): se anida con el resto de marcas
