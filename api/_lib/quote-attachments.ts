@@ -549,7 +549,8 @@ function blockWeight(b: PageBlock): number {
       return 200
     case 'diagram': {
       const n = Array.isArray(b.items) ? b.items.length : 0
-      const kids = Array.isArray(b.items) ? b.items.reduce((s: number, it: any) => s + (Array.isArray(it?.children) ? it.children.length : 0), 0) : 0
+      const countKids = (list: any[]): number => (Array.isArray(list) ? list.reduce((s: number, c: any) => s + 1 + (c && typeof c === 'object' ? countKids(c.children) : 0), 0) : 0)
+      const kids = Array.isArray(b.items) ? b.items.reduce((s: number, it: any) => s + countKids(it?.children), 0) : 0
       return 500 + n * 70 + kids * 40
     }
     default:
@@ -821,6 +822,20 @@ export const PAGE_BLOCK_TYPES = new Set([
   'grid', 'icon', 'button', 'htimeline', 'vtimeline', 'signature', 'sechead', 'diagram',
 ])
 export const DIAGRAM_KINDS = new Set(['process', 'cycle', 'pyramid', 'matrix', 'mindmap', 'conceptmap', 'synoptic', 'causeeffect'])
+/** Hijos de un elemento de esquema: texto plano o nodo con sus propios hijos, hasta cuatro niveles. */
+function diagramKids(raw: unknown, depth = 1): Array<string | { label: string; children: unknown[] }> {
+  if (!Array.isArray(raw) || depth > 4) return []
+  return raw.slice(0, 10).map((c: any) => {
+    if (typeof c === 'string') return s(c, 160)
+    if (c && typeof c === 'object') {
+      const label = s(c.label, 160)
+      if (!label) return ''
+      const children = diagramKids(c.children, depth + 1)
+      return children.length ? { label, children } : label
+    }
+    return ''
+  }).filter(Boolean) as Array<string | { label: string; children: unknown[] }>
+}
 const ICON_COLORS = new Set(['navy', 'cyan', 'gold', 'muted'])
 const STYLE_SIZES = new Set(['xs', 'sm', 'md', 'lg', 'xl', 'xxl'])
 const STYLE_COLORS = new Set(['ink', 'navy', 'cyan', 'gold', 'muted', 'white'])
@@ -939,7 +954,7 @@ export function sanitizeBlock(raw: any): PageBlock | null {
         ? raw.items.slice(0, 12).map((it: any) => ({
             label: s(it?.label, 160),
             desc: s(it?.desc, 300),
-            children: sl(it?.children, 8, 160),
+            children: diagramKids(it?.children),
             tone: tone(it?.tone),
           })).filter((it: any) => it.label)
         : []

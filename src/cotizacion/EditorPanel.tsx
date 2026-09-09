@@ -1059,6 +1059,32 @@ function DiagramDialog({ onPick, onClose }: { onPick: (kind: DiagramKind) => voi
   )
 }
 
+type Kid = string | { label: string; children?: Kid[] }
+const kidLabel = (k: Kid) => (typeof k === 'string' ? k : k.label)
+const kidKids = (k: Kid): Kid[] => (typeof k === 'string' ? [] : k.children || [])
+
+/** Árbol de subniveles de un elemento de esquema: agregar o quitar niveles por ítem, por separado. */
+function KidTree({ list, depth, onChange }: { list: Kid[]; depth: number; onChange: (next: Kid[]) => void }) {
+  const setAt = (k: number, value: Kid) => onChange(list.map((c, i) => (i === k ? value : c)))
+  return (
+    <div className="qv-kidtree" style={{ marginLeft: depth > 1 ? 14 : 0 }}>
+      {list.map((c, k) => (
+        <div key={k} className="qv-kid">
+          <div className="qv-kid-row">
+            <span className="qv-kid-label" title={kidLabel(c)}>{'·'.repeat(depth)} {kidLabel(c).slice(0, 40) || '(sin texto)'}</span>
+            {depth < 4 && <button onClick={() => setAt(k, { label: kidLabel(c), children: [...kidKids(c), 'Nuevo subnivel'] })} title="Agregar un subnivel a este ítem">＋ subnivel</button>}
+            <button onClick={() => onChange(list.filter((_, i) => i !== k))} title="Quitar este ítem y sus subniveles">✕</button>
+          </div>
+          {kidKids(c).length > 0 && (
+            <KidTree list={kidKids(c)} depth={depth + 1} onChange={(children) => setAt(k, children.length ? { label: kidLabel(c), children } : kidLabel(c))} />
+          )}
+        </div>
+      ))}
+      <button className="qv-kid-add" onClick={() => onChange([...list, depth === 1 ? 'Nuevo detalle' : 'Nuevo subnivel'])}>＋ {depth === 1 ? 'Detalle' : 'Ítem en este nivel'}</button>
+    </div>
+  )
+}
+
 /** Selector de índice (fila, tarjeta, hito…) para los diálogos de elementos. */
 function Sel({ n, value, set, label }: { n: number; value: number; set: (v: number) => void; label: string }) {
   return (
@@ -1251,10 +1277,15 @@ function ItemsDialog({ block, onChange, onClose }: { block: any; onChange: (patc
           <select value={items[idx]?.tone || 'cyan'} onChange={(e) => onChange({ items: items.map((x, i) => (i === idx ? { ...x, tone: e.target.value } : x)) })}><option value="cyan">Cian</option><option value="deep">Profundo</option><option value="gold">Dorado</option></select>
         </div>
         {withChildren && (
-          <div className="row">
-            <button onClick={() => onChange({ items: items.map((x, i) => (i === idx ? { ...x, children: [...(x.children || []), 'Nuevo detalle'] } : x)) })}>＋ Detalle al elemento {idx + 1}</button>
-            <button disabled={!(items[idx]?.children?.length)} onClick={() => onChange({ items: items.map((x, i) => (i === idx ? { ...x, children: (x.children || []).slice(0, -1) } : x)) })}>− Último detalle</button>
-          </div>
+          <>
+            <label>Jerarquía del elemento {idx + 1} · «{String(items[idx]?.label || '').slice(0, 30)}»</label>
+            <p style={{ margin: '0 0 6px', fontSize: 11.5, color: '#64748b' }}>Cada ítem puede tener sus propios subniveles (hasta cuatro). Los textos se editan en la página.</p>
+            <KidTree
+              list={items[idx]?.children || []}
+              depth={1}
+              onChange={(children) => onChange({ items: items.map((x, i) => (i === idx ? { ...x, children } : x)) })}
+            />
+          </>
         )}
         <div className="row">
           <button disabled={idx === 0} onClick={() => { const n = [...items]; [n[idx - 1], n[idx]] = [n[idx], n[idx - 1]]; onChange({ items: n }); setIdx(idx - 1) }}>↑ Subir</button>

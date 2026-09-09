@@ -148,7 +148,10 @@ export type DocBlock =
   /** Encabezado de sección numerada dentro de la página: permite dos numerales en una hoja. */
   | { type: 'sechead'; num?: string; kicker?: string; title: string }
   /** Esquema personalizable: proceso, ciclo, pirámide, matriz, mapa mental, mapa conceptual, cuadro sinóptico o causa-efecto. */
-  | { type: 'diagram'; kind: DiagramKind; title?: string; center?: string; items: Array<{ label: string; desc?: string; children?: string[]; tone?: 'cyan' | 'deep' | 'gold' }>; axes?: { x?: string[]; y?: string[] } }
+  | { type: 'diagram'; kind: DiagramKind; title?: string; center?: string; items: Array<{ label: string; desc?: string; children?: DiagramKid[]; tone?: 'cyan' | 'deep' | 'gold' }>; axes?: { x?: string[]; y?: string[] } }
+
+/** Hijo de un elemento de esquema: texto, o nodo con subniveles propios. */
+export type DiagramKid = string | { label: string; children?: DiagramKid[] }
 
 export type DiagramKind = 'process' | 'cycle' | 'pyramid' | 'matrix' | 'mindmap' | 'conceptmap' | 'synoptic' | 'causeeffect'
 export const DIAGRAM_LABELS: Record<DiagramKind, string> = {
@@ -650,6 +653,17 @@ export function DocBlockView({
 function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; r: (field: string) => { 'data-ref'?: string } }) {
   const items = block.items || []
   const toneCls = (t?: string) => `tone-${t || 'cyan'}`
+  /** Subniveles de un elemento, anidados; cada texto lleva su referencia. */
+  const kids = (list: DiagramKid[] | undefined, prefix: string): React.ReactNode =>
+    list && list.length ? (
+      <ul>
+        {list.map((c, k) => (
+          typeof c === 'string'
+            ? <li key={k} {...r(`${prefix}.${k}`)}>{rich(c)}</li>
+            : <li key={k}><span {...r(`${prefix}.${k}.label`)}>{rich(c.label)}</span>{kids(c.children, `${prefix}.${k}.children`)}</li>
+        ))}
+      </ul>
+    ) : null
   const title = (block.title || r('title')['data-ref']) ? <div className="qv-dg-title" {...r('title')}>{block.title || ''}</div> : null
 
   if (block.kind === 'process') {
@@ -745,9 +759,7 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
           {block.kind === 'conceptmap' && (it.desc || r('x')['data-ref']) && <em className="qv-dg-link" {...r(`items.${i}.desc`)}>{it.desc || ''}</em>}
           <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
         </div>
-        {(it.children || []).length > 0 && (
-          <ul>{(it.children || []).map((c, k) => <li key={k} {...r(`items.${i}.children.${k}`)}>{rich(c)}</li>)}</ul>
-        )}
+        {kids(it.children, `items.${i}.children`)}
       </div>
     )
     return (
@@ -774,7 +786,7 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
               {(it.children || []).length > 0 && (
                 <>
                   <div className="qv-dg-syn-brace small" aria-hidden="true" />
-                  <ul>{(it.children || []).map((c, k) => <li key={k} {...r(`items.${i}.children.${k}`)}>{rich(c)}</li>)}</ul>
+                  {kids(it.children, `items.${i}.children`)}
                 </>
               )}
             </div>
@@ -790,7 +802,7 @@ function Diagram({ block, r }: { block: Extract<DocBlock, { type: 'diagram' }>; 
   const bone = (it: (typeof items)[number], i: number) => (
     <div className={`qv-dg-bone ${toneCls(it.tone)}`} key={i}>
       <b {...r(`items.${i}.label`)}>{rich(it.label)}</b>
-      <ul>{(it.children || []).map((c, k) => <li key={k} {...r(`items.${i}.children.${k}`)}>{rich(c)}</li>)}</ul>
+      {kids(it.children, `items.${i}.children`)}
     </div>
   )
   return (
