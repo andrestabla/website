@@ -17,7 +17,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === 'GET') {
       if (req.query?.history === '1') {
-        if (!requireAdminSession(req, res)) return
+        res.setHeader('Cache-Control', 'private, no-store')
+        if (!await requireAdminSession(req, res)) return
         const section = typeof req.query?.section === 'string' ? req.query.section : undefined
         const limit = Math.min(Math.max(Number(req.query?.limit || 20), 1), 100)
         const where = {
@@ -39,6 +40,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ ok: true, versions, audits })
       }
 
+      // El panel de administracion pide ?fresh=1 para no editar sobre una copia
+      // del CDN. El sitio publico se sirve cacheado: sin esto, cada visita
+      // ejecutaba la funcion y consultaba la base para devolver ~122 KB de JSON.
+      //
+      // s-maxage=5 sin stale-while-revalidate: lo que se guarda en el panel sale
+      // publicado como mucho 5 s despues. La ventana sigue colapsando las rafagas
+      // (todas las visitas de esos 5 s cuestan una sola consulta), que es de donde
+      // venia casi todo el ahorro. Con SWR el CDN podia servir una copia vieja
+      // mucho despues de caducar, y eso es justo lo que no queremos al editar.
+      if (req.query?.fresh === '1') {
+        res.setHeader('Cache-Control', 'private, no-store')
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=5')
+      }
+
       const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: SNAPSHOT_ID } })
       if (!snapshot) {
         const data = getDefaultCmsSnapshot()
@@ -49,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'PUT') {
-      const session = requireAdminSession(req, res)
+      const session = await requireAdminSession(req, res)
       if (!session) return
       const body = parseJsonBody(req)
       const data = sanitizeCmsSnapshot(body)
@@ -99,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
-      const session = requireAdminSession(req, res)
+      const session = await requireAdminSession(req, res)
       if (!session) return
       const body = parseJsonBody(req)
       if (body?.action !== 'rollback') {

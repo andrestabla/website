@@ -33,7 +33,12 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;500;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <!-- La tipografia real del sitio es Space Grotesk (design.fontBody/fontDisplay
+         en el CMS) y CMSContext la trata como "built-in", es decir, da por hecho
+         que se carga aqui. Antes se pedian Inter y Playfair Display, que no se
+         referencian en ningun sitio, mientras Space Grotesk no se descargaba nunca. -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap">
   </head>
   <body>
     <div id="root"></div>
