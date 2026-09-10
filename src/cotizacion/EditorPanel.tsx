@@ -37,6 +37,7 @@ type Dialog =
   | { kind: 'grid'; target: AddTarget }
   | { kind: 'img'; target: AddTarget }
   | { kind: 'imgReplace'; ref: string }
+  | { kind: 'pageTpl'; pi: number }
   | { kind: 'icon'; target?: AddTarget; loc?: Loc }
   | { kind: 'button'; target?: AddTarget; loc?: Loc }
   | { kind: 'ai'; target: AddTarget }
@@ -166,7 +167,7 @@ export type EditorProps = {
 export function EditorPanel(props: EditorProps) {
   const { publicId, pages, sections, dirty, preview, onPreview, onApplyRef, onPages, onSections, onSave, onDiscard, onReload, onUndo, onRedo, canUndo, canRedo } = props
   const [mode, setMode] = useState<Mode>('edit')
-  const { confirm, prompt, alert, dialogs } = useDialogs()
+  const { confirm, alert, dialogs } = useDialogs()
   const [focus, setFocus] = useState<Focus | null>(null)
   const [draft, setDraft] = useState('')
   const [messages, setMessages] = useState<Msg[]>([])
@@ -182,10 +183,8 @@ export function EditorPanel(props: EditorProps) {
   const [pageMenu, setPageMenu] = useState<number | null>(null) // insertar plantilla después de la página N (-1 al inicio)
   /** Plantillas de página propias (guardadas desde cualquier cotización). */
   const [ownTpls, setOwnTpls] = useState<Array<{ id: string; name: string; description?: string | null; page: Page; mine: boolean }>>([])
-  useEffect(() => {
-    if (pageMenu === null) return
-    post('/api/quotes/manage', { op: 'list-page-templates' }).then((r) => setOwnTpls(Array.isArray(r.templates) ? r.templates : [])).catch(() => setOwnTpls([]))
-  }, [pageMenu])
+  const loadOwnTpls = useCallback(() => post('/api/quotes/manage', { op: 'list-page-templates' }).then((r) => setOwnTpls(Array.isArray(r.templates) ? r.templates : [])).catch(() => setOwnTpls([])), [])
+  useEffect(() => { if (pageMenu !== null) void loadOwnTpls() }, [pageMenu, loadOwnTpls])
   const [saveModal, setSaveModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [converting, setConverting] = useState(false)
@@ -593,17 +592,25 @@ export function EditorPanel(props: EditorProps) {
     scrollToPage(copy.id)
   }
   /** Guarda una página (título, antetítulo y bloques) como plantilla propia para reutilizarla en otra cotización. */
-  const savePageTemplate = async (pi: number) => {
+  const savePageTemplate = (pi: number) => { if (pages[pi]) { void loadOwnTpls(); setDialog({ kind: 'pageTpl', pi }) } }
+  /** Crea una plantilla nueva con la página, o reemplaza el contenido de una existente. */
+  const commitPageTemplate = async (pi: number, target: { mode: 'new'; name: string; description: string } | { mode: 'update'; id: string; name: string; description: string }) => {
     const pg = pages[pi]
     if (!pg) return
-    const name = await prompt('Nombre de la plantilla de página', pg.title || pg.id, { title: 'Guardar página como plantilla', okLabel: 'Guardar' })
-    if (!name?.trim()) return
     try {
-      await post('/api/quotes/manage', { op: 'save-page-template', name: name.trim(), page: pg })
-      flash('Plantilla guardada · disponible en «＋pág» de cualquier cotización')
+      if (target.mode === 'new') await post('/api/quotes/manage', { op: 'save-page-template', name: target.name, description: target.description, page: pg })
+      else await post('/api/quotes/manage', { op: 'update-page-template', templateId: target.id, name: target.name, description: target.description, page: pg })
+      setDialog(null)
+      flash(target.mode === 'new' ? 'Plantilla guardada · disponible en «＋pág» de cualquier cotización' : 'Plantilla actualizada con esta página')
+      void loadOwnTpls()
     } catch (e) {
       await alert((e as Error).message, { title: 'No se guardó la plantilla' })
     }
+  }
+  /** Renombra o cambia la descripción de una plantilla propia (desde el banco). */
+  const renameOwnTpl = async (id: string, name: string, description: string) => {
+    try { await post('/api/quotes/manage', { op: 'update-page-template', templateId: id, name, description }); void loadOwnTpls(); flash('Plantilla actualizada') }
+    catch (e) { await alert((e as Error).message, { title: 'No se actualizó' }) }
   }
   const addOwnPage = (id: string, after: number) => {
     const tpl = ownTpls.find((t) => t.id === id)
@@ -1081,7 +1088,10 @@ export function EditorPanel(props: EditorProps) {
         <button className="qv-side-fab" onClick={() => setSideOpen(true)} title="Mostrar páginas">☰ Páginas{dirty ? ' ●' : ''}</button>
       )}
 
-      {pageMenu !== null && <TemplateMenu own={ownTpls} onPickOwn={(id) => addOwnPage(id, pageMenu)} onDeleteOwn={(id) => void deleteOwnTpl(id)} onPick={(id) => addPage(id, pageMenu)} onClose={() => setPageMenu(null)} />}
+      {pageMenu !== null && <TemplateMenu own={ownTpls} onPickOwn={(id) => addOwnPage(id, pageMenu)} onDeleteOwn={(id) => void deleteOwnTpl(id)} onRenameOwn={(id, name, description) => void renameOwnTpl(id, name, description)} onPick={(id) => addPage(id, pageMenu)} onClose={() => setPageMenu(null)} />}
+      {dialog?.kind === 'pageTpl' && pages[dialog.pi] && (
+        <PageTplDialog page={pages[dialog.pi]} own={ownTpls.filter((t) => t.mine)} onClose={() => setDialog(null)} onSave={(target) => void commitPageTemplate(dialog.pi, target)} />
+      )}
 
       {/* ── barra flotante sobre el bloque ── */}
       {hover && hoverBlock && hoverTarget && mode === 'edit' && (
@@ -2094,8 +2104,46 @@ function AiDialog({ onAsk, onClose }: { onAsk: (kind: string, prompt: string) =>
 }
 
 /** Banco de páginas plantilla: agrupado por momento de la propuesta, con búsqueda. */
-function TemplateMenu({ own, onPickOwn, onDeleteOwn, onPick, onClose }: { own: Array<{ id: string; name: string; description?: string | null; page: Page; mine: boolean }>; onPickOwn: (id: string) => void; onDeleteOwn: (id: string) => void; onPick: (id: string) => void; onClose: () => void }) {
+type OwnTpl = { id: string; name: string; description?: string | null; page: Page; mine: boolean }
+
+/** Guardar una página como plantilla propia: nueva, o reemplazando una existente. */
+function PageTplDialog({ page, own, onSave, onClose }: { page: Page; own: OwnTpl[]; onSave: (t: { mode: 'new'; name: string; description: string } | { mode: 'update'; id: string; name: string; description: string }) => void; onClose: () => void }) {
+  const [mode, setMode] = useState<'new' | 'update'>('new')
+  const [id, setId] = useState(own[0]?.id || '')
+  const [name, setName] = useState(page.title || page.id)
+  const [description, setDescription] = useState('')
+  const pick = (tid: string) => { setId(tid); const t = own.find((x) => x.id === tid); if (t) { setName(t.name); setDescription(t.description || '') } }
+  return (
+    <div className="qv-modal-wrap" onClick={onClose}>
+      <div className="qv-modal qv-dialog" onClick={(e) => e.stopPropagation()}>
+        <h3>Guardar página como plantilla</h3>
+        <p>Se guardan el antetítulo, el título y los {page.blocks.length} elementos de «{page.title || page.id}». Estará en «＋pág» de todas tus cotizaciones.</p>
+        <div className="row">
+          <button className={mode === 'new' ? 'is-active' : ''} onClick={() => { setMode('new'); setName(page.title || page.id); setDescription('') }}>Plantilla nueva</button>
+          <button className={mode === 'update' ? 'is-active' : ''} disabled={!own.length} onClick={() => { setMode('update'); pick(id || own[0]?.id) }} title={own.length ? '' : 'Aún no tienes plantillas propias'}>Reemplazar una existente</button>
+        </div>
+        {mode === 'update' && (
+          <>
+            <label>Plantilla a reemplazar con esta página</label>
+            <select value={id} onChange={(e) => pick(e.target.value)}>{own.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
+          </>
+        )}
+        <label>Nombre</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} autoFocus onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) onSave(mode === 'new' ? { mode, name: name.trim(), description: description.trim() } : { mode, id, name: name.trim(), description: description.trim() }) }} />
+        <label>Descripción (opcional) · para qué sirve y cuándo va</label>
+        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="P. ej. Portafolio de virtualización con seis casos" />
+        <div className="qv-modal-actions">
+          <button onClick={onClose}>Cancelar</button>
+          <button className="primary" disabled={!name.trim() || (mode === 'update' && !id)} onClick={() => onSave(mode === 'new' ? { mode, name: name.trim(), description: description.trim() } : { mode, id, name: name.trim(), description: description.trim() })}>{mode === 'new' ? 'Guardar plantilla' : 'Reemplazar plantilla'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TemplateMenu({ own, onPickOwn, onDeleteOwn, onRenameOwn, onPick, onClose }: { own: OwnTpl[]; onPickOwn: (id: string) => void; onDeleteOwn: (id: string) => void; onRenameOwn: (id: string, name: string, description: string) => void; onPick: (id: string) => void; onClose: () => void }) {
   const [q, setQ] = useState('')
+  const [editing, setEditing] = useState<{ id: string; name: string; description: string } | null>(null)
   const term = q.trim().toLowerCase()
   const ownItems = own.filter((t) => !term || `${t.name} ${t.description || ''} ${t.page?.title || ''}`.toLowerCase().includes(term))
   const groups = templatesByCategory()
@@ -2112,13 +2160,26 @@ function TemplateMenu({ own, onPickOwn, onDeleteOwn, onPick, onClose }: { own: A
             <div className="qv-tplbank-group is-own">
               <div className="qv-tplbank-cat">Mis plantillas · guardadas desde otras cotizaciones</div>
               {ownItems.map((t) => (
-                <div className="qv-tplbank-own" key={t.id}>
-                  <button onClick={() => onPickOwn(t.id)}>
-                    <b>{t.name}</b>
-                    <span>{t.description || `${t.page?.title || 'Página'} · ${t.page?.blocks?.length || 0} elementos`}</span>
-                  </button>
-                  {t.mine && <button className="qv-tplbank-del" title="Eliminar plantilla" onClick={() => onDeleteOwn(t.id)}>✕</button>}
-                </div>
+                editing?.id === t.id ? (
+                  <div className="qv-tplbank-edit" key={t.id}>
+                    <input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} placeholder="Nombre" autoFocus />
+                    <input value={editing.description} onChange={(e) => setEditing({ ...editing, description: e.target.value })} placeholder="Descripción (opcional)" />
+                    <div className="row">
+                      <button onClick={() => setEditing(null)}>Cancelar</button>
+                      <button className="primary" disabled={!editing.name.trim()} onClick={() => { onRenameOwn(t.id, editing.name.trim(), editing.description.trim()); setEditing(null) }}>Guardar</button>
+                    </div>
+                    <p className="qv-tplbank-tip">Para cambiar el contenido: inserta la plantilla, edita la página y guárdala con «☆» eligiendo «Reemplazar una existente».</p>
+                  </div>
+                ) : (
+                  <div className="qv-tplbank-own" key={t.id}>
+                    <button onClick={() => onPickOwn(t.id)}>
+                      <b>{t.name}</b>
+                      <span>{t.description || `${t.page?.title || 'Página'} · ${t.page?.blocks?.length || 0} elementos`}</span>
+                    </button>
+                    {t.mine && <button className="qv-tplbank-ed" title="Cambiar nombre o descripción" onClick={() => setEditing({ id: t.id, name: t.name, description: t.description || '' })}>✎</button>}
+                    {t.mine && <button className="qv-tplbank-del" title="Eliminar plantilla" onClick={() => onDeleteOwn(t.id)}>✕</button>}
+                  </div>
+                )
               ))}
             </div>
           )}

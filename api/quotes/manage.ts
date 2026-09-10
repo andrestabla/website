@@ -377,6 +377,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, template: { id: tpl.id, name: tpl.name } })
     }
 
+    if (op === 'update-page-template') {
+      const id = str(body.templateId, 40)
+      const tpl = await templateDb().findUnique({ where: { id } })
+      if (!tpl || tpl.template !== PAGE_TPL) return res.status(404).json({ ok: false, error: 'Plantilla no encontrada' })
+      if (tpl.createdBy !== userId && !isAdmin) return res.status(403).json({ ok: false, error: 'Esta plantilla es de otro usuario' })
+      const data: Record<string, unknown> = {}
+      if (body.name !== undefined) { const name = str(body.name, 120); if (!name) return res.status(400).json({ ok: false, error: 'Falta el nombre' }); data.name = name }
+      if (body.description !== undefined) data.description = str(body.description, 400) || null
+      if (body.page !== undefined) {
+        const page = sanitizePages([body.page])[0]
+        if (!page || !page.blocks?.length) return res.status(400).json({ ok: false, error: 'La página no tiene contenido que guardar' })
+        data.content = { page }
+      }
+      const updated = await templateDb().update({ where: { id }, data })
+      return res.status(200).json({ ok: true, template: { id: updated.id, name: updated.name } })
+    }
+
     if (op === 'delete-template') {
       const id = str(body.templateId, 40)
       const tpl = await templateDb().findUnique({ where: { id } })
