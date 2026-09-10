@@ -1,0 +1,1211 @@
+{
+  "portada": {
+    "title": "Aplicativo para la gestión de la correspondencia",
+    "subtitle": "Solución para el proceso de mensajería interna y externa de la Fundación Cardioinfantil. Comprende un mes de discovery del proceso, el aplicativo web de radicación, trazabilidad y cierre, la captura de entregas en campo y el tablero de indicadores del servicio.",
+    "meta": {
+      "Cliente": "Fundación Cardioinfantil · Instituto de Cardiología",
+      "Duración": "3 meses · 12 semanas · producción en el mes 3",
+      "Alcance": "3 fases · discovery, aplicativo web y captura en campo",
+      "Inversión": "$ 21.717.500 IVA incluido · licencia anual $ 10.000.000"
+    },
+    "tagline": "Soluciones digitales con **sentido humano**",
+    "client": "Dirigida a\nJhon Alexander Zárate Vera\nCoordinador de gestión documental\nDirección de Operaciones · Fundación Cardioinfantil"
+  },
+  "pages": [
+    {
+      "id": "contenido",
+      "num": "—",
+      "kicker": "Contenido",
+      "title": "Contenido",
+      "blocks": [
+        {
+          "type": "toc"
+        }
+      ]
+    },
+    {
+      "id": "presentacion",
+      "num": "01",
+      "kicker": "Presentación",
+      "title": "Objeto de la propuesta",
+      "blocks": [
+        {
+          "type": "letterhead",
+          "date": "Bogotá D. C., 9 de septiembre de 2026",
+          "addressee": "Señor\nJhon Alexander Zárate Vera\nCoordinador de gestión documental · Dirección de Operaciones\nFundación Cardioinfantil · Instituto de Cardiología",
+          "salutation": "Respetado Jhon Alexander:"
+        },
+        {
+          "type": "p",
+          "text": "Agradecemos la oportunidad de presentar esta propuesta para el proceso de correspondencia y mensajería de la Clínica. Partimos de un trabajo ya adelantado: durante la fase de planeación revisamos las 3.812 diligencias registradas en 2025 y en el primer semestre de 2026, acompañamos el trabajo de la coordinación y levantamos los flujos de mensajería interna y externa."
+        },
+        {
+          "type": "p",
+          "text": "Con ese material diseñamos el aplicativo que se ilustra en estas páginas. Cada solicitud nace con radicado y etiqueta de código de barras. El motorizado la recoge en el área durante uno de los recorridos internos del día. Correspondencia define cómo sale: con proveedor o con motorizado. Luego, el destinatario firma en el teléfono del mensajero y los indicadores del servicio se calculan automáticamente sobre la historia ya cargada."
+        },
+        {
+          "type": "p",
+          "text": "El trabajo se organiza en tres fases. Primero, un mes de **discovery**, para conocer cómo funciona el proceso en cada área, recoger ideas de mejora y dejar por escrito las reglas de negocio que ejecutará el aplicativo. Luego, la construcción del aplicativo web sobre esas reglas, tanto para las áreas solicitantes como para la coordinación. Al final, la captura en campo, para que Carlos y Mauricio cierren cada entrega en el punto donde ocurre. Este documento describe las tres fases, con el equipo responsable, el cronograma de doce semanas hasta la salida a producción, la inversión y las condiciones del servicio."
+        },
+        {
+          "type": "p",
+          "text": "Un proceso que ya funciona merece una herramienta que lo sostenga. Esa es la apuesta de las páginas que siguen."
+        },
+        {
+          "type": "signature",
+          "name": "Ana Milena Diazgranados",
+          "role": "Directora de Relacionamiento · Algoritmo T"
+        }
+      ]
+    },
+    {
+      "id": "arquitectura",
+      "num": "02",
+      "kicker": "Arquitectura",
+      "title": "Tres fases, un solo sistema",
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "El discovery define las reglas y el aplicativo las ejecuta. Por eso, la fase 01 inicia el cronograma: sus acuerdos se parametrizan en el sistema y orientan la construcción de las otras dos fases."
+        },
+        {
+          "type": "h3",
+          "text": "Gestión de correspondencia FCI · 3 meses · 12 semanas · producción en el mes 3"
+        },
+        {
+          "type": "cards",
+          "cols": 3,
+          "items": [
+            {
+              "tag": "Fase 01 · Mes 1",
+              "title": "Discovery del proceso",
+              "body": "**Entrega** · Mapa del proceso tal como funciona hoy\n\n**Entrega** · Reglas de negocio: prioridad, cortes, ANS y causales\n\n**Entrega** · Ideas de mejora priorizadas\n\n**Entrega** · Estructura organizacional y centros de costo\n\n**Entrega** · Tarifario y proveedores\n\n**Entrega** · Diccionario de datos y plan de migración",
+              "foot": "Producto · Las reglas que el aplicativo ejecuta"
+            },
+            {
+              "tag": "Fase 02 · Meses 1 a 3",
+              "title": "Aplicativo web",
+              "body": "**Módulos 1–4** · Solicitud, radicado, prioridad y recogidas\n\n**Módulos 5–8** · Mesa, rutas, seguimiento y escáner\n\n**Módulos 9–12** · Gestión, tickets, avisos y gastos del área\n\n**Módulos 13–16** · Estructura, directorio, tarifario y tablero\n\n**Roles** · Área, coordinación, motorizado, dirección y admon\n\n**Histórico** · 3.812 registros migrados desde el primer día",
+              "foot": "Producto · El sistema de registro del proceso"
+            },
+            {
+              "tag": "Fase 03 · Meses 2 y 3",
+              "title": "Captura en campo",
+              "body": "**Módulo** · Ruta del día del motorizado\n\n**Módulo** · Entrega con firma, foto y posición\n\n**Módulo** · Novedad con causal cerrada\n\n**Módulo** · Escáner, planillas y prueba de entrega\n\n**Módulo** · Enlace con proveedores por guía\n\n**Módulo** · Avisos al dispositivo",
+              "foot": "Producto · El dato nace donde ocurre la entrega"
+            }
+          ]
+        },
+        {
+          "type": "p",
+          "text": "**El ciclo de vida de un trámite, en dos trayectos.** Del área a correspondencia, y de correspondencia al destinatario. Cada cambio de estado guarda fecha, hora y usuario. La secuencia queda auditable de principio a fin, y los indicadores se calculan sobre ella."
+        },
+        {
+          "type": "diagram",
+          "kind": "process",
+          "width": "full",
+          "items": [
+            {
+              "label": "01 · Solicitada",
+              "desc": "Radicado, etiqueta y recogida propuesta"
+            },
+            {
+              "label": "02 · Recogida programada",
+              "desc": "Primer o segundo recorrido del día"
+            },
+            {
+              "label": "03 · Recogida",
+              "desc": "El motorizado la registra en el área"
+            },
+            {
+              "label": "04 · En correspondencia",
+              "desc": "Llega a la mesa con el recorrido"
+            },
+            {
+              "label": "05 · Enrutada",
+              "desc": "Proveedor con guía o motorizado"
+            },
+            {
+              "label": "06 · En tránsito",
+              "desc": "Seguimiento por guía o posición"
+            },
+            {
+              "label": "07 · Entregada",
+              "desc": "Firma, foto y ubicación"
+            },
+            {
+              "label": "08 · Cerrada",
+              "desc": "Fecha sellada por el sistema"
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "text": "Cuando la entrega falla, el trámite pasa a **Con novedad** con su causal de lista cerrada y regresa a la mesa para reprogramarse o cerrarse como devuelto. Una entrada que llega por ventanilla nace ya en correspondencia; un traslado interno se entrega en la misma vuelta en que se recoge. Un trámite cerrado o anulado se reabre desde correspondencia con motivo."
+        }
+      ]
+    },
+    {
+      "id": "fase-01",
+      "num": "03",
+      "kicker": "Fase 01 · Mes 1",
+      "title": "Discovery del proceso",
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "Un mes para conocer cómo funciona hoy el proceso, aportar ideas de mejora y dejar definidas las reglas de negocio. Sus seis entregables tienen dos usos: como documentos del sistema de gestión de la Clínica y como especificación del aplicativo."
+        },
+        {
+          "type": "cards",
+          "cols": 2,
+          "items": [
+            {
+              "tag": "E1",
+              "title": "Mapa del proceso tal como funciona hoy",
+              "body": "Sesiones con la coordinación, los dos motorizados y tres áreas de alto volumen. Flujos de mensajería **interna y externa**, canales de entrada, puntos de decisión, tiempos reales y los atajos que el equipo ya usa.",
+              "foot": "Base para construir el aplicativo sobre la operación real"
+            },
+            {
+              "tag": "E2",
+              "title": "Reglas de negocio",
+              "body": "Matriz de priorización con impacto, plazo legal y tipo de correspondencia; ANS por prioridad; horas de corte y salida de los **recorridos internos**; lista cerrada de causales; criterios para tercerizar.",
+              "foot": "Se parametrizan en Admon y admiten ajuste posterior"
+            },
+            {
+              "tag": "E3",
+              "title": "Ideas de mejora priorizadas",
+              "body": "Lo que el equipo propone y lo que observamos en el diagnóstico, ordenado por impacto y esfuerzo en una sesión con la Coordinación de gestión documental. Lo aprobado entra al plan de ajuste del aplicativo.",
+              "foot": "Un backlog acordado, con dueño y fecha"
+            },
+            {
+              "tag": "E4",
+              "title": "Estructura organizacional y centros de costo",
+              "body": "Árbol de unidades con sede, torre y piso, centro de costos de cada una y equivalencias entre el departamento del **directorio corporativo** y la unidad, para que cada persona entre ya asociada a su área.",
+              "foot": "Carga directa en el módulo de administración"
+            },
+            {
+              "tag": "E5",
+              "title": "Tarifario y proveedores",
+              "body": "Tarifas vigentes por proveedor, tipo, destino y peso, y el costo interno del motorizado. Con ellas el aplicativo estima el gasto al enrutar y lo carga al centro de costos del área solicitante.",
+              "foot": "Da el costo estimado antes de decidir cómo sale"
+            },
+            {
+              "tag": "E6",
+              "title": "Diccionario de datos y plan de migración",
+              "body": "Definición de cada campo con su tipo y su regla. Separa el **cierre del trámite** de la **devolución del radicado de factura** y reclasifica las causales de texto libre del histórico en la lista cerrada.",
+              "foot": "Guía la migración definitiva de los 3.812 registros"
+            }
+          ]
+        },
+        {
+          "type": "box",
+          "body": "Primero entender cómo funciona hoy. Después construir el aplicativo sobre las reglas acordadas."
+        }
+      ]
+    },
+    {
+      "id": "fase-02-a",
+      "num": "03",
+      "kicker": "Fase 02 · Meses 1 a 3",
+      "title": "Aplicativo web · solicitud y recogida",
+      "tocHidden": false,
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "Dieciséis módulos componen el aplicativo, en cuatro grupos. Los cuatro primeros cubren el primer trayecto: de la solicitud del área a la recogida en el recorrido interno."
+        },
+        {
+          "type": "cards",
+          "cols": 2,
+          "items": [
+            {
+              "tag": "M1",
+              "title": "Solicitud única con datos precargados",
+              "body": "El funcionario entra y encuentra su unidad, su nombre, la fecha, la hora y el centro de costos ya diligenciados. Elige el destinatario del directorio, describe el envío y radica. Puede remitir a nombre de otra persona de su área.",
+              "foot": "Correo, WhatsApp y ventanilla siguen abiertos y la coordinación radica por el área"
+            },
+            {
+              "tag": "M2",
+              "title": "Radicado, etiqueta y código de barras",
+              "body": "Cada solicitud recibe su consecutivo al radicarse. El aplicativo imprime la etiqueta adhesiva de 100 × 60 mm con el número en **Code 128**, que acompaña al sobre durante todo el recorrido y se lee con un escáner de mesa.",
+              "foot": "Reemplaza el reloj cuentahoras con equipos ya disponibles"
+            },
+            {
+              "tag": "M3",
+              "title": "Priorización automática y compromiso",
+              "body": "La matriz del discovery calcula la prioridad y el plazo en días hábiles, con festivos colombianos. La coordinación puede ajustarla con motivo, y cada ajuste queda contado por área en el tablero.",
+              "foot": "El área ve el compromiso de entrega antes de radicar"
+            },
+            {
+              "tag": "M4",
+              "title": "Recogidas por recorridos internos",
+              "body": "Hasta dos recorridos al día con hora de corte. La solicitud entra en el primero cuyo corte aún abre; si llega después del último, pasa al siguiente día hábil. Correspondencia confirma la propuesta o la mueve y elige quién recoge.",
+              "foot": "El motorizado registra la recogida en el área con quién le entregó y cuántas piezas"
+            }
+          ]
+        },
+        {
+          "type": "img",
+          "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/radicar.png",
+          "caption": "Vista del aplicativo · radicar un trámite con unidad, remitente, fecha y centro de costos precargados",
+          "wide": true
+        }
+      ]
+    },
+    {
+      "id": "fase-02-b",
+      "num": "",
+      "kicker": "Fase 02 — continuación",
+      "title": "Aplicativo web · mesa, rutas y seguimiento",
+      "tocHidden": true,
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "El segundo trayecto empieza en la ventanilla de correspondencia, donde se decide cómo sale cada envío y con qué costo, y termina con el seguimiento minuto a minuto hasta el destinatario."
+        },
+        {
+          "type": "cards",
+          "cols": 2,
+          "items": [
+            {
+              "tag": "M5",
+              "title": "Mesa de enrutamiento con tarifario",
+              "body": "Lo que trae el recorrido se recibe con un escaneo. Para cada envío la mesa muestra el costo estimado con cada proveedor y con el motorizado, y exige el **número de guía** cuando sale con proveedor.",
+              "foot": "El gasto queda cargado al centro de costos del área"
+            },
+            {
+              "tag": "M6",
+              "title": "Rutas inteligentes",
+              "body": "El recorrido externo ordena las paradas por urgencia y cercanía; el interno, por sede, torre y piso. La coordinación previsualiza, ajusta y confirma; el motorizado recibe su ruta ordenada en el teléfono.",
+              "foot": "Con puerto listo para tiempos reales con tráfico cuando la Clínica lo pida"
+            },
+            {
+              "tag": "M7",
+              "title": "Trazabilidad y seguimiento",
+              "body": "Con proveedor, los eventos de la guía; con motorizado, la posición que el teléfono reporta cada pocos minutos mientras va en ruta. Cada cambio de estado guarda fecha, hora y usuario en una bitácora inmutable.",
+              "foot": "El cierre lo sella el aplicativo, con fecha independiente del radicado de factura"
+            },
+            {
+              "tag": "M8",
+              "title": "Escáner, planillas y prueba de entrega",
+              "body": "Un puesto de escaneo con cuatro modos: recibir en la mesa, armar la **planilla de despacho** por transportador, adjuntar la guía de retorno firmada y consultar. La planilla se imprime con código por fila y la firma quien recibe el lote.",
+              "foot": "Constancia de que el sobre salió, en qué momento y en manos de quién"
+            }
+          ]
+        },
+        {
+          "type": "img",
+          "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/mesa.png",
+          "caption": "Vista del aplicativo · mesa de enrutamiento con el costo estimado de cada opción antes de decidir",
+          "wide": true
+        }
+      ]
+    },
+    {
+      "id": "fase-02-c",
+      "num": "",
+      "kicker": "Fase 02 — continuación",
+      "title": "Aplicativo web · gestión y servicio a las áreas",
+      "tocHidden": true,
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "El tercer grupo sostiene la relación entre correspondencia y las áreas: la conversación sobre cada trámite, los tickets, los avisos automáticos y la información que cada área puede consultar sobre sus solicitudes, incluido el gasto asociado."
+        },
+        {
+          "type": "cards",
+          "cols": 2,
+          "items": [
+            {
+              "tag": "M9",
+              "title": "Gestión del trámite",
+              "body": "Correspondencia responde, corrige datos con el valor anterior en bitácora, ajusta la prioridad con motivo, cierra devoluciones, reabre con motivo y busca en todo el histórico por radicado, guía, asunto o destinatario, con filtros y paginación.",
+              "foot": "Cada comentario cruza la mesa y avisa a la otra parte"
+            },
+            {
+              "tag": "M10",
+              "title": "Tickets y mesa de servicio",
+              "body": "El área abre incidentes, reclamos, solicitudes o consultas, ligados a un trámite o generales. La coordinación responde, deja notas internas y cambia el estado; el área recibe cada respuesta en su campana y por correo.",
+              "foot": "Un ticket que espera respuesta desde el día hábil anterior genera alerta"
+            },
+            {
+              "tag": "M11",
+              "title": "Avisos automáticos",
+              "body": "Campana en el aplicativo, correo según preferencia y aviso al dispositivo. Cada paso del trámite avisa a quien corresponde, y las reglas programadas alertan lo que vence mañana, lo que lleva días de silencio del transportador y las recogidas por registrar.",
+              "foot": "Una sola vez por trámite y por día, revisado cada hora hábil"
+            },
+            {
+              "tag": "M12",
+              "title": "Mis trámites y gastos del área",
+              "body": "Cada área ve el estado de lo suyo en lenguaje llano, con lo que sigue en cada caso, y el detalle de cada trámite con su evidencia. En **Gastos** consulta el costo estimado y el facturado de sus envíos, cargado a su centro de costos.",
+              "foot": "Descarga a la coordinación de las llamadas de seguimiento"
+            }
+          ]
+        },
+        {
+          "type": "img",
+          "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/bandeja.png",
+          "caption": "Vista del aplicativo · bandeja del día con la alerta de envíos en silencio del transportador",
+          "wide": true
+        }
+      ]
+    },
+    {
+      "id": "fase-02-d",
+      "num": "",
+      "kicker": "Fase 02 — continuación",
+      "title": "Aplicativo web · administración y auditoría",
+      "tocHidden": true,
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "El cuarto grupo es lo que la Clínica administra por sí misma: la estructura, las personas, las tarifas y los recorridos, más el registro que deja cada acción para la auditoría interna."
+        },
+        {
+          "type": "cards",
+          "cols": 2,
+          "items": [
+            {
+              "tag": "M13",
+              "title": "Estructura organizacional y centros de costo",
+              "body": "Árbol de unidades con sede, torre y piso, cada una colgada de un centro de costos. Se crea, edita y mueve con su subárbol. Lo primero determina a quién se carga el gasto; lo segundo ordena el recorrido interno.",
+              "foot": "El centro de costos se congela al radicar: el histórico sobrevive a reorganizaciones"
+            },
+            {
+              "tag": "M14",
+              "title": "Directorio corporativo y roles",
+              "body": "Entrada con la cuenta institucional por **Microsoft Entra ID**. El departamento que entrega el directorio se traduce a una unidad con una tabla de equivalencias, y la persona queda asociada a su área desde la primera vez. Cinco roles con alcances distintos.",
+              "foot": "Los departamentos que aún carecen de equivalencia aparecen como pendientes en Admon"
+            },
+            {
+              "tag": "M15",
+              "title": "Tarifario, proveedores y recorridos",
+              "body": "Tarifas por proveedor, tipo, destino y peso con vigencia; motorizados y transportadores con su vía; horas de corte y salida de los recorridos internos. Todo parametrizable por la Clínica, con efecto inmediato en la mesa.",
+              "foot": "La coincidencia va de lo específico a lo general"
+            },
+            {
+              "tag": "M16",
+              "title": "Bitácora, auditoría y reportes",
+              "body": "Cada transición, edición y aviso queda con usuario, fecha y hora en una bitácora inmutable, junto al rastro de guía o de posición. Reporte mensual programado a la Coordinación de gestión documental y exportación a Excel de cualquier consulta.",
+              "foot": "Disponible para auditoría interna, con cero reconstrucción manual"
+            }
+          ]
+        },
+        {
+          "type": "img",
+          "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/organizacion.png",
+          "caption": "Vista del aplicativo · árbol de unidades con centro de costos, sede, torre y piso",
+          "wide": true
+        }
+      ]
+    },
+    {
+      "id": "tablero",
+      "num": "",
+      "kicker": "Fase 02 — continuación",
+      "title": "El tablero de indicadores",
+      "tocHidden": true,
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "Los indicadores que el informe de agosto propuso para seguimiento continuo dejan de reconstruirse a mano. El aplicativo los calcula sobre los 3.812 registros históricos migrados, y cada uno arranca con su línea base y una meta que se acuerda en el discovery."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Indicador",
+            "Línea base 2026-I",
+            "Meta año 1",
+            "Desagregación"
+          ],
+          "rows": [
+            [
+              "Tiempo promedio de entrega",
+              "2,4 días",
+              "≤ 2,0 días",
+              "Por tipo de correspondencia, área y responsable"
+            ],
+            [
+              "Cumplimiento del ANS de 3 días hábiles",
+              "87 %",
+              "≥ 95 %",
+              "Con aviso al acercarse el vencimiento"
+            ],
+            [
+              "Registros con fecha de cierre",
+              "58 %",
+              "100 %",
+              "El cierre lo sella el aplicativo"
+            ],
+            [
+              "Solicitudes marcadas como urgentes",
+              "Por medir",
+              "≤ 15 %",
+              "Por área solicitante, contra la matriz"
+            ],
+            [
+              "Trámites tercerizados y su ciclo",
+              "12 % · 3,1 d",
+              "Criterio revisado",
+              "Compara gestión interna y proveedor por tipo"
+            ],
+            [
+              "Devoluciones por causal",
+              "Texto libre",
+              "100 % clasificadas",
+              "Lista cerrada, ordenada por frecuencia"
+            ],
+            [
+              "Gasto por centro de costos",
+              "Por consolidar",
+              "Facturado vs. estimado",
+              "Desviación acumulada por proveedor y por área"
+            ]
+          ],
+          "firstCol": "key"
+        },
+        {
+          "type": "img",
+          "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/tablero.png",
+          "caption": "Vista del aplicativo · tablero calculado sobre el histórico, con gasto por centro de costos",
+          "wide": true
+        },
+        {
+          "type": "note",
+          "text": "El reporte mensual sale del tablero y llega por correo a la Coordinación de gestión documental el primer día hábil de cada mes. Los umbrales de alerta se fijan en el discovery, junto con la política de uso."
+        }
+      ]
+    },
+    {
+      "id": "fase-03",
+      "num": "",
+      "kicker": "Fase 03 · Meses 2 y 3",
+      "title": "Captura en campo y migración",
+      "tocHidden": true,
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "Aquí se define la calidad del dato. Mientras el cierre dependa de transcribir la información al regresar, los registros vacíos seguirán apareciendo. La captura en el punto de entrega corrige el problema desde su origen, en el teléfono que el motorizado ya lleva."
+        },
+        {
+          "type": "cards",
+          "cols": 2,
+          "items": [
+            {
+              "tag": "C1",
+              "title": "Ruta del día",
+              "body": "Aplicación web progresiva (**PWA**) que se instala en el teléfono de cada motorizado, con icono propio y pantalla completa: las recogidas en las áreas y las entregas en orden. Al leer el rótulo de un sobre se abre su parada.",
+              "foot": "Instalación en los teléfonos actuales, Android o iOS, incluida en la capacitación"
+            },
+            {
+              "tag": "C2",
+              "title": "Entrega con firma, foto y posición",
+              "body": "Firma del receptor en pantalla, fotografía de la evidencia y sello automático de fecha, hora y ubicación. La firma es requisito para cerrar. Mientras haya algo en tránsito, el teléfono reporta la posición para el seguimiento.",
+              "foot": "Sustituye la planilla de recibido en papel"
+            },
+            {
+              "tag": "C3",
+              "title": "Novedad con causal",
+              "body": "Cuando la entrega falla, el motorizado elige la causal de la lista cerrada y deja nota. El trámite vuelve a la mesa con su motivo, y cada dirección errada actualiza la ficha del destinatario en el directorio.",
+              "foot": "Cierra el ciclo de aprendizaje sobre direcciones erradas"
+            },
+            {
+              "tag": "C4",
+              "title": "Recorrido interno y traslados",
+              "body": "El recorrido interno recoge en las áreas y trae a la mesa; los traslados entre dependencias se entregan en la misma vuelta. Al llegar a correspondencia, todo lo recogido se recibe de una vez.",
+              "foot": "Recoge el flujo del diagrama de mensajería interna"
+            },
+            {
+              "tag": "C5",
+              "title": "Enlace con proveedores",
+              "body": "Servientrega, Soluciones Médicas y Envía reciben el lote con su planilla. El número de guía queda enlazado al radicado, los eventos del proveedor se registran contra él y su ciclo se mide igual que el interno.",
+              "foot": "La integración con las API de los transportadores queda prevista en el puerto de seguimiento"
+            },
+            {
+              "tag": "C6",
+              "title": "Avisos al dispositivo y trabajo con señal débil",
+              "body": "El motorizado recibe su recorrido armado como aviso en el teléfono. La aplicación conserva la ruta del día aunque falte la señal y sube lo capturado al recuperarla.",
+              "foot": "Elimina la digitación de regreso a la oficina"
+            }
+          ]
+        },
+        {
+          "type": "h3",
+          "text": "Vistas del aplicativo en el teléfono · ruta del día y entrega con firma"
+        },
+        {
+          "type": "grid",
+          "cols": 2,
+          "cells": [
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/m-ruta.png",
+                "caption": "Ruta del día en el teléfono",
+                "aspect": "portrait"
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/m-entrega.png",
+                "caption": "Registro de entrega con firma",
+                "aspect": "portrait"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vistas-a",
+      "num": "",
+      "kicker": "Vistas del aplicativo",
+      "title": "Coordinación de correspondencia",
+      "tocHidden": true,
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "A continuación, algunas de las vistas del aplicativo en su operación: programar recogidas, armar recorridos, gestionar un trámite y despachar en lote con el escáner."
+        },
+        {
+          "type": "grid",
+          "cols": 2,
+          "cells": [
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/g-recogidas.png",
+                "caption": "Recogidas en las áreas · propuesta por cortes, confirmación y motorizado",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/g-rutas.png",
+                "caption": "Armado de recorridos · orden por urgencia y cercanía, con distancia y tiempo",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/g-detalle.png",
+                "caption": "Detalle del trámite · dos trayectos, seguimiento, conversación y acciones",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/planilla.png",
+                "caption": "Planilla de despacho · imprimible, con código por fila y firma de quien recibe",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/g-escaner.png",
+                "caption": "Escáner de la mesa · recibir, armar planilla, prueba de entrega y consultar",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/g-tramites.png",
+                "caption": "Trámites · búsqueda sobre todo el histórico con filtros",
+                "wide": true
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vistas-b",
+      "num": "",
+      "kicker": "Vistas del aplicativo",
+      "title": "Áreas, servicio y administración",
+      "tocHidden": true,
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "Lo que ve el área solicitante, la mesa de servicio, los avisos y la administración del sistema, en el mismo lenguaje visual."
+        },
+        {
+          "type": "grid",
+          "cols": 2,
+          "cells": [
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/g-mis-tramites.png",
+                "caption": "Mis trámites · el estado de cada uno, en pocas palabras",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/g-gastos.png",
+                "caption": "Gastos del área · estimado, facturado y desviación por centro de costos",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/g-tickets.png",
+                "caption": "Tickets · incidentes, reclamos, solicitudes y consultas",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/g-avisos.png",
+                "caption": "Avisos · campana, correo y dispositivo, con alertas automáticas",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/etiqueta.png",
+                "caption": "Etiqueta del radicado · 100 × 60 mm con código de barras Code 128",
+                "wide": true
+              }
+            ],
+            [
+              {
+                "type": "img",
+                "url": "/cotizaciones/cardioinfantil-2026/assets/img/app/m-escaner.png",
+                "caption": "Escáner en el teléfono · lector por cámara para el motorizado",
+                "wide": true
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "infraestructura",
+      "num": "04",
+      "kicker": "Infraestructura",
+      "title": "Arquitectura desplegada",
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "El proceso opera en un núcleo independiente de los servicios que lo rodean. Cada servicio se conecta por un puerto definido; así, un proveedor de nube puede reemplazarse por otro sin alterar la lógica del proceso, y la Clínica mantiene abierta su capacidad de elección tecnológica."
+        },
+        {
+          "type": "h3",
+          "text": "Correspondencia FCI · producción · Nube administrada por Algoritmo T · datos de la Clínica"
+        },
+        {
+          "type": "cards",
+          "cols": 3,
+          "items": [
+            {
+              "tag": "Aplicativo",
+              "title": "Vercel",
+              "body": "**Web e instalable** · Next.js y React, un solo código para escritorio y teléfono\n\n**Sesión** · Cookie firmada, roles y bitácora inmutable por usuario\n\n**Tareas** · Cron cada hora hábil para las reglas de alerta\n\n**Dominio** · Subdominio institucional con certificado TLS",
+              "foot": "Núcleo · Estados, prioridad, calendario, rutas y costos"
+            },
+            {
+              "tag": "Datos y evidencias",
+              "title": "Neon · Amazon S3",
+              "body": "**Base de datos** · PostgreSQL serverless; cada cambio de estado y su rastro se confirman juntos\n\n**Evidencias** · Firmas, fotos y guías de retorno en S3, con acceso por URL firmada temporal\n\n**Respaldo** · Copia diaria y recuperación a un punto en el tiempo\n\n**Cifrado** · En tránsito y en reposo",
+              "foot": "Propiedad · Los datos son de la Clínica y se exportan en formato abierto"
+            },
+            {
+              "tag": "Servicios",
+              "title": "SES · Entra ID · Push",
+              "body": "**Correo** · Amazon SES desde el dominio institucional\n\n**Identidad** · Microsoft Entra ID por OIDC; la unidad sale del departamento del directorio\n\n**Avisos** · Web Push con claves VAPID al teléfono del motorizado\n\n**Transportadores** · Puerto de seguimiento listo para las API de guías",
+              "foot": "Rutas · Puerto de enrutador para tráfico real cuando la Clínica lo pida"
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Componente",
+            "Servicio",
+            "Función en el proceso",
+            "Operación y seguridad"
+          ],
+          "rows": [
+            [
+              "Aplicativo web e instalable",
+              "Vercel · Next.js · PWA",
+              "Radicación, mesa, rutas, campo, tablero y administración desde un solo código; en el teléfono del motorizado se instala como aplicación.",
+              "Certificado TLS, sesión firmada, roles por perfil y bitácora inmutable."
+            ],
+            [
+              "Base de datos",
+              "Neon · PostgreSQL serverless",
+              "Trámites, estados, bitácora, estructura, tarifario e histórico migrado.",
+              "Copia diaria, recuperación a un punto en el tiempo, cifrado en reposo."
+            ],
+            [
+              "Evidencias de entrega",
+              "Amazon S3 · bucket privado",
+              "Firmas, fotografías y guías de retorno enlazadas al radicado.",
+              "Acceso por URL firmada temporal; credenciales de mínimo privilegio."
+            ],
+            [
+              "Correo",
+              "Amazon SES",
+              "Avisos a las áreas, a coordinación y a la Dirección; reporte mensual.",
+              "Remitente verificado en el dominio de la Clínica."
+            ],
+            [
+              "Identidad",
+              "Microsoft Entra ID · OIDC",
+              "Entrada con la cuenta corporativa; la unidad sale del departamento del directorio.",
+              "Registro de la aplicación en el tenant de la Clínica; tabla de equivalencias."
+            ],
+            [
+              "Avisos al dispositivo",
+              "Web Push · VAPID",
+              "Recorrido armado, entregas y alertas en el teléfono del motorizado.",
+              "Suscripción por dispositivo, revocable desde el aplicativo."
+            ],
+            [
+              "Reglas de alerta",
+              "Vercel Cron",
+              "Vencimientos, envíos en silencio, recogidas por registrar, tickets por responder.",
+              "Cada hora hábil, protegido con secreto."
+            ],
+            [
+              "Lector de código de barras",
+              "Lector USB · Code 128",
+              "Recepción en la mesa, planillas de despacho y prueba de entrega con un escaneo.",
+              "Lo entrega Algoritmo T; se conecta y lee de inmediato."
+            ]
+          ],
+          "firstCol": "key",
+          "fontSize": "sm"
+        },
+        {
+          "type": "note",
+          "text": "**Residencia y tratamiento.** Los servicios de nube operan en la región de Estados Unidos de cada proveedor, con cifrado en tránsito y en reposo, acceso restringido por credenciales de mínimo privilegio y acuerdo de encargado del tratamiento conforme a la Ley 1581 de 2012. La operación, el monitoreo y las actualizaciones de seguridad quedan cubiertos por la licencia de servicio."
+        }
+      ]
+    },
+    {
+      "id": "equipo",
+      "num": "05",
+      "kicker": "Talento",
+      "title": "Equipo y gobernanza",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "Cinco perfiles trabajan sobre el mismo cronograma. El equipo se concentra en el discovery durante el primer mes y se abre a desarrollo desde la segunda quincena, con el analista de procesos acompañando hasta el cierre."
+        },
+        {
+          "type": "team",
+          "items": [
+            {
+              "role": "Director de proyecto",
+              "dedication": "Responsable único ante la Clínica y de la coordinación integral del servicio.",
+              "functions": [
+                "Conducir el comité quincenal y las aprobaciones de cada fase.",
+                "Organizar tiempos, entregables y dependencias entre las tres fases.",
+                "Resolver bloqueos y gestionar las órdenes de cambio."
+              ]
+            },
+            {
+              "role": "Analista de procesos · discovery",
+              "dedication": "Responsable de la fase 01 y de la coherencia entre el proceso y el aplicativo.",
+              "functions": [
+                "Conducir las sesiones con la coordinación, los motorizados y las áreas.",
+                "Documentar el proceso, las reglas de negocio y el diccionario de datos.",
+                "Priorizar el backlog de mejoras con la Coordinación de gestión documental.",
+                "Validar que cada regla quede reflejada en el comportamiento del sistema."
+              ]
+            },
+            {
+              "role": "Diseñador de producto",
+              "dedication": "Responsable de los flujos, las pantallas y la experiencia de uso.",
+              "functions": [
+                "Diseñar las pantallas y los flujos que se aprueban en la semana 4.",
+                "Resolver la interfaz para tres públicos: áreas, coordinación y motorizados.",
+                "Cuidar accesibilidad, contraste y legibilidad en pantalla pequeña."
+              ]
+            },
+            {
+              "role": "Desarrollador full stack",
+              "dedication": "Responsable del aplicativo web, la captura en campo, los servicios y la seguridad de acceso.",
+              "functions": [
+                "Construir los dieciséis módulos del aplicativo web y la ruta del día del motorizado.",
+                "Implementar roles, permisos, bitácora, avisos y la firma en pantalla.",
+                "Conectar el directorio corporativo y desplegar los ambientes de pruebas y producción."
+              ]
+            },
+            {
+              "role": "Ingeniero de datos y QA",
+              "dedication": "Responsable de la migración, el tablero y la calidad funcional.",
+              "functions": [
+                "Normalizar y cargar los 3.812 registros históricos.",
+                "Construir los indicadores y sus reglas de cálculo, con días hábiles y festivos.",
+                "Probar cada módulo contra las reglas del discovery y acompañar el piloto en calle con Carlos y Mauricio."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "note",
+          "text": "**Gobernanza.** Un responsable único por cada lado. Comité de seguimiento cada quince días, **6 sesiones de 60 a 90 minutos** a lo largo del proyecto, con acta y decisiones registradas. Cada mes cierra con una aprobación escrita."
+        }
+      ]
+    },
+    {
+      "id": "inversion",
+      "num": "06",
+      "kicker": "Inversión",
+      "title": "Propuesta económica",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "La inversión tiene dos rubros. El diseño y la implementación, que se pagan una vez contra las aprobaciones de las doce semanas, y la licencia anual de servicio, que sostiene la operación del aplicativo en la nube con la Clínica como propietaria de sus datos."
+        },
+        {
+          "type": "invoice",
+          "rows": [
+            {
+              "concept": "Diseño e implementación · tres fases · 28 entregables",
+              "detail": "12 semanas · Discovery, aplicativo web con sus dieciséis módulos, captura en campo con instalación en los teléfonos de los motorizados, migración del histórico, lector de código de barras, piloto y capacitación · antes de IVA $ 18.250.000",
+              "amount": "$ 21.717.500"
+            },
+            {
+              "concept": "Licencia anual de servicio · software como servicio",
+              "detail": "12 meses · Hospedaje, base de datos, evidencias, correo y avisos, respaldo diario, monitoreo, actualizaciones de seguridad y soporte · antes de IVA $ 10.000.000",
+              "amount": "$ 10.000.000"
+            }
+          ],
+          "totalLabel": "Primer año · 3 + 12 meses · $ 28.250.000 antes de IVA",
+          "total": "$ 31.717.500",
+          "note": "El diseño y la implementación llevan IVA del 19 % ($ 3.467.500). La licencia anual se factura como servicio en la nube, **excluida de IVA**, a la salida a producción, y cubre los doce meses siguientes; la renovación se pacta con el IPC del año inmediatamente anterior."
+        },
+        {
+          "type": "h3",
+          "text": "**Qué cubre la licencia** · el aplicativo opera en la nube bajo administración de Algoritmo T:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "**Licencia anual** · $ 10.000.000 · IVA excluido",
+            "**Usuarios ilimitados** en las áreas solicitantes",
+            "**Soporte** en horario hábil · respuesta dentro de 4 horas",
+            "**8 horas mensuales** de ajustes evolutivos, acumulables en el trimestre"
+          ],
+          "marker": "check"
+        },
+        {
+          "type": "box",
+          "title": "Salida del servicio · opcional, por una vez · $ 5.000.000",
+          "body": "Traslado de la operación a un tercero o a la propia Clínica: entrega de la infraestructura, las credenciales y la documentación técnica, con acompañamiento durante la migración. Desde ese momento la Clínica asume directamente el hospedaje, la base de datos, el almacenamiento y el consumo de los servicios de terceros."
+        },
+        {
+          "type": "note",
+          "text": "Los valores están expresados en pesos colombianos. El diseño y la implementación incluyen IVA del 19 %; la licencia anual se factura como servicio en la nube, excluida de IVA. Las retenciones aplican según el régimen tributario de la Clínica. La oferta tiene vigencia de 30 días calendario."
+        }
+      ]
+    },
+    {
+      "id": "aprobaciones",
+      "num": "",
+      "kicker": "Inversión — continuación",
+      "title": "Aprobaciones y plan de pagos",
+      "tocHidden": true,
+      "blocks": [
+        {
+          "type": "p",
+          "text": "Cada mes cierra con una aprobación escrita sobre entregables verificables. Esa aprobación habilita el pago del periodo, de manera que la Clínica paga contra producto entregado y revisado. Son **tres pagos**: en las semanas 4, 8 y 12; el último incluye la anualidad de la suscripción."
+        },
+        {
+          "type": "table",
+          "headers": [
+            "Pago",
+            "Fase",
+            "Qué se verifica",
+            "Concepto",
+            "Valor a pagar"
+          ],
+          "rows": [
+            [
+              "Semana 4\ndiscovery aprobado",
+              "Fase 01",
+              "Mapa del proceso, reglas de negocio, estructura organizacional, tarifario, backlog de mejoras y pantallas aprobados",
+              "Implementación 40 %\n$ 7.300.000 + IVA",
+              "$ 8.687.000"
+            ],
+            [
+              "Semana 8\naplicativo en pruebas",
+              "Fase 02",
+              "Aplicativo web en la nube, en pruebas con la coordinación y dos áreas piloto, con el directorio corporativo conectado y el histórico migrado",
+              "Implementación 30 %\n$ 5.475.000 + IVA",
+              "$ 6.515.250"
+            ],
+            [
+              "Semana 12\nproducción",
+              "Fase 03",
+              "Salida a producción, captura en campo operativa, piloto en calle cerrado y equipo capacitado",
+              "Implementación 30 %\n$ 5.475.000 + IVA\nLicencia anual\n$ 10.000.000 · IVA excluido",
+              "$ 16.515.250"
+            ],
+            [
+              "Primer año",
+              "3 pagos",
+              "",
+              "$ 28.250.000 antes de IVA",
+              "$ 31.717.500"
+            ]
+          ],
+          "firstCol": "key",
+          "fontSize": "sm",
+          "colAlign": [
+            "left",
+            "left",
+            "left",
+            "left",
+            "right"
+          ]
+        },
+        {
+          "type": "p",
+          "text": "**Qué revisa cada aprobación.** La Clínica recibe los entregables del periodo con cinco días hábiles de anticipación a la sesión de cierre. En el comité se revisan uno por uno, se consignan las observaciones y se firma el acta. Las observaciones menores se incorporan dentro del periodo siguiente, con la aprobación ya firmada."
+        },
+        {
+          "type": "p",
+          "text": "**Ritmo del cronograma.** El esquema es secuencial en su primer tramo: el aplicativo se construye sobre las reglas del discovery. Una demora en la retroalimentación de la semana 4 desplaza lo que sigue en la misma proporción. Por eso el supuesto de respuesta dentro de cinco días hábiles aparece entre las condiciones del servicio."
+        },
+        {
+          "type": "p",
+          "text": "**La anualidad de la suscripción.** Se factura con el pago de la semana 12, a la salida a producción, y cubre los doce meses siguientes de operación en la nube. Cada factura se paga dentro de los 30 días siguientes a su radicación."
+        },
+        {
+          "type": "note",
+          "text": "Cada pago se libera con la aprobación escrita de su periodo. Las tres cuotas de implementación suman $ 18.250.000 antes de IVA ($ 21.717.500 con IVA del 19 %); la licencia anual de $ 10.000.000 va excluida de IVA como servicio en la nube. El total del primer año es $ 31.717.500."
+        }
+      ]
+    },
+    {
+      "id": "cronograma",
+      "num": "07",
+      "kicker": "Tiempos",
+      "title": "Cronograma",
+      "blocks": [
+        {
+          "type": "p",
+          "text": "Doce semanas divididas en quincenas, desde el arranque hasta la salida a producción. El discovery abre y entrega las reglas; el diseño arranca en la segunda quincena, el desarrollo se solapa con la nube y la migración, y el piloto en calle con la capacitación cierra el tercer mes."
+        },
+        {
+          "type": "gantt",
+          "cols": [
+            "Q1",
+            "Q2",
+            "Q3",
+            "Q4",
+            "Q5",
+            "Q6"
+          ],
+          "rows": [
+            {
+              "label": "Sesiones de discovery y mapa del proceso",
+              "from": 1,
+              "to": 2,
+              "tone": "cyan",
+              "bold": false
+            },
+            {
+              "label": "Reglas de negocio, estructura y tarifario",
+              "from": 1,
+              "to": 2,
+              "tone": "cyan",
+              "bold": false
+            },
+            {
+              "label": "Diseño de pantallas y modelo de datos",
+              "from": 2,
+              "to": 2,
+              "tone": "cyan",
+              "bold": false
+            },
+            {
+              "label": "Semana 4 · discovery aprobado",
+              "from": 2,
+              "to": 2,
+              "tone": "gold",
+              "bold": true
+            },
+            {
+              "label": "Desarrollo del aplicativo web",
+              "from": 2,
+              "to": 5,
+              "tone": "cyan",
+              "bold": false
+            },
+            {
+              "label": "Nube, directorio corporativo y migración",
+              "from": 3,
+              "to": 4,
+              "tone": "cyan",
+              "bold": false
+            },
+            {
+              "label": "Semana 8 · aplicativo en pruebas",
+              "from": 4,
+              "to": 4,
+              "tone": "gold",
+              "bold": true
+            },
+            {
+              "label": "Captura en campo y avisos al dispositivo",
+              "from": 4,
+              "to": 5,
+              "tone": "cyan",
+              "bold": false
+            },
+            {
+              "label": "Piloto con coordinación y motorizados",
+              "from": 5,
+              "to": 6,
+              "tone": "cyan",
+              "bold": false
+            },
+            {
+              "label": "Capacitación y documentación",
+              "from": 6,
+              "to": 6,
+              "tone": "cyan",
+              "bold": false
+            },
+            {
+              "label": "Semana 12 · salida a producción",
+              "from": 6,
+              "to": 6,
+              "tone": "gold",
+              "bold": true
+            }
+          ],
+          "note": "Ejecución · Aprobación escrita · Q = quincena · 6 quincenas en 12 semanas"
+        },
+        {
+          "type": "note",
+          "text": "Ritmo de decisión: **6 sesiones de 60 a 90 minutos**, dos por mes. La primera del mes revisa avance; la segunda firma la aprobación. El piloto del mes 3 corre en paralelo con la operación actual durante **dos semanas**, con ambos registros activos, antes de retirar el archivo de Excel del flujo diario."
+        }
+      ]
+    },
+    {
+      "id": "condiciones",
+      "num": "08",
+      "kicker": "Condiciones",
+      "title": "Supuestos y condiciones del servicio",
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "Estas condiciones soportan el cronograma y la inversión de las páginas anteriores. Las declaramos por adelantado para que la conversación empiece con las cartas sobre la mesa."
+        },
+        {
+          "type": "table",
+          "firstCol": "key",
+          "headers": [
+            "Condición",
+            "Alcance"
+          ],
+          "rows": [
+            [
+              "Interlocución",
+              "Un responsable único por cada lado, con capacidad de decisión sobre las reglas del proceso. Del lado de la Clínica proponemos a la Coordinación de gestión documental, acompañada por quien coordina el proceso de mensajería en las aprobaciones."
+            ],
+            [
+              "Acceso a las personas",
+              "Disponibilidad de la coordinadora, de los dos motorizados y de tres áreas para las sesiones de discovery del mes 1 y para el piloto del mes 3. Estimamos **14 horas** de la coordinadora, **6 horas** de cada motorizado y **3 horas** por área a lo largo del proyecto."
+            ],
+            [
+              "Retroalimentación",
+              "Observaciones consolidadas dentro de los **5 días hábiles** siguientes a cada entrega. Los plazos del cronograma se calculan sobre ese ritmo y una demora en la respuesta desplaza la aprobación correspondiente."
+            ],
+            [
+              "Infraestructura",
+              "El aplicativo opera en infraestructura de nube administrada por Algoritmo T, con cifrado en tránsito y en reposo. La Clínica aporta el subdominio institucional, el registro de la aplicación en su directorio corporativo y la autorización de acceso desde su red interna."
+            ],
+            [
+              "Datos personales",
+              "El tratamiento se rige por la política de la Clínica y por la Ley 1581 de 2012. Algoritmo T actúa como **encargado del tratamiento** y suscribe el acuerdo correspondiente antes del inicio."
+            ],
+            [
+              "Propiedad y salida",
+              "Los datos son propiedad de la Clínica y se exportan en formato abierto cuando los solicite, durante la vigencia y al terminarla. El código del aplicativo permanece en propiedad de Algoritmo T bajo la licencia descrita. La **salida del servicio** (traslado de la operación a un tercero o a la Clínica, con infraestructura, credenciales, documentación técnica y acompañamiento) se contrata por una vez, por $ 5.000.000."
+            ],
+            [
+              "Equipos",
+              "Algoritmo T entrega el **lector de código de barras** del puesto de correspondencia, incluido en la implementación. Los teléfonos de los motorizados los aporta la Clínica; el aplicativo se instala en ellos como **aplicación web progresiva (PWA)**, con Android o iOS, y esa instalación queda incluida en la capacitación. La publicación como app en las tiendas de Apple y Google queda para una fase posterior, si la Clínica la requiere."
+            ],
+            [
+              "Capacitación",
+              "Incluida en el mes 3. Tres sesiones por perfil: áreas solicitantes, coordinación y motorizados. Se entregan manuales en video y una guía rápida imprimible para el puesto de trabajo."
+            ],
+            [
+              "Garantía",
+              "**Tres meses** de garantía sobre defectos de funcionamiento desde la salida a producción, incluidos en la implementación y cubiertos dentro de la licencia anual."
+            ],
+            [
+              "Alcance de fases siguientes",
+              "La integración con el ERP, la facturación electrónica, las rutas con tráfico en tiempo real y la extensión a otras sedes quedan para etapas posteriores, con su propia valoración y cronograma."
+            ],
+            [
+              "Órdenes de cambio",
+              "Toda solicitud que altere alcance, plazos o complejidad se evalúa con su impacto en tiempo y costo, y se aprueba por escrito antes de ejecutarse."
+            ],
+            [
+              "Impuestos y vigencia",
+              "Valores en pesos colombianos, con IVA del 19 %. Las retenciones aplican según el régimen tributario de la Clínica. La oferta tiene vigencia de **30 días calendario** desde la fecha de esta propuesta."
+            ],
+            [
+              "Confidencialidad",
+              "Este documento es propiedad exclusiva de Algoritmo T. Su copia o su uso para fines distintos de la evaluación de esta propuesta requiere autorización escrita."
+            ]
+          ],
+          "colWidths": [
+            24,
+            76
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cierre",
+      "num": "—",
+      "kicker": "Cierre",
+      "title": "Quedamos atentos para dar continuidad al proceso conforme a los tiempos de la Clínica.",
+      "tocHidden": true,
+      "blocks": [
+        {
+          "type": "lede",
+          "text": "Soluciones digitales con sentido humano."
+        },
+        {
+          "type": "signature",
+          "name": "Ana Milena Diazgranados",
+          "role": "Directora de Relacionamiento · Algoritmo T",
+          "org": "Algoritmo T",
+          "email": "anadiazgranados@algoritmot.com",
+          "phone": "+57 300 659 0161"
+        },
+        {
+          "type": "button",
+          "label": "Versión diagramada · descargar en PDF",
+          "url": "/cotizaciones/cardioinfantil-2026/Propuesta-Cardioinfantil-2026.pdf",
+          "style": "outline",
+          "align": "left"
+        }
+      ]
+    }
+  ]
+}

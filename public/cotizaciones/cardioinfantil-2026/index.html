@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta · Aplicativo de correspondencia — Fundación Cardioinfantil | Algoritmo T</title>
+<meta name="description" content="Propuesta técnica y económica de Algoritmo T para el discovery del proceso de mensajería y la puesta en producción del aplicativo web de gestión y trazabilidad de la correspondencia de la Fundación Cardioinfantil · Instituto de Cardiología.">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/print.css" media="print">
+</head>
+<body>
+
+<div class="bar no-print">
+  <span class="b-l"><img src="assets/img/algoritmot-mark.svg" alt="">Algoritmo&nbsp;T</span>
+  <div class="b-r">
+    <nav>
+      <a href="#arquitectura">Arquitectura</a>
+      <a href="#fases">Fases</a>
+      <a href="#infraestructura">Infraestructura</a>
+      <a href="#equipo">Equipo</a>
+      <a href="#inversion">Inversión</a>
+      <a href="#cronograma">Cronograma</a>
+      <a href="#condiciones">Condiciones</a>
+    </nav>
+    <button class="pdfbtn" onclick="descargarPDF()">Descargar PDF</button>
+  </div>
+</div>
+
+<!-- ===================== 1 · PORTADA ===================== -->
+<section class="page cover">
+  <div class="cv-top">
+    <span class="brandmark"><b>Algoritmo</b><img src="assets/img/algoritmot-mark.svg" alt="Algoritmo T"></span>
+    <span class="cv-idx">PROPUESTA · 2026</span>
+  </div>
+  <div class="cv-mid">
+    <span class="kick">Propuesta técnica y económica</span>
+    <h1>Aplicativo para la gestión de la <em>correspondencia</em></h1>
+    <div class="cv-rule"></div>
+    <p class="cv-sub">Solución para el proceso de mensajería interna y externa de la Fundación Cardioinfantil. Comprende un mes de discovery del proceso, el aplicativo web de radicación, trazabilidad y cierre, la captura de entregas en campo y el tablero de indicadores del servicio.</p>
+    <div class="cv-meta">
+      <div class="m"><div class="ml">Cliente</div><div class="mv">Fundación Cardioinfantil · Instituto de Cardiología</div></div>
+      <div class="m"><div class="ml">Duración</div><div class="mv">3 meses · 12 semanas · producción en el mes 3</div></div>
+      <div class="m"><div class="ml">Alcance</div><div class="mv">3 fases · discovery, aplicativo web y captura en campo</div></div>
+      <div class="m"><div class="ml">Inversión</div><div class="mv">$ 21.717.500 IVA incluido · licencia anual $ 10.000.000</div></div>
+    </div>
+  </div>
+  <div class="cv-bot">
+    <span class="tag">Soluciones digitales con <b>sentido humano</b></span>
+    <span class="client"><span>Dirigida a<br>Jhon Alexander Zárate Vera<br>Coordinador de gestión documental<br>Dirección de Operaciones · Fundación Cardioinfantil</span></span>
+  </div>
+</section>
+
+<!-- ===================== 2 · CONTENIDO ===================== -->
+<section class="page pad toc">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <h2>Contenido</h2>
+  <ol>
+    <li><a href="#presentacion"><span class="num">01</span><span class="ti">Presentación</span><span class="pg"><i>pág.</i> 03</span></a></li>
+    <li><a href="#arquitectura"><span class="num">02</span><span class="ti">Arquitectura de la solución</span><span class="pg"><i>pág.</i> 04</span></a></li>
+    <li><a href="#fases"><span class="num">03</span><span class="ti">Fases de trabajo y entregables</span><span class="pg"><i>pág.</i> 05</span></a></li>
+    <li><a href="#infraestructura"><span class="num">04</span><span class="ti">Infraestructura y arquitectura</span><span class="pg"><i>pág.</i> 14</span></a></li>
+    <li><a href="#equipo"><span class="num">05</span><span class="ti">Equipo y gobernanza</span><span class="pg"><i>pág.</i> 15</span></a></li>
+    <li><a href="#inversion"><span class="num">06</span><span class="ti">Inversión y modelo de servicio</span><span class="pg"><i>pág.</i> 16</span></a></li>
+    <li><a href="#cronograma"><span class="num">07</span><span class="ti">Cronograma</span><span class="pg"><i>pág.</i> 18</span></a></li>
+    <li><a href="#condiciones"><span class="num">08</span><span class="ti">Supuestos y condiciones</span><span class="pg"><i>pág.</i> 19</span></a></li>
+  </ol>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">02 / 20</span></div>
+</section>
+
+<!-- ===================== 3 · PRESENTACIÓN ===================== -->
+<section class="page pad" id="presentacion">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">01</div><div class="sh"><span class="kicker">Presentación</span><h2>Objeto de la propuesta</h2></div></div>
+  <div class="col">
+    <p class="addr"><b>Señor</b><br><b>Jhon Alexander Zárate Vera</b><br>Coordinador de gestión documental · Dirección de Operaciones<br>Fundación Cardioinfantil · Instituto de Cardiología<br>Bogotá D. C., 9 de septiembre de 2026</p>
+    <p class="salutation">Respetado Jhon Alexander:</p>
+    <p class="drop">Agradecemos la oportunidad de presentar esta propuesta para el proceso de correspondencia y mensajería de la Clínica. Partimos de un trabajo ya adelantado: durante la fase de planeación revisamos las 3.812 diligencias registradas en 2025 y en el primer semestre de 2026, acompañamos el trabajo de la coordinación y levantamos los flujos de mensajería interna y externa.</p>
+    <p>Con ese material diseñamos el aplicativo que se ilustra en estas páginas. Cada solicitud nace con radicado y etiqueta de código de barras. El motorizado la recoge en el área durante uno de los recorridos internos del día. Correspondencia define cómo sale: con proveedor o con motorizado. Luego, el destinatario firma en el teléfono del mensajero y los indicadores del servicio se calculan automáticamente sobre la historia ya cargada.</p>
+    <p>El trabajo se organiza en tres fases. Primero, un mes de <b>discovery</b>, para conocer cómo funciona el proceso en cada área, recoger ideas de mejora y dejar por escrito las reglas de negocio que ejecutará el aplicativo. Luego, la construcción del aplicativo web sobre esas reglas, tanto para las áreas solicitantes como para la coordinación. Al final, la captura en campo, para que Carlos y Mauricio cierren cada entrega en el punto donde ocurre. Este documento describe las tres fases, con el equipo responsable, el cronograma de doce semanas hasta la salida a producción, la inversión y las condiciones del servicio.</p>
+    <p>Un proceso que ya funciona merece una herramienta que lo sostenga. Esa es la apuesta de las páginas que siguen.</p>
+    <div class="signoff">
+      <div class="nm">Ana Milena Diazgranados</div>
+      <div class="rl">Directora de Relacionamiento · Algoritmo T</div>
+    </div>
+  </div>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">03 / 20</span></div>
+</section>
+
+<!-- ===================== 4 · ARQUITECTURA ===================== -->
+<section class="page pad" id="arquitectura">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">02</div><div class="sh"><span class="kicker">Arquitectura</span><h2>Tres fases, un solo sistema</h2></div></div>
+  <p class="lede">El discovery define las reglas y el aplicativo las ejecuta. Por eso, la fase 01 inicia el cronograma: sus acuerdos se parametrizan en el sistema y orientan la construcción de las otras dos fases.</p>
+
+  <div class="cmap" style="margin-top:20px">
+    <div class="cmap-head">
+      <span class="cmap-root">Gestión de correspondencia FCI</span>
+      <span class="cm-lbl">3 meses · 12 semanas · producción en el mes 3</span>
+    </div>
+    <div class="cmap-units">
+      <div class="cmap-u">
+        <div class="uh"><b>Fase 01 · Mes 1</b>Discovery del proceso</div>
+        <div class="cm-row"><em>Entrega</em>Mapa del proceso tal como funciona hoy</div>
+        <div class="cm-row"><em>Entrega</em>Reglas de negocio: prioridad, cortes, ANS y causales</div>
+        <div class="cm-row"><em>Entrega</em>Ideas de mejora priorizadas</div>
+        <div class="cm-row"><em>Entrega</em>Estructura organizacional y centros de costo</div>
+        <div class="cm-row"><em>Entrega</em>Tarifario y proveedores</div>
+        <div class="cm-row"><em>Entrega</em>Diccionario de datos y plan de migración</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Producto</b>Las reglas que el aplicativo ejecuta</div></div></div>
+      </div>
+      <div class="cmap-u">
+        <div class="uh"><b>Fase 02 · Meses 1 a 3</b>Aplicativo web</div>
+        <div class="cm-row"><em>Módulos 1–4</em>Solicitud, radicado, prioridad y recogidas</div>
+        <div class="cm-row"><em>Módulos 5–8</em>Mesa, rutas, seguimiento y escáner</div>
+        <div class="cm-row"><em>Módulos 9–12</em>Gestión, tickets, avisos y gastos del área</div>
+        <div class="cm-row"><em>Módulos 13–16</em>Estructura, directorio, tarifario y tablero</div>
+        <div class="cm-row"><em>Roles</em>Área, coordinación, motorizado, dirección y admon</div>
+        <div class="cm-row"><em>Histórico</em>3.812 registros migrados desde el primer día</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Producto</b>El sistema de registro del proceso</div></div></div>
+      </div>
+      <div class="cmap-u">
+        <div class="uh"><b>Fase 03 · Meses 2 y 3</b>Captura en campo</div>
+        <div class="cm-row"><em>Módulo</em>Ruta del día del motorizado</div>
+        <div class="cm-row"><em>Módulo</em>Entrega con firma, foto y posición</div>
+        <div class="cm-row"><em>Módulo</em>Novedad con causal cerrada</div>
+        <div class="cm-row"><em>Módulo</em>Escáner, planillas y prueba de entrega</div>
+        <div class="cm-row"><em>Módulo</em>Enlace con proveedores por guía</div>
+        <div class="cm-row"><em>Módulo</em>Avisos al dispositivo</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Producto</b>El dato nace donde ocurre la entrega</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:22px"><b>El ciclo de vida de un trámite, en dos trayectos.</b> Del área a correspondencia, y de correspondencia al destinatario. Cada cambio de estado guarda fecha, hora y usuario. La secuencia queda auditable de principio a fin, y los indicadores se calculan sobre ella.</p>
+  <div class="flow ocho">
+    <div class="st"><div class="sn">01</div><div class="sl">Solicitada</div><div class="sd">Radicado, etiqueta y recogida propuesta</div></div>
+    <div class="st"><div class="sn">02</div><div class="sl">Recogida programada</div><div class="sd">Primer o segundo recorrido del día</div></div>
+    <div class="st"><div class="sn">03</div><div class="sl">Recogida</div><div class="sd">El motorizado la registra en el área</div></div>
+    <div class="st"><div class="sn">04</div><div class="sl">En correspondencia</div><div class="sd">Llega a la mesa con el recorrido</div></div>
+    <div class="st"><div class="sn">05</div><div class="sl">Enrutada</div><div class="sd">Proveedor con guía o motorizado</div></div>
+    <div class="st"><div class="sn">06</div><div class="sl">En tránsito</div><div class="sd">Seguimiento por guía o posición</div></div>
+    <div class="st"><div class="sn">07</div><div class="sl">Entregada</div><div class="sd">Firma, foto y ubicación</div></div>
+    <div class="st end"><div class="sn">08</div><div class="sl">Cerrada</div><div class="sd">Fecha sellada por el sistema</div></div>
+  </div>
+  <p class="schema-note">Cuando la entrega falla, el trámite pasa a <b>Con novedad</b> con su causal de lista cerrada y regresa a la mesa para reprogramarse o cerrarse como devuelto. Una entrada que llega por ventanilla nace ya en correspondencia; un traslado interno se entrega en la misma vuelta en que se recoge. Un trámite cerrado o anulado se reabre desde correspondencia con motivo.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">04 / 20</span></div>
+</section>
+
+<!-- ===================== 5 · FRENTE 01 · DISCOVERY ===================== -->
+<section class="page pad" id="fases">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Fase 01 · Mes 1</span><h2>Discovery del proceso</h2></div></div>
+  <p class="lede">Un mes para conocer cómo funciona hoy el proceso, aportar ideas de mejora y dejar definidas las reglas de negocio. Sus seis entregables tienen dos usos: como documentos del sistema de gestión de la Clínica y como especificación del aplicativo.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">E1</div>
+      <h4>Mapa del proceso tal como funciona hoy</h4>
+      <p>Sesiones con la coordinación, los dos motorizados y tres áreas de alto volumen. Flujos de mensajería <b>interna y externa</b>, canales de entrada, puntos de decisión, tiempos reales y los atajos que el equipo ya usa.</p>
+      <span class="mx">Base para construir el aplicativo sobre la operación real</span>
+    </li>
+    <li>
+      <div class="mn">E2</div>
+      <h4>Reglas de negocio</h4>
+      <p>Matriz de priorización con impacto, plazo legal y tipo de correspondencia; ANS por prioridad; horas de corte y salida de los <b>recorridos internos</b>; lista cerrada de causales; criterios para tercerizar.</p>
+      <span class="mx">Se parametrizan en Admon y admiten ajuste posterior</span>
+    </li>
+    <li>
+      <div class="mn">E3</div>
+      <h4>Ideas de mejora priorizadas</h4>
+      <p>Lo que el equipo propone y lo que observamos en el diagnóstico, ordenado por impacto y esfuerzo en una sesión con la Coordinación de gestión documental. Lo aprobado entra al plan de ajuste del aplicativo.</p>
+      <span class="mx">Un backlog acordado, con dueño y fecha</span>
+    </li>
+    <li>
+      <div class="mn">E4</div>
+      <h4>Estructura organizacional y centros de costo</h4>
+      <p>Árbol de unidades con sede, torre y piso, centro de costos de cada una y equivalencias entre el departamento del <b>directorio corporativo</b> y la unidad, para que cada persona entre ya asociada a su área.</p>
+      <span class="mx">Carga directa en el módulo de administración</span>
+    </li>
+    <li>
+      <div class="mn">E5</div>
+      <h4>Tarifario y proveedores</h4>
+      <p>Tarifas vigentes por proveedor, tipo, destino y peso, y el costo interno del motorizado. Con ellas el aplicativo estima el gasto al enrutar y lo carga al centro de costos del área solicitante.</p>
+      <span class="mx">Da el costo estimado antes de decidir cómo sale</span>
+    </li>
+    <li>
+      <div class="mn">E6</div>
+      <h4>Diccionario de datos y plan de migración</h4>
+      <p>Definición de cada campo con su tipo y su regla. Separa el <b>cierre del trámite</b> de la <b>devolución del radicado de factura</b> y reclasifica las causales de texto libre del histórico en la lista cerrada.</p>
+      <span class="mx">Guía la migración definitiva de los 3.812 registros</span>
+    </li>
+  </ul>
+
+  <div class="pull">
+    <p>Primero entender cómo funciona hoy. Después construir el aplicativo sobre las reglas acordadas.</p>
+    <svg class="pull-check" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24" fill="#14306b"/><path d="M16 26.5 L23 34 L37 18.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">05 / 20</span></div>
+</section>
+
+<!-- ===================== 6 · FRENTE 02 (I) ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Fase 02 · Meses 1 a 3</span><h2>Aplicativo web · solicitud y recogida</h2></div></div>
+  <p class="lede">Dieciséis módulos componen el aplicativo, en cuatro grupos. Los cuatro primeros cubren el primer trayecto: de la solicitud del área a la recogida en el recorrido interno.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">M1</div>
+      <h4>Solicitud única con datos precargados</h4>
+      <p>El funcionario entra y encuentra su unidad, su nombre, la fecha, la hora y el centro de costos ya diligenciados. Elige el destinatario del directorio, describe el envío y radica. Puede remitir a nombre de otra persona de su área.</p>
+      <span class="mx">Correo, WhatsApp y ventanilla siguen abiertos y la coordinación radica por el área</span>
+    </li>
+    <li>
+      <div class="mn">M2</div>
+      <h4>Radicado, etiqueta y código de barras</h4>
+      <p>Cada solicitud recibe su consecutivo al radicarse. El aplicativo imprime la etiqueta adhesiva de 100 × 60 mm con el número en <b>Code 128</b>, que acompaña al sobre durante todo el recorrido y se lee con un escáner de mesa.</p>
+      <span class="mx">Reemplaza el reloj cuentahoras con equipos ya disponibles</span>
+    </li>
+    <li>
+      <div class="mn">M3</div>
+      <h4>Priorización automática y compromiso</h4>
+      <p>La matriz del discovery calcula la prioridad y el plazo en días hábiles, con festivos colombianos. La coordinación puede ajustarla con motivo, y cada ajuste queda contado por área en el tablero.</p>
+      <span class="mx">El área ve el compromiso de entrega antes de radicar</span>
+    </li>
+    <li>
+      <div class="mn">M4</div>
+      <h4>Recogidas por recorridos internos</h4>
+      <p>Hasta dos recorridos al día con hora de corte. La solicitud entra en el primero cuyo corte aún abre; si llega después del último, pasa al siguiente día hábil. Correspondencia confirma la propuesta o la mueve y elige quién recoge.</p>
+      <span class="mx">El motorizado registra la recogida en el área con quién le entregó y cuántas piezas</span>
+    </li>
+  </ul>
+
+  <figure class="shot recorte">
+    <figcaption>Vista del aplicativo · radicar un trámite con unidad, remitente, fecha y centro de costos precargados</figcaption>
+    <img src="assets/img/app/radicar.png" alt="Formulario de radicación del aplicativo" style="max-height:330px">
+  </figure>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">06 / 20</span></div>
+</section>
+
+<!-- ===================== 7 · FRENTE 02 (II) ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Fase 02 — continuación</span><h2>Aplicativo web · mesa, rutas y seguimiento</h2></div></div>
+  <p class="lede">El segundo trayecto empieza en la ventanilla de correspondencia, donde se decide cómo sale cada envío y con qué costo, y termina con el seguimiento minuto a minuto hasta el destinatario.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">M5</div>
+      <h4>Mesa de enrutamiento con tarifario</h4>
+      <p>Lo que trae el recorrido se recibe con un escaneo. Para cada envío la mesa muestra el costo estimado con cada proveedor y con el motorizado, y exige el <b>número de guía</b> cuando sale con proveedor.</p>
+      <span class="mx">El gasto queda cargado al centro de costos del área</span>
+    </li>
+    <li>
+      <div class="mn">M6</div>
+      <h4>Rutas inteligentes</h4>
+      <p>El recorrido externo ordena las paradas por urgencia y cercanía; el interno, por sede, torre y piso. La coordinación previsualiza, ajusta y confirma; el motorizado recibe su ruta ordenada en el teléfono.</p>
+      <span class="mx">Con puerto listo para tiempos reales con tráfico cuando la Clínica lo pida</span>
+    </li>
+    <li>
+      <div class="mn">M7</div>
+      <h4>Trazabilidad y seguimiento</h4>
+      <p>Con proveedor, los eventos de la guía; con motorizado, la posición que el teléfono reporta cada pocos minutos mientras va en ruta. Cada cambio de estado guarda fecha, hora y usuario en una bitácora inmutable.</p>
+      <span class="mx">El cierre lo sella el aplicativo, con fecha independiente del radicado de factura</span>
+    </li>
+    <li>
+      <div class="mn">M8</div>
+      <h4>Escáner, planillas y prueba de entrega</h4>
+      <p>Un puesto de escaneo con cuatro modos: recibir en la mesa, armar la <b>planilla de despacho</b> por transportador, adjuntar la guía de retorno firmada y consultar. La planilla se imprime con código por fila y la firma quien recibe el lote.</p>
+      <span class="mx">Constancia de que el sobre salió, en qué momento y en manos de quién</span>
+    </li>
+  </ul>
+
+  <figure class="shot recorte">
+    <figcaption>Vista del aplicativo · mesa de enrutamiento con el costo estimado de cada opción antes de decidir</figcaption>
+    <img src="assets/img/app/mesa.png" alt="Mesa de enrutamiento del aplicativo" style="max-height:330px">
+  </figure>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">07 / 20</span></div>
+</section>
+
+<!-- ===================== 8 · FASE 02 (III) ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Fase 02 — continuación</span><h2>Aplicativo web · gestión y servicio a las áreas</h2></div></div>
+  <p class="lede">El tercer grupo sostiene la relación entre correspondencia y las áreas: la conversación sobre cada trámite, los tickets, los avisos automáticos y la información que cada área puede consultar sobre sus solicitudes, incluido el gasto asociado.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">M9</div>
+      <h4>Gestión del trámite</h4>
+      <p>Correspondencia responde, corrige datos con el valor anterior en bitácora, ajusta la prioridad con motivo, cierra devoluciones, reabre con motivo y busca en todo el histórico por radicado, guía, asunto o destinatario, con filtros y paginación.</p>
+      <span class="mx">Cada comentario cruza la mesa y avisa a la otra parte</span>
+    </li>
+    <li>
+      <div class="mn">M10</div>
+      <h4>Tickets y mesa de servicio</h4>
+      <p>El área abre incidentes, reclamos, solicitudes o consultas, ligados a un trámite o generales. La coordinación responde, deja notas internas y cambia el estado; el área recibe cada respuesta en su campana y por correo.</p>
+      <span class="mx">Un ticket que espera respuesta desde el día hábil anterior genera alerta</span>
+    </li>
+    <li>
+      <div class="mn">M11</div>
+      <h4>Avisos automáticos</h4>
+      <p>Campana en el aplicativo, correo según preferencia y aviso al dispositivo. Cada paso del trámite avisa a quien corresponde, y las reglas programadas alertan lo que vence mañana, lo que lleva días de silencio del transportador y las recogidas por registrar.</p>
+      <span class="mx">Una sola vez por trámite y por día, revisado cada hora hábil</span>
+    </li>
+    <li>
+      <div class="mn">M12</div>
+      <h4>Mis trámites y gastos del área</h4>
+      <p>Cada área ve el estado de lo suyo en lenguaje llano, con lo que sigue en cada caso, y el detalle de cada trámite con su evidencia. En <b>Gastos</b> consulta el costo estimado y el facturado de sus envíos, cargado a su centro de costos.</p>
+      <span class="mx">Descarga a la coordinación de las llamadas de seguimiento</span>
+    </li>
+  </ul>
+
+  <figure class="shot recorte">
+    <figcaption>Vista del aplicativo · bandeja del día con la alerta de envíos en silencio del transportador</figcaption>
+    <img src="assets/img/app/bandeja.png" alt="Bandeja de coordinación del aplicativo" style="max-height:300px">
+  </figure>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">08 / 20</span></div>
+</section>
+
+<!-- ===================== 9 · FASE 02 (IV) ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Fase 02 — continuación</span><h2>Aplicativo web · administración y auditoría</h2></div></div>
+  <p class="lede">El cuarto grupo es lo que la Clínica administra por sí misma: la estructura, las personas, las tarifas y los recorridos, más el registro que deja cada acción para la auditoría interna.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">M13</div>
+      <h4>Estructura organizacional y centros de costo</h4>
+      <p>Árbol de unidades con sede, torre y piso, cada una colgada de un centro de costos. Se crea, edita y mueve con su subárbol. Lo primero determina a quién se carga el gasto; lo segundo ordena el recorrido interno.</p>
+      <span class="mx">El centro de costos se congela al radicar: el histórico sobrevive a reorganizaciones</span>
+    </li>
+    <li>
+      <div class="mn">M14</div>
+      <h4>Directorio corporativo y roles</h4>
+      <p>Entrada con la cuenta institucional por <b>Microsoft Entra ID</b>. El departamento que entrega el directorio se traduce a una unidad con una tabla de equivalencias, y la persona queda asociada a su área desde la primera vez. Cinco roles con alcances distintos.</p>
+      <span class="mx">Los departamentos que aún carecen de equivalencia aparecen como pendientes en Admon</span>
+    </li>
+    <li>
+      <div class="mn">M15</div>
+      <h4>Tarifario, proveedores y recorridos</h4>
+      <p>Tarifas por proveedor, tipo, destino y peso con vigencia; motorizados y transportadores con su vía; horas de corte y salida de los recorridos internos. Todo parametrizable por la Clínica, con efecto inmediato en la mesa.</p>
+      <span class="mx">La coincidencia va de lo específico a lo general</span>
+    </li>
+    <li>
+      <div class="mn">M16</div>
+      <h4>Bitácora, auditoría y reportes</h4>
+      <p>Cada transición, edición y aviso queda con usuario, fecha y hora en una bitácora inmutable, junto al rastro de guía o de posición. Reporte mensual programado a la Coordinación de gestión documental y exportación a Excel de cualquier consulta.</p>
+      <span class="mx">Disponible para auditoría interna, con cero reconstrucción manual</span>
+    </li>
+  </ul>
+
+  <figure class="shot recorte">
+    <figcaption>Vista del aplicativo · árbol de unidades con centro de costos, sede, torre y piso</figcaption>
+    <img src="assets/img/app/organizacion.png" alt="Estructura organizacional en Admon" style="max-height:300px">
+  </figure>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">09 / 20</span></div>
+</section>
+
+<!-- ===================== 9 · FRENTE 02 (IV) · TABLERO ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Fase 02 — continuación</span><h2>El tablero de indicadores</h2></div></div>
+  <p class="lede">Los indicadores que el informe de agosto propuso para seguimiento continuo dejan de reconstruirse a mano. El aplicativo los calcula sobre los 3.812 registros históricos migrados, y cada uno arranca con su línea base y una meta que se acuerda en el discovery.</p>
+  <table class="ind-t">
+    <thead><tr><th>Indicador</th><th>Línea base 2026-I</th><th>Meta año 1</th><th>Desagregación</th></tr></thead>
+    <tbody>
+      <tr><td class="r">Tiempo promedio de entrega</td><td class="b">2,4 días</td><td class="m">≤ 2,0 días</td><td>Por tipo de correspondencia, área y responsable</td></tr>
+      <tr><td class="r">Cumplimiento del ANS de 3 días hábiles</td><td class="b">87 %</td><td class="m">≥ 95 %</td><td>Con aviso al acercarse el vencimiento</td></tr>
+      <tr><td class="r">Registros con fecha de cierre</td><td class="b">58 %</td><td class="m">100 %</td><td>El cierre lo sella el aplicativo</td></tr>
+      <tr><td class="r">Solicitudes marcadas como urgentes</td><td class="b">Por medir</td><td class="m">≤ 15 %</td><td>Por área solicitante, contra la matriz</td></tr>
+      <tr><td class="r">Trámites tercerizados y su ciclo</td><td class="b">12 % · 3,1 d</td><td class="m">Criterio revisado</td><td>Compara gestión interna y proveedor por tipo</td></tr>
+      <tr><td class="r">Devoluciones por causal</td><td class="b">Texto libre</td><td class="m">100 % clasificadas</td><td>Lista cerrada, ordenada por frecuencia</td></tr>
+      <tr><td class="r">Gasto por centro de costos</td><td class="b">Por consolidar</td><td class="m">Facturado vs. estimado</td><td>Desviación acumulada por proveedor y por área</td></tr>
+    </tbody>
+  </table>
+
+  <figure class="shot recorte">
+    <figcaption>Vista del aplicativo · tablero calculado sobre el histórico, con gasto por centro de costos</figcaption>
+    <img src="assets/img/app/tablero.png" alt="Tablero de indicadores del aplicativo" style="max-height:400px">
+  </figure>
+  <p class="schema-note">El reporte mensual sale del tablero y llega por correo a la Coordinación de gestión documental el primer día hábil de cada mes. Los umbrales de alerta se fijan en el discovery, junto con la política de uso.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">10 / 20</span></div>
+</section>
+
+<!-- ===================== 10 · FRENTE 03 ===================== -->
+<section class="page pad tight-campo">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Fase 03 · Meses 2 y 3</span><h2>Captura en campo y migración</h2></div></div>
+  <p class="lede">Aquí se define la calidad del dato. Mientras el cierre dependa de transcribir la información al regresar, los registros vacíos seguirán apareciendo. La captura en el punto de entrega corrige el problema desde su origen, en el teléfono que el motorizado ya lleva.</p>
+
+  <ul class="mods">
+    <li>
+      <div class="mn">C1</div>
+      <h4>Ruta del día</h4>
+      <p>Aplicación web progresiva (<b>PWA</b>) que se instala en el teléfono de cada motorizado, con icono propio y pantalla completa: las recogidas en las áreas y las entregas en orden. Al leer el rótulo de un sobre se abre su parada.</p>
+      <span class="mx">Instalación en los teléfonos actuales, Android o iOS, incluida en la capacitación</span>
+    </li>
+    <li>
+      <div class="mn">C2</div>
+      <h4>Entrega con firma, foto y posición</h4>
+      <p>Firma del receptor en pantalla, fotografía de la evidencia y sello automático de fecha, hora y ubicación. La firma es requisito para cerrar. Mientras haya algo en tránsito, el teléfono reporta la posición para el seguimiento.</p>
+      <span class="mx">Sustituye la planilla de recibido en papel</span>
+    </li>
+    <li>
+      <div class="mn">C3</div>
+      <h4>Novedad con causal</h4>
+      <p>Cuando la entrega falla, el motorizado elige la causal de la lista cerrada y deja nota. El trámite vuelve a la mesa con su motivo, y cada dirección errada actualiza la ficha del destinatario en el directorio.</p>
+      <span class="mx">Cierra el ciclo de aprendizaje sobre direcciones erradas</span>
+    </li>
+    <li>
+      <div class="mn">C4</div>
+      <h4>Recorrido interno y traslados</h4>
+      <p>El recorrido interno recoge en las áreas y trae a la mesa; los traslados entre dependencias se entregan en la misma vuelta. Al llegar a correspondencia, todo lo recogido se recibe de una vez.</p>
+      <span class="mx">Recoge el flujo del diagrama de mensajería interna</span>
+    </li>
+    <li>
+      <div class="mn">C5</div>
+      <h4>Enlace con proveedores</h4>
+      <p>Servientrega, Soluciones Médicas y Envía reciben el lote con su planilla. El número de guía queda enlazado al radicado, los eventos del proveedor se registran contra él y su ciclo se mide igual que el interno.</p>
+      <span class="mx">La integración con las API de los transportadores queda prevista en el puerto de seguimiento</span>
+    </li>
+    <li>
+      <div class="mn">C6</div>
+      <h4>Avisos al dispositivo y trabajo con señal débil</h4>
+      <p>El motorizado recibe su recorrido armado como aviso en el teléfono. La aplicación conserva la ruta del día aunque falte la señal y sube lo capturado al recuperarla.</p>
+      <span class="mx">Elimina la digitación de regreso a la oficina</span>
+    </li>
+  </ul>
+
+  <figure class="shot movil">
+    <figcaption>Vistas del aplicativo en el teléfono · ruta del día y entrega con firma</figcaption>
+    <img src="assets/img/app/m-ruta.png" alt="Ruta del día en el teléfono">
+    <img src="assets/img/app/m-entrega.png" alt="Registro de entrega con firma">
+  </figure>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">11 / 20</span></div>
+</section>
+
+<!-- ===================== 12 · GALERÍA (I) ===================== -->
+<section class="page pad galeria">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Vistas del aplicativo</span><h2>Coordinación de correspondencia</h2></div></div>
+  <p class="lede">A continuación, algunas de las vistas del aplicativo en su operación: programar recogidas, armar recorridos, gestionar un trámite y despachar en lote con el escáner.</p>
+  <div class="gal">
+    <figure class="shot"><figcaption>Recogidas en las áreas · propuesta por cortes, confirmación y motorizado</figcaption><img src="assets/img/app/g-recogidas.png" alt="Recogidas en las áreas · propuesta por cortes, confirmación y motorizado"></figure>
+    <figure class="shot"><figcaption>Armado de recorridos · orden por urgencia y cercanía, con distancia y tiempo</figcaption><img src="assets/img/app/g-rutas.png" alt="Armado de recorridos · orden por urgencia y cercanía, con distancia y tiempo"></figure>
+    <figure class="shot"><figcaption>Detalle del trámite · dos trayectos, seguimiento, conversación y acciones</figcaption><img src="assets/img/app/g-detalle.png" alt="Detalle del trámite · dos trayectos, seguimiento, conversación y acciones"></figure>
+    <figure class="shot"><figcaption>Planilla de despacho · imprimible, con código por fila y firma de quien recibe</figcaption><img src="assets/img/app/planilla.png" alt="Planilla de despacho · imprimible, con código por fila y firma de quien recibe"></figure>
+    <figure class="shot"><figcaption>Escáner de la mesa · recibir, armar planilla, prueba de entrega y consultar</figcaption><img src="assets/img/app/g-escaner.png" alt="Escáner de la mesa · recibir, armar planilla, prueba de entrega y consultar"></figure>
+    <figure class="shot"><figcaption>Trámites · búsqueda sobre todo el histórico con filtros</figcaption><img src="assets/img/app/g-tramites.png" alt="Trámites · búsqueda sobre todo el histórico con filtros"></figure>
+  </div>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">12 / 20</span></div>
+</section>
+
+<!-- ===================== 13 · GALERÍA (II) ===================== -->
+<section class="page pad galeria">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Vistas del aplicativo</span><h2>Áreas, servicio y administración</h2></div></div>
+  <p class="lede">Lo que ve el área solicitante, la mesa de servicio, los avisos y la administración del sistema, en el mismo lenguaje visual.</p>
+  <div class="gal">
+    <figure class="shot"><figcaption>Mis trámites · el estado de cada uno, en pocas palabras</figcaption><img src="assets/img/app/g-mis-tramites.png" alt="Mis trámites · el estado de cada uno, en pocas palabras"></figure>
+    <figure class="shot"><figcaption>Gastos del área · estimado, facturado y desviación por centro de costos</figcaption><img src="assets/img/app/g-gastos.png" alt="Gastos del área · estimado, facturado y desviación por centro de costos"></figure>
+    <figure class="shot"><figcaption>Tickets · incidentes, reclamos, solicitudes y consultas</figcaption><img src="assets/img/app/g-tickets.png" alt="Tickets · incidentes, reclamos, solicitudes y consultas"></figure>
+    <figure class="shot"><figcaption>Avisos · campana, correo y dispositivo, con alertas automáticas</figcaption><img src="assets/img/app/g-avisos.png" alt="Avisos · campana, correo y dispositivo, con alertas automáticas"></figure>
+    <figure class="shot"><figcaption>Etiqueta del radicado · 100 × 60 mm con código de barras Code 128</figcaption><img src="assets/img/app/etiqueta.png" alt="Etiqueta del radicado · 100 × 60 mm con código de barras Code 128"></figure>
+    <figure class="shot"><figcaption>Escáner en el teléfono · lector por cámara para el motorizado</figcaption><img src="assets/img/app/m-escaner.png" alt="Escáner en el teléfono · lector por cámara para el motorizado"></figure>
+  </div>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">13 / 20</span></div>
+</section>
+
+<!-- ===================== 11 · INFRAESTRUCTURA ===================== -->
+<section class="page pad tight-infra" id="infraestructura">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Infraestructura</span><h2>Arquitectura desplegada</h2></div></div>
+  <p class="lede">El proceso opera en un núcleo independiente de los servicios que lo rodean. Cada servicio se conecta por un puerto definido; así, un proveedor de nube puede reemplazarse por otro sin alterar la lógica del proceso, y la Clínica mantiene abierta su capacidad de elección tecnológica.</p>
+
+  <div class="cmap" style="margin-top:14px">
+    <div class="cmap-head">
+      <span class="cmap-root">Correspondencia FCI · producción</span>
+      <span class="cm-lbl">Nube administrada por Algoritmo T · datos de la Clínica</span>
+    </div>
+    <div class="cmap-units">
+      <div class="cmap-u">
+        <div class="uh"><b>Aplicativo</b>Vercel</div>
+        <div class="cm-row"><em>Web e instalable</em>Next.js y React, un solo código para escritorio y teléfono</div>
+        <div class="cm-row"><em>Sesión</em>Cookie firmada, roles y bitácora inmutable por usuario</div>
+        <div class="cm-row"><em>Tareas</em>Cron cada hora hábil para las reglas de alerta</div>
+        <div class="cm-row"><em>Dominio</em>Subdominio institucional con certificado TLS</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Núcleo</b>Estados, prioridad, calendario, rutas y costos</div></div></div>
+      </div>
+      <div class="cmap-u">
+        <div class="uh"><b>Datos y evidencias</b>Neon · Amazon S3</div>
+        <div class="cm-row"><em>Base de datos</em>PostgreSQL serverless; cada cambio de estado y su rastro se confirman juntos</div>
+        <div class="cm-row"><em>Evidencias</em>Firmas, fotos y guías de retorno en S3, con acceso por URL firmada temporal</div>
+        <div class="cm-row"><em>Respaldo</em>Copia diaria y recuperación a un punto en el tiempo</div>
+        <div class="cm-row"><em>Cifrado</em>En tránsito y en reposo</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Propiedad</b>Los datos son de la Clínica y se exportan en formato abierto</div></div></div>
+      </div>
+      <div class="cmap-u">
+        <div class="uh"><b>Servicios</b>SES · Entra ID · Push</div>
+        <div class="cm-row"><em>Correo</em>Amazon SES desde el dominio institucional</div>
+        <div class="cm-row"><em>Identidad</em>Microsoft Entra ID por OIDC; la unidad sale del departamento del directorio</div>
+        <div class="cm-row"><em>Avisos</em>Web Push con claves VAPID al teléfono del motorizado</div>
+        <div class="cm-row"><em>Transportadores</em>Puerto de seguimiento listo para las API de guías</div>
+        <div class="cm-acts"><div class="cm-act"><div class="al"><b>Rutas</b>Puerto de enrutador para tráfico real cuando la Clínica lo pida</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <table class="schema sch4b">
+    <thead><tr><th class="rh">Componente</th><th>Servicio</th><th>Función en el proceso</th><th>Operación y seguridad</th></tr></thead>
+    <tbody>
+    <tr><td class="r">Aplicativo web e instalable</td><td class="ty">Vercel · Next.js · PWA</td><td>Radicación, mesa, rutas, campo, tablero y administración desde un solo código; en el teléfono del motorizado se instala como aplicación.</td><td>Certificado TLS, sesión firmada, roles por perfil y bitácora inmutable.</td></tr>
+    <tr><td class="r">Base de datos</td><td class="ty">Neon · PostgreSQL serverless</td><td>Trámites, estados, bitácora, estructura, tarifario e histórico migrado.</td><td>Copia diaria, recuperación a un punto en el tiempo, cifrado en reposo.</td></tr>
+    <tr><td class="r">Evidencias de entrega</td><td class="ty">Amazon S3 · bucket privado</td><td>Firmas, fotografías y guías de retorno enlazadas al radicado.</td><td>Acceso por URL firmada temporal; credenciales de mínimo privilegio.</td></tr>
+    <tr><td class="r">Correo</td><td class="ty">Amazon SES</td><td>Avisos a las áreas, a coordinación y a la Dirección; reporte mensual.</td><td>Remitente verificado en el dominio de la Clínica.</td></tr>
+    <tr><td class="r">Identidad</td><td class="ty">Microsoft Entra ID · OIDC</td><td>Entrada con la cuenta corporativa; la unidad sale del departamento del directorio.</td><td>Registro de la aplicación en el tenant de la Clínica; tabla de equivalencias.</td></tr>
+    <tr><td class="r">Avisos al dispositivo</td><td class="ty">Web Push · VAPID</td><td>Recorrido armado, entregas y alertas en el teléfono del motorizado.</td><td>Suscripción por dispositivo, revocable desde el aplicativo.</td></tr>
+    <tr><td class="r">Reglas de alerta</td><td class="ty">Vercel Cron</td><td>Vencimientos, envíos en silencio, recogidas por registrar, tickets por responder.</td><td>Cada hora hábil, protegido con secreto.</td></tr>
+    <tr><td class="r">Lector de código de barras</td><td class="ty">Lector USB · Code 128</td><td>Recepción en la mesa, planillas de despacho y prueba de entrega con un escaneo.</td><td>Lo entrega Algoritmo T; se conecta y lee de inmediato.</td></tr>
+    </tbody>
+  </table>
+  <p class="schema-note"><b>Residencia y tratamiento.</b> Los servicios de nube operan en la región de Estados Unidos de cada proveedor, con cifrado en tránsito y en reposo, acceso restringido por credenciales de mínimo privilegio y acuerdo de encargado del tratamiento conforme a la Ley 1581 de 2012. La operación, el monitoreo y las actualizaciones de seguridad quedan cubiertos por la licencia de servicio.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">14 / 20</span></div>
+</section>
+
+<!-- ===================== 13 · EQUIPO Y GOBERNANZA ===================== -->
+<section class="page pad tight-team" id="equipo">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">05</div><div class="sh"><span class="kicker">Talento</span><h2>Equipo y gobernanza</h2></div></div>
+  <p class="col">Cinco perfiles trabajan sobre el mismo cronograma. El equipo se concentra en el discovery durante el primer mes y se abre a desarrollo desde la segunda quincena, con el analista de procesos acompañando hasta el cierre.</p>
+  <ol class="team">
+    <li>
+      <div class="tm-h"><span class="tm-n">01</span><div class="tm-id"><h4>Director de proyecto</h4><p class="tm-resp">Responsable único ante la Clínica y de la coordinación integral del servicio.</p></div></div>
+      <ul class="tm-fns">
+        <li>Conducir el comité quincenal y las aprobaciones de cada fase.</li>
+        <li>Organizar tiempos, entregables y dependencias entre las tres fases.</li>
+        <li>Resolver bloqueos y gestionar las órdenes de cambio.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">02</span><div class="tm-id"><h4>Analista de procesos · discovery</h4><p class="tm-resp">Responsable de la fase 01 y de la coherencia entre el proceso y el aplicativo.</p></div></div>
+      <ul class="tm-fns">
+        <li>Conducir las sesiones con la coordinación, los motorizados y las áreas.</li>
+        <li>Documentar el proceso, las reglas de negocio y el diccionario de datos.</li>
+        <li>Priorizar el backlog de mejoras con la Coordinación de gestión documental.</li>
+        <li>Validar que cada regla quede reflejada en el comportamiento del sistema.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">03</span><div class="tm-id"><h4>Diseñador de producto</h4><p class="tm-resp">Responsable de los flujos, las pantallas y la experiencia de uso.</p></div></div>
+      <ul class="tm-fns">
+        <li>Diseñar las pantallas y los flujos que se aprueban en la semana 4.</li>
+        <li>Resolver la interfaz para tres públicos: áreas, coordinación y motorizados.</li>
+        <li>Cuidar accesibilidad, contraste y legibilidad en pantalla pequeña.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">04</span><div class="tm-id"><h4>Desarrollador full stack</h4><p class="tm-resp">Responsable del aplicativo web, la captura en campo, los servicios y la seguridad de acceso.</p></div></div>
+      <ul class="tm-fns">
+        <li>Construir los dieciséis módulos del aplicativo web y la ruta del día del motorizado.</li>
+        <li>Implementar roles, permisos, bitácora, avisos y la firma en pantalla.</li>
+        <li>Conectar el directorio corporativo y desplegar los ambientes de pruebas y producción.</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">05</span><div class="tm-id"><h4>Ingeniero de datos y QA</h4><p class="tm-resp">Responsable de la migración, el tablero y la calidad funcional.</p></div></div>
+      <ul class="tm-fns">
+        <li>Normalizar y cargar los 3.812 registros históricos.</li>
+        <li>Construir los indicadores y sus reglas de cálculo, con días hábiles y festivos.</li>
+        <li>Probar cada módulo contra las reglas del discovery y acompañar el piloto en calle con Carlos y Mauricio.</li>
+      </ul>
+    </li>
+  </ol>
+  <p class="schema-note"><b>Gobernanza.</b> Un responsable único por cada lado. Comité de seguimiento cada quince días, <b>6 sesiones de 60 a 90 minutos</b> a lo largo del proyecto, con acta y decisiones registradas. Cada mes cierra con una aprobación escrita.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">15 / 20</span></div>
+</section>
+
+<!-- ===================== 13 · INVERSIÓN ===================== -->
+<section class="page pad tight-pay" id="inversion">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">06</div><div class="sh"><span class="kicker">Inversión</span><h2>Propuesta económica</h2></div></div>
+  <p class="col">La inversión tiene dos rubros. El diseño y la implementación, que se pagan una vez contra las aprobaciones de las doce semanas, y la licencia anual de servicio, que sostiene la operación del aplicativo en la nube con la Clínica como propietaria de sus datos.</p>
+
+  <table class="inv-t">
+    <thead><tr><th>Rubro</th><th>Ventana</th><th>Comprende</th><th>Valor antes de IVA</th><th>Valor a pagar</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="ci">Diseño e implementación</span><br><span class="cf">tres fases · 28 entregables</span></td>
+        <td class="cn">12 semanas</td>
+        <td class="cd">Discovery, aplicativo web con sus dieciséis módulos, captura en campo con instalación en los teléfonos de los motorizados, migración del histórico, lector de código de barras, piloto y capacitación</td>
+        <td class="cn">$ 18.250.000</td>
+        <td class="cv">$ 21.717.500</td>
+      </tr>
+      <tr>
+        <td><span class="ci">Licencia anual de servicio</span><br><span class="cf">software como servicio</span></td>
+        <td class="cn">12 meses</td>
+        <td class="cd">Hospedaje, base de datos, evidencias, correo y avisos, respaldo diario, monitoreo, actualizaciones de seguridad y soporte</td>
+        <td class="cn">$ 10.000.000</td>
+        <td class="cv">$ 10.000.000</td>
+      </tr>
+      <tr class="tot"><td class="lab">Primer año</td><td class="num">3 + 12 meses</td><td class="num"></td><td class="num">$ 28.250.000</td><td><span class="big">$ 31.717.500</span></td></tr>
+    </tbody>
+  </table>
+  <p class="schema-note">El diseño y la implementación llevan IVA del 19 % ($ 3.467.500). La licencia anual se factura como servicio en la nube, <b>excluida de IVA</b>, a la salida a producción, y cubre los doce meses siguientes; la renovación se pacta con el IPC del año inmediatamente anterior.</p>
+
+  <p style="margin-top:16px"><b>Qué cubre la licencia</b> · el aplicativo opera en la nube bajo administración de Algoritmo T:</p>
+  <div class="escala">
+    <span class="base"><b>Licencia anual</b> · $ 10.000.000 · IVA excluido</span>
+    <span class="base"><b>Usuarios ilimitados</b> en las áreas solicitantes</span>
+    <span><b>Soporte</b> en horario hábil · respuesta dentro de 4 horas</span>
+    <span><b>8 horas mensuales</b> de ajustes evolutivos, acumulables en el trimestre</span>
+  </div>
+
+  <p style="margin-top:16px"><b>Salida del servicio</b> · opcional, por una vez · <b>$ 5.000.000</b>. Traslado de la operación a un tercero o a la propia Clínica: entrega de la infraestructura, las credenciales y la documentación técnica, con acompañamiento durante la migración. Desde ese momento la Clínica asume directamente el hospedaje, la base de datos, el almacenamiento y el consumo de los servicios de terceros.</p>
+
+  <p class="note">Los valores están expresados en pesos colombianos. El diseño y la implementación incluyen IVA del 19 %; la licencia anual se factura como servicio en la nube, excluida de IVA. Las retenciones aplican según el régimen tributario de la Clínica. La oferta tiene vigencia de 30 días calendario.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">16 / 20</span></div>
+</section>
+
+<!-- ===================== 17 · APROBACIONES Y PLAN DE PAGOS ===================== -->
+<section class="page pad tight-pay">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">06</div><div class="sh"><span class="kicker">Inversión — continuación</span><h2>Aprobaciones y plan de pagos</h2></div></div>
+  <p class="col">Cada mes cierra con una aprobación escrita sobre entregables verificables. Esa aprobación habilita el pago del periodo, de manera que la Clínica paga contra producto entregado y revisado. Son <b>tres pagos</b>: en las semanas 4, 8 y 12; el último incluye la anualidad de la suscripción.</p>
+
+  <table class="inv-t">
+    <thead><tr><th>Pago</th><th>Fase</th><th>Qué se verifica</th><th>Concepto</th><th>Valor a pagar</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="ci">Semana 4</span><br><span class="cf">discovery aprobado</span></td>
+        <td class="cn">Fase 01</td>
+        <td class="cd">Mapa del proceso, reglas de negocio, estructura organizacional, tarifario, backlog de mejoras y pantallas aprobados</td>
+        <td class="cd">Implementación 40 %<br><span class="cf">$ 7.300.000 + IVA</span></td>
+        <td class="cv">$ 8.687.000</td>
+      </tr>
+      <tr>
+        <td><span class="ci">Semana 8</span><br><span class="cf">aplicativo en pruebas</span></td>
+        <td class="cn">Fase 02</td>
+        <td class="cd">Aplicativo web en la nube, en pruebas con la coordinación y dos áreas piloto, con el directorio corporativo conectado y el histórico migrado</td>
+        <td class="cd">Implementación 30 %<br><span class="cf">$ 5.475.000 + IVA</span></td>
+        <td class="cv">$ 6.515.250</td>
+      </tr>
+      <tr>
+        <td><span class="ci">Semana 12</span><br><span class="cf">producción</span></td>
+        <td class="cn">Fase 03</td>
+        <td class="cd">Salida a producción, captura en campo operativa, piloto en calle cerrado y equipo capacitado</td>
+        <td class="cd">Implementación 30 %<br><span class="cf">$ 5.475.000 + IVA</span><br>Licencia anual<br><span class="cf">$ 10.000.000 · IVA excluido</span></td>
+        <td class="cv">$ 16.515.250</td>
+      </tr>
+      <tr class="tot"><td class="lab">Primer año</td><td class="num">3 pagos</td><td class="num"></td><td class="num">$ 28.250.000 antes de IVA</td><td><span class="big">$ 31.717.500</span></td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top:18px"><b>Qué revisa cada aprobación.</b> La Clínica recibe los entregables del periodo con cinco días hábiles de anticipación a la sesión de cierre. En el comité se revisan uno por uno, se consignan las observaciones y se firma el acta. Las observaciones menores se incorporan dentro del periodo siguiente, con la aprobación ya firmada.</p>
+  <p><b>Ritmo del cronograma.</b> El esquema es secuencial en su primer tramo: el aplicativo se construye sobre las reglas del discovery. Una demora en la retroalimentación de la semana 4 desplaza lo que sigue en la misma proporción. Por eso el supuesto de respuesta dentro de cinco días hábiles aparece entre las condiciones del servicio.</p>
+  <p><b>La anualidad de la suscripción.</b> Se factura con el pago de la semana 12, a la salida a producción, y cubre los doce meses siguientes de operación en la nube. Cada factura se paga dentro de los 30 días siguientes a su radicación.</p>
+
+  <p class="note">Cada pago se libera con la aprobación escrita de su periodo. Las tres cuotas de implementación suman $ 18.250.000 antes de IVA ($ 21.717.500 con IVA del 19 %); la licencia anual de $ 10.000.000 va excluida de IVA como servicio en la nube. El total del primer año es $ 31.717.500.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">17 / 20</span></div>
+</section>
+
+<!-- ===================== 15 · CRONOGRAMA ===================== -->
+<section class="page pad" id="cronograma">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">07</div><div class="sh"><span class="kicker">Tiempos</span><h2>Cronograma</h2></div></div>
+  <p class="col">Doce semanas divididas en quincenas, desde el arranque hasta la salida a producción. El discovery abre y entrega las reglas; el diseño arranca en la segunda quincena, el desarrollo se solapa con la nube y la migración, y el piloto en calle con la capacitación cierra el tercer mes.</p>
+  <div class="tscroll">
+  <table class="crono">
+    <thead><tr><th>Actividad</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Q5</th><th>Q6</th></tr></thead>
+    <tbody>
+      <tr><td>Sesiones de discovery y mapa del proceso</td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Reglas de negocio, estructura y tarifario</td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Diseño de pantallas y modelo de datos</td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Semana 4 · discovery aprobado</td><td><div class="gbar"></div></td><td><div class="gbar aprob"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Desarrollo del aplicativo web</td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Nube, directorio corporativo y migración</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Semana 8 · aplicativo en pruebas</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar aprob"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Captura en campo y avisos al dispositivo</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Piloto con coordinación y motorizados</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td></tr>
+      <tr><td>Capacitación y documentación</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td></tr>
+      <tr><td>Semana 12 · salida a producción</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar aprob"></div></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="crono-legend">
+    <span><i style="background:#4fd0ec"></i> Ejecución</span>
+    <span><i style="background:#f1ba5b"></i> Aprobación escrita</span>
+    <span>Q = quincena · 6 quincenas en 12 semanas</span>
+  </div>
+  <p class="schema-note" style="margin-top:16px">Ritmo de decisión: <b>6 sesiones de 60 a 90 minutos</b>, dos por mes. La primera del mes revisa avance; la segunda firma la aprobación. El piloto del mes 3 corre en paralelo con la operación actual durante <b>dos semanas</b>, con ambos registros activos, antes de retirar el archivo de Excel del flujo diario.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">18 / 20</span></div>
+</section>
+
+<!-- ===================== 16 · CONDICIONES ===================== -->
+<section class="page pad tight-terms" id="condiciones">
+  <div class="rhead"><span class="r-l">Propuesta · Fundación Cardioinfantil</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">08</div><div class="sh"><span class="kicker">Condiciones</span><h2>Supuestos y condiciones del servicio</h2></div></div>
+  <p class="lede">Estas condiciones soportan el cronograma y la inversión de las páginas anteriores. Las declaramos por adelantado para que la conversación empiece con las cartas sobre la mesa.</p>
+
+  <ul class="terms">
+    <li><div class="tt">Interlocución</div><div class="tb">Un responsable único por cada lado, con capacidad de decisión sobre las reglas del proceso. Del lado de la Clínica proponemos a la Coordinación de gestión documental, acompañada por quien coordina el proceso de mensajería en las aprobaciones.</div></li>
+    <li><div class="tt">Acceso a las personas</div><div class="tb">Disponibilidad de la coordinadora, de los dos motorizados y de tres áreas para las sesiones de discovery del mes 1 y para el piloto del mes 3. Estimamos <b>14 horas</b> de la coordinadora, <b>6 horas</b> de cada motorizado y <b>3 horas</b> por área a lo largo del proyecto.</div></li>
+    <li><div class="tt">Retroalimentación</div><div class="tb">Observaciones consolidadas dentro de los <b>5 días hábiles</b> siguientes a cada entrega. Los plazos del cronograma se calculan sobre ese ritmo y una demora en la respuesta desplaza la aprobación correspondiente.</div></li>
+    <li><div class="tt">Infraestructura</div><div class="tb">El aplicativo opera en infraestructura de nube administrada por Algoritmo T, con cifrado en tránsito y en reposo. La Clínica aporta el subdominio institucional, el registro de la aplicación en su directorio corporativo y la autorización de acceso desde su red interna.</div></li>
+    <li><div class="tt">Datos personales</div><div class="tb">El tratamiento se rige por la política de la Clínica y por la Ley 1581 de 2012. Algoritmo T actúa como <b>encargado del tratamiento</b> y suscribe el acuerdo correspondiente antes del inicio.</div></li>
+    <li><div class="tt">Propiedad y salida</div><div class="tb">Los datos son propiedad de la Clínica y se exportan en formato abierto cuando los solicite, durante la vigencia y al terminarla. El código del aplicativo permanece en propiedad de Algoritmo T bajo la licencia descrita. La <b>salida del servicio</b> (traslado de la operación a un tercero o a la Clínica, con infraestructura, credenciales, documentación técnica y acompañamiento) se contrata por una vez, por $ 5.000.000.</div></li>
+    <li><div class="tt">Equipos</div><div class="tb">Algoritmo T entrega el <b>lector de código de barras</b> del puesto de correspondencia, incluido en la implementación. Los teléfonos de los motorizados los aporta la Clínica; el aplicativo se instala en ellos como <b>aplicación web progresiva (PWA)</b>, con Android o iOS, y esa instalación queda incluida en la capacitación. La publicación como app en las tiendas de Apple y Google queda para una fase posterior, si la Clínica la requiere.</div></li>
+    <li><div class="tt">Capacitación</div><div class="tb">Incluida en el mes 3. Tres sesiones por perfil: áreas solicitantes, coordinación y motorizados. Se entregan manuales en video y una guía rápida imprimible para el puesto de trabajo.</div></li>
+    <li><div class="tt">Garantía</div><div class="tb"><b>Tres meses</b> de garantía sobre defectos de funcionamiento desde la salida a producción, incluidos en la implementación y cubiertos dentro de la licencia anual.</div></li>
+    <li><div class="tt">Alcance de fases siguientes</div><div class="tb">La integración con el ERP, la facturación electrónica, las rutas con tráfico en tiempo real y la extensión a otras sedes quedan para etapas posteriores, con su propia valoración y cronograma.</div></li>
+    <li><div class="tt">Órdenes de cambio</div><div class="tb">Toda solicitud que altere alcance, plazos o complejidad se evalúa con su impacto en tiempo y costo, y se aprueba por escrito antes de ejecutarse.</div></li>
+    <li><div class="tt">Impuestos y vigencia</div><div class="tb">Valores en pesos colombianos, con IVA del 19 %. Las retenciones aplican según el régimen tributario de la Clínica. La oferta tiene vigencia de <b>30 días calendario</b> desde la fecha de esta propuesta.</div></li>
+    <li><div class="tt">Confidencialidad</div><div class="tb">Este documento es propiedad exclusiva de Algoritmo T. Su copia o su uso para fines distintos de la evaluación de esta propuesta requiere autorización escrita.</div></li>
+  </ul>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · Correspondencia FCI</span><span class="pf-r">19 / 20</span></div>
+</section>
+
+<!-- ===================== 17 · CONTRAPORTADA ===================== -->
+<section class="page back">
+  <div class="bk-top"><b>Algoritmo</b><img src="assets/img/algoritmot-mark.svg" alt="Algoritmo T"></div>
+  <div class="bk-mid">
+    <div class="bk-q">Quedamos atentos para <em>dar continuidad al proceso</em> conforme a los tiempos de la Clínica.</div>
+    <div class="bk-tag">Soluciones digitales con sentido humano.</div>
+  </div>
+  <div class="bk-bot">
+    <div class="sig">
+      <div class="nm">Ana Milena Diazgranados</div>
+      <div class="rl">Directora de Relacionamiento · Algoritmo T</div>
+      <div class="ct"><a href="mailto:anadiazgranados@algoritmot.com">anadiazgranados@algoritmot.com</a> · +57 300 659 0161<br><a href="https://www.algoritmot.com">www.algoritmot.com</a></div>
+    </div>
+    <div class="bk-client"><span>Fundación Cardioinfantil<br>Instituto de Cardiología</span></div>
+  </div>
+</section>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>
