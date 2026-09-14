@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Propuesta v2.0 · 4Shine Empresas y caso JSSuministros | Algoritmo T</title>
+<meta name="description" content="Propuesta técnica y económica de Algoritmo T, versión 2.0: framework fundacional de 4Shine Empresas en 12 semanas, con aplicación de los frameworks al caso JSSuministros (arquitectura organizacional, estandarización y planeación de tecnología y automatización).">
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/extra.css">
+<link rel="stylesheet" href="assets/css/print.css" media="print">
+<style>
+  .crono thead th{vertical-align:bottom !important}
+  .crono th span{white-space:nowrap}
+  .crono td:first-child{max-width:330px}
+  .crono .gbar.done{background:var(--navy); border-color:var(--navy)}
+  .crono .gbar.done.hito{background:var(--navy); border-color:var(--gold); box-shadow:inset 0 0 0 2px var(--gold-fill)}
+  .estado{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px}
+  .estado .co h4{margin-bottom:6px}
+  .estado ul{list-style:none; margin:0; padding:0; font-size:12.5px; line-height:1.45}
+  .estado li{padding:3px 0 3px 14px; position:relative; border-top:1px solid var(--line)}
+  .estado li:first-child{border-top:0}
+  .estado li:before{content:""; position:absolute; left:0; top:10px; width:6px; height:6px; background:var(--navy)}
+  .estado .pend li:before{background:var(--cyan-fill); border:1px solid var(--cyan); width:5px; height:5px}
+  .estado li b{color:var(--navy); font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="bar no-print">
+  <span class="b-l"><img src="assets/img/algoritmot-mark.svg" alt="">Algoritmo&nbsp;T</span>
+  <div class="b-r">
+    <nav>
+      <a href="#alcance">Alcance</a>
+      <a href="#empresas">Empresas</a>
+      <a href="#piloto">JSSuministros</a>
+      <a href="#cronograma">Cronograma</a>
+      <a href="#inversion">Inversión</a>
+    </nav>
+    <button class="pdfbtn" onclick="descargarPDF()">Descargar PDF</button>
+  </div>
+</div>
+
+<!-- ===================== 1 · PORTADA ===================== -->
+<section class="page cover">
+  <div class="cv-top">
+    <span class="brandmark"><b>Algoritmo</b><img src="assets/img/algoritmot-mark.svg" alt="Algoritmo T"></span>
+    <span class="cv-idx">PROPUESTA · 2026 · v2.0</span>
+  </div>
+  <div class="cv-mid">
+    <span class="kick">Propuesta técnica y económica</span>
+    <h1><em>4Shine Empresas</em>: framework fundacional y aplicación al caso JSSuministros</h1>
+    <div class="cv-rule"></div>
+    <div class="cv-meta">
+      <div class="m"><div class="ml">Cliente</div><div class="mv">Carmenza Alarcón · Sistema 4Shine®</div></div>
+      <div class="m"><div class="ml">Duración</div><div class="mv">12 semanas · 3 ago – 23 oct 2026</div></div>
+      <div class="m"><div class="ml">Alcance</div><div class="mv">2 frentes · 18 entregables · 4 ya recibidos</div></div>
+      <div class="m"><div class="ml">Inversión</div><div class="mv">COP 20.000.000</div></div>
+    </div>
+  </div>
+  <div class="cv-bot">
+    <span class="tag">Soluciones digitales con <b>sentido humano</b></span>
+    <span class="cmark"><span class="cm-w">4<b>Shine</b></span><span class="cm-s">Empresas</span></span>
+  </div>
+</section>
+
+<!-- ===================== 2 · CONTENIDO ===================== -->
+<section class="page pad toc">
+  <div class="rhead"><span class="r-l">Propuesta · 4Shine Empresas</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <h2>Contenido</h2>
+  <ol>
+    <li><a href="#presentacion"><span class="num">01</span><span class="ti">Presentación</span><span class="pg"><i>pág.</i> 03</span></a></li>
+    <li><a href="#alcance"><span class="num">02</span><span class="ti">Arquitectura de la propuesta y estado de avance</span><span class="pg"><i>pág.</i> 04</span></a></li>
+    <li><a href="#empresas"><span class="num">03</span><span class="ti">Frente 01 · Framework 4Shine Empresas</span><span class="pg"><i>pág.</i> 05</span></a></li>
+    <li><a href="#piloto"><span class="num">04</span><span class="ti">Frente 02 · Aplicación al caso JSSuministros</span><span class="pg"><i>pág.</i> 07</span></a></li>
+    <li><a href="#equipo"><span class="num">05</span><span class="ti">Equipo y gobernanza</span><span class="pg"><i>pág.</i> 09</span></a></li>
+    <li><a href="#cronograma"><span class="num">06</span><span class="ti">Cronograma de 12 semanas</span><span class="pg"><i>pág.</i> 10</span></a></li>
+    <li><a href="#inversion"><span class="num">07</span><span class="ti">Inversión y plan de pagos</span><span class="pg"><i>pág.</i> 11</span></a></li>
+    <li><a href="#condiciones"><span class="num">08</span><span class="ti">Supuestos, alcance y condiciones</span><span class="pg"><i>pág.</i> 12</span></a></li>
+  </ol>
+  <p class="note" style="margin-top:28px"><b>Versión 2.0 · 14 de septiembre de 2026.</b> Reemplaza la propuesta del 23 de julio de 2026. Concentra el alcance en la línea 4Shine Empresas, fija una duración de 12 semanas contadas desde el 3 de agosto, registra los entregables ya recibidos en la semana 7 e incorpora la aplicación de los frameworks al caso JSSuministros. La serie de papers, el estudio de observación y 4Shine Experience se retiran de este documento y se cotizan en propuesta aparte.</p>
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">02 / 13</span></div>
+</section>
+
+<!-- ===================== 3 · PRESENTACIÓN ===================== -->
+<section class="page pad" id="presentacion">
+  <div class="rhead"><span class="r-l">Propuesta · 4Shine Empresas</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">01</div><div class="sh"><span class="kicker">Presentación</span><h2>Objeto de la propuesta</h2></div></div>
+
+  <p class="addr">Bogotá, 14 de septiembre de 2026 · Para <b>Carmenza Alarcón</b>, creadora del Sistema 4Shine®<br><b>Asunto:</b> Propuesta comercial v2.0 — Fundación de la línea 4Shine Empresas y aplicación de sus frameworks al caso JSSuministros.</p>
+
+  <p class="salutation">Apreciada Carmenza,</p>
+
+  <p class="drop">Esta versión ajusta la propuesta de julio a lo que acordamos: concentrar el esfuerzo en 4Shine Empresas, cerrarlo en doce semanas contadas desde el 3 de agosto y aplicar los frameworks en una empresa real antes de salir a venderlos. La agenda científica del Instituto y 4Shine Experience siguen en pie, pero salen de este documento y se cotizan por separado.</p>
+
+  <p>Vamos en la semana 7 y la <b>fase fundacional ya está entregada</b>: la Presentación 4Shine Empresas v1, el Dossier v1.0, la Matriz de capacidades de cuatro niveles y los Soportes teóricos y empíricos del framework. Ese hito habilita el primer pago.</p>
+
+  <p>Lo que sigue hasta la semana 12 se organiza en dos frentes. En el <b>Frente 01</b>, versionamos los cuatro documentos con tu retroalimentación, diseñamos el diagnóstico 4Shine-OD y diseñamos los frameworks propios de la línea. En el <b>Frente 02</b>, aplicamos esos frameworks a <b>JSSuministros</b>, que ya cuenta con veinte procesos administrativos documentados, para dejarle una arquitectura organizacional escalable, sus procesos críticos estandarizados con conocimiento institucional, y una planeación de tecnología y automatización. El diagnóstico 4Shine-OD no se aplica en este caso; la intervención va directo a los formatos.</p>
+
+  <div class="pull">
+    <p>Doce semanas para instalar el framework y aplicarlo en una organización real.</p>
+  </div>
+
+  <p>Sobre el alcance prefiero ser directa. La inversión cubre la <b>versión 1.0 del framework</b> con su diagnóstico y sus frameworks, y la <b>aplicación completa al caso JSSuministros</b>. La implementación de las automatizaciones y la validación psicométrica del diagnóstico quedan para etapas siguientes, como detalla la sección 08.</p>
+
+  <p>Gracias por la confianza. Quedamos atentos a tu retroalimentación sobre los documentos entregados y a confirmar con la gerencia de JSSuministros la sesión de apertura.</p>
+
+  <div class="signoff">
+    <div class="nm">Ana Milena Diazgranados</div>
+    <div class="rl">Directora de Relacionamiento · Algoritmo T<br>anadiazgranados@algoritmot.com · +57 300 659 0161 · www.algoritmot.com</div>
+  </div>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">03 / 13</span></div>
+</section>
+
+<!-- ===================== 4 · ARQUITECTURA Y ESTADO ===================== -->
+<section class="page pad" id="alcance">
+  <div class="rhead"><span class="r-l">Propuesta · 4Shine Empresas</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">02</div><div class="sh"><span class="kicker">Alcance general</span><h2>Arquitectura de la propuesta y estado de avance</h2></div></div>
+
+  <p class="lede">Dos frentes en doce semanas. El Frente 01 fundó el sistema corporativo en las primeras siete semanas y lo completa con el diagnóstico y los frameworks hasta la semana 12. El Frente 02 toma esos frameworks a medida que quedan listos y los aplica a JSSuministros hasta el cierre.</p>
+
+  <div class="frentes">
+    <div class="fr">
+      <div class="fr-n">Frente 01 · Semanas 1–12</div>
+      <h3>Framework fundacional 4Shine Empresas</h3>
+      <p>Las cuatro capacidades (Dirección, Liderazgo, Ejecución y Multiplicación) bajan a 17 dimensiones, 68 prácticas observables con codificación trazable y su evidencia verificable. La fase fundacional ya está entregada; falta versionarla con la retroalimentación del cliente, diseñar el diagnóstico 4Shine-OD y diseñar los frameworks propios de la línea.</p>
+      <div class="fr-o"><b>14 entregables</b> · 4 recibidos (presentación, dossier, matriz y soportes) · 10 pendientes (versión 1.1 de los cuatro, 4Shine-OD y frameworks T1–T8)</div>
+    </div>
+    <div class="fr">
+      <div class="fr-n">Frente 02 · Semanas 8–12</div>
+      <h3>Aplicación de los frameworks al caso JSSuministros</h3>
+      <p>Los formatos de la línea se aplican a los veinte procesos administrativos ya documentados por JSSuministros, sin pasar por el diagnóstico 4Shine-OD, para dejar instalados tres resultados: arquitectura organizacional escalable (MUL-1.1), estandarización y conocimiento institucional (MUL-2.1 y MUL-2.2) y planeación de la tecnología y la automatización (MUL-3).</p>
+      <div class="fr-o"><b>4 entregables</b> · Arquitectura organizacional, inventario de procesos críticos con estándar mínimo, playbooks y plan de tecnología y automatización</div>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--sans);font-weight:700;font-size:var(--fs-sub);color:var(--navy);margin:20px 0 0;letter-spacing:-.02em">Estado de avance al 14 de septiembre de 2026 · semana 7</h3>
+  <div class="estado">
+    <div class="co">
+      <div class="co-k">Recibido · habilita el primer pago</div>
+      <h4>Fase fundacional</h4>
+      <ul>
+        <li><b>Presentación 4Shine Empresas v1</b> — posicionamiento de la línea y sus cuatro capacidades</li>
+        <li><b>Dossier 4Shine Empresas v1.0</b> — texto matriz: tesis, arquitectura, capacidades, diagnóstico, intervención y gobernanza</li>
+        <li><b>Matriz de capacidades · 4 niveles v1</b> — 17 dimensiones y 68 prácticas con codificación CAP-n.p</li>
+        <li><b>Soportes teóricos y empíricos</b> — referencias que respaldan cada práctica del mapa</li>
+      </ul>
+    </div>
+    <div class="co pend">
+      <div class="co-k">Pendiente · semanas 8–12 · habilita el pago final</div>
+      <h4>Consolidación y aplicación</h4>
+      <ul>
+        <li><b>Versión 1.1 de los cuatro documentos</b> — incorpora la retroalimentación del cliente, con changelog</li>
+        <li><b>Diseño del diagnóstico 4Shine-OD</b> — tres fuentes, scoring y cinco salidas (OD1–OD5)</li>
+        <li><b>Diseño de los frameworks propios</b> — toolkit T1–T8 de la línea</li>
+        <li><b>Aplicación al caso JSSuministros</b> — arquitectura, estandarización y plan de tecnología, presentados a su gerencia</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="scopebox">
+    <div class="sb-h">Criterio de alcance</div>
+    <p>Cada frente se entrega en <b>versión 1.0</b>, lista para operar y con trazabilidad completa. La aplicación a JSSuministros prueba los frameworks sobre una organización real y le deja a la empresa un resultado propio que puede seguir operando. La implementación de las automatizaciones y el despliegue comercial llegan en una fase posterior.</p>
+  </div>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">04 / 13</span></div>
+</section>
+
+<!-- ===================== 5 · FRENTE 1 — PARTE A ===================== -->
+<section class="page pad" id="empresas">
+  <div class="rhead"><span class="r-l">Frente 01 · 4Shine Empresas</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Frente 01 · Fase fundacional entregada</span><h2>Framework 4Shine Empresas</h2></div></div>
+
+  <p class="lede">Las cuatro capacidades de 4Shine Empresas ya están definidas y posicionadas. La fase fundacional les dio profundidad metodológica y las bajó a dimensiones, prácticas observables y evidencia verificable, que es lo que hace falta para diagnosticarlas e intervenirlas.</p>
+
+  <p class="col" style="font-size:var(--fs-compact)">En el sistema para personas la cadena baja de <b>pilar</b> a componente, de ahí a competencia y termina en <b>conducta observable</b>. Funciona porque al final hay un individuo a quien se le puede pedir que actúe distinto. En una organización el sujeto es un colectivo, y lo observable pasa a ser una <b>práctica instalada</b>: un ritual, un proceso, una decisión que se repite, con la <b>evidencia</b> que la demuestra. De ahí esta arquitectura de cuatro niveles, ya documentada en el Dossier v1.0 y la Matriz de capacidades.</p>
+
+  <div class="arch">
+    <div class="ar hl">
+      <div class="ar-n">Nivel 1</div>
+      <div class="ar-t">Capacidad</div>
+      <div class="ar-d">Dirección, Liderazgo, Ejecución y Multiplicación. Ya definidas por 4Shine Empresas.</div>
+    </div>
+    <div class="ar">
+      <div class="ar-n">Nivel 2</div>
+      <div class="ar-t">Dimensión</div>
+      <div class="ar-d">Los focos que componen cada capacidad. Entre 4 y 5 por capacidad; 17 en total.</div>
+    </div>
+    <div class="ar">
+      <div class="ar-n">Nivel 3</div>
+      <div class="ar-t">Práctica observable</div>
+      <div class="ar-d">Lo que la organización hace de forma recurrente. 68 prácticas con código único CAP-n.p.</div>
+    </div>
+    <div class="ar">
+      <div class="ar-n">Nivel 4</div>
+      <div class="ar-t">Evidencia verificable</div>
+      <div class="ar-d">Artefacto, indicador o registro que demuestra la práctica y califica su madurez.</div>
+    </div>
+  </div>
+
+  <ul class="caps">
+    <li>
+      <div class="cp-id">
+        <div class="cp-p">Capacidad 01</div>
+        <h3>Dirección</h3>
+        <div class="cp-q">¿Hacia dónde vamos y con qué criterio decidimos?</div>
+      </div>
+      <div class="cp-b">
+        <p class="cp-def">Claridad estratégica que orienta decisiones de alto impacto y genera ventaja sostenible.</p>
+        <div class="cp-dims"><span>Ambición estratégica</span><span>Posicionamiento y elección</span><span>Arquitectura de crecimiento</span><span>Foco y alineación estratégica</span></div>
+      </div>
+    </li>
+    <li>
+      <div class="cp-id">
+        <div class="cp-p">Capacidad 02</div>
+        <h3>Liderazgo</h3>
+        <div class="cp-q">¿Quién moviliza, y con qué calidad de conversación?</div>
+      </div>
+      <div class="cp-b">
+        <p class="cp-def">Líderes que inspiran, alinean y movilizan culturas de alto desempeño.</p>
+        <div class="cp-dims"><span>Liderazgo del CEO</span><span>Cohesión del equipo directivo</span><span>Liderazgo de personas y cultura</span><span>Desarrollo de talento y sucesión</span></div>
+      </div>
+    </li>
+    <li>
+      <div class="cp-id">
+        <div class="cp-p">Capacidad 03</div>
+        <h3>Ejecución</h3>
+        <div class="cp-q">¿Cómo convertimos la estrategia en resultado medible?</div>
+      </div>
+      <div class="cp-b">
+        <p class="cp-def">Sistemas, procesos y disciplina operativa que convierten la estrategia en resultados.</p>
+        <div class="cp-dims"><span>Traducción estratégica</span><span>Accountability</span><span>Indicadores y visibilidad</span><span>Cadencia y coordinación operativa</span></div>
+      </div>
+    </li>
+    <li>
+      <div class="cp-id">
+        <div class="cp-p">Capacidad 04</div>
+        <h3>Multiplicación</h3>
+        <div class="cp-q">¿Qué queda instalado y sigue creciendo por sí mismo?</div>
+      </div>
+      <div class="cp-b">
+        <p class="cp-def">Construcción de capacidades organizacionales que aseguran crecimiento escalable y sostenible.</p>
+        <div class="cp-dims"><span>Arquitectura organizacional escalable</span><span>Estandarización y conocimiento institucional</span><span>Tecnología y automatización</span><span>Modelo replicable de crecimiento</span><span>Desacoplamiento de dependencias</span></div>
+      </div>
+    </li>
+  </ul>
+
+  <p class="note">Capacidades y definiciones tomadas del documento de posicionamiento vigente de 4Shine Empresas. Las 17 dimensiones corresponden a la Matriz de capacidades v1 ya entregada, que es la fuente única de verdad del mapa. Los cambios que surjan de la retroalimentación del cliente se incorporan en la versión 1.1.</p>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">05 / 13</span></div>
+</section>
+
+<!-- ===================== 6 · FRENTE 1 — PARTE B ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Frente 01 · 4Shine Empresas</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">03</div><div class="sh"><span class="kicker">Frente 01 · Pendiente hasta la semana 12</span><h2>Versionado, frameworks y diagnóstico</h2></div></div>
+
+  <p class="col">Con la fase fundacional entregada, el trabajo se concentra en tres productos. El <b>versionado</b> incorpora la retroalimentación del cliente a los cuatro documentos recibidos. Los <b>frameworks propios</b> vuelven operable la línea. El <b>diagnóstico</b> establece el punto de partida para conocer los niveles de madurez de una empresa en cada una de sus capacidades.</p>
+
+  <h3 style="font-family:var(--sans);font-weight:700;font-size:var(--fs-sub);color:var(--navy);margin:18px 0 2px;letter-spacing:-.02em">Versión 1.1 con retroalimentación del cliente</h3>
+  <p class="col" style="font-size:var(--fs-compact)">La Presentación, el Dossier, la Matriz de capacidades y los Soportes teóricos y empíricos pasan a <b>versión 1.1</b> con los ajustes que surjan de tu lectura. Cada cambio queda registrado en un <b>changelog</b>; si la retroalimentación toca la estructura del mapa (agregar, quitar o fusionar dimensiones o prácticas), se aplica la regla de versionado del Dossier y los instrumentos dependientes heredan la codificación.</p>
+
+  <h3 style="font-family:var(--sans);font-weight:700;font-size:var(--fs-sub);color:var(--navy);margin:18px 0 2px;letter-spacing:-.02em">Frameworks propios de la línea · <span style="font-family:var(--mono);font-size:13px;color:var(--cyan-deep);font-weight:600">T1–T8</span></h3>
+  <ul class="deliv">
+    <li><b>T1 · Mapa de capacidades 4Shine Empresas</b> — matriz de 4 niveles con codificación trazable</li>
+    <li><b>T2 · Escala de madurez organizacional</b> — 5 niveles descritos por capacidad y dimensión</li>
+    <li><b>T3 · Matriz de articulación</b> — capacidades ↔ 4 pilares ↔ niveles de acompañamiento</li>
+    <li><b>T4 · Mapa de ecosistema corporativo</b> — actores, flujos, tensiones y dependencias</li>
+    <li><b>T5 · Framework de intervención por brecha</b> — brecha → servicio principal → nivel de acompañamiento</li>
+    <li><b>T6 · Plantilla de plan de expansión</b> — compromisos, responsables, evidencia y fecha</li>
+    <li><b>T7 · Rúbricas de calificación</b> — criterios de evidencia por nivel de madurez</li>
+    <li><b>T8 · Guía del Advisor 4Shine Empresas</b> — protocolo de aplicación, guiones y objeciones</li>
+  </ul>
+
+  <h3 style="font-family:var(--sans);font-weight:700;font-size:var(--fs-sub);color:var(--navy);margin:20px 0 2px;letter-spacing:-.02em">Diagnóstico organizacional · <span style="font-family:var(--mono);font-size:13px;color:var(--cyan-deep);font-weight:600">4Shine-OD</span></h3>
+  <p class="col" style="font-size:var(--fs-compact)">Una encuesta de percepción se queda corta para esto. Para sostenerse ante un comité directivo, el diagnóstico triangula tres fuentes independientes. Donde las tres discrepan aparece la brecha entre cómo se ve la organización y cómo opera.</p>
+
+  <div class="coh">
+    <div class="co">
+      <div class="co-k">Fuente 01 · OD1</div>
+      <h4>Autoevaluación directiva</h4>
+      <p>Cómo el comité califica la madurez de cada dimensión. Detecta el relato oficial de la organización.</p>
+      <span class="co-n">68 ítems · escala 1–5</span>
+    </div>
+    <div class="co">
+      <div class="co-k">Fuente 02 · OD2</div>
+      <h4>Percepción de equipos</h4>
+      <p>Muestra de mandos medios y colaboradores sobre las mismas dimensiones. Detecta la brecha jerárquica.</p>
+      <span class="co-n">Versión reducida · 40 ítems</span>
+    </div>
+    <div class="co">
+      <div class="co-k">Fuente 03 · OD3</div>
+      <h4>Evidencia documental</h4>
+      <p>Verificación de artefactos reales, entre rituales, procesos e indicadores, contra las prácticas declaradas.</p>
+      <span class="co-n">Checklist de evidencia por dimensión</span>
+    </div>
+  </div>
+
+  <p class="col" style="margin-top:14px;font-size:var(--fs-compact)">El instrumento se entrega con su lógica de <b>scoring</b> (OD4: ponderación entre fuentes, techo de evidencia e interpretación por rangos) y con cinco <b>salidas</b> (OD5): radar de las 4 capacidades, mapa de calor por dimensión, informe de brechas priorizadas, comparativo de fuentes y recomendación de nivel de acompañamiento (Focus, Growth Partner o Enterprise Elite). Se entrega en versión 1.0 diseñada; su aplicación a JSSuministros no forma parte de este alcance.</p>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">06 / 13</span></div>
+</section>
+
+<!-- ===================== 7 · FRENTE 2 — JSSUMINISTROS A ===================== -->
+<section class="page pad" id="piloto">
+  <div class="rhead"><span class="r-l">Frente 02 · Caso JSSuministros</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Frente 02 · Aplicación de los frameworks</span><h2>Caso JSSuministros</h2></div></div>
+
+  <p class="lede">JSSuministros tiene veinte procesos administrativos documentados en flujogramas, con etapas y responsables definidos. Es el punto de partida ideal para aplicar los frameworks: hay material real sobre el cual organizar, estandarizar y planear, sin partir de cero.</p>
+
+  <p class="col" style="font-size:var(--fs-compact)">La aplicación no pasa por el diagnóstico 4Shine-OD. Va directo a los formatos de la línea sobre la capacidad de <b>Multiplicación</b>, en tres prácticas concretas del mapa: la estructura se diseña desde la estrategia y se revisa ante cada cambio de escala (<b>MUL-1.1</b>); los procesos críticos quedan identificados y documentados con un estándar mínimo no negociable (<b>MUL-2.1</b>) y las prácticas que generan resultados se convierten en playbooks vivos (<b>MUL-2.2</b>); y la tecnología se planea por la capacidad que multiplica (<b>MUL-3</b>). Cada resultado se rastrea hasta la práctica codificada y la evidencia que la demuestra.</p>
+
+  <h3 style="font-family:var(--sans);font-weight:700;font-size:var(--fs-sub);color:var(--navy);margin:18px 0 2px;letter-spacing:-.02em">Inventario de partida · 20 procesos documentados</h3>
+  <table class="amb">
+    <thead><tr><th>Área</th><th>Procesos documentados</th><th>Responsables declarados</th></tr></thead>
+    <tbody>
+      <tr><td class="ab-p">Talento humano <span style="font-family:var(--mono);font-size:10px;color:var(--faint)">· 7</span></td><td>Reclutamiento y selección · Vinculación del empleado · Inducción y capacitación · Gestión de nómina · Evaluación de desempeño · Seguridad y salud en el trabajo · Bienestar</td><td class="ab-f">Asesor de RH · Coordinador de talento humano · SG-SST</td></tr>
+      <tr class="inv"><td class="ab-p">Administrativo, contable y financiero <span style="font-family:var(--mono);font-size:10px;color:var(--faint)">· 10</span></td><td>Elaboración de presupuesto · Seguimiento y control del presupuesto · Contable y administrativo · Tesorería · Revisión de flujo de caja · Facturación a clientes y registro de ventas · Control de ventas y pagos · Cartera · Facturas de proveedores y acreedores · Órdenes de compra</td><td class="ab-f">Coordinador administrativo y contable · Asesor externo financiero</td></tr>
+      <tr><td class="ab-p">Operaciones <span style="font-family:var(--mono);font-size:10px;color:var(--faint)">· 1</span></td><td>Control de inventario</td><td class="ab-f">Coordinador de operaciones</td></tr>
+      <tr class="inv"><td class="ab-p">Comercial <span style="font-family:var(--mono);font-size:10px;color:var(--faint)">· 2</span></td><td>Fidelización · Estrategias comerciales</td><td class="ab-f">Asesor comercial</td></tr>
+    </tbody>
+  </table>
+
+  <p class="col" style="margin-top:14px;font-size:var(--fs-compact)">La lectura inicial de los flujogramas muestra lo que la aplicación debe resolver. Los procesos están descritos como secuencias de actividades, pero <b>no están clasificados</b> por tipo ni conectados entre sí: facturación, cartera, tesorería y flujo de caja se tocan en varios puntos sin que esas interdependencias estén explícitas. Diez de los veinte procesos recaen en un mismo cargo, y ninguno declara aún un <b>estándar mínimo</b> de cumplimiento. Y varias etapas describen recapturas manuales entre el sistema contable, el inventario y los reportes a gerencia, que son el candidato natural para la planeación de la automatización.</p>
+
+  <div class="scopebox">
+    <div class="sb-h">Qué recibe JSSuministros</div>
+    <p>Una estructura organizacional diseñada desde su estrategia, con roles y derechos de decisión; sus procesos críticos identificados y documentados con dueño y estándar mínimo, y playbooks vivos para los que generan resultados; y un plan de tecnología y automatización priorizado, presentado a su gerencia. Todo en formato editable, para que la empresa lo siga operando por su cuenta.</p>
+  </div>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">07 / 13</span></div>
+</section>
+
+<!-- ===================== 8 · FRENTE 2 — JSSUMINISTROS B ===================== -->
+<section class="page pad">
+  <div class="rhead"><span class="r-l">Frente 02 · Caso JSSuministros</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">04</div><div class="sh"><span class="kicker">Frente 02 · continuación</span><h2>Resultados, método y entregables</h2></div></div>
+
+  <p class="col" style="font-size:var(--fs-compact)">Tres resultados, cada uno anclado a una práctica del mapa y a la evidencia que lo demuestra. Los frameworks de la línea se aplican a medida que quedan diseñados en el Frente 01, y cada resultado cierra con una sesión de trabajo con la gerencia de JSSuministros.</p>
+
+  <div class="coh">
+    <div class="co">
+      <div class="co-k">Resultado 01 · MUL-1.1</div>
+      <h4>Arquitectura organizacional escalable</h4>
+      <p>La estructura se diseña desde la estrategia: organigrama con su lógica documentada, roles que existen independientes de la persona, tramos de control viables y derechos de decisión sobre los veinte procesos.</p>
+      <span class="co-n">Evidencia: organigrama vigente con lógica y motivo de revisión</span>
+    </div>
+    <div class="co">
+      <div class="co-k">Resultado 02 · MUL-2.1 y MUL-2.2</div>
+      <h4>Estandarización y conocimiento institucional</h4>
+      <p>Procesos críticos identificados y documentados con dueño y estándar mínimo no negociable; y playbooks vivos para las prácticas que generan resultados en lo comercial, la operación y la administración.</p>
+      <span class="co-n">Evidencia: inventario con estándar · playbooks con fecha y uso</span>
+    </div>
+    <div class="co">
+      <div class="co-k">Resultado 03 · MUL-3</div>
+      <h4>Planeación de tecnología y automatización</h4>
+      <p>Mapa de sistemas e integraciones, tareas repetitivas y recapturas manuales priorizadas en un backlog, fuente única de verdad para los datos críticos y roadmap con casos de negocio.</p>
+      <span class="co-n">Evidencia: backlog priorizado · mapa de sistemas · fuentes maestras</span>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--sans);font-weight:700;font-size:var(--fs-sub);color:var(--navy);margin:22px 0 2px;letter-spacing:-.02em">Método · semanas 8–12</h3>
+  <p class="col" style="font-size:var(--fs-compact)"><b>Levantamiento (semanas 8–9).</b> Lectura de los veinte flujogramas, entrevistas de 45 minutos con los responsables de proceso, organigrama actual y mapa de los sistemas en uso. <b>Arquitectura y estandarización (semanas 9–11).</b> Con el mapa de capacidades (T1), el mapa de ecosistema (T4) y las rúbricas (T7) se diseña la estructura, se clasifican los procesos, se eligen los críticos y se documentan con estándar mínimo y playbook. <b>Plan de tecnología (semanas 11–12).</b> Con la plantilla de plan de expansión (T6) se construye el backlog de automatización, la fuente única de verdad y el roadmap, y se presenta a la gerencia.</p>
+
+  <h3 style="font-family:var(--sans);font-weight:700;font-size:var(--fs-sub);color:var(--navy);margin:20px 0 2px;letter-spacing:-.02em">Entregables del caso</h3>
+  <ul class="deliv">
+    <li><b>J1 · Arquitectura organizacional de JSSuministros</b> — organigrama con lógica documentada, roles, tramos de control y derechos de decisión</li>
+    <li><b>J2 · Inventario de procesos críticos</b> — los 20 procesos clasificados y conectados, con dueño y estándar mínimo para los críticos</li>
+    <li><b>J3 · Playbooks vivos</b> — para las prácticas que generan resultados, con fecha de actualización y responsable de mantenerlos</li>
+    <li><b>J4 · Plan de tecnología y automatización</b> — mapa de sistemas, backlog priorizado, fuente única de verdad y roadmap de 90 días con casos de negocio</li>
+  </ul>
+
+  <div class="scopebox">
+    <div class="sb-h">Lo que el caso no incluye</div>
+    <p>La <b>aplicación del diagnóstico 4Shine-OD</b> en JSSuministros y la <b>implementación</b> de las automatizaciones planeadas (configuración, integraciones, desarrollo y licencias) se cotizan aparte. El caso entrega la arquitectura, los estándares y la decisión fundamentada; la ejecución tecnológica es la fase siguiente.</p>
+  </div>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">08 / 13</span></div>
+</section>
+
+<!-- ===================== 9 · EQUIPO Y GOBERNANZA ===================== -->
+<section class="page pad" id="equipo">
+  <div class="rhead"><span class="r-l">Propuesta · 4Shine Empresas</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">05</div><div class="sh"><span class="kicker">Talento y método</span><h2>Equipo y gobernanza</h2></div></div>
+
+  <p class="lede">Dos frentes piden una regla de decisión clara. Una sola persona decide del lado del cliente, una sola responde del lado del proveedor. En el caso, la gerencia de JSSuministros decide sobre su propia organización.</p>
+
+  <ul class="team">
+    <li>
+      <div class="tm-h"><span class="tm-n">01</span><div class="tm-id"><h4>Dirección de producto</h4><p class="tm-resp">Andrés Tabla · Algoritmo T</p></div></div>
+      <ul class="tm-fns">
+        <li>Responsable único de la entrega y contraparte de decisión frente a la creadora del sistema</li>
+        <li>Arquitectura del framework y control de consistencia entre los documentos, los frameworks, el diagnóstico y el caso</li>
+        <li>Gestión del backlog, las compuertas de aprobación y las órdenes de cambio</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">02</span><div class="tm-id"><h4>Dirección metodológica</h4><p class="tm-resp">Diseño instruccional sénior</p></div></div>
+      <ul class="tm-fns">
+        <li>Versionado del dossier, la matriz y los soportes con la retroalimentación del cliente</li>
+        <li>Diseño de los frameworks T1–T8 y de la guía del Advisor</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">03</span><div class="tm-id"><h4>Consultoría de procesos y automatización</h4><p class="tm-resp">Consultor de operaciones y sistemas</p></div></div>
+      <ul class="tm-fns">
+        <li>Levantamiento en JSSuministros, entrevistas, organigrama y mapa de sistemas</li>
+        <li>Arquitectura organizacional, inventario de procesos críticos con estándar mínimo y playbooks</li>
+        <li>Backlog de automatización, fuente única de verdad, casos de negocio y roadmap de 90 días</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">04</span><div class="tm-id"><h4>Medición y análisis</h4><p class="tm-resp">Analista de datos</p></div></div>
+      <ul class="tm-fns">
+        <li>Diseño de los ítems, el scoring, las rúbricas y las salidas del 4Shine-OD</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">05</span><div class="tm-id"><h4>Diseño gráfico y editorial</h4><p class="tm-resp">Diseño de producto y publicación</p></div></div>
+      <ul class="tm-fns">
+        <li>Diagramación de las versiones 1.1, los frameworks, el diagnóstico y los entregables del caso</li>
+      </ul>
+    </li>
+    <li>
+      <div class="tm-h"><span class="tm-n">06</span><div class="tm-id"><h4>Dirección de relacionamiento</h4><p class="tm-resp">Ana Milena Diazgranados · Algoritmo T</p></div></div>
+      <ul class="tm-fns">
+        <li>Relación comercial, seguimiento de hitos de pago y gestión contractual</li>
+      </ul>
+    </li>
+  </ul>
+
+  <p class="col" style="margin-top:18px;font-size:var(--fs-compact)"><b>Ritmo de trabajo.</b> Sesiones de decisión de 60–90 minutos con la creadora del sistema, una cada dos semanas, limitadas a 3–5 decisiones críticas por sesión. Tres sesiones de trabajo con la gerencia de JSSuministros, una al cierre de cada resultado. Backlog visible en tablero compartido. Cada afirmación del método queda trazable hasta una fuente documental o hasta una decisión aprobada en sesión.</p>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">09 / 13</span></div>
+</section>
+
+<!-- ===================== 10 · CRONOGRAMA ===================== -->
+<section class="page pad" id="cronograma">
+  <div class="rhead"><span class="r-l">Propuesta · 4Shine Empresas</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">06</div><div class="sh"><span class="kicker">Tiempos</span><h2>Cronograma de 12 semanas</h2></div></div>
+
+  <p class="col" style="font-size:var(--fs-compact)">12 semanas, del <b>3 de agosto</b> al <b>23 de octubre de 2026</b>, organizadas en seis quincenas. Las primeras siete semanas produjeron la fase fundacional, recibida el 14 de septiembre (Gate B). De la semana 8 a la 12 el Frente 01 versiona los documentos, diseña los frameworks y el diagnóstico, y el Frente 02 aplica los frameworks a JSSuministros. Ambos cierran el 23 de octubre (Gate C).</p>
+
+  <div class="tscroll">
+  <table class="crono">
+    <thead><tr>
+      <th>Actividad</th>
+      <th>S1&#8209;2<span>3–14 ago</span></th><th>S3&#8209;4<span>17–28 ago</span></th><th>S5&#8209;6<span>31 ago–11 sep</span></th>
+      <th>S7&#8209;8<span>14–25 sep</span></th><th>S9&#8209;10<span>28 sep–9 oct</span></th><th>S11&#8209;12<span>12–23 oct</span></th>
+    </tr></thead>
+    <tbody>
+      <tr class="grp"><td>Frente 01 · Framework 4Shine Empresas · fase fundacional recibida</td><td colspan="6"></td></tr>
+      <tr><td>Kickoff, inventario y arquitectura de capacidades</td><td><div class="gbar done"></div></td><td><div class="gbar done"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Dossier v1.0, Matriz de capacidades y Soportes teóricos</td><td><div class="gbar"></div></td><td><div class="gbar done"></div></td><td><div class="gbar done"></div></td><td><div class="gbar done hito"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Presentación 4Shine Empresas v1</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar done"></div></td><td><div class="gbar done hito"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td></tr>
+      <tr class="grp"><td>Frente 01 · Framework 4Shine Empresas · pendiente</td><td colspan="6"></td></tr>
+      <tr><td>Versión 1.1 de los documentos con retroalimentación</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Diseño de los frameworks propios T1–T8</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar hito"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Diseño del diagnóstico 4Shine-OD (OD1–OD5)</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar hito"></div></td></tr>
+      <tr><td>Paquete IP-ready con versionado y changelog</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar hito"></div></td></tr>
+      <tr class="grp"><td>Frente 02 · Aplicación a JSSuministros · semanas 8–12</td><td colspan="6"></td></tr>
+      <tr><td>Levantamiento: flujogramas, entrevistas y sistemas</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td><td><div class="gbar"></div></td></tr>
+      <tr><td>Arquitectura organizacional y estandarización (MUL-1, MUL-2)</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar on"></div></td><td><div class="gbar on"></div></td></tr>
+      <tr><td>Plan de tecnología y automatización (MUL-3) · presentación</td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar"></div></td><td><div class="gbar hito"></div></td></tr>
+      <tr class="grp"><td>Compuertas de aprobación y pagos</td><td colspan="6"></td></tr>
+      <tr><td>Gate A sem. 4 · Gate B sem. 8 (primer pago) · Gate C sem. 12 (pago final)</td><td><div class="gbar"></div></td><td><div class="gbar done hito"></div></td><td><div class="gbar"></div></td><td><div class="gbar done hito"></div></td><td><div class="gbar"></div></td><td><div class="gbar hito"></div></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="crono-legend">
+    <span><i style="background:#1a2d5a"></i> Ejecutado y recibido</span>
+    <span><i style="background:#4fd0ec"></i> Ejecución pendiente</span>
+    <span><i style="background:#f1ba5b"></i> Hito de entrega / aprobación</span>
+    <span style="color:var(--faint)">Sesiones de decisión de 60–90 min cada dos semanas · 3 sesiones con la gerencia de JSSuministros</span>
+  </div>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">10 / 13</span></div>
+</section>
+
+<!-- ===================== 11 · INVERSIÓN ===================== -->
+<section class="page pad" id="inversion">
+  <div class="rhead"><span class="r-l">Propuesta · 4Shine Empresas</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">07</div><div class="sh"><span class="kicker">Inversión</span><h2>Propuesta económica</h2></div></div>
+
+  <p class="col" style="font-size:var(--fs-compact)">La inversión es integral por los dos frentes. Se factura en dos hitos: el primero contra la fase fundacional ya recibida, el segundo contra el cierre total en la semana 12.</p>
+
+  <div class="tscroll fit">
+  <table class="inv-t">
+    <thead><tr><th>Frente de trabajo</th><th>Ventana</th><th>Entregables</th><th>Inversión (COP)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="ci">01 · Framework fundacional 4Shine Empresas</span><br><span class="cf">Presentación, dossier, matriz y soportes (recibidos) · versión 1.1, frameworks T1–T8 y diagnóstico 4Shine-OD (pendientes)</span></td>
+        <td class="cd">Sem. 1–12</td>
+        <td class="cn">14</td>
+        <td class="cv" rowspan="2" style="vertical-align:middle">20.000.000<br><span class="cf">valor integral</span></td>
+      </tr>
+      <tr>
+        <td><span class="ci">02 · Aplicación al caso JSSuministros</span><br><span class="cf">Arquitectura organizacional, procesos críticos estandarizados, playbooks y plan de tecnología y automatización</span></td>
+        <td class="cd">Sem. 8–12</td>
+        <td class="cn">4</td>
+      </tr>
+      <tr class="tot"><td class="lab">Inversión total</td><td class="cd">12 semanas</td><td class="num">18</td><td><span class="big">COP 20.000.000</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 style="font-family:var(--sans);font-weight:700;font-size:var(--fs-sub);color:var(--navy);margin:26px 0 2px;letter-spacing:-.02em">Plan de pagos</h3>
+  <p class="col" style="font-size:var(--fs-compact)">Dos pagos contra hitos verificables. El primero, en la octava semana, queda habilitado por los cuatro entregables de la fase fundacional recibidos el 14 de septiembre. El segundo, en la doceava semana, al cierre total de los dos frentes.</p>
+
+  <div class="tscroll">
+  <table class="pay">
+    <thead><tr><th>Semana</th><th>Compuerta e hito habilitante</th><th>Frente</th><th>%</th><th>Valor (COP)</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="py-m">Semana 8<br><span style="font-family:var(--mono);font-size:10px;color:var(--faint)">25 sep 2026</span></td>
+        <td class="py-h">Gate B · Fase fundacional recibida<span>Presentación 4Shine Empresas v1, Dossier v1.0, Matriz de capacidades · 4 niveles v1 y Soportes teóricos y empíricos, entregados el 14 de septiembre. Hito cumplido.</span></td>
+        <td class="cn">01</td>
+        <td class="py-p">60%</td>
+        <td class="py-v">12.000.000</td>
+      </tr>
+      <tr>
+        <td class="py-m">Semana 12<br><span style="font-family:var(--mono);font-size:10px;color:var(--faint)">23 oct 2026</span></td>
+        <td class="py-h">Gate C · Cierre total<span>Versión 1.1 de los cuatro documentos, frameworks T1–T8 y 4Shine-OD diseñados, paquete IP-ready con changelog; arquitectura, estándares, playbooks y plan de tecnología de JSSuministros presentados a su gerencia</span></td>
+        <td class="cn">01&nbsp;·&nbsp;02</td>
+        <td class="py-p">40%</td>
+        <td class="py-v">8.000.000</td>
+      </tr>
+      <tr class="tot"><td class="lab" colspan="3">Total</td><td class="py-p">100%</td><td class="py-v">20.000.000</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p class="note">Valores en pesos colombianos (COP), con IVA y retenciones sujetos a la jurisdicción de facturación. Los entregables se liberan en formato editable y final diagramado, con versionado y changelog para trazabilidad de propiedad intelectual.</p>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">11 / 13</span></div>
+</section>
+
+<!-- ===================== 12 · CONDICIONES ===================== -->
+<section class="page pad" id="condiciones">
+  <div class="rhead"><span class="r-l">Propuesta · 4Shine Empresas</span><span class="r-r">Algoritmo&nbsp;T</span></div>
+  <div class="sec-head"><div class="sn">08</div><div class="sh"><span class="kicker">Condiciones</span><h2>Supuestos, alcance y control de cambios</h2></div></div>
+
+  <div class="twocol">
+    <div class="tcbox">
+      <h3>Supuestos · lo que aporta el cliente</h3>
+      <ul>
+        <li><b>Decisora única.</b> Carmenza Alarcón como contraparte de decisión, con disponibilidad para sesiones de 60–90 minutos cada dos semanas.</li>
+        <li><b>Retroalimentación sobre la fase fundacional.</b> Comentarios con acción concreta sobre los cuatro documentos recibidos, antes de la semana 9, para producir la versión 1.1.</li>
+        <li><b>Aval de JSSuministros.</b> Gerencia dispuesta a participar como caso de aplicación, con un interlocutor designado y tres sesiones de trabajo, una al cierre de cada resultado.</li>
+        <li><b>Acceso en JSSuministros.</b> Flujogramas vigentes, organigrama actual, acceso de lectura a los sistemas en uso (contable, inventario, hojas de cálculo) y entrevistas de 45 minutos con los responsables de proceso, en las semanas 8 y 9.</li>
+        <li><b>Retroalimentación acotada.</b> Comentarios con acción concreta dentro de los 5 días hábiles siguientes a cada entrega.</li>
+        <li><b>Titularidad.</b> El cliente garantiza los derechos de uso del material fuente entregado.</li>
+      </ul>
+    </div>
+    <div class="tcbox warn">
+      <h3>Alcance reservado a fases posteriores</h3>
+      <ul>
+        <li><b>Aplicación del diagnóstico 4Shine-OD</b> en JSSuministros o en otras organizaciones. Se diseña en este alcance; su aplicación se cotiza aparte.</li>
+        <li><b>Implementación de las automatizaciones</b> planeadas para JSSuministros: configuración, integraciones, desarrollo y licencias de software.</li>
+        <li><b>Validación psicométrica formal</b> del 4Shine-OD: análisis factorial, fiabilidad y baremos exigen muestra y tiempo mayores.</li>
+        <li><b>Serie de papers, estudio de observación y 4Shine Experience.</b> Se cotizan en propuesta aparte.</li>
+        <li><b>Acompañamiento posterior a JSSuministros</b> en la ejecución del roadmap de 90 días.</li>
+        <li><b>Desarrollo de software.</b> Plataforma de aplicación del 4Shine-OD y carga en la plataforma 4Shine.</li>
+        <li><b>Registro de marca</b> y trámites de propiedad intelectual ante autoridades competentes.</li>
+        <li><b>Despliegue comercial</b> de la línea y certificación de Advisors externos.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--sans);font-weight:700;font-size:var(--fs-sub);color:var(--navy);margin:22px 0 6px;letter-spacing:-.02em">Hitos de aprobación y control de cambios</h3>
+  <table class="gates">
+    <thead><tr><th>Gate</th><th>Momento</th><th>Qué se congela</th></tr></thead>
+    <tbody>
+      <tr><td class="gt-g">Gate A</td><td class="gt-d">Semana 4 · 28 ago</td><td><span class="gt-t">Arquitectura del framework definida</span> — capacidades, 17 dimensiones, codificación y glosario. Cumplido.</td></tr>
+      <tr><td class="gt-g">Gate B</td><td class="gt-d">Semana 8 · 25 sep</td><td><span class="gt-t">Fase fundacional recibida</span> — Presentación v1, Dossier v1.0, Matriz de capacidades v1 y Soportes teóricos y empíricos, entregados el 14 de septiembre. Cumplido; habilita el primer pago.</td></tr>
+      <tr><td class="gt-g">Gate C</td><td class="gt-d">Semana 12 · 23 oct</td><td><span class="gt-t">Cierre total</span> — versión 1.1 de los documentos, frameworks T1–T8 y 4Shine-OD diseñados, paquete IP-ready con changelog; entregables de JSSuministros presentados a su gerencia. Habilita el pago final.</td></tr>
+    </tbody>
+  </table>
+
+  <p class="col" style="margin-top:16px;font-size:var(--fs-compact)"><b>Órdenes de cambio.</b> Toda solicitud que modifique alcance, plazos o complejidad se gestiona mediante <em>Change Request</em>, con impacto en tiempo y costo y aprobación escrita previa. <b>Riesgo principal.</b> El tramo final depende de dos insumos del cliente: la retroalimentación sobre la fase fundacional, que alimenta la versión 1.1, y el acceso oportuno a JSSuministros en las semanas 8 y 9. Una demora en cualquiera de los dos desplaza el cierre. Lo contienen tres reglas: retroalimentación antes de la semana 9, accesos confirmados en la sesión de apertura y glosario congelado en el Gate A.</p>
+
+  <p class="note" style="margin-top:18px">La información contenida en este documento, así como los modelos, metodologías, gráficos, procesos y propuestas de solución, es confidencial y de propiedad exclusiva de Algoritmo T. Su finalidad es la evaluación interna por parte del destinatario. Copiarla, reproducirla, modificarla, distribuirla o usarla con otro fin requiere autorización previa y escrita de Algoritmo T. <b>Esta propuesta tiene una validez de 30 días calendario.</b></p>
+
+  <div class="pfoot"><span class="pf-l">Algoritmo T · 4Shine Empresas</span><span class="pf-r">12 / 13</span></div>
+</section>
+
+<!-- ===================== 13 · CONTRAPORTADA ===================== -->
+<section class="page back">
+  <div class="bk-top"><b>Algoritmo</b><img src="assets/img/algoritmot-mark.svg" alt="Algoritmo T"></div>
+  <div class="bk-mid">
+    <div class="bk-q">Convertir un método que funciona en un <em>sistema que escala</em> más allá de quien lo creó.</div>
+    <div class="bk-tag">Soluciones digitales con sentido humano.</div>
+  </div>
+  <div class="bk-bot">
+    <div class="sig">
+      <div class="nm">Ana Milena Diazgranados</div>
+      <div class="rl">Directora de Relacionamiento · Algoritmo T</div>
+      <div class="ct"><a href="mailto:anadiazgranados@algoritmot.com">anadiazgranados@algoritmot.com</a> · +57 300 659 0161<br><a href="https://www.algoritmot.com">www.algoritmot.com</a></div>
+    </div>
+    <div class="bk-client">
+      <span class="cmark"><span class="cm-w">4<b>Shine</b></span><span class="cm-s">Empresas</span></span>
+    </div>
+  </div>
+</section>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>

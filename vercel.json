@@ -13,6 +13,10 @@
       "destination": "/cotizaciones/cardioinfantil-2026/index.html"
     },
     {
+      "source": "/cotizaciones/4shine-2026",
+      "destination": "/cotizaciones/4shine-2026/index.html"
+    },
+    {
       "source": "/robots.txt",
       "destination": "/api/robots"
     },
