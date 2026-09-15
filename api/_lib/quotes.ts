@@ -156,6 +156,40 @@ export const normalizeTemplate = (v: unknown): QuoteTemplateKey => {
   return 'SOLUCIONES'
 }
 
+// ── Línea de negocio y seguimiento comercial ─────────────────────────────────
+
+/** Línea de negocio de Algoritmo T a la que pertenece la cotización. */
+export const QUOTE_LINES = {
+  EDUCATIVA: { label: 'Educativa', short: 'Educación' },
+  EMPRESARIAL: { label: 'Empresarial', short: 'Empresas' },
+} as const
+export type QuoteLineKey = keyof typeof QUOTE_LINES
+
+/**
+ * Seguimiento comercial, independiente del estado de publicación (DRAFT/PUBLISHED/ARCHIVED).
+ * null = todavía no se ha enviado al cliente.
+ */
+export const QUOTE_STAGES = {
+  ENVIADA: { label: 'Enviada', order: 1 },
+  EN_ESTUDIO: { label: 'En estudio', order: 2 },
+  APROBADA: { label: 'Aprobada', order: 3 },
+  DESCARTADA: { label: 'Descartada', order: 4 },
+} as const
+export type QuoteStageKey = keyof typeof QUOTE_STAGES
+
+/** Línea sugerida por plantilla: Soluciones y Transformación son de Empresas; el resto, de Educación. */
+export const defaultLineFor = (template: unknown): QuoteLineKey =>
+  normalizeTemplate(template) === 'SOLUCIONES' || normalizeTemplate(template) === 'TRANSFORMACION' ? 'EMPRESARIAL' : 'EDUCATIVA'
+
+/** Devuelve la clave válida o null (valor vacío / desconocido). */
+export const normalizeLine = (v: unknown): QuoteLineKey | null =>
+  typeof v === 'string' && v.toUpperCase() in QUOTE_LINES ? (v.toUpperCase() as QuoteLineKey) : null
+export const normalizeStage = (v: unknown): QuoteStageKey | null => {
+  if (typeof v !== 'string') return null
+  const key = v.toUpperCase().replace(/[\s-]+/g, '_')
+  return key in QUOTE_STAGES ? (key as QuoteStageKey) : null
+}
+
 /** Escala plana para servicios: el precio es unitario y no hay descuento automático. */
 export const FLAT_DISCOUNT_SCALE: DiscountTier[] = [{ upTo: 99, pct: 0 }]
 

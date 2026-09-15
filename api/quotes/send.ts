@@ -230,10 +230,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const updated = await recipientDb().update({ where: { id: recipient.id }, data: { sentAt: new Date() } })
-    // lo que se envió queda como plantilla de la cotización
-    if (body.template && typeof body.template === 'object') {
-      await quoteDb().update({ where: { id: quote.id }, data: { content: { ...(quote.content as object), email: tpl } } }).catch(() => undefined)
-    }
+    // lo que se envió queda como plantilla de la cotización; el primer envío
+    // pasa el seguimiento comercial a «Enviada» si aún no tenía estado
+    const patch: Record<string, unknown> = {}
+    if (body.template && typeof body.template === 'object') patch.content = { ...(quote.content as object), email: tpl }
+    if (!quote.stage) { patch.stage = 'ENVIADA'; patch.stageAt = new Date() }
+    if (Object.keys(patch).length) await quoteDb().update({ where: { id: quote.id }, data: patch }).catch(() => undefined)
     return res.status(200).json({ ok: true, recipient: updated, url })
   } catch (error: any) {
     console.error('quotes/send error:', error)

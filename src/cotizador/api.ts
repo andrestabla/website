@@ -14,7 +14,13 @@ export type QuoteListItem = {
   publicId: string
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
   template?: string
+  /** Línea de negocio: EDUCATIVA | EMPRESARIAL (puede faltar en cotizaciones viejas). */
+  line?: string | null
+  /** Seguimiento comercial: ENVIADA | EN_ESTUDIO | APROBADA | DESCARTADA; null = por enviar. */
+  stage?: string | null
+  stageAt?: string | null
   clientName: string
+  sector?: string | null
   title: string
   currency: string
   totalFinal: number
@@ -88,7 +94,7 @@ async function post(path: string, body: Record<string, unknown>) {
 export const quotesApi = {
   list: () => post('/api/quotes/manage', { op: 'list' }),
   get: (quoteId: string) => post('/api/quotes/manage', { op: 'get', quoteId }),
-  create: (data: { clientName: string; sector?: string; template?: string; clientContact?: string; clientEmail?: string; documentUrl?: string; title?: string; total?: number; fromTemplateId?: string }) =>
+  create: (data: { clientName: string; sector?: string; template?: string; line?: string; stage?: string | null; clientContact?: string; clientEmail?: string; documentUrl?: string; title?: string; total?: number; fromTemplateId?: string }) =>
     post('/api/quotes/manage', { op: 'create', ...data }),
   versions: (quoteId: string) => post('/api/quotes/manage', { op: 'versions', quoteId }),
   restore: (quoteId: string, versionId: string) => post('/api/quotes/manage', { op: 'restore', quoteId, versionId }),

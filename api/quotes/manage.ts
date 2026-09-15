@@ -19,6 +19,9 @@ import {
   FLAT_DISCOUNT_SCALE,
   QUOTE_TEMPLATES,
   normalizeTemplate,
+  normalizeLine,
+  normalizeStage,
+  defaultLineFor,
   type QuoteItem,
   type QuoteTemplateKey,
 } from '../_lib/quotes.js'
@@ -132,9 +135,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const quotes = await db().findMany({
         where,
         orderBy: { updatedAt: 'desc' },
-        take: 100,
+        take: 200,
         select: {
-          id: true, publicId: true, status: true, template: true, clientName: true, title: true,
+          id: true, publicId: true, status: true, template: true, line: true, stage: true, stageAt: true,
+          clientName: true, sector: true, title: true,
           currency: true, totalFinal: true, weeks: true, moduleCount: true,
           publishedAt: true, createdAt: true, updatedAt: true, ownerId: true,
         },
@@ -181,6 +185,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (op === 'create') {
       const clientName = str(body.clientName, 160)
       if (!clientName) return res.status(400).json({ ok: false, error: 'Falta el nombre del cliente' })
+      // línea de negocio (educativa / empresarial) y seguimiento inicial; la línea
+      // se sugiere por plantilla cuando no viene explícita
+      const lineOf = (template: unknown) => normalizeLine(body.line) ?? defaultLineFor(template)
+      const stage = normalizeStage(body.stage)
+      const tracking = (template: unknown) => ({ line: lineOf(template), stage, stageAt: stage ? new Date() : null })
 
       // Cotización-documento: una pieza diagramada aparte (HTML propio) que
       // igual vive en el sistema — URL pública con métricas, destinatarios,
@@ -193,6 +202,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             publicId: newPublicId(),
             ownerId: userId,
             template: 'SOLUCIONES',
+            ...tracking('SOLUCIONES'),
             clientName,
             clientContact: str(body.clientContact, 160) || null,
             clientEmail: str(body.clientEmail, 200) || null,
@@ -227,6 +237,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             publicId: newPublicId(),
             ownerId: userId,
             template: tplKey,
+            ...tracking(tplKey),
             clientName,
             clientContact: str(body.clientContact, 160) || null,
             clientEmail: str(body.clientEmail, 200) || null,
@@ -263,6 +274,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           publicId: newPublicId(),
           ownerId: userId,
           template,
+          ...tracking(template),
           clientName,
           clientContact: str(body.clientContact, 160) || null,
           clientEmail: str(body.clientEmail, 200) || null,
@@ -291,6 +303,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (body.validDays !== undefined) {
         data.validDays = Math.min(365, Math.max(1, Math.round(Number(body.validDays) || 45)))
+      }
+      // línea de negocio: '' o null la quita; un valor desconocido se ignora
+      if (body.line !== undefined) {
+        const line = normalizeLine(body.line)
+        if (line || body.line === null || body.line === '') data.line = line
+      }
+      // seguimiento comercial: '' o null vuelve a «por enviar»; cada cambio deja fecha
+      if (body.stage !== undefined) {
+        const stage = normalizeStage(body.stage)
+        if ((stage || body.stage === null || body.stage === '') && stage !== (quote.stage ?? null)) {
+          data.stage = stage
+          data.stageAt = stage ? new Date() : null
+        }
       }
       // Cotizaciones-documento: la inversión se fija a mano (no hay ítems).
       if (body.documentTotal !== undefined) {
@@ -450,6 +475,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ownerId: userId,
           status: 'DRAFT',
           template: quote.template,
+          line: quote.line ?? null,
+          stage: null,
+          stageAt: null,
           clientName: str(body.clientName, 160) || `${quote.clientName} (copia)`,
           clientContact: quote.clientContact,
           clientEmail: quote.clientEmail,

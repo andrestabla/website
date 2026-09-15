@@ -8,11 +8,12 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Send, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, Sparkles,
   Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw, PenSquare, MoreVertical, CopyPlus, Archive,
-  Mic, Square, Paperclip, X, FileInput, Code2, Save, ChevronDown, ChevronRight, PanelLeft, PanelRight,
+  Mic, Square, Paperclip, X, FileInput, Code2, Save, ChevronDown, ChevronRight, PanelLeft, PanelRight, MessageSquare,
 } from 'lucide-react'
 import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
 import { quotesApi, money, timeAgo, fmtDuration, expiresAt, type QuoteMessageRow, type QuoteRecipient, type QuoteAttachmentRow, type EmailTemplate } from './api'
-import { TEMPLATE_LABEL } from './CotizadorList'
+import { TEMPLATE_LABEL, StagePicker } from './CotizadorList'
+import { LINES, LINE_LABEL, LINE_STYLE, STAGES, STAGE_EMPTY_LABEL } from './meta'
 import { useDialogs } from './ui/dialogs'
 
 type Tab = 'propuesta' | 'vista' | 'destinatarios' | 'metricas'
@@ -25,6 +26,18 @@ const readLayout = (): Layout => {
 }
 const readSplit = (): number => {
   try { const n = Number(localStorage.getItem(SPLIT_KEY)); return n >= 25 && n <= 75 ? n : 44 } catch { return 44 }
+}
+/** true en pantallas anchas (lg de Tailwind); en móvil el builder muestra una columna a la vez. */
+function useDesktop() {
+  const query = '(min-width: 1024px)'
+  const [desktop, setDesktop] = useState(() => (typeof window !== 'undefined' ? window.matchMedia(query).matches : true))
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const onChange = () => setDesktop(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return desktop
 }
 
 /** Formatos que el asistente acepta como adjunto. Markdown es el recomendado; el resto se convierte. */
@@ -74,6 +87,11 @@ export function QuoteBuilder() {
   // disposición: columnas visibles y ancho del chat (arrastrando el divisor)
   const [layout, setLayoutState] = useState<Layout>(readLayout)
   const [split, setSplit] = useState<number>(readSplit)
+  // móvil: una sola columna; se alterna entre el chat y el panel de la propuesta
+  const desktop = useDesktop()
+  const [mobilePane, setMobilePane] = useState<'chat' | 'panel'>('panel')
+  const showChat = desktop ? layout !== 'panel' : mobilePane === 'chat'
+  const showPanel = desktop ? layout !== 'chat' : mobilePane === 'panel'
   const gridRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
   const setLayout = (next: Layout) => { setLayoutState(next); try { localStorage.setItem(LAYOUT_KEY, next) } catch { /* sin almacenamiento */ } }
@@ -561,6 +579,12 @@ export function QuoteBuilder() {
       setQuote(payload.quote)
     } catch (e: any) { setError(e.message) }
   }
+  const saveTracking = async (data: { line?: string | null; stage?: string | null }) => {
+    try {
+      const payload = await quotesApi.update(quoteId, { ...(data.line !== undefined ? { line: data.line ?? '' } : {}), ...(data.stage !== undefined ? { stage: data.stage ?? '' } : {}) })
+      setQuote(payload.quote)
+    } catch (e: any) { setError(e.message) }
+  }
   const isDoc = content.documentUrl !== undefined
   const selectable = content.modulesSelectable !== false
   const itemsNoun: string = content.itemsNoun || 'Módulos'
@@ -582,33 +606,39 @@ export function QuoteBuilder() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       {/* Header */}
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
-        <Link to="/ecosistema/cotizador" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600">
-          <ArrowLeft size={16} /> Cotizaciones
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 sm:gap-3 sm:px-6">
+        <Link to="/ecosistema/cotizador" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600" aria-label="Volver a cotizaciones">
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">Cotizaciones</span>
         </Link>
-        <div className="h-5 w-px bg-slate-200" />
-        <div className="min-w-0">
+        <div className="h-5 w-px shrink-0 bg-slate-200" />
+        <div className="min-w-0 flex-1 sm:flex-none">
           <div className="truncate text-sm font-black tracking-tight">{quote.clientName}</div>
           <div className="truncate text-[11px] text-slate-400">{quote.title}</div>
         </div>
-        <span className={`ml-1 shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${published ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : quote.status === 'ARCHIVED' ? 'border-slate-200 bg-slate-100 text-slate-500' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
+        <span className={`ml-1 hidden shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold sm:inline-flex ${published ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : quote.status === 'ARCHIVED' ? 'border-slate-200 bg-slate-100 text-slate-500' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
           {published ? 'Publicada' : quote.status === 'ARCHIVED' ? 'Archivada' : 'Borrador'}
         </span>
+        <StagePicker value={quote.stage} onChange={(stage) => void saveTracking({ stage })} className="shrink-0" />
+        {quote.line && LINE_LABEL[quote.line] && (
+          <span className={`hidden shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold md:inline-flex ${LINE_STYLE[quote.line]}`} title="Línea de negocio · se cambia en Propuesta › Ajustes del documento">
+            {LINE_LABEL[quote.line]}
+          </span>
+        )}
         {quote.template && quote.template !== 'SOLUCIONES' && (
-          <span className="shrink-0 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-700">
+          <span className="hidden shrink-0 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-700 xl:inline-flex">
             {TEMPLATE_LABEL[quote.template] ?? quote.template}
           </span>
         )}
         {published && (() => {
           const days = Math.ceil((expiresAt(quote.publishedAt, quote.updatedAt, quote.validDays).getTime() - Date.now()) / 86_400_000)
           return (
-            <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${days < 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : days <= 5 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
+            <span className={`hidden shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold md:inline-flex ${days < 0 ? 'border-rose-200 bg-rose-50 text-rose-700' : days <= 5 ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}
               title="Validez de la propuesta: se ajusta en Propuesta › Ajustes del documento">
               {days < 0 ? `Vencida hace ${Math.abs(days)} d` : days === 0 ? 'Vence hoy' : `Vence en ${days} d`}
             </span>
           )
         })()}
-        <div className="flex-1" />
+        <div className="hidden flex-1 sm:block" />
         <div className="mr-1 hidden items-center gap-0.5 rounded-lg border border-slate-200 p-0.5 lg:flex" title="Mostrar u ocultar columnas">
           <button
             onClick={() => toggleColumn('chat')}
@@ -635,16 +665,18 @@ export function QuoteBuilder() {
         </button>
         <a
           href={publicUrl} target="_blank" rel="noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-[13px] font-semibold text-slate-600 hover:bg-slate-100"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] font-semibold text-slate-600 hover:bg-slate-100 sm:px-3"
+          aria-label="Ver la cotización publicada"
         >
-          <ExternalLink size={14} /> Ver
+          <ExternalLink size={14} /> <span className="hidden sm:inline">Ver</span>
         </a>
         <button
           onClick={togglePublish} disabled={publishing}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-bold shadow-sm disabled:opacity-50 ${published ? 'border border-slate-300 text-slate-600 hover:bg-slate-100' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[13px] font-bold shadow-sm disabled:opacity-50 sm:px-3.5 ${published ? 'border border-slate-300 text-slate-600 hover:bg-slate-100' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}
+          aria-label={published ? 'Despublicar' : 'Publicar'}
         >
           {publishing ? <Loader2 size={14} className="animate-spin" /> : published ? <EyeOff size={14} /> : <Globe size={14} />}
-          {published ? 'Despublicar' : 'Publicar'}
+          <span className="hidden sm:inline">{published ? 'Despublicar' : 'Publicar'}</span>
         </button>
         <div className="relative">
           <button
@@ -658,6 +690,9 @@ export function QuoteBuilder() {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
               <div className="absolute right-0 top-9 z-20 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                <button onClick={() => { copy(publicUrl, 'link'); setMenuOpen(false) }} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-slate-700 hover:bg-slate-50 sm:hidden">
+                  <Copy size={14} className="text-slate-400" /> Copiar enlace público
+                </button>
                 <button onClick={duplicateQuote} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-slate-700 hover:bg-slate-50">
                   <CopyPlus size={14} className="text-slate-400" /> Duplicar cotización
                 </button>
@@ -678,17 +713,34 @@ export function QuoteBuilder() {
       </header>
 
       {dialogs}
-      {error && <div className="border-b border-rose-200 bg-rose-50 px-6 py-2 text-[13px] text-rose-700">{error}</div>}
+      {error && <div className="border-b border-rose-200 bg-rose-50 px-4 py-2 text-[13px] text-rose-700 sm:px-6">{error}</div>}
+
+      {/* móvil: una columna a la vez */}
+      {!desktop && (
+        <div className="flex shrink-0 gap-1 border-b border-slate-200 bg-white px-3 py-1.5" role="tablist" aria-label="Vista">
+          {([['chat', 'Chat con la IA', MessageSquare], ['panel', 'Propuesta', FileText]] as const).map(([key, label, Icon]) => (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={mobilePane === key}
+              onClick={() => setMobilePane(key)}
+              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-[13px] font-semibold transition ${mobilePane === key ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'}`}
+            >
+              <Icon size={14} /> {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div
         ref={gridRef}
         className="mx-auto grid w-full flex-1 gap-0"
-        style={{ gridTemplateColumns: layout === 'both' ? `${split}% 6px minmax(0, 1fr)` : 'minmax(0, 1fr)' }}
+        style={{ gridTemplateColumns: desktop && layout === 'both' ? `${split}% 6px minmax(0, 1fr)` : 'minmax(0, 1fr)' }}
       >
         {/* ── Chat ── */}
-        {layout !== 'panel' && (
-        <section className={`flex min-h-[50vh] flex-col border-slate-200 ${layout === 'chat' ? 'mx-auto w-full max-w-4xl' : ''}`}>
-          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-6" style={{ maxHeight: 'calc(100vh - 190px)' }}>
+        {showChat && (
+        <section className={`flex min-h-[50vh] flex-col border-slate-200 ${desktop && layout === 'chat' ? 'mx-auto w-full max-w-4xl' : ''}`}>
+          <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6" style={{ maxHeight: desktop ? 'calc(100vh - 190px)' : 'calc(100dvh - 240px)' }}>
             {messages.length === 0 && (
               <div className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5">
                 <div className="flex items-center gap-2 text-sm font-bold text-indigo-700"><Sparkles size={15} /> Construyamos la cotización</div>
@@ -829,14 +881,15 @@ export function QuoteBuilder() {
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void ask() } }}
                 rows={2}
-                placeholder={recording ? 'Grabando… habla y vuelve a tocar el micrófono' : pendingRows.length ? 'Di qué hacer con el adjunto: referencia, volcarlo tal cual, traducirlo… (Enter envía)' : 'Describe, dicta, adjunta o pide una sección… (Enter envía)'}
-                className="flex-1 resize-none rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500"
+                placeholder={recording ? 'Grabando… toca el micrófono para parar' : pendingRows.length ? (desktop ? 'Di qué hacer con el adjunto: referencia, volcarlo tal cual, traducirlo… (Enter envía)' : 'Qué hacer con el adjunto…') : desktop ? 'Describe, dicta, adjunta o pide una sección… (Enter envía)' : 'Escribe o dicta…'}
+                className="min-w-0 flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-indigo-500 sm:px-3.5"
               />
               <button
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading || thinking}
                 title="Adjuntar archivo (.md recomendado; .docx, .pdf, .html o .txt se convierten a Markdown)"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-300 bg-white text-slate-500 shadow-sm transition hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-40"
+                className="grid h-11 w-10 shrink-0 place-items-center rounded-xl border border-slate-300 bg-white text-slate-500 shadow-sm transition hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-40 sm:w-11"
+                aria-label="Adjuntar archivo"
               >
                 {uploading ? <Loader2 size={17} className="animate-spin" /> : <Paperclip size={17} />}
               </button>
@@ -844,18 +897,20 @@ export function QuoteBuilder() {
                 onClick={toggleRecording}
                 disabled={transcribing}
                 title={recording ? 'Detener y transcribir' : 'Dictar por voz'}
-                className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl border shadow-sm transition disabled:opacity-40 ${recording ? 'animate-pulse border-rose-600 bg-rose-600 text-white' : 'border-slate-300 bg-white text-slate-500 hover:border-indigo-400 hover:text-indigo-600'}`}
+                className={`grid h-11 w-10 shrink-0 place-items-center rounded-xl border shadow-sm transition disabled:opacity-40 sm:w-11 ${recording ? 'animate-pulse border-rose-600 bg-rose-600 text-white' : 'border-slate-300 bg-white text-slate-500 hover:border-indigo-400 hover:text-indigo-600'}`}
+                aria-label={recording ? 'Detener y transcribir' : 'Dictar por voz'}
               >
                 {transcribing ? <Loader2 size={17} className="animate-spin" /> : recording ? <Square size={15} /> : <Mic size={17} />}
               </button>
               <button
                 onClick={ask} disabled={thinking || uploading || (!draft.trim() && pendingRows.length === 0)}
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 disabled:opacity-40"
+                className="grid h-11 w-10 shrink-0 place-items-center rounded-xl bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 disabled:opacity-40 sm:w-11"
+                aria-label="Enviar"
               >
                 <Send size={17} />
               </button>
             </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+            <p className="mt-1.5 hidden text-[11px] leading-relaxed text-slate-400 sm:block">
               Adjunta archivos en <b className="font-semibold text-slate-500">.md</b> (recomendado). Un .docx, .pdf, .html o .txt se
               convierte a Markdown con el 100 % de su contenido. Luego pide a la IA usarlo como referencia o volcarlo
               tal cual en la propuesta: cada título y bloque queda editable en Contenido.
@@ -865,7 +920,7 @@ export function QuoteBuilder() {
         )}
 
         {/* divisor arrastrable entre columnas */}
-        {layout === 'both' && (
+        {desktop && layout === 'both' && (
           <div
             onMouseDown={startDrag}
             onDoubleClick={() => { setSplit(44); try { localStorage.setItem(SPLIT_KEY, '44') } catch { /* sin almacenamiento */ } }}
@@ -903,16 +958,16 @@ export function QuoteBuilder() {
         )}
 
         {/* ── Estado ── */}
-        {layout !== 'chat' && (
+        {showPanel && (
         <section className="flex min-w-0 flex-col">
-          <nav className="flex gap-1 border-b border-slate-200 bg-white px-4 pt-2 sm:px-6">
-            {([['propuesta', 'Propuesta', FileText], ['vista', 'Editor del documento', PenSquare], ['destinatarios', 'Destinatarios', Users], ['metricas', 'Métricas', BarChart2]] as const).map(([key, label, Icon]) => (
+          <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3 pt-2 sm:px-6" style={{ scrollbarWidth: 'none' }}>
+            {([['propuesta', 'Propuesta', FileText], ['vista', 'Editor', PenSquare], ['destinatarios', 'Destinatarios', Users], ['metricas', 'Métricas', BarChart2]] as const).map(([key, label, Icon]) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`inline-flex items-center gap-1.5 rounded-t-lg px-3.5 py-2 text-[13px] font-semibold ${tab === key ? 'border border-b-0 border-slate-200 bg-slate-50 text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-t-lg px-2.5 py-2 text-[12.5px] font-semibold sm:px-3.5 sm:text-[13px] ${tab === key ? 'border border-b-0 border-slate-200 bg-slate-50 text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
               >
-                <Icon size={14} /> {label}
+                <Icon size={14} className="hidden sm:inline" /> {label}{key === 'vista' && <span className="hidden lg:inline"> del documento</span>}
                 {key === 'destinatarios' && recipients.length > 0 && (
                   <span className="rounded-full bg-slate-200 px-1.5 text-[10.5px] text-slate-600">{recipients.length}</span>
                 )}
@@ -920,7 +975,7 @@ export function QuoteBuilder() {
             ))}
           </nav>
 
-          <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6" style={{ maxHeight: 'calc(100vh - 165px)' }}>
+          <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-5" style={{ maxHeight: desktop ? 'calc(100vh - 165px)' : 'calc(100dvh - 165px)' }}>
             {tab === 'propuesta' && (
               <div className="space-y-5">
                 {/* Totales */}
@@ -1023,6 +1078,31 @@ export function QuoteBuilder() {
                   <div className="border-b border-slate-100 px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-400">Ajustes del documento</div>
                   <div className="grid gap-3 p-4 sm:grid-cols-2" key={`settings-${quote.updatedAt}`}>
                     <label className="block text-[12px] font-semibold text-slate-500">
+                      Línea de negocio
+                      <select
+                        value={quote.line || ''}
+                        onChange={(e) => void saveTracking({ line: e.target.value || null })}
+                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] font-normal"
+                      >
+                        <option value="">Sin línea</option>
+                        {LINES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                      </select>
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Seguimiento comercial
+                      <select
+                        value={quote.stage || ''}
+                        onChange={(e) => void saveTracking({ stage: e.target.value || null })}
+                        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[12.5px] font-normal"
+                      >
+                        <option value="">{STAGE_EMPTY_LABEL}</option>
+                        {STAGES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                      </select>
+                      <span className="mt-0.5 block text-[11px] font-normal text-slate-400">
+                        {quote.stage && quote.stageAt ? `Desde ${timeAgo(quote.stageAt)} · ` : ''}el primer envío por correo la pasa a «Enviada».
+                      </span>
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
                       Validez de la propuesta (días)
                       <input type="number" min={1} max={365} defaultValue={quote.validDays}
                         onBlur={(e) => { const v = Math.round(Number(e.target.value) || 45); if (v !== quote.validDays) void quotesApi.update(quoteId, { validDays: v }).then((p) => setQuote(p.quote)).catch((err) => setError((err as Error).message)) }}
@@ -1098,7 +1178,7 @@ export function QuoteBuilder() {
                   </div>
                   <ul className="divide-y divide-slate-100" key={`items-${quote.updatedAt}`}>
                     {items.map((item) => (
-                      <li key={item.code} className="flex items-center gap-2 px-4 py-2.5">
+                      <li key={item.code} className="flex flex-wrap items-center gap-2 px-3 py-2.5 sm:px-4 md:flex-nowrap">
                         <input
                           defaultValue={item.code}
                           onBlur={(e) => renameItemCode(item.code, e.target.value)}
@@ -1108,7 +1188,7 @@ export function QuoteBuilder() {
                         <input
                           defaultValue={item.name}
                           onBlur={(e) => { const v = e.target.value.trim(); if (v) patchItem(item.code, { name: v }); else e.target.value = item.name }}
-                          className={`min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-0.5 text-[13px] hover:border-slate-200 focus:border-indigo-400 focus:bg-white ${item.kind === 'CORE' ? 'font-bold text-slate-900' : item.on ? 'text-slate-700' : 'text-slate-400 line-through'}`}
+                          className={`min-w-[140px] flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-0.5 text-[13px] hover:border-slate-200 focus:border-indigo-400 focus:bg-white ${item.kind === 'CORE' ? 'font-bold text-slate-900' : item.on ? 'text-slate-700' : 'text-slate-400 line-through'}`}
                           title="Nombre de la línea"
                         />
                         {item.unit && item.kind !== 'CORE' && (
@@ -1128,7 +1208,7 @@ export function QuoteBuilder() {
                           className="w-32 shrink-0 rounded-lg border border-slate-300 px-2 py-0.5 text-right font-mono text-[12px] text-slate-700 focus:border-indigo-400"
                           title={`Valor unitario en ${currency}${item.unit ? ` por ${item.unit}` : ''}`}
                         />
-                        <span className="w-28 shrink-0 text-right font-mono text-[11.5px] text-slate-400" title="Valor de la línea">
+                        <span className="ml-auto w-28 shrink-0 text-right font-mono text-[11.5px] text-slate-400 md:ml-0" title="Valor de la línea">
                           {(item.qty ?? 1) > 1 ? `${item.qty} × ` : ''}{money(item.price * (item.qty ?? 1), currency)}
                         </span>
                         {selectable && item.kind !== 'CORE' && (

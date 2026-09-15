@@ -660,8 +660,11 @@ model Quote {
   id            String  @id @default(cuid())
   publicId      String  @unique // id no adivinable de la URL /c/:publicId
   ownerId       String // AdminUser.id
-  status        String  @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  status        String  @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED (publicación)
   template      String  @default("PRODUCTO") // PRODUCTO | SERVICIO
+  line          String? // EDUCATIVA | EMPRESARIAL (línea de negocio)
+  stage         String? // seguimiento comercial: ENVIADA | EN_ESTUDIO | APROBADA | DESCARTADA (null = por enviar)
+  stageAt       DateTime? // último cambio de seguimiento
   clientName    String
   clientContact String?
   clientEmail   String?
@@ -692,6 +695,8 @@ model Quote {
 
   @@index([ownerId, updatedAt(sort: Desc)])
   @@index([status, updatedAt(sort: Desc)])
+  @@index([line, updatedAt(sort: Desc)])
+  @@index([stage, updatedAt(sort: Desc)])
 }
 
 model QuoteRecipient {
