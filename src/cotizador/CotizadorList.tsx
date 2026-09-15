@@ -314,6 +314,18 @@ export function CotizadorList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [quotes, filters.line, filters.stage, filters.status, needle],
   )
+  // totalizador: suma de lo que queda tras los filtros, separada por moneda (COP y USD no se mezclan)
+  const totals = useMemo(() => {
+    const by = new Map<string, { amount: number; count: number }>()
+    for (const q of filtered) {
+      const currency = q.currency || 'COP'
+      const row = by.get(currency) || { amount: 0, count: 0 }
+      row.amount += Number(q.totalFinal) || 0
+      row.count += 1
+      by.set(currency, row)
+    }
+    return [...by.entries()].sort(([a], [b]) => a.localeCompare(b))
+  }, [filtered])
   // conteos de cada chip: con los demás filtros aplicados, sin el propio
   const countBy = (list: QuoteListItem[], key: (q: QuoteListItem) => string) => {
     const out: Record<string, number> = { ALL: list.length }
@@ -679,6 +691,30 @@ export function CotizadorList() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Totalizador: sigue a los filtros activos */}
+            <div className="mt-3 rounded-2xl bg-slate-900 px-4 py-3 text-white shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-6" aria-live="polite">
+              <div>
+                <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-amber-400">
+                  {activeFilters ? 'Total de las cotizaciones filtradas' : 'Total de todas las cotizaciones'}
+                </div>
+                <div className="text-[12px] text-slate-400">
+                  {filtered.length === 1 ? '1 cotización' : `${filtered.length} cotizaciones`}
+                  {activeFilters ? ` de ${quotes.length}` : ''}
+                  {totals.length > 1 ? ' · monedas distintas, se suman por separado' : ''}
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap items-end gap-x-6 gap-y-1 sm:mt-0 sm:justify-end">
+                {totals.map(([currency, row]) => (
+                  <div key={currency} className="sm:text-right">
+                    <div className="font-mono text-xl font-black tracking-tight sm:text-2xl">{money(row.amount, currency)}</div>
+                    {totals.length > 1 && (
+                      <div className="text-[11px] text-slate-400">{row.count === 1 ? '1 cotización' : `${row.count} cotizaciones`} en {currency}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </>
         )}
