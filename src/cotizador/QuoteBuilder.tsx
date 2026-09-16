@@ -149,6 +149,7 @@ export function QuoteBuilder() {
 
   // acciones
   const [publishing, setPublishing] = useState(false)
+  const [detaching, setDetaching] = useState(false)
   const [copied, setCopied] = useState('')
 
   // destinatarios
@@ -586,6 +587,19 @@ export function QuoteBuilder() {
     } catch (e: any) { setError(e.message) }
   }
   const isDoc = content.documentUrl !== undefined
+  /** Quita el documento externo: la cotización pasa a mostrarse y valorarse con sus páginas y líneas. */
+  const detachDocument = async () => {
+    const ok = await confirm(
+      'La vista pública dejará de mostrar el HTML externo y pasará a las páginas construidas aquí; la inversión saldrá de las líneas (o de la inversión configurada). Se guarda una versión para volver atrás.',
+      { title: 'Pasar a la lógica del builder', okLabel: 'Pasar al builder' },
+    )
+    if (!ok) return
+    setDetaching(true); setError('')
+    try {
+      const payload = await quotesApi.update(quoteId, { content: { documentUrl: null } })
+      setQuote(payload.quote)
+    } catch (e: any) { setError(e.message) } finally { setDetaching(false) }
+  }
   const selectable = content.modulesSelectable !== false
   const itemsNoun: string = content.itemsNoun || 'Módulos'
   const narrative: Array<[string, boolean]> = [
@@ -1069,6 +1083,21 @@ export function QuoteBuilder() {
                     ) : (
                       <p className="text-[12px] text-amber-600">Falta la URL del documento: la vista pública saldrá vacía hasta que la pongas.</p>
                     )}
+                    <div className="rounded-lg border border-indigo-100 bg-indigo-50/50 px-3 py-2.5">
+                      <p className="text-[12px] leading-relaxed text-slate-600">
+                        {pagesCount > 0 || items.length > 0
+                          ? `Esta cotización ya tiene ${pagesCount > 0 ? `${pagesCount} página${pagesCount === 1 ? '' : 's'}` : ''}${pagesCount > 0 && items.length > 0 ? ' y ' : ''}${items.length > 0 ? `${items.length} línea${items.length === 1 ? '' : 's'}` : ''} construidas aquí, pero el documento externo manda sobre ellas: la vista pública muestra el HTML y la inversión no sale de las líneas.`
+                          : 'Si prefieres construir la propuesta aquí (páginas, líneas e inversión calculada) en lugar de enlazar un HTML aparte, quita el documento externo.'}
+                      </p>
+                      <button
+                        onClick={detachDocument}
+                        disabled={detaching}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[12.5px] font-bold text-white hover:bg-indigo-500 disabled:opacity-40"
+                      >
+                        {detaching ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />} Pasar a la lógica del builder
+                      </button>
+                      <span className="ml-2 text-[11px] text-slate-400">Queda una versión para volver atrás.</span>
+                    </div>
                   </div>
                 </div>
                 )}

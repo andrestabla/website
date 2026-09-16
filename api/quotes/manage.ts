@@ -324,7 +324,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         data.totalFinal = total
       }
       if (body.content !== undefined && body.content && typeof body.content === 'object') {
-        data.content = { ...(quote.content as object), ...(body.content as object) }
+        const merged: Record<string, unknown> = { ...(quote.content as object), ...(body.content as object) }
+        // documentUrl: null quita el documento externo y la cotización vuelve a
+        // la lógica del builder (páginas, líneas e inversión calculada)
+        if (merged.documentUrl === null) delete merged.documentUrl
+        data.content = merged
       }
       if (body.discountScale !== undefined && Array.isArray(body.discountScale)) {
         data.discountScale = body.discountScale
@@ -340,8 +344,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const manual = manualInvestment(data.content ?? quote.content)
       if (manual) { data.totalFinal = manual; if (data.totalBase === undefined) data.totalBase = quote.totalBase || manual }
 
-      // el guardado completo del editor (contenido + líneas) deja una versión restaurable
+      // el guardado completo del editor (contenido + líneas) deja una versión restaurable;
+      // también quitar el documento externo, por si hay que volver atrás
       if (data.content !== undefined && body.items !== undefined) await snapshotQuote(quote, 'EDITOR', userId, str(body.versionLabel, 120) || undefined)
+      else if (body.content?.documentUrl === null && (quote.content as any)?.documentUrl !== undefined) await snapshotQuote(quote, 'EDITOR', userId, 'Antes de quitar el documento externo')
       const updated = await db().update({ where: { id: quote.id }, data })
       return res.status(200).json({ ok: true, quote: updated })
     }
