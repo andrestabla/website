@@ -77,6 +77,12 @@ const ADMIN_MODULE_INFO: Record<AdminModuleKey, { label: string; description: st
     description: 'Emite y controla las licencias del plugin Learning Analytics para Moodle.',
     url: '/ecosistema/licencias',
   },
+  LEARNING_BUILDER: {
+    label: 'Learning Builder',
+    description:
+      'Construye y edita recursos educativos por cliente: OVA, lecturas, presentaciones interactivas, pódcast, videos, rutas de aprendizaje y piezas importadas. Publica con enlace propio y exporta a SCORM.',
+    url: '/ecosistema/learning',
+  },
   ADMIN_BRIDGE: {
     label: 'Acceso puente al panel',
     description: 'Permite entrar al panel de administración (a los módulos habilitados) sin ser administrador.',

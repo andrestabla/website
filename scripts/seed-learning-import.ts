@@ -102,9 +102,11 @@ const result = await ingestPackage({
   userId: owner?.id,
 })
 
+// Se publica dentro del workspace, no hacia fuera: el enlace público es una
+// decisión del cliente y se activa desde la pestaña Entrega.
 await store.lbResources().update({
   where: { id: resource.id },
-  data: { status: 'PUBLISHED', publishedAt: resource.publishedAt || new Date(), shareMode: 'OPEN' },
+  data: { status: 'PUBLISHED', publishedAt: resource.publishedAt || new Date() },
 })
 
 const directives = sanitizeDirectives(workspace.directives)
