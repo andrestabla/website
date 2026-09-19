@@ -30,7 +30,7 @@ import { GuionEditor } from './editor/GuionEditor'
 import { CommentsPanel } from './CommentsPanel'
 import type { CommentRow } from './lib/api'
 
-type Tab = 'guion' | 'vista' | 'comentarios' | 'revision' | 'entrega'
+type Tab = 'guion' | 'ficha' | 'vista' | 'comentarios' | 'revision' | 'entrega'
 type Layout = 'both' | 'chat' | 'panel'
 
 const LAYOUT_KEY = 'learning:layout'
@@ -117,7 +117,9 @@ export function ResourceBuilder() {
       setContent(payload.resource.content)
       setIssues(payload.issues || [])
       setShareCode(payload.shareCode)
-      if (!can(payload.role, 'resource.edit')) setTab(can(payload.role, 'comment.view') ? 'comentarios' : 'vista')
+      const ready = LB_RESOURCE_KIND_SPECS[payload.resource.kind]?.available !== false
+      if (!ready) setTab('ficha')
+      else if (!can(payload.role, 'resource.edit')) setTab(can(payload.role, 'comment.view') ? 'comentarios' : 'vista')
       if (can(payload.role, 'sources.manage')) {
         const sourcesPayload = await learningApi.sources.list(resourceId)
         setSources(sourcesPayload.sources || [])
@@ -356,15 +358,23 @@ export function ResourceBuilder() {
   }
 
   const kindSpec = LB_RESOURCE_KIND_SPECS[resource.kind]
-  const showChat = editable && (desktop ? layout !== 'panel' : mobilePane === 'chat')
-  const showPanel = desktop ? layout !== 'chat' || !editable : mobilePane === 'panel' || !editable
+  // Hay tipos cuyo editor todavía no existe. En vez de abrirles el editor de
+  // bloques —que no les corresponde— se muestra su ficha y se dice qué falta.
+  const kindReady = kindSpec.available
+  const showChat = editable && kindReady && (desktop ? layout !== 'panel' : mobilePane === 'chat')
+  const showPanel = !showChat || (desktop ? layout !== 'chat' : mobilePane === 'panel')
   const toggleColumn = (column: 'chat' | 'panel') => {
     setLayout((prev) => {
       if (prev === 'both') return column === 'chat' ? 'panel' : 'chat'
       return 'both'
     })
   }
-  const tabs: Array<[Tab, string, any]> = editable
+  const tabs: Array<[Tab, string, any]> = !kindReady
+    ? [
+        ['ficha', 'Ficha', FileText],
+        ...(maySeeComments ? ([['comentarios', 'Comentarios', MessageSquare]] as Array<[Tab, string, any]>) : []),
+      ]
+    : editable
     ? [
         ['guion', 'Guion', FileText],
         ['vista', 'Vista previa', Eye],
@@ -442,7 +452,7 @@ export function ResourceBuilder() {
             </a>
           </>
         )}
-        {can(role, 'resource.publish') && (
+        {can(role, 'resource.publish') && kindReady && (
           <button
             onClick={togglePublish}
             disabled={busy === 'publish'}
@@ -655,7 +665,48 @@ export function ResourceBuilder() {
             </div>
 
             <div className="min-h-0 flex-1">
-              {tab === 'guion' && editable && (
+              {tab === 'ficha' && (
+                <div className="mx-auto max-w-3xl space-y-4 p-5">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <div className="flex items-center gap-2 text-[14px] font-bold text-amber-900">
+                      <AlertTriangle size={16} /> El editor de «{kindSpec.label}» todavía no existe
+                    </div>
+                    <p className="mt-1 text-[12.5px] text-amber-900/80">
+                      {kindSpec.pending} Mientras tanto el recurso está inventariado en la metabiblioteca con su ficha,
+                      y se puede comentar y planificar.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <h4 className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Ficha del recurso</h4>
+                    <dl className="mt-3 grid gap-x-6 gap-y-2 text-[13px] sm:grid-cols-2">
+                      {([
+                        ['Tipo', kindSpec.label],
+                        ['Workspace', workspaceName],
+                        ['Curso', resource.course || '—'],
+                        ['Unidad', resource.unit || '—'],
+                        ['Estado', LB_STATUS_LABEL[resource.status]],
+                        ['Editado', timeAgo(resource.updatedAt)],
+                      ] as Array<[string, string]>).map(([label, value]) => (
+                        <div key={label} className="flex gap-2">
+                          <dt className="shrink-0 font-semibold text-slate-500">{label}:</dt>
+                          <dd className="min-w-0 text-slate-700">{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {resource.subtitle && <p className="mt-3 text-[13px] leading-relaxed text-slate-600">{resource.subtitle}</p>}
+                    {resource.tags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        {resource.tags.map((tag) => (
+                          <span key={tag} className="rounded bg-slate-50 px-1.5 py-0.5 text-[10.5px] text-slate-500">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {tab === 'guion' && editable && kindReady && (
                 <GuionEditor
                   content={content}
                   directives={directives}

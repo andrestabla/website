@@ -7,7 +7,7 @@
  * que viene sin ofrecer un botón que no lleva a ninguna parte.
  */
 
-export const LB_RESOURCE_KINDS = ['OVA', 'INTERACTIVE', 'PODCAST', 'VIDEO', 'ROUTE', 'IMPORT'] as const
+export const LB_RESOURCE_KINDS = ['OVA', 'LECTURA', 'INTERACTIVE', 'PODCAST', 'VIDEO', 'ROUTE', 'IMPORT'] as const
 export type LbResourceKind = (typeof LB_RESOURCE_KINDS)[number]
 
 export type LbResourceKindSpec = {
@@ -32,6 +32,15 @@ export const LB_RESOURCE_KIND_SPECS: Record<LbResourceKind, LbResourceKindSpec> 
     hint: 'Objeto de aprendizaje por lecciones y bloques, al estilo Rise. Exporta a SCORM 1.2 y a HTML.',
     icon: 'GraduationCap',
     accent: 'from-rose-500 to-orange-500',
+    available: true,
+  },
+  LECTURA: {
+    kind: 'LECTURA',
+    label: 'Lectura interactiva',
+    short: 'Lectura',
+    hint: 'Documento navegable por bloques con comprobaciones: el mismo motor del OVA, pensado para leer.',
+    icon: 'BookOpen',
+    accent: 'from-sky-600 to-cyan-500',
     available: true,
   },
   INTERACTIVE: {

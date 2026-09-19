@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { lazy, Suspense, type ReactNode } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { canAccessModule } from '../admin/lib/permissions'
 import { useEcoSession } from './lib/session'
 import { EcosistemaLogin } from './EcosistemaLogin'
@@ -8,8 +8,8 @@ import { CotizadorList } from '../cotizador/CotizadorList'
 import { QuoteBuilder } from '../cotizador/QuoteBuilder'
 import { ClaudiaRemote } from './ClaudiaRemote'
 import { LicenciasPage } from './LicenciasPage'
-import { LearningHome } from '../learning/LearningHome'
-import { ResourceBuilder } from '../learning/ResourceBuilder'
+// Learning Builder tiene su propia puerta, así que se carga aparte.
+const LearningApp = lazy(() => import('../learning/LearningApp'))
 
 function Centered({ children }: { children: ReactNode }) {
   return (
@@ -20,7 +20,21 @@ function Centered({ children }: { children: ReactNode }) {
 }
 
 export default function EcosistemaApp() {
+  const { pathname } = useLocation()
   const { status, user, refresh } = useEcoSession()
+
+  // Learning Builder valida sesión y permiso por su cuenta y muestra su propio
+  // login, igual que BI y Project Control. Por eso se resuelve antes de la
+  // puerta del Ecosistema: si no, se vería primero la pantalla genérica.
+  if (pathname.startsWith('/ecosistema/learning')) {
+    return (
+      <Suspense fallback={<Centered><div className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Cargando Learning Builder…</div></Centered>}>
+        <Routes>
+          <Route path="learning/*" element={<LearningApp />} />
+        </Routes>
+      </Suspense>
+    )
+  }
 
   if (status === 'checking') {
     return <Centered><div className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">Validando sesión…</div></Centered>
@@ -30,7 +44,6 @@ export default function EcosistemaApp() {
   }
 
   const cotizadorAllowed = canAccessModule(user, 'COTIZADOR')
-  const learningAllowed = canAccessModule(user, 'LEARNING_BUILDER')
 
   return (
     <Routes>
@@ -42,15 +55,6 @@ export default function EcosistemaApp() {
       <Route
         path="cotizador/:quoteId"
         element={cotizadorAllowed ? <QuoteBuilder /> : <Navigate to="/ecosistema" replace />}
-      />
-      {/* Learning Builder: constructor de OVA. El API revalida el permiso. */}
-      <Route
-        path="learning"
-        element={learningAllowed ? <LearningHome /> : <Navigate to="/ecosistema" replace />}
-      />
-      <Route
-        path="learning/:resourceId"
-        element={learningAllowed ? <ResourceBuilder /> : <Navigate to="/ecosistema" replace />}
       />
       {/* Licencias del plugin de Moodle: el API revalida el permiso. */}
       <Route

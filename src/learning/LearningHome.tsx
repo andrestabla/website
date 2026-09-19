@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Eye, Copy, Trash2, CopyPlus, Search, Loader2, CheckCircle2, X, Settings2,
-  ChevronDown, Layers, Lock, GraduationCap, MousePointerClick, Mic, Clapperboard, Route, PackageOpen,
+  ChevronDown, Layers, Lock, GraduationCap, BookOpen, MousePointerClick, Mic, Clapperboard, Route, PackageOpen,
   Library, Users, AlertTriangle, MessageSquare,
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
@@ -31,7 +31,7 @@ import { WorkspacePanel } from './WorkspacePanel'
 
 /** Los iconos que declara cada tipo de recurso, resueltos aquí. */
 const ICONS: Record<string, any> = {
-  GraduationCap, MousePointerClick, Mic, Clapperboard, Route, PackageOpen,
+  GraduationCap, BookOpen, MousePointerClick, Mic, Clapperboard, Route, PackageOpen,
 }
 
 function KindIcon({ kind, size = 16 }: { kind: LbResourceKind; size?: number }) {
