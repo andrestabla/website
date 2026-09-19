@@ -48,7 +48,28 @@ export function useLearningSession() {
     setStatus('unauthenticated')
   }, [])
 
-  useEffect(() => { void refresh() }, [refresh])
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch('/api/admin/session', { cache: 'no-store' })
+        const payload = await res.json().catch(() => null)
+        if (cancelled) return
+        if (res.ok && payload?.authenticated && payload.user) {
+          setUser(payload.user)
+          setStatus(hasLearningAccess(payload.user) ? 'authenticated' : 'noaccess')
+          return
+        }
+      } catch {
+        /* se cae a no autenticado */
+      }
+      if (cancelled) return
+      setUser(null)
+      setStatus('unauthenticated')
+    }
+    void load()
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     const revalidate = () => { if (document.visibilityState === 'visible') void refresh() }

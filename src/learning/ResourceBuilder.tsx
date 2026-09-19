@@ -19,7 +19,7 @@ import { validateOva, type LbContent, type LbIssue } from './lib/blocks'
 import type { LbDirectives } from './lib/directives'
 import { LB_ROLE_LABEL, LB_ROLE_STYLE, can, type LbRole } from './lib/roles'
 import {
-  LB_RESOURCE_KIND_SPECS, LB_SHARE_HINT, LB_SHARE_LABEL, LB_SHARE_MODES, LB_STATUS_LABEL, LB_STATUS_STYLE,
+  kindSpec, LB_SHARE_HINT, LB_SHARE_LABEL, LB_SHARE_MODES, LB_STATUS_LABEL, LB_STATUS_STYLE,
   type LbShareMode,
 } from './lib/resources'
 import {
@@ -58,7 +58,9 @@ function useDesktop() {
 }
 
 export function ResourceBuilder() {
-  const { resourceId = '' } = useParams()
+  const { workspaceCode = '', resourceCode = '' } = useParams()
+  // La URL trae el código legible; el id interno llega con el recurso.
+  const [resourceId, setResourceId] = useState('')
   const navigate = useNavigate()
   const desktop = useDesktop()
   const { confirm, dialogs } = useDialogs()
@@ -98,18 +100,23 @@ export function ResourceBuilder() {
   const editable = can(role, 'resource.edit')
   const maySeeComments = can(role, 'comment.view')
 
-  const loadComments = useCallback(async () => {
+  const loadComments = useCallback(async (id: string) => {
+    if (!id) return
     try {
-      const payload = await learningApi.comments.list(resourceId)
+      const payload = await learningApi.comments.list(id)
       setComments(payload.comments || [])
     } catch {
       // La revisión es accesoria: si falla, el builder sigue funcionando.
     }
-  }, [resourceId])
+  }, [])
+
+  /** Recarga los hilos del recurso ya abierto; la usa el panel de revisión. */
+  const reloadComments = useCallback(() => loadComments(resourceId), [loadComments, resourceId])
 
   const load = useCallback(async () => {
     try {
-      const payload = await learningApi.resources.get(resourceId)
+      const payload = await learningApi.resources.get(resourceCode)
+      setResourceId(payload.resource.id)
       setResource(payload.resource)
       setWorkspaceName(payload.workspace.name)
       setDirectives(payload.directives)
@@ -117,20 +124,20 @@ export function ResourceBuilder() {
       setContent(payload.resource.content)
       setIssues(payload.issues || [])
       setShareCode(payload.shareCode)
-      const ready = LB_RESOURCE_KIND_SPECS[payload.resource.kind]?.available !== false
+      const ready = kindSpec(payload.resource.kind)?.available !== false
       if (!ready) setTab('ficha')
       else if (!can(payload.role, 'resource.edit')) setTab(can(payload.role, 'comment.view') ? 'comentarios' : 'vista')
       if (can(payload.role, 'sources.manage')) {
-        const sourcesPayload = await learningApi.sources.list(resourceId)
+        const sourcesPayload = await learningApi.sources.list(payload.resource.id)
         setSources(sourcesPayload.sources || [])
       }
-      if (can(payload.role, 'comment.view')) await loadComments()
+      if (can(payload.role, 'comment.view')) await loadComments(payload.resource.id)
     } catch (e: any) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
-  }, [resourceId, loadComments])
+  }, [resourceCode, loadComments])
   useEffect(() => { void load() }, [load])
 
   useEffect(() => { try { localStorage.setItem(LAYOUT_KEY, layout) } catch { /* sin persistencia */ } }, [layout])
@@ -243,7 +250,7 @@ export function ResourceBuilder() {
     await flush()
     try {
       const payload = await learningApi.resources.duplicate(resource.id)
-      navigate(`/ecosistema/learning/${payload.resource.id}`)
+      navigate(`/ecosistema/learning/${payload.resource.workspaceCode}/${payload.resource.code}`)
     } catch (e: any) { setError(e.message) }
   }
 
@@ -263,7 +270,7 @@ export function ResourceBuilder() {
     if (!ok) return
     try {
       await learningApi.resources.remove(resource.id)
-      navigate('/ecosistema/learning')
+      navigate(`/ecosistema/learning/${workspaceCode}`)
     } catch (e: any) { setError(e.message) }
   }
 
@@ -349,7 +356,7 @@ export function ResourceBuilder() {
       <div className="grid min-h-screen place-items-center bg-slate-50 p-6 text-center">
         <div>
           <div className="text-sm font-semibold text-slate-600">{error || 'No se pudo abrir este recurso.'}</div>
-          <Link to="/ecosistema/learning" className="mt-3 inline-block text-[13px] font-bold text-indigo-600 hover:underline">
+          <Link to={`/ecosistema/learning/${workspaceCode}`} className="mt-3 inline-block text-[13px] font-bold text-indigo-600 hover:underline">
             Volver a la metabiblioteca
           </Link>
         </div>
@@ -357,10 +364,10 @@ export function ResourceBuilder() {
     )
   }
 
-  const kindSpec = LB_RESOURCE_KIND_SPECS[resource.kind]
+  const spec = kindSpec(resource.kind)
   // Hay tipos cuyo editor todavía no existe. En vez de abrirles el editor de
   // bloques —que no les corresponde— se muestra su ficha y se dice qué falta.
-  const kindReady = kindSpec.available
+  const kindReady = spec.available
   const showChat = editable && kindReady && (desktop ? layout !== 'panel' : mobilePane === 'chat')
   const showPanel = !showChat || (desktop ? layout !== 'chat' : mobilePane === 'panel')
   const toggleColumn = (column: 'chat' | 'panel') => {
@@ -390,14 +397,15 @@ export function ResourceBuilder() {
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       {dialogs}
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 sm:gap-3 sm:px-6">
-        <Link to="/ecosistema/learning" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600" aria-label="Volver a la metabiblioteca">
+        <Link to={`/ecosistema/learning/${workspaceCode}`} className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600" aria-label="Volver a la metabiblioteca">
           <ArrowLeft size={16} /> <span className="hidden sm:inline">Biblioteca</span>
         </Link>
         <div className="h-5 w-px shrink-0 bg-slate-200" />
         <div className="min-w-0 flex-1 sm:flex-none">
           <div className="truncate text-sm font-black tracking-tight">{resource.title}</div>
           <div className="truncate text-[11px] text-slate-400">
-            {workspaceName} · {kindSpec.short}{resource.course ? ` · ${resource.course}` : ''}
+            <span className="font-mono">{resource.code}</span> · {workspaceName} · {spec.short}
+            {resource.course ? ` · ${resource.course}` : ''}
           </div>
         </div>
         <span className={`ml-1 hidden shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold sm:inline-flex ${LB_STATUS_STYLE[resource.status]}`}>
@@ -669,10 +677,10 @@ export function ResourceBuilder() {
                 <div className="mx-auto max-w-3xl space-y-4 p-5">
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                     <div className="flex items-center gap-2 text-[14px] font-bold text-amber-900">
-                      <AlertTriangle size={16} /> El editor de «{kindSpec.label}» todavía no existe
+                      <AlertTriangle size={16} /> El editor de «{spec.label}» todavía no existe
                     </div>
                     <p className="mt-1 text-[12.5px] text-amber-900/80">
-                      {kindSpec.pending} Mientras tanto el recurso está inventariado en la metabiblioteca con su ficha,
+                      {spec.pending} Mientras tanto el recurso está inventariado en la metabiblioteca con su ficha,
                       y se puede comentar y planificar.
                     </p>
                   </div>
@@ -681,7 +689,7 @@ export function ResourceBuilder() {
                     <h4 className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">Ficha del recurso</h4>
                     <dl className="mt-3 grid gap-x-6 gap-y-2 text-[13px] sm:grid-cols-2">
                       {([
-                        ['Tipo', kindSpec.label],
+                        ['Tipo', spec.label],
                         ['Workspace', workspaceName],
                         ['Curso', resource.course || '—'],
                         ['Unidad', resource.unit || '—'],
@@ -724,7 +732,7 @@ export function ResourceBuilder() {
                   directives={directives}
                   role={role}
                   comments={comments}
-                  reload={loadComments}
+                  reload={reloadComments}
                   focusAnchor={focusAnchor}
                 />
               )}

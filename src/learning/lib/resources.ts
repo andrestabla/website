@@ -139,3 +139,23 @@ export const LB_IMPORT_LABEL: Record<LbImportMode, string> = {
   BLOCKS: 'Convertido a bloques',
   MIRROR: 'Copia fiel editable por capa',
 }
+
+/**
+ * Un recurso guardado con un tipo que esta versión de la interfaz no conoce
+ * —por ejemplo tras sembrar datos antes de que el navegador recargue— no debe
+ * tumbar la pantalla: se pinta como desconocido y se dice qué hacer.
+ */
+const UNKNOWN_KIND: LbResourceKindSpec = {
+  kind: 'OVA',
+  label: 'Tipo no reconocido',
+  short: 'Recurso',
+  hint: 'Este tipo de recurso no existe en la versión de la interfaz que tienes cargada.',
+  icon: 'Library',
+  accent: 'from-slate-500 to-slate-400',
+  available: false,
+  pending: 'Recarga la página para traer la versión más reciente del módulo.',
+}
+
+export function kindSpec(kind: string | null | undefined): LbResourceKindSpec {
+  return LB_RESOURCE_KIND_SPECS[kind as LbResourceKind] ?? UNKNOWN_KIND
+}

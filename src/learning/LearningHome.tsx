@@ -11,7 +11,7 @@
  * pudiera llamar.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Eye, Copy, Trash2, CopyPlus, Search, Loader2, CheckCircle2, X, Settings2,
   ChevronDown, Layers, Lock, GraduationCap, BookOpen, MousePointerClick, Mic, Clapperboard, Route, PackageOpen,
@@ -19,12 +19,12 @@ import {
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import {
-  LB_RESOURCE_KINDS, LB_RESOURCE_KIND_SPECS, LB_STATUSES, LB_STATUS_LABEL, LB_STATUS_STYLE,
+  LB_RESOURCE_KINDS, kindSpec, LB_STATUSES, LB_STATUS_LABEL, LB_STATUS_STYLE,
   type LbResourceKind,
 } from './lib/resources'
 import { LB_ROLE_LABEL, LB_ROLE_STYLE, can } from './lib/roles'
 import {
-  learningApi, recalledWorkspace, rememberWorkspace, timeAgo,
+  learningApi, timeAgo,
   type ResourceRow, type WorkspaceRow,
 } from './lib/api'
 import { WorkspacePanel } from './WorkspacePanel'
@@ -35,17 +35,17 @@ const ICONS: Record<string, any> = {
 }
 
 function KindIcon({ kind, size = 16 }: { kind: LbResourceKind; size?: number }) {
-  const Icon = ICONS[LB_RESOURCE_KIND_SPECS[kind].icon] || Library
+  const Icon = ICONS[kindSpec(kind).icon] || Library
   return <Icon size={size} />
 }
 
 export function LearningHome() {
   const navigate = useNavigate()
+  const { workspaceCode = '' } = useParams()
   const { confirm, dialogs } = useDialogs()
 
   const [workspaces, setWorkspaces] = useState<WorkspaceRow[]>([])
   const [canCreateWorkspace, setCanCreateWorkspace] = useState(false)
-  const [currentId, setCurrentId] = useState('')
   const [resources, setResources] = useState<ResourceRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -63,7 +63,10 @@ export function LearningHome() {
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ kind: 'OVA' as LbResourceKind, title: '', course: '', unit: '' })
 
-  const current = useMemo(() => workspaces.find((row) => row.id === currentId) || null, [workspaces, currentId])
+  const current = useMemo(
+    () => workspaces.find((row) => row.code === workspaceCode.toUpperCase()) || null,
+    [workspaces, workspaceCode]
+  )
   const role = current?.role ?? null
 
   const loadWorkspaces = useCallback(async () => {
@@ -71,12 +74,6 @@ export function LearningHome() {
       const payload = await learningApi.workspaces.list()
       setWorkspaces(payload.workspaces || [])
       setCanCreateWorkspace(!!payload.canCreate)
-      setCurrentId((prev) => {
-        if (prev && payload.workspaces.some((row) => row.id === prev)) return prev
-        const remembered = recalledWorkspace()
-        if (remembered && payload.workspaces.some((row) => row.id === remembered)) return remembered
-        return payload.workspaces[0]?.id || ''
-      })
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -85,19 +82,15 @@ export function LearningHome() {
   }, [])
   useEffect(() => { void loadWorkspaces() }, [loadWorkspaces])
 
-  const loadLibrary = useCallback(async (workspaceId: string) => {
-    if (!workspaceId) { setResources([]); return }
+  const loadLibrary = useCallback(async (code: string) => {
+    if (!code) { setResources([]); return }
     try {
-      const payload = await learningApi.resources.library(workspaceId)
+      const payload = await learningApi.resources.library(code)
       setResources(payload.resources || [])
     } catch (e: any) { setError(e.message) }
   }, [])
 
-  useEffect(() => {
-    if (!currentId) return
-    rememberWorkspace(currentId)
-    void loadLibrary(currentId)
-  }, [currentId, loadLibrary])
+  useEffect(() => { void loadLibrary(workspaceCode.toUpperCase()) }, [workspaceCode, loadLibrary])
 
   const needle = query.trim().toLowerCase()
   const filtered = useMemo(
@@ -126,7 +119,7 @@ export function LearningHome() {
       const payload = await learningApi.workspaces.create({ name: newWorkspace.trim() })
       setNewWorkspace('')
       await loadWorkspaces()
-      setCurrentId(payload.workspace.id)
+      navigate(`/ecosistema/learning/${payload.workspace.code}`)
       setSwitcherOpen(false)
     } catch (e: any) { setError(e.message) } finally { setBusy('') }
   }
@@ -142,7 +135,7 @@ export function LearningHome() {
         course: form.course.trim() || undefined,
         unit: form.unit.trim() || undefined,
       })
-      navigate(`/ecosistema/learning/${payload.resource.id}`)
+      navigate(`/ecosistema/learning/${payload.resource.workspaceCode}/${payload.resource.code}`)
     } catch (e: any) { setError(e.message); setBusy('') }
   }
 
@@ -155,7 +148,7 @@ export function LearningHome() {
   const duplicate = async (resource: ResourceRow) => {
     try {
       const payload = await learningApi.resources.duplicate(resource.id)
-      navigate(`/ecosistema/learning/${payload.resource.id}`)
+      navigate(`/ecosistema/learning/${payload.resource.workspaceCode}/${payload.resource.code}`)
     } catch (e: any) { setError(e.message) }
   }
 
@@ -210,9 +203,9 @@ export function LearningHome() {
                 {workspaces.map((workspace) => (
                   <button
                     key={workspace.id}
-                    onClick={() => { setCurrentId(workspace.id); setSwitcherOpen(false) }}
+                    onClick={() => { navigate(`/ecosistema/learning/${workspace.code}`); setSwitcherOpen(false) }}
                     className={`flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] hover:bg-slate-50 ${
-                      workspace.id === currentId ? 'bg-indigo-50' : ''
+                      workspace.code === current?.code ? 'bg-indigo-50' : ''
                     }`}
                   >
                     <span className="min-w-0 flex-1 truncate font-semibold">{workspace.name}</span>
@@ -328,7 +321,7 @@ export function LearningHome() {
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   {LB_RESOURCE_KINDS.map((kind) => {
-                    const spec = LB_RESOURCE_KIND_SPECS[kind]
+                    const spec = kindSpec(kind)
                     const active = form.kind === kind
                     return (
                       <button
@@ -414,7 +407,7 @@ export function LearningHome() {
                 <option value="">Todos los tipos</option>
                 {LB_RESOURCE_KINDS.map((kind) => (
                   <option key={kind} value={kind}>
-                    {LB_RESOURCE_KIND_SPECS[kind].label} {countByKind.get(kind) ? `(${countByKind.get(kind)})` : ''}
+                    {kindSpec(kind).label} {countByKind.get(kind) ? `(${countByKind.get(kind)})` : ''}
                   </option>
                 ))}
               </select>
@@ -455,13 +448,13 @@ export function LearningHome() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filtered.map((resource) => {
-                  const spec = LB_RESOURCE_KIND_SPECS[resource.kind]
+                  const spec = kindSpec(resource.kind)
                   const editable = can(role, 'resource.edit')
                   return (
                     <div
                       key={resource.id}
                       className="group flex cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-400 hover:shadow-md"
-                      onClick={() => navigate(`/ecosistema/learning/${resource.id}`)}
+                      onClick={() => navigate(`/ecosistema/learning/${resource.workspaceCode}/${resource.code}`)}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
@@ -551,8 +544,8 @@ export function LearningHome() {
                   <AlertTriangle size={13} /> En preparación
                 </div>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {LB_RESOURCE_KINDS.filter((kind) => !LB_RESOURCE_KIND_SPECS[kind].available).map((kind) => {
-                    const spec = LB_RESOURCE_KIND_SPECS[kind]
+                  {LB_RESOURCE_KINDS.filter((kind) => !kindSpec(kind).available).map((kind) => {
+                    const spec = kindSpec(kind)
                     return (
                       <div key={kind} className="flex items-start gap-2 text-[12.5px] text-slate-500">
                         <span className="mt-0.5 text-slate-300"><KindIcon kind={kind} size={14} /></span>
@@ -571,7 +564,7 @@ export function LearningHome() {
         <WorkspacePanel
           workspace={current}
           onClose={() => setPanelOpen(false)}
-          onChanged={() => { void loadWorkspaces(); void loadLibrary(current.id) }}
+          onChanged={() => { void loadWorkspaces(); void loadLibrary(current.code) }}
         />
       )}
     </div>

@@ -6,6 +6,8 @@ import type { LbResourceKind, LbShareMode, LbStatus } from './resources.js'
 
 export type WorkspaceRow = {
   id: string
+  /** Identificador raíz, el que va en la URL: UNICAFAM. */
+  code: string
   name: string
   slug: string
   kind: string
@@ -39,8 +41,11 @@ export type DataSourceRow = {
 
 export type ResourceRow = {
   id: string
+  /** Identificador legible derivado del workspace: UNICAFAM-OVA-001. */
+  code: string
   publicId: string
   workspaceId: string
+  workspaceCode: string
   workspaceName: string
   kind: LbResourceKind
   title: string
@@ -138,16 +143,20 @@ export const learningApi = {
       post('/api/learning/workspaces', { op: 'data-delete', workspaceId, id }),
   },
   resources: {
-    library: (workspaceId?: string): Promise<{ resources: ResourceRow[] }> =>
-      post('/api/learning/resources', { op: 'library', workspaceId }),
-    get: (resourceId: string): Promise<{
+    library: (workspaceCode?: string): Promise<{ resources: ResourceRow[] }> =>
+      post('/api/learning/resources', { op: 'library', workspaceCode }),
+    /** Acepta el id interno o el código legible (el de la URL). */
+    get: (resourceIdOrCode: string): Promise<{
       resource: ResourceDetail
       workspace: { id: string; name: string; slug: string; kind: string }
       directives: LbDirectives
       role: LbRole
       issues: LbIssue[]
       shareCode: string | null
-    }> => post('/api/learning/resources', { op: 'get', resourceId }),
+    }> =>
+      post('/api/learning/resources', /^[A-Z0-9]+-[A-Z]{3}-\d{3}$/i.test(resourceIdOrCode)
+        ? { op: 'get', code: resourceIdOrCode }
+        : { op: 'get', resourceId: resourceIdOrCode }),
     create: (data: { workspaceId: string; kind: LbResourceKind; title: string; subtitle?: string; course?: string; unit?: string; tags?: string[] }) =>
       post('/api/learning/resources', { op: 'create', ...data }),
     update: (resourceId: string, data: Record<string, unknown>): Promise<{ resource: ResourceRow; issues: LbIssue[] }> =>

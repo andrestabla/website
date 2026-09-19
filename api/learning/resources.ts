@@ -16,6 +16,7 @@ import {
 import { sanitizeContent, scaffoldContent, validateOva } from '../../src/learning/lib/blocks.js'
 import { sanitizeDirectives } from '../../src/learning/lib/directives.js'
 import { can } from '../../src/learning/lib/roles.js'
+import { resourceCodeFor, takenResourceCodes } from '../_lib/lb-codes.js'
 import {
   LB_RESOURCE_KIND_SPECS, LB_SHARE_MODES, LB_STATUSES, isResourceKind, type LbShareMode,
 } from '../../src/learning/lib/resources.js'
@@ -50,8 +51,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!allowed) return res.status(403).json({ ok: false, error: 'Sin acceso a Learning Builder' })
 
       const visible = await visibleWorkspaces(session)
-      const wanted = text(body.workspaceId, 40)
-      const scope = wanted ? visible.filter((entry) => entry.workspace.id === wanted) : visible
+      // La biblioteca se pide por id o por el código raíz, que es lo que va en la URL.
+      const wantedId = text(body.workspaceId, 40)
+      const wantedCode = text(body.workspaceCode, 40).toUpperCase()
+      const wanted = wantedId || wantedCode
+      const scope = wanted
+        ? visible.filter((entry) => entry.workspace.id === wantedId || entry.workspace.code === wantedCode)
+        : visible
       if (wanted && !scope.length) return res.status(403).json({ ok: false, error: 'No perteneces a este workspace' })
       if (!scope.length) return res.status(200).json({ ok: true, resources: [] })
 
@@ -107,6 +113,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const created = await lbResources().create({
         data: {
           publicId: newPublicId(),
+          code: resourceCodeFor(workspace.code, kind, await takenResourceCodes(lbResources(), workspaceId)),
           workspaceId,
           ownerId: check.session.userId,
           kind,
@@ -126,7 +133,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const gate = await requireModule(req)
     if (!gate.ok) return denied(res, gate)
 
-    const resourceId = text(body.resourceId, 40)
+    // El recurso llega por id (llamadas internas) o por su código legible, que
+    // es lo que viaja en la URL del builder.
+    let resourceId = text(body.resourceId, 40)
+    const wantedCode = text(body.code, 60).toUpperCase()
+    if (!resourceId && wantedCode) {
+      const found = await lbResources().findUnique({ where: { code: wantedCode }, select: { id: true } })
+      resourceId = found?.id || ''
+      if (!resourceId) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
+    }
     if (!resourceId) return res.status(400).json({ ok: false, error: 'Falta el recurso' })
     const loaded = await loadResource(resourceId)
     if (!loaded) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
@@ -250,6 +265,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const created = await lbResources().create({
         data: {
           publicId: newPublicId(),
+          code: resourceCodeFor(
+            workspace.code,
+            resource.kind,
+            await takenResourceCodes(lbResources(), resource.workspaceId)
+          ),
           workspaceId: resource.workspaceId,
           ownerId: check.session.userId,
           kind: resource.kind,

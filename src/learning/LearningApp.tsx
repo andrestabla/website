@@ -11,6 +11,7 @@ import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { Library } from 'lucide-react'
 import { useLearningSession } from './lib/session'
 import { LearningLogin } from './LearningLogin'
+import { WorkspacesGrid } from './WorkspacesGrid'
 import { LearningHome } from './LearningHome'
 import { ResourceBuilder } from './ResourceBuilder'
 
@@ -59,8 +60,9 @@ export default function LearningApp() {
 
   return (
     <Routes>
-      <Route index element={<LearningHome />} />
-      <Route path=":resourceId" element={<ResourceBuilder />} />
+      <Route index element={<WorkspacesGrid />} />
+      <Route path=":workspaceCode" element={<LearningHome />} />
+      <Route path=":workspaceCode/:resourceCode" element={<ResourceBuilder />} />
       <Route path="*" element={<Navigate to="/ecosistema/learning" replace />} />
     </Routes>
   )

@@ -11,6 +11,7 @@ import { canCreateWorkspace, denied, guard, lbSessionState, visibleWorkspaces } 
 import { lbDataSources, lbMembers, lbResources, lbWorkspaces, uniqueSlug, usersByIds } from '../_lib/lb-store.js'
 import { prisma } from '../_lib/prisma.js'
 import { LB_DEFAULT_DIRECTIVES, sanitizeDirectives } from '../../src/learning/lib/directives.js'
+import { workspaceCodeFrom } from '../_lib/lb-codes.js'
 import { capabilitiesOf, isLbRole } from '../../src/learning/lib/roles.js'
 
 type VercelRequest = any
@@ -55,6 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           me: { userId: session.userId, adminRole: session.role },
           workspaces: visible.map(({ workspace, role }) => ({
             id: workspace.id,
+            code: workspace.code,
             name: workspace.name,
             slug: workspace.slug,
             kind: workspace.kind,
@@ -74,10 +76,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       const name = text(body.name, 160)
       if (!name) return res.status(400).json({ ok: false, error: 'El workspace necesita un nombre' })
+      const slug = await uniqueSlug(text(body.slug, 60) || name)
+      const takenCodes = new Set<string>(
+        (await lbWorkspaces().findMany({ select: { code: true } })).map((row: any) => row.code).filter(Boolean)
+      )
       const created = await lbWorkspaces().create({
         data: {
           name,
-          slug: await uniqueSlug(text(body.slug, 60) || name),
+          code: workspaceCodeFrom(slug, takenCodes),
+          slug,
           kind: KINDS.includes(String(body.kind)) ? String(body.kind) : 'EDUCATIVA',
           notes: text(body.notes, 1000) || null,
           directives: sanitizeDirectives(body.directives ?? LB_DEFAULT_DIRECTIVES) as any,
