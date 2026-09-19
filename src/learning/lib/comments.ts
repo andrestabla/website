@@ -17,7 +17,7 @@
  *
  * Lo importa la UI y también el API, así que no puede depender de React.
  */
-import { LB_BLOCK_SPECS, type LbContent, type LbBlock } from './blocks'
+import { LB_BLOCK_SPECS, type LbContent, type LbBlock } from './blocks.js'
 
 export type LbAnchorKind = 'resource' | 'cover' | 'coverField' | 'lesson' | 'block'
 

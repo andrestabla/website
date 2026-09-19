@@ -18,7 +18,7 @@
  *
  * Lo importa la UI y también el API, así que no puede depender de React.
  */
-import { LB_BLOCK_TYPES, type LbBlockType } from './blocks'
+import { LB_BLOCK_TYPES, type LbBlockType } from './blocks.js'
 
 export type LbGraphicDirectives = {
   accent: string

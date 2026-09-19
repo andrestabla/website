@@ -559,8 +559,12 @@ export function WorkspacePanel({
           {tab === 'equipo' && (
             <>
               <p className="text-[12.5px] text-slate-500">
-                El rol decide qué puede hacer cada persona <b>en este workspace</b>. Para entrar al módulo necesita además el
-                permiso «Learning Builder» en el panel de Usuarios.
+                El rol decide qué puede hacer cada persona <b>en este workspace</b>. Para entrar al módulo necesita
+                además el permiso «Learning Builder», y para agregarla aquí tiene que existir como usuario:
+                ambas cosas se hacen en{' '}
+                <a href="/admin/users" target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 hover:underline">
+                  el panel de Usuarios
+                </a>.
               </p>
 
               <div className="space-y-2">

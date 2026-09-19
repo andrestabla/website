@@ -283,13 +283,38 @@ export function LearningHome() {
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {!current ? (
           <div className="grid min-h-[50vh] place-items-center rounded-2xl border border-dashed border-slate-300 text-center">
-            <div className="max-w-sm px-6">
-              <div className="text-sm font-semibold text-slate-600">Todavía no perteneces a ningún workspace</div>
-              <div className="mt-1 text-[13px] text-slate-400">
-                {canCreateWorkspace
-                  ? 'Crea el primero desde el selector de arriba.'
-                  : 'Pide a un gestor que te agregue al equipo de su workspace.'}
+            <div className="max-w-md px-6">
+              <div className="text-sm font-semibold text-slate-600">
+                {canCreateWorkspace ? 'Todavía no hay ningún workspace' : 'Todavía no perteneces a ningún workspace'}
               </div>
+              {canCreateWorkspace ? (
+                <>
+                  <p className="mt-1 text-[13px] text-slate-400">
+                    Un workspace es un cliente: su equipo, su línea gráfica y su modelo instruccional. Crea el primero
+                    y quedarás como su gestor.
+                  </p>
+                  <div className="mt-4 flex justify-center gap-2">
+                    <input
+                      value={newWorkspace}
+                      onChange={(e) => setNewWorkspace(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') void createWorkspace() }}
+                      placeholder="Nombre del cliente"
+                      className="w-56 rounded-lg border border-slate-300 px-3 py-2 text-[14px]"
+                    />
+                    <button
+                      onClick={createWorkspace}
+                      disabled={busy === 'workspace' || !newWorkspace.trim()}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-[13px] font-bold text-white disabled:opacity-50"
+                    >
+                      {busy === 'workspace' ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Crear workspace
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className="mt-1 text-[13px] text-slate-400">
+                  Pide a un gestor que te agregue al equipo de su workspace.
+                </p>
+              )}
             </div>
           </div>
         ) : (

@@ -1,8 +1,8 @@
 /** Cliente de la API del Learning Builder (sesión por cookie del sitio). */
-import type { LbContent, LbIssue } from './blocks'
-import type { LbDirectives } from './directives'
-import type { LbCapability, LbRole } from './roles'
-import type { LbResourceKind, LbShareMode, LbStatus } from './resources'
+import type { LbContent, LbIssue } from './blocks.js'
+import type { LbDirectives } from './directives.js'
+import type { LbCapability, LbRole } from './roles.js'
+import type { LbResourceKind, LbShareMode, LbStatus } from './resources.js'
 
 export type WorkspaceRow = {
   id: string

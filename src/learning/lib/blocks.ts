@@ -11,7 +11,7 @@
  * directives.ts), que viven en base de datos: aquí no hay nada codificado por
  * cliente.
  */
-import type { LbDirectives } from './directives'
+import type { LbDirectives } from './directives.js'
 
 // ── Bloques ──────────────────────────────────────────────────────────────────
 
