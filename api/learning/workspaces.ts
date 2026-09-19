@@ -12,7 +12,13 @@ import { lbDataSources, lbMembers, lbResources, lbWorkspaces, uniqueSlug, usersB
 import { prisma } from '../_lib/prisma.js'
 import { LB_DEFAULT_DIRECTIVES, sanitizeDirectives } from '../../src/learning/lib/directives.js'
 import { workspaceCodeFrom } from '../_lib/lb-codes.js'
+import { platformReadiness, workspaceIntegrations } from '../_lib/lb-integrations.js'
+import {
+  describeIntegrations, mergeIntegrations, LB_PROVIDERS, LB_PROVIDER_SPECS,
+  type LbProvider,
+} from '../../src/learning/lib/integrations.js'
 import { capabilitiesOf, isLbRole } from '../../src/learning/lib/roles.js'
+import { probeProvider } from '../_lib/lb-provider-probe.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -230,6 +236,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       await lbMembers().delete({ where: { id: memberId } })
       return res.status(200).json({ ok: true })
+    }
+
+    // ── Claves de API propias del workspace ──
+    if (op === 'integrations' || op === 'integrations-save' || op === 'integrations-test') {
+      const check = await guard(req, workspaceId, 'workspace.integrations')
+      if (!check.ok) return denied(res, check)
+      const workspace = await lbWorkspaces().findUnique({ where: { id: workspaceId } })
+      if (!workspace) return res.status(404).json({ ok: false, error: 'Workspace no encontrado' })
+
+      const provider = String(body.provider || '') as LbProvider
+      const known = (LB_PROVIDERS as readonly string[]).includes(provider)
+
+      if (op === 'integrations') {
+        return res.status(200).json({
+          ok: true,
+          role: check.role,
+          specs: LB_PROVIDER_SPECS,
+          platformReady: await platformReadiness(),
+          providers: describeIntegrations(workspaceIntegrations(workspace), await platformReadiness()),
+        })
+      }
+
+      if (!known) return res.status(400).json({ ok: false, error: `Proveedor desconocido: ${provider}` })
+
+      if (op === 'integrations-test') {
+        // Se prueba con lo que hay guardado, no con lo que venga en la
+        // petición: así el resultado dice si el workspace funciona de verdad.
+        const outcome = await probeProvider(workspace, provider)
+        return res.status(200).json({ ok: true, ...outcome })
+      }
+
+      const current = workspaceIntegrations(workspace)
+      const next = mergeIntegrations(current, provider, {
+        enabled: typeof body.enabled === 'boolean' ? body.enabled : undefined,
+        values: body.values && typeof body.values === 'object' ? body.values : undefined,
+        monthlyCap: body.monthlyCap,
+        notes: body.notes,
+      })
+      const updated = await lbWorkspaces().update({
+        where: { id: workspaceId },
+        data: { integrations: next as any },
+      })
+      // Las claves no vuelven: solo su cola y de dónde salen.
+      return res.status(200).json({
+        ok: true,
+        providers: describeIntegrations(workspaceIntegrations(updated), await platformReadiness()),
+      })
     }
 
     // ── Fuentes de datos abiertas ──

@@ -86,7 +86,7 @@ async function generateJsonWithOpenAI({
       ],
     }),
   })
-  const json = await response.json().catch(() => null)
+  const json = (await response.json().catch(() => null)) as any
   if (!response.ok) {
     throw new Error(json?.error?.message || `OpenAI request failed (${response.status})`)
   }
@@ -153,7 +153,7 @@ async function generateChatWithOpenAI({
       messages: [{ role: 'system', content: system }, ...messages],
     }),
   })
-  const json = await response.json().catch(() => null)
+  const json = (await response.json().catch(() => null)) as any
   if (!response.ok) {
     throw new Error(json?.error?.message || `OpenAI request failed (${response.status})`)
   }

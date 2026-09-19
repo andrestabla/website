@@ -11,8 +11,10 @@
  */
 import { denied, guard, lbSessionState, requireModule, visibleWorkspaces } from '../_lib/lb-auth.js'
 import {
-  lbComments, lbResources, lbVersions, lbWorkspaces, loadResource, newPublicId, newShareCode, snapshot, summarize,
+  lbComments, lbFiles, lbResources, lbVersions, lbWorkspaces, loadResource, newPublicId, newShareCode,
+  snapshot, summarize,
 } from '../_lib/lb-store.js'
+import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
 import {
   sanitizeResourceContent, scaffoldResourceContent, validateResourceContent,
 } from '../../src/learning/lib/content.js'
@@ -288,8 +290,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (op === 'delete') {
+      // Los archivos del recurso —paquete importado, locuciones, fotogramas—
+      // no los borra la base: si falla el almacenamiento se avisa, pero no se
+      // deja el registro a medias, que es lo que dejaría huérfano lo demás.
+      const files = await lbFiles().findMany({ where: { resourceId }, select: { path: true } })
+      let orphans = 0
+      if (files.length) {
+        try {
+          const bucket = await workspaceBucket(workspace)
+          const folder = resourceFolder(workspace.code, resource.code)
+          const removed = await bucket.remove(files.map((file: any) => `${folder}/pkg/${file.path}`))
+          orphans = files.length - removed
+        } catch {
+          orphans = files.length
+        }
+      }
       await lbResources().delete({ where: { id: resourceId } })
-      return res.status(200).json({ ok: true })
+      return res.status(200).json({
+        ok: true,
+        warning: orphans
+          ? `Quedaron ${orphans} archivo(s) en el almacenamiento: bórralos a mano si hace falta.`
+          : null,
+      })
     }
 
     if (op === 'versions') {

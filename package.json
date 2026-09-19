@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "vite",
     "postinstall": "prisma generate",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc -p tsconfig.api.json && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:api": "tsc -p tsconfig.api.json"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

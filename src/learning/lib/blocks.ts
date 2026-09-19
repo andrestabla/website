@@ -11,7 +11,10 @@
  * directives.ts), que viven en base de datos: aquí no hay nada codificado por
  * cliente.
  */
+import type { LbIssue } from './common.js'
 import type { LbDirectives } from './directives.js'
+
+export type { LbIssue }
 
 // ── Bloques ──────────────────────────────────────────────────────────────────
 
@@ -359,7 +362,6 @@ export function sanitizeContent(value: unknown, directives?: LbDirectives): LbCo
 
 // ── Validación contra las directivas del workspace ───────────────────────────
 
-export type LbIssue = { level: 'error' | 'warning'; message: string; lessonId?: string; blockId?: string }
 
 /**
  * Comprueba el recurso contra las directivas instruccionales de su workspace.

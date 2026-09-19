@@ -123,18 +123,17 @@ export async function docxToContent(options: {
 
   const { value: html } = await mammoth.convertToHtml({ buffer }, { convertImage })
 
+  // La pantalla en curso es siempre la última de la lista, y no una variable
+  // aparte: así no hay dos sitios que puedan discrepar sobre cuál es.
   const lessons: LbLesson[] = []
-  let current: LbLesson | null = null
-  const push = (block: LbBlock) => {
-    if (!current) {
-      current = { id: newId('l'), title, blocks: [] }
-      lessons.push(current)
-    }
-    current.blocks.push(block)
+  const openLesson = (lessonTitle: string): LbLesson => {
+    const lesson: LbLesson = { id: newId('l'), title: lessonTitle, blocks: [] }
+    lessons.push(lesson)
+    return lesson
   }
-  const openLesson = (lessonTitle: string) => {
-    current = { id: newId('l'), title: lessonTitle, blocks: [] }
-    lessons.push(current)
+  const lastLesson = (): LbLesson | undefined => lessons[lessons.length - 1]
+  const push = (block: LbBlock) => {
+    (lastLesson() || openLesson(title)).blocks.push(block)
   }
 
   // Se recorre el HTML por bloques de nivel superior, en orden de lectura.
@@ -155,8 +154,9 @@ export async function docxToContent(options: {
         const rank = headingRank(heading)
         if (rank === 'lesson') {
           // Abre pantalla nueva, salvo que la actual esté todavía vacía.
-          if (!current || current.blocks.length) openLesson(heading)
-          else current.title = heading
+          const open = lastLesson()
+          if (!open || open.blocks.length) openLesson(heading)
+          else open.title = heading
           push({ id: newId('b'), type: 'heading', variant: 'h2', text: heading })
         } else {
           push({ id: newId('b'), type: 'heading', variant: rank, text: heading })

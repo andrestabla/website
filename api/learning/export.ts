@@ -11,10 +11,13 @@
  * subirlo.
  */
 import { denied, guard, requireModule } from '../_lib/lb-auth.js'
+import { buildMirrorPackage } from '../_lib/lb-mirror-package.js'
 import { renderResourceHtml } from '../_lib/lb-render-any.js'
 import { buildScormPackage, safeFileName } from '../_lib/lb-scorm.js'
-import { loadResource } from '../_lib/lb-store.js'
-import { validateResourceContent } from '../../src/learning/lib/content.js'
+import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
+import { lbFiles, loadResource } from '../_lib/lb-store.js'
+import { familyOf, validateResourceContent } from '../../src/learning/lib/content.js'
+import type { LbMirrorContent } from '../../src/learning/lib/mirror.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -66,6 +69,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).send(
         JSON.stringify({ meta: { ...meta, workspace: workspace?.slug }, directives, content }, null, 2)
       )
+    }
+
+    // Una copia fiel se entrega como el paquete que entró, no como un solo
+    // archivo: sus estilos, imágenes y scripts son parte de la pieza.
+    if (familyOf(resource.kind) === 'mirror' && (format === 'html' || format === 'scorm')) {
+      const mirror = content as LbMirrorContent
+      if (!mirror.pages.length) {
+        return res.status(400).json({ ok: false, error: 'Esta pieza todavía no tiene paquete que descargar.' })
+      }
+      const files = await lbFiles().findMany({
+        where: { resourceId: resource.id },
+        orderBy: { path: 'asc' },
+        select: { path: true },
+      })
+      const bucket = await workspaceBucket(workspace)
+      const { buffer, fileName } = await buildMirrorPackage({
+        content: mirror,
+        directives,
+        bucket,
+        folder: resourceFolder(workspace.code, resource.code),
+        files,
+        title: mirror.cover.title || resource.title,
+        publicId: resource.publicId,
+        format,
+      })
+      res.setHeader('Content-Type', 'application/zip')
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+      res.setHeader('Content-Length', String(buffer.length))
+      return res.status(200).send(buffer)
     }
 
     if (format === 'html') {

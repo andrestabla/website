@@ -12,7 +12,13 @@
  * Lo importa la UI y también el API, así que no puede depender de React.
  */
 import type { LbCover, LbMedia } from './blocks.js'
+import {
+  coverAnchors, coverIssues, ident, newLbId, sanitizeCover, sanitizeMedia, str,
+  type LbAnchorTarget, type LbIssue,
+} from './common.js'
 import type { LbDirectives } from './directives.js'
+
+export type { LbIssue }
 
 export type LbHotspotShape = 'pin' | 'area'
 
@@ -45,7 +51,7 @@ export type LbInteractiveContent = {
 }
 
 export function newInteractiveId(prefix: string): string {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+  return newLbId(prefix)
 }
 
 // ── Saneamiento ──────────────────────────────────────────────────────────────
@@ -53,29 +59,10 @@ export function newInteractiveId(prefix: string): string {
 const MAX_SCENES = 30
 const MAX_HOTSPOTS = 24
 
-function str(value: unknown, max: number): string {
-  if (typeof value !== 'string') return ''
-  return value.replace(/[^\P{Cc}\n\t]/gu, '').slice(0, max)
-}
-
-function ident(value: unknown, prefix: string): string {
-  const raw = str(value, 40).replace(/[^a-zA-Z0-9_-]/g, '')
-  return raw || newInteractiveId(prefix)
-}
-
 function pct(value: unknown, fallback: number): number {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return fallback
   return Math.min(100, Math.max(0, Math.round(parsed * 10) / 10))
-}
-
-function media(value: unknown): LbMedia | undefined {
-  if (!value || typeof value !== 'object') return undefined
-  const raw = value as Record<string, unknown>
-  const url = str(raw.url, 1200).trim()
-  if (!url || !/^(https?:\/\/|\/)/i.test(url)) return undefined
-  const alt = str(raw.alt, 300)
-  return alt ? { url, alt } : { url }
 }
 
 function sanitizeHotspot(value: unknown): LbHotspot {
@@ -93,24 +80,13 @@ function sanitizeHotspot(value: unknown): LbHotspot {
     hotspot.h = Math.max(4, pct(raw.h, 15))
   }
   const body = str(raw.body, 4000); if (body) hotspot.body = body
-  const image = media(raw.media); if (image) hotspot.media = image
+  const image = sanitizeMedia(raw.media); if (image) hotspot.media = image
   return hotspot
 }
 
 export function sanitizeInteractive(value: unknown): LbInteractiveContent {
   const raw = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
-  const rawCover = (raw.cover && typeof raw.cover === 'object' ? raw.cover : {}) as Record<string, unknown>
-
-  const cover: LbCover = {}
-  const kicker = str(rawCover.kicker, 160); if (kicker) cover.kicker = kicker
-  const title = str(rawCover.title, 240); if (title) cover.title = title
-  const subtitle = str(rawCover.subtitle, 400); if (subtitle) cover.subtitle = subtitle
-  const summary = str(rawCover.summary, 2000); if (summary) cover.summary = summary
-  const image = media(rawCover.media); if (image) cover.media = image
-  if (Array.isArray(rawCover.outcomes)) {
-    const outcomes = (rawCover.outcomes as unknown[]).slice(0, 12).map((o) => str(o, 400)).filter(Boolean)
-    if (outcomes.length) cover.outcomes = outcomes
-  }
+  const cover: LbCover = sanitizeCover(raw.cover)
 
   const rawScenes = Array.isArray(raw.scenes) ? (raw.scenes as unknown[]).slice(0, MAX_SCENES) : []
   const scenes: LbScene[] = rawScenes.map((value2) => {
@@ -123,7 +99,7 @@ export function sanitizeInteractive(value: unknown): LbInteractiveContent {
       ),
     }
     const intro = str(rawScene.intro, 4000); if (intro) scene.intro = intro
-    const background = media(rawScene.background); if (background) scene.background = background
+    const background = sanitizeMedia(rawScene.background); if (background) scene.background = background
     return scene
   })
 
@@ -149,24 +125,15 @@ export function scaffoldInteractive(title: string): LbInteractiveContent {
 
 // ── Validación ───────────────────────────────────────────────────────────────
 
-export type LbIssue = { level: 'error' | 'warning'; message: string; lessonId?: string; blockId?: string }
-
 /**
  * Comprueba la presentación contra las directivas del workspace. Reutiliza las
  * reglas que tienen sentido aquí: portada con presentación y resultados, y
  * texto alternativo en las imágenes.
  */
 export function validateInteractive(content: LbInteractiveContent, directives: LbDirectives): LbIssue[] {
-  const issues: LbIssue[] = []
   const rules = directives.instructional.rules
+  const issues: LbIssue[] = coverIssues(content.cover, rules)
 
-  if (!content.cover.title) issues.push({ level: 'error', message: 'La portada no tiene título.' })
-  if (rules.requireCoverSummary && !content.cover.summary) {
-    issues.push({ level: 'error', message: 'La portada necesita una presentación breve.' })
-  }
-  if (rules.requireOutcomes && !(content.cover.outcomes || []).length) {
-    issues.push({ level: 'error', message: 'Faltan los resultados de aprendizaje.' })
-  }
   if (!content.scenes.length) issues.push({ level: 'error', message: 'La presentación no tiene ninguna escena.' })
 
   for (const scene of content.scenes) {
@@ -201,11 +168,8 @@ export function validateInteractive(content: LbInteractiveContent, directives: L
 }
 
 /** Piezas comentables de una presentación, para la revisión del auditor. */
-export function interactiveAnchorTargets(content: LbInteractiveContent) {
-  const targets: Array<{ anchor: string; kind: string; label: string; preview?: string; depth: number }> = [
-    { anchor: 'resource', kind: 'resource', label: 'El recurso completo', depth: 0 },
-    { anchor: 'cover', kind: 'cover', label: 'Portada', preview: content.cover.title || '', depth: 1 },
-  ]
+export function interactiveAnchorTargets(content: LbInteractiveContent): LbAnchorTarget[] {
+  const targets = coverAnchors(content.cover)
   content.scenes.forEach((scene, index) => {
     targets.push({
       anchor: `lesson:${scene.id}`,

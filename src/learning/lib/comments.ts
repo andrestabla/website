@@ -18,8 +18,9 @@
  * Lo importa la UI y también el API, así que no puede depender de React.
  */
 import { LB_BLOCK_SPECS, type LbContent, type LbBlock } from './blocks.js'
+import type { LbAnchorKind, LbAnchorTarget } from './common.js'
 
-export type LbAnchorKind = 'resource' | 'cover' | 'coverField' | 'lesson' | 'block'
+export type { LbAnchorKind, LbAnchorTarget }
 
 export type LbAnchor = {
   /** La cadena tal como se guarda. */
@@ -69,19 +70,6 @@ export function blockPreview(block: LbBlock): string {
   if (first) return plain(first.title || first.description).slice(0, 120)
   if (block.media?.url) return plain(block.media.alt) || 'Imagen sin texto alternativo'
   return 'Sin contenido todavía'
-}
-
-export type LbAnchorTarget = {
-  anchor: string
-  kind: LbAnchorKind
-  /** Cómo se llama la pieza en la lista de revisión. */
-  label: string
-  /** Un fragmento de su contenido, para reconocerla. */
-  preview?: string
-  /** Lección a la que pertenece, si cuelga de una. */
-  lessonId?: string
-  /** Sangría en la lista: 0 el recurso, 1 lección o portada, 2 bloque o campo. */
-  depth: number
 }
 
 /**

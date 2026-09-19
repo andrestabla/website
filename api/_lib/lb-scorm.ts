@@ -14,7 +14,7 @@
 import { createZip, type ZipEntry } from './lb-zip.js'
 import { escapeHtml, type LbRenderMeta } from './lb-render.js'
 import { renderResourceHtml } from './lb-render-any.js'
-import type { LbContent } from '../../src/learning/lib/blocks.js'
+import { screenTitles, type LbResourceContent } from '../../src/learning/lib/content.js'
 import type { LbDirectives } from '../../src/learning/lib/directives.js'
 
 /** Identificador del manifiesto: ASCII, sin espacios, como pide el esquema. */
@@ -131,7 +131,7 @@ const SCORM_API_JS = `(function(){
 
 export function buildScormPackage(options: {
   meta: LbRenderMeta
-  content: LbContent
+  content: LbResourceContent
   directives: LbDirectives
   publicId: string
   kind: string
@@ -142,7 +142,7 @@ export function buildScormPackage(options: {
 
   const index = renderResourceHtml({ kind, meta, content, directives, mode: 'scorm' })
   const entries: ZipEntry[] = [
-    { path: 'imsmanifest.xml', data: manifest({ identifier, title, lessons: ((content as any).lessons || (content as any).scenes || []).map((row: any) => row.title) }) },
+    { path: 'imsmanifest.xml', data: manifest({ identifier, title, lessons: screenTitles(kind, content) }) },
     { path: 'index.html', data: index },
     { path: 'scorm-api.js', data: SCORM_API_JS },
   ]

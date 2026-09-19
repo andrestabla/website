@@ -13,8 +13,11 @@
  */
 import crypto from 'node:crypto'
 import { guard, lbSessionState } from '../_lib/lb-auth.js'
+import { injectMirrorLayer } from '../_lib/lb-mirror-html.js'
 import { renderResourceHtml } from '../_lib/lb-render-any.js'
-import { lbResources, loadResource, loadResourceByPublicId } from '../_lib/lb-store.js'
+import { lbFiles, lbResources, loadResource, loadResourceByPublicId } from '../_lib/lb-store.js'
+import { familyOf } from '../../src/learning/lib/content.js'
+import { safePath, type LbMirrorContent } from '../../src/learning/lib/mirror.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -97,6 +100,59 @@ function codeForm(publicId: string, error: string, res: VercelResponse) {
   )
 }
 
+
+/**
+ * Sirve una página de una pieza importada: el HTML original, tal cual salió
+ * del almacenamiento, con la capa de ediciones añadida en la cabecera.
+ *
+ * Solo se sirven rutas que estén registradas como archivos de ESTE recurso.
+ * Es lo que impide que el parámetro `path` se convierta en una forma de pedirle
+ * al servidor que descargue cualquier cosa.
+ */
+async function serveMirror(options: {
+  res: VercelResponse
+  resourceId: string
+  content: LbMirrorContent
+  requested: string
+  viewBase: string
+  editable: boolean
+}): Promise<unknown> {
+  const { res, resourceId, content, requested, viewBase, editable } = options
+  const wanted = safePath(requested) || content.entry
+  const page = content.pages.find((row) => row.path === wanted)
+  if (!page) return shell('Página no encontrada', 'Esa página no está en el paquete.', 404, res)
+
+  const file = await lbFiles().findUnique({ where: { resourceId_path: { resourceId, path: page.path } } })
+  if (!file?.url) {
+    return shell('Paquete incompleto', 'El archivo original de esta página ya no está en el almacenamiento.', 404, res)
+  }
+
+  const response = await fetch(file.url)
+  if (!response.ok) {
+    return shell('No se pudo leer', `El almacenamiento respondió ${response.status}.`, 502, res)
+  }
+  const original = await response.text()
+
+  // El <base> es la carpeta de ESTA página, para que sus rutas relativas
+  // resuelvan igual que resolvían dentro del paquete original.
+  const pageUrl = new URL(file.url)
+  const baseHref = file.url.slice(0, file.url.length - pageUrl.pathname.split('/').pop()!.length)
+  const depth = page.path.split('/').length - 1
+  const packageRoot = depth ? new URL('../'.repeat(depth), baseHref).href : baseHref
+
+  res.setHeader('Content-Type', 'text/html; charset=utf-8')
+  res.setHeader('Cache-Control', 'no-store')
+  return res.status(200).send(
+    injectMirrorLayer(original, {
+      baseHref,
+      packageRoot,
+      edits: content.edits[page.path] || {},
+      viewBase,
+      editable,
+    })
+  )
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'POST') {
     res.setHeader('Allow', 'GET, POST')
@@ -120,9 +176,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return shell('Todavía en construcción', 'Este recurso aún no está publicado.', 403, res)
       }
 
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN')
+
+      // Una copia fiel no se rehace: se sirve su propio HTML. Dentro del
+      // builder, además, con la capa que lo hace editable.
+      if (familyOf(loaded.resource.kind) === 'mirror') {
+        const mirror = loaded.content as LbMirrorContent
+        if (mirror.pages.length) {
+          const base = `/api/learning/view?preview=${encodeURIComponent(previewId)}${req.query?.edit ? '&edit=1' : ''}&path=`
+          return serveMirror({
+            res,
+            resourceId: loaded.resource.id,
+            content: mirror,
+            requested: String(req.query?.path || ''),
+            viewBase: base,
+            editable: !!req.query?.edit && check.role !== 'GUEST' && check.role !== 'AUDITOR',
+          })
+        }
+      }
+
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
       res.setHeader('Cache-Control', 'no-store')
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN')
       return res.status(200).send(
         renderResourceHtml({
           kind: loaded.resource.kind,
@@ -178,10 +252,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Contador de lecturas: no bloquea la respuesta si falla.
     lbResources().update({ where: { id: resource.id }, data: { views: { increment: 1 } } }).catch(() => undefined)
 
+    if (!resource.embedEnabled) res.setHeader('X-Frame-Options', 'SAMEORIGIN')
+
+    if (familyOf(resource.kind) === 'mirror') {
+      const mirror = content as LbMirrorContent
+      if (mirror.pages.length) {
+        return serveMirror({
+          res,
+          resourceId: resource.id,
+          content: mirror,
+          requested: String(req.query?.path || ''),
+          viewBase: `/ova/${encodeURIComponent(publicId)}?path=`,
+          editable: false,
+        })
+      }
+    }
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     // Un recurso protegido por código nunca se cachea en intermediarios.
     res.setHeader('Cache-Control', resource.shareMode === 'CODE' ? 'private, no-store' : 'public, max-age=60, s-maxage=300')
-    if (!resource.embedEnabled) res.setHeader('X-Frame-Options', 'SAMEORIGIN')
 
     return res.status(200).send(
       renderResourceHtml({

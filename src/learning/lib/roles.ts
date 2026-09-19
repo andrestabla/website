@@ -66,6 +66,8 @@ export const LB_CAPABILITIES = [
   'data.manage',
   /** Cambiar las directivas gráficas e instruccionales. */
   'workspace.directives',
+  /** Ver y cambiar las claves de API propias del workspace. */
+  'workspace.integrations',
   /** Invitar, cambiar de rol y quitar miembros. */
   'workspace.team',
   /** Renombrar, desactivar o eliminar el workspace. */
@@ -101,6 +103,7 @@ const MANAGER_CAPS: LbCapability[] = [
   'resource.delete',
   'data.manage',
   'workspace.directives',
+  'workspace.integrations',
   'workspace.team',
   'workspace.manage',
 ]
