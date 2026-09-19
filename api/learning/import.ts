@@ -18,13 +18,11 @@
  */
 import crypto from 'node:crypto'
 import { denied, guard, requireModule } from '../_lib/lb-auth.js'
-import { contentTypeFor, isHtmlPath } from '../_lib/lb-mirror-html.js'
+import { LbZipError, ingestPackage } from '../_lib/lb-import.js'
 import { lbFiles, lbResources, loadResource, snapshot } from '../_lib/lb-store.js'
-import { resourceFolder, workspaceBucket, type LbBucket } from '../_lib/lb-storage.js'
-import { LbZipError, stripCommonRoot, unzip, type LbZipEntry } from '../_lib/lb-unzip.js'
+import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
 import { familyOf } from '../../src/learning/lib/content.js'
-import { sanitizeMirror, type LbMirrorContent, type LbMirrorPage } from '../../src/learning/lib/mirror.js'
-import { newLbId } from '../../src/learning/lib/common.js'
+import { sanitizeMirror, type LbMirrorContent } from '../../src/learning/lib/mirror.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -35,80 +33,6 @@ const MAX_PARTS = 40
 
 function staging(folder: string, uploadId: string): string {
   return `${folder}/.subiendo/${uploadId}`
-}
-
-// ── Lectura del manifiesto SCORM ─────────────────────────────────────────────
-
-/**
- * Qué dice el imsmanifest: por dónde se entra, cómo se llama y qué versión de
- * SCORM declara. Se lee con expresiones regulares y no con un parser de XML
- * porque solo hacen falta tres datos y ninguno está anidado de forma
- * ambigua; si algo no aparece, se cae al reparto por convención.
- */
-function readManifest(xml: string): { entry: string; title: string; version: string; titles: Map<string, string> } {
-  const decode = (value: string) =>
-    value
-      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'").replace(/&apos;/g, "'").replace(/&amp;/g, '&')
-
-  const version = /<schemaversion[^>]*>([^<]+)</i.exec(xml)?.[1]?.trim() || ''
-  const title = decode(/<organization\b[^>]*>[\s\S]*?<title[^>]*>([^<]*)</i.exec(xml)?.[1] || '').trim()
-
-  // Cada <resource> declara su href; cada <item> apunta a uno y le pone nombre.
-  const hrefById = new Map<string, string>()
-  for (const match of xml.matchAll(/<resource\b([^>]*)>/gi)) {
-    const attrs = match[1]
-    const id = /identifier="([^"]+)"/i.exec(attrs)?.[1]
-    const href = /href="([^"]+)"/i.exec(attrs)?.[1]
-    if (id && href) hrefById.set(id, decode(href))
-  }
-
-  const titles = new Map<string, string>()
-  let entry = ''
-  for (const match of xml.matchAll(/<item\b([^>]*)>([\s\S]*?)<\/item>/gi)) {
-    const ref = /identifierref="([^"]+)"/i.exec(match[1])?.[1]
-    if (!ref) continue
-    const href = hrefById.get(ref)
-    if (!href) continue
-    const itemTitle = decode(/<title[^>]*>([^<]*)</i.exec(match[2])?.[1] || '').trim()
-    if (itemTitle) titles.set(href.split('?')[0], itemTitle)
-    if (!entry) entry = href.split('?')[0]
-  }
-  if (!entry) entry = [...hrefById.values()][0]?.split('?')[0] || ''
-
-  return { entry, title, version, titles }
-}
-
-function htmlTitle(bytes: Buffer): string {
-  const head = bytes.subarray(0, 4000).toString('utf8')
-  const raw = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1] || ''
-  return raw.replace(/\s+/g, ' ').trim().slice(0, 240)
-}
-
-/** Por dónde se entra cuando no hay manifiesto: la convención de siempre. */
-function guessEntry(paths: string[]): string {
-  const html = paths.filter(isHtmlPath)
-  const preferred = ['index.html', 'index.htm', 'story.html', 'scormdriver/indexAPI.html', 'default.html']
-  for (const candidate of preferred) {
-    const found = html.find((path) => path.toLowerCase() === candidate.toLowerCase())
-    if (found) return found
-  }
-  // Si no, la más superficial del árbol, y a igualdad la primera por nombre.
-  return [...html].sort((a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b))[0] || ''
-}
-
-async function storePackage(
-  bucket: LbBucket,
-  folder: string,
-  entries: LbZipEntry[]
-): Promise<Array<{ path: string; url: string; contentType: string; bytes: number }>> {
-  const stored: Array<{ path: string; url: string; contentType: string; bytes: number }> = []
-  for (const entry of entries) {
-    const contentType = contentTypeFor(entry.path)
-    const result = await bucket.put(`${folder}/pkg/${entry.path}`, entry.bytes, contentType)
-    stored.push({ path: entry.path, url: result.url, contentType, bytes: result.bytes })
-  }
-  return stored
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -209,114 +133,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .remove(Array.from({ length: parts }, (_, i) => `${staging(folder, uploadId)}/${String(i).padStart(3, '0')}`))
       .catch(() => undefined)
 
-    const isZip = archive.length > 4 && archive.readUInt32LE(0) === 0x04034b50
-    let entries: LbZipEntry[]
-    if (isZip) {
-      try {
-        entries = stripCommonRoot(unzip(archive))
-      } catch (error) {
-        if (error instanceof LbZipError) return res.status(400).json({ ok: false, error: error.message })
-        throw error
-      }
-    } else {
-      // Un HTML suelto es un paquete de un solo archivo.
-      const single = fileName.toLowerCase().endsWith('.html') || fileName.toLowerCase().endsWith('.htm')
-      if (!single) {
-        return res.status(400).json({ ok: false, error: 'El archivo no es un ZIP ni un HTML.' })
-      }
-      entries = [{ path: 'index.html', bytes: archive }]
-    }
-
-    if (!entries.length) return res.status(400).json({ ok: false, error: 'El paquete está vacío.' })
-    const paths = entries.map((entry) => entry.path)
-    if (!paths.some(isHtmlPath)) {
-      return res.status(400).json({ ok: false, error: 'El paquete no contiene ninguna página HTML.' })
-    }
-
-    const manifestEntry = entries.find((entry) => entry.path.toLowerCase() === 'imsmanifest.xml')
-    const manifest = manifestEntry
-      ? readManifest(manifestEntry.bytes.toString('utf8'))
-      : { entry: '', title: '', version: '', titles: new Map<string, string>() }
-
-    const entry = (manifest.entry && paths.includes(manifest.entry) ? manifest.entry : '') || guessEntry(paths)
-    if (!entry) return res.status(400).json({ ok: false, error: 'No se encontró la página de entrada del paquete.' })
-
-    // Lo anterior se borra antes de subir lo nuevo: dos paquetes mezclados en
-    // la misma carpeta dejarían archivos del viejo sirviéndose al nuevo.
-    const previous = await lbFiles().findMany({ where: { resourceId: resource.id }, select: { path: true } })
-    if (previous.length) {
-      await bucket.remove(previous.map((file: any) => `${folder}/pkg/${file.path}`))
-      await lbFiles().deleteMany({ where: { resourceId: resource.id } })
-    }
-
-    const stored = await storePackage(bucket, folder, entries)
-    await lbFiles().createMany({
-      data: stored.map((file) => ({
-        resourceId: resource.id,
-        path: file.path,
-        url: file.url,
-        contentType: file.contentType,
-        bytes: file.bytes,
-      })),
-    })
-
-    const pages: LbMirrorPage[] = entries
-      .filter((candidate) => isHtmlPath(candidate.path))
-      .map((candidate) => ({
-        id: newLbId('pg'),
-        path: candidate.path,
-        title: manifest.titles.get(candidate.path) || htmlTitle(candidate.bytes) || candidate.path,
-      }))
-      // La de entrada primero: es la que abre el visor y la que se edita antes.
-      .sort((a, b) => (a.path === entry ? -1 : b.path === entry ? 1 : a.path.localeCompare(b.path)))
-
-    const kind = isZip ? (manifestEntry ? 'SCORM' : 'ZIP') : 'HTML'
-    const previousContent = resource.content
-    const content = sanitizeMirror({
-      // Se conserva lo que ya hubiera escrito el equipo en la portada.
-      cover: {
-        ...(previousContent && typeof previousContent === 'object' ? (previousContent as any).cover : {}),
-        title:
-          (previousContent as any)?.cover?.title || manifest.title || htmlTitle(entries[0].bytes) || resource.title,
-      },
-      origin: {
-        kind,
+    try {
+      const result = await ingestPackage({
+        archive,
         fileName,
-        importedAt: new Date().toISOString(),
-        manifestTitle: manifest.title,
-        scormVersion: manifest.version,
-      },
-      entry,
-      pages,
-      // Las ediciones no sobreviven a un paquete nuevo: sus números apuntaban
-      // a los nodos del anterior y caerían sobre textos distintos.
-      edits: {},
-    })
-
-    await snapshot(resource.id, previousContent, 'import', check.session.userId, `Antes de importar «${fileName}»`)
-    await lbResources().update({
-      where: { id: resource.id },
-      data: {
-        content: content as any,
-        importMode: 'MIRROR',
-        importMeta: {
-          fileName,
-          bytes: archive.length,
-          files: stored.length,
-          entry,
-          scormVersion: manifest.version || null,
-        } as any,
-      },
-    })
-
-    return res.status(200).json({
-      ok: true,
-      content,
-      files: stored.length,
-      bytes: archive.length,
-      storage: bucket.source,
-      dropped: entries.length - stored.length,
-    })
+        resource,
+        workspace,
+        bucket,
+        userId: check.session.userId,
+      })
+      return res.status(200).json({ ok: true, ...result, storage: bucket.source })
+    } catch (error) {
+      // Un paquete que no se puede abrir es culpa del archivo, no del servidor:
+      // su mensaje va dirigido a quien lo subió.
+      if (error instanceof LbZipError) return res.status(400).json({ ok: false, error: error.message })
+      throw error
+    }
   } catch (error: any) {
     console.error('api/learning/import error', error)
     return res.status(500).json({ ok: false, error: error?.message || 'Error interno' })

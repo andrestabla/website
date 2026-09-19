@@ -10,10 +10,19 @@
  */
 import type { LbCover, LbMedia } from './blocks.js'
 
-/** Texto de fuera: sin caracteres de control y acotado. */
+/**
+ * Texto de fuera: sin caracteres de control, en forma normalizada y acotado.
+ *
+ * La normalización no es cosmética. macOS guarda los nombres de archivo en
+ * forma descompuesta —la «ó» son dos caracteres— y Windows y los navegadores
+ * los guardan compuestos. Un título traído de una carpeta y otro tecleado en
+ * el editor se ven idénticos y no son iguales: la búsqueda falla, el orden
+ * alfabético se desordena y una comprobación de duplicados da por nuevo algo
+ * que ya existía. Se compone aquí, una vez, antes de guardar nada.
+ */
 export function str(value: unknown, max = 400): string {
   if (typeof value !== 'string') return ''
-  return value.replace(/[^\P{Cc}\n\t]/gu, '').slice(0, max)
+  return value.normalize('NFC').replace(/[^\P{Cc}\n\t]/gu, '').slice(0, max)
 }
 
 export function num(value: unknown, fallback: number, min: number, max: number): number {

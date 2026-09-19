@@ -29,8 +29,9 @@ const PROVIDERS = [
   'CROSSREF', 'OPENALEX', 'SEMANTIC_SCHOLAR',
 ]
 
+/** Se compone la forma Unicode antes de guardar; ver `str` en lib/common.ts. */
 function text(value: unknown, max: number): string {
-  return typeof value === 'string' ? value.trim().slice(0, max) : ''
+  return typeof value === 'string' ? value.normalize('NFC').trim().slice(0, max) : ''
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
