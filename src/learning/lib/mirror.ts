@@ -15,7 +15,6 @@
  * Lo importa la UI y también el API, así que no puede depender de React.
  */
 import type { LbCover } from './blocks.js'
-import type { LbDirectives } from './directives.js'
 import { coverAnchors, ident, pick, sanitizeCover, str, type LbAnchorTarget, type LbIssue } from './common.js'
 
 export const LB_MIRROR_ORIGINS = ['SCORM', 'HTML', 'ZIP'] as const
@@ -135,7 +134,12 @@ export function scaffoldMirror(title: string): LbMirrorContent {
 
 // ── Validación ───────────────────────────────────────────────────────────────
 
-export function validateMirror(content: LbMirrorContent, _directives: LbDirectives): LbIssue[] {
+/**
+ * Las directivas no entran aquí a propósito: una copia fiel conserva la línea
+ * gráfica del paquete original, que es justo lo que el cliente quiere
+ * mantener. Exigirle la del workspace sería contradecir el modo.
+ */
+export function validateMirror(content: LbMirrorContent): LbIssue[] {
   const issues: LbIssue[] = []
   if (!content.pages.length) {
     issues.push({

@@ -1,22 +1,24 @@
 /**
  * Learning Builder — gobierno del workspace.
  *
- * Cinco cuerpos en un solo panel, porque son las cinco cosas que definen a un
+ * Seis cuerpos en un solo panel, porque son las seis cosas que definen a un
  * cliente: su línea gráfica, su modelo instruccional, cómo entrega, quién está
- * en su equipo y de qué fuentes puede beber la IA.
+ * en su equipo, de qué fuentes puede beber la IA y con qué cuentas de API
+ * trabaja —las suyas o las de la plataforma—.
  *
  * Todo miembro puede mirar; solo el gestor guarda. Los controles se
  * deshabilitan cuando no corresponde, y la API vuelve a comprobarlo.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Check, Loader2, Plus, Save, Trash2, X, Users, Palette, GraduationCap, Package, Database } from 'lucide-react'
+import { Check, Loader2, Plus, Save, Trash2, X, Users, Palette, GraduationCap, Package, Database, Plug } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import { LB_BLOCK_SPECS, LB_BLOCK_TYPES, type LbBlockType } from './lib/blocks'
 import type { LbDirectives } from './lib/directives'
 import { LB_ROLES, LB_ROLE_HINT, LB_ROLE_LABEL, LB_ROLE_STYLE, can, type LbRole } from './lib/roles'
 import { learningApi, type DataSourceRow, type MemberRow, type WorkspaceRow } from './lib/api'
+import { IntegrationsPanel } from './IntegrationsPanel'
 
-type Tab = 'grafica' | 'instruccional' | 'entrega' | 'equipo' | 'datos'
+type Tab = 'grafica' | 'instruccional' | 'entrega' | 'equipo' | 'datos' | 'apis'
 
 const GROUP_LABEL: Record<string, string> = {
   texto: 'Texto',
@@ -218,6 +220,7 @@ export function WorkspacePanel({
     ['entrega', 'Entrega', Package, true],
     ['equipo', 'Equipo', Users, true],
     ['datos', 'Fuentes', Database, can(role, 'data.manage')],
+    ['apis', 'Integraciones', Plug, can(role, 'workspace.integrations')],
   ]
 
   return (
@@ -227,7 +230,7 @@ export function WorkspacePanel({
         <header className="flex h-14 shrink-0 items-center gap-3 border-b border-slate-200 px-5">
           <div className="min-w-0">
             <div className="truncate text-sm font-black tracking-tight">{workspace.name}</div>
-            <div className="text-[11px] text-slate-400">Directivas, equipo y fuentes del workspace</div>
+            <div className="text-[11px] text-slate-400">Directivas, equipo, fuentes e integraciones</div>
           </div>
           <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${LB_ROLE_STYLE[role]}`}>
             {LB_ROLE_LABEL[role]}
@@ -637,6 +640,10 @@ export function WorkspacePanel({
                 </div>
               )}
             </>
+          )}
+
+          {tab === 'apis' && can(role, 'workspace.integrations') && (
+            <IntegrationsPanel workspaceId={workspace.id} />
           )}
 
           {tab === 'datos' && (

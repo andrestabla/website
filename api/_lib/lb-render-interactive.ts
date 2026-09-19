@@ -11,7 +11,7 @@
  */
 import type { LbInteractiveContent } from '../../src/learning/lib/interactive.js'
 import type { LbDirectives } from '../../src/learning/lib/directives.js'
-import { escapeHtml, type LbRenderMeta, type LbRenderMode } from './lb-render.js'
+import { escapeHtml, type LbRenderMeta, type LbRenderMode } from '../../src/learning/lib/render-ova.js'
 
 function inline(value: unknown): string {
   return escapeHtml(value)

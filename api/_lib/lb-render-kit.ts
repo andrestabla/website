@@ -10,7 +10,7 @@
  * el shim de SCORM y el markdown mínimo del editor— se escribe aquí una vez.
  */
 import type { LbDirectives } from '../../src/learning/lib/directives.js'
-import { escapeHtml, type LbRenderMeta, type LbRenderMode } from './lb-render.js'
+import { escapeHtml, type LbRenderMeta, type LbRenderMode } from '../../src/learning/lib/render-ova.js'
 
 export { escapeHtml }
 export type { LbRenderMeta, LbRenderMode }

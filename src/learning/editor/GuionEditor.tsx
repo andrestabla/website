@@ -2,15 +2,21 @@
  * Learning Builder — editor del guion.
  *
  * Izquierda: portada y pantallas (el índice del recurso). Derecha: los bloques
- * de lo seleccionado, editables en línea. La paleta sale de las directivas
- * instruccionales del workspace, así que nunca se puede insertar algo que el
- * cliente no admite: la restricción se ve antes de escribir, no al validar.
+ * de lo seleccionado. La paleta sale de las directivas instruccionales del
+ * workspace, así que nunca se puede insertar algo que el cliente no admite: la
+ * restricción se ve antes de escribir, no al validar.
+ *
+ * Cada bloque se muestra como lo verá el estudiante —con el color, la
+ * tipografía y el aire del cliente— y el formulario se abre debajo al pulsar
+ * «Editar». Es la misma caja que se publica, no una imitación: la pinta el
+ * motor de render (BlockPreview), de modo que no pueden separarse.
  */
 import { useMemo, useState } from 'react'
 import {
   ChevronDown, ChevronUp, Copy, GripVertical, Plus, Trash2, AlertTriangle, Image as ImageIcon,
-  MessageSquare,
+  MessageSquare, Pencil, Eye,
 } from 'lucide-react'
+import { BlockPreview } from './BlockPreview'
 import {
   LB_BLOCK_SPECS, defaultVariant, newId,
   type LbBlock, type LbBlockType, type LbContent, type LbIssue, type LbItem, type LbLesson,
@@ -53,6 +59,12 @@ function emptyBlock(type: LbBlockType): LbBlock {
     block.piles = [{ id: newId('p'), title: 'Categoría A' }, { id: newId('p'), title: 'Categoría B' }]
   }
   return block
+}
+
+/** ¿Está el bloque como recién nacido? Entonces se abre en modo edición. */
+function isEmptyBlock(block: LbBlock): boolean {
+  if (block.text?.trim() || block.caption?.trim() || block.media?.url) return false
+  return !(block.items || []).some((item) => item.title?.trim() || item.description?.trim())
 }
 
 function move<T>(list: T[], from: number, to: number): T[] {
@@ -230,6 +242,8 @@ export function GuionEditor({
                 <BlockCard
                   key={block.id}
                   block={block}
+                  index={index}
+                  directives={directives}
                   issues={blockIssues.get(block.id) || []}
                   comments={commentsByAnchor?.get(`block:${block.id}`)}
                   onOpenComments={onOpenComments && (() => onOpenComments(`block:${block.id}`))}
@@ -414,6 +428,8 @@ function CommentBadge({
 
 function BlockCard({
   block,
+  index,
+  directives,
   issues,
   comments,
   onOpenComments,
@@ -423,6 +439,8 @@ function BlockCard({
   onRemove,
 }: {
   block: LbBlock
+  index: number
+  directives: LbDirectives
   issues: LbIssue[]
   comments?: { total: number; open: number }
   onOpenComments?: () => void
@@ -432,6 +450,8 @@ function BlockCard({
   onRemove: () => void
 }) {
   const spec = LB_BLOCK_SPECS[block.type]
+  // Un bloque recién puesto se abre solo: nadie añade una caja para mirarla.
+  const [editing, setEditing] = useState(() => isEmptyBlock(block))
   const patch = (value: Partial<LbBlock>) => onChange({ ...block, ...value })
   const items = block.items || []
   const setItems = (next: LbItem[]) => patch({ items: next })
@@ -459,16 +479,41 @@ function BlockCard({
         )}
         <div className="flex-1" />
         <CommentBadge counts={comments} onOpen={onOpenComments} />
+        <button
+          onClick={() => setEditing((value) => !value)}
+          className={`inline-flex items-center gap-1 rounded px-2 py-1 text-[11.5px] font-bold ${
+            editing ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'
+          }`}
+        >
+          {editing ? <><Eye size={12} /> Ver</> : <><Pencil size={12} /> Editar</>}
+        </button>
         <button onClick={() => onMove(-1)} className="grid h-7 w-7 place-items-center rounded text-slate-400 hover:bg-slate-100" aria-label="Subir bloque"><ChevronUp size={14} /></button>
         <button onClick={() => onMove(1)} className="grid h-7 w-7 place-items-center rounded text-slate-400 hover:bg-slate-100" aria-label="Bajar bloque"><ChevronDown size={14} /></button>
         <button onClick={onDuplicate} className="grid h-7 w-7 place-items-center rounded text-slate-400 hover:bg-slate-100" aria-label="Duplicar bloque"><Copy size={14} /></button>
         <button onClick={onRemove} className="grid h-7 w-7 place-items-center rounded text-slate-400 hover:bg-rose-50 hover:text-rose-600" aria-label="Eliminar bloque"><Trash2 size={14} /></button>
       </header>
 
-      <div className="space-y-3 p-3">
+      {!editing && issues.length > 0 && (
+        <ul className="space-y-1 border-b border-rose-100 bg-rose-50 px-3 py-2 text-[12px] text-rose-700">
+          {issues.map((issue, position) => <li key={position}>{issue.message}</li>)}
+        </ul>
+      )}
+
+      {!editing && (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          title="Editar este bloque"
+          className="block w-full cursor-text p-4 text-left"
+        >
+          <BlockPreview block={block} index={index} directives={directives} />
+        </button>
+      )}
+
+      <div className={`space-y-3 p-3 ${editing ? '' : 'hidden'}`}>
         {issues.length > 0 && (
           <ul className="space-y-1 rounded-lg bg-rose-50 px-3 py-2 text-[12px] text-rose-700">
-            {issues.map((issue, index) => <li key={index}>{issue.message}</li>)}
+            {issues.map((issue, position) => <li key={position}>{issue.message}</li>)}
           </ul>
         )}
 

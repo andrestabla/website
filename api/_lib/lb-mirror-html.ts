@@ -19,7 +19,7 @@
  * arranca oculta y se revela al terminar, con un plazo de seguridad para que
  * un fallo del script nunca deje la pieza en blanco.
  */
-import { escapeHtml } from './lb-render.js'
+import { escapeHtml } from '../../src/learning/lib/render-ova.js'
 
 /**
  * JSON seguro dentro de un <script>: un texto editado que contenga «</script>»

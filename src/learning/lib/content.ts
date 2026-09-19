@@ -115,7 +115,7 @@ export function validateResourceContent(
     case 'podcast': return validatePodcast(content as LbPodcastContent, directives)
     case 'video': return validateVideo(content as LbVideoContent, directives)
     case 'route': return validateRoute(content as LbRouteContent, directives)
-    case 'mirror': return validateMirror(content as LbMirrorContent, directives)
+    case 'mirror': return validateMirror(content as LbMirrorContent)
     default: return validateOva(content as LbContent, directives)
   }
 }

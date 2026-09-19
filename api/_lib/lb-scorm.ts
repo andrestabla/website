@@ -12,7 +12,7 @@
  * SCORM 1.2, de modo que el campus lo trata igual que a un paquete de Rise.
  */
 import { createZip, type ZipEntry } from './lb-zip.js'
-import { escapeHtml, type LbRenderMeta } from './lb-render.js'
+import { escapeHtml, type LbRenderMeta } from '../../src/learning/lib/render-ova.js'
 import { renderResourceHtml } from './lb-render-any.js'
 import { screenTitles, type LbResourceContent } from '../../src/learning/lib/content.js'
 import type { LbDirectives } from '../../src/learning/lib/directives.js'

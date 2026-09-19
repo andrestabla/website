@@ -3,6 +3,9 @@ import type { LbIssue } from './blocks.js'
 import type { LbResourceContent } from './content.js'
 import type { LbDirectives } from './directives.js'
 import type { LbContent } from './blocks.js'
+import type { LbProvider, LbProviderSpec, LbProviderStatus } from './integrations.js'
+import type { LbMirrorContent } from './mirror.js'
+import type { LbPodcastContent } from './podcast.js'
 import type { LbCapability, LbRole } from './roles.js'
 import type { LbResourceKind, LbShareMode, LbStatus } from './resources.js'
 
@@ -85,6 +88,22 @@ export type SourceRow = {
 
 export type VersionRow = { id: string; reason: string; label?: string | null; createdAt: string }
 
+/** Una voz de la cuenta de ElevenLabs del workspace. */
+export type VoiceRow = {
+  voiceId: string
+  name: string
+  category: string
+  preview: string
+  labels: Record<string, string>
+}
+
+export type ProbeRow = {
+  reachable: boolean
+  source: 'own' | 'inherited' | 'none'
+  message: string
+  detail?: string
+}
+
 export type CommentRow = {
   id: string
   anchor: string
@@ -143,6 +162,21 @@ export const learningApi = {
       post('/api/learning/workspaces', { op: 'data-save', workspaceId, ...data }),
     dataRemove: (workspaceId: string, id: string) =>
       post('/api/learning/workspaces', { op: 'data-delete', workspaceId, id }),
+    integrations: (workspaceId: string): Promise<{
+      providers: LbProviderStatus[]
+      specs: Record<LbProvider, LbProviderSpec>
+      platformReady: Partial<Record<LbProvider, boolean>>
+      role: LbRole
+    }> => post('/api/learning/workspaces', { op: 'integrations', workspaceId }),
+    /** Las claves secretas se mandan solo cuando cambian; el resto va como KEEP. */
+    integrationsSave: (
+      workspaceId: string,
+      provider: LbProvider,
+      data: { enabled?: boolean; values?: Record<string, string>; monthlyCap?: number; notes?: string }
+    ): Promise<{ providers: LbProviderStatus[] }> =>
+      post('/api/learning/workspaces', { op: 'integrations-save', workspaceId, provider, ...data }),
+    integrationsTest: (workspaceId: string, provider: LbProvider): Promise<ProbeRow> =>
+      post('/api/learning/workspaces', { op: 'integrations-test', workspaceId, provider }),
   },
   resources: {
     library: (workspaceCode?: string): Promise<{ resources: ResourceRow[] }> =>
@@ -201,6 +235,26 @@ export const learningApi = {
       post('/api/learning/ai', { op: 'draft', resourceId, sourceIds, instruction }),
     revise: (resourceId: string, instruction: string): Promise<{ content: LbContent; issues: LbIssue[]; providerUsed: string }> =>
       post('/api/learning/ai', { op: 'revise', resourceId, instruction }),
+  },
+  voice: {
+    list: (resourceId: string): Promise<{ voices: VoiceRow[]; defaultVoiceId: string }> =>
+      post('/api/learning/voice', { op: 'voices', resourceId }),
+    speak: (resourceId: string, cueId: string): Promise<{ content: LbPodcastContent; bytes: number }> =>
+      post('/api/learning/voice', { op: 'speak', resourceId, cueId }),
+  },
+  /** Subida por trozos del paquete original de una pieza importada. */
+  importPkg: {
+    begin: (resourceId: string, bytes: number): Promise<{ uploadId: string; maxPartBytes: number }> =>
+      post('/api/learning/import', { op: 'begin', resourceId, bytes }),
+    part: (resourceId: string, uploadId: string, index: number, data: string) =>
+      post('/api/learning/import', { op: 'part', resourceId, uploadId, index, data }),
+    ingest: (resourceId: string, uploadId: string, parts: number, fileName: string): Promise<{
+      content: LbMirrorContent
+      files: number
+      bytes: number
+    }> => post('/api/learning/import', { op: 'ingest', resourceId, uploadId, parts, fileName }),
+    clear: (resourceId: string): Promise<{ content: LbMirrorContent }> =>
+      post('/api/learning/import', { op: 'clear', resourceId }),
   },
   previewUrl: (resourceId: string) => `/api/learning/view?preview=${encodeURIComponent(resourceId)}`,
   publicUrl: (publicId: string) => `/ova/${encodeURIComponent(publicId)}`,

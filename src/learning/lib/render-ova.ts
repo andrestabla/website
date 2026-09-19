@@ -8,9 +8,14 @@
  * lo que se publica y lo que se sube al campus.
  *
  * No depende de red: todo el CSS y el JS van en línea.
+ *
+ * Vive en el dominio compartido, y no en api/, porque el editor pinta cada
+ * bloque con este mismo `renderBlock` y esta misma hoja de estilo. Si fueran
+ * dos implementaciones, la caja del editor y la del alumno se irían separando
+ * a cada cambio; siendo una sola, no pueden.
  */
-import type { LbBlock, LbContent, LbItem } from '../../src/learning/lib/blocks.js'
-import type { LbDirectives } from '../../src/learning/lib/directives.js'
+import type { LbBlock, LbContent, LbItem } from './blocks.js'
+import type { LbDirectives } from './directives.js'
 
 export type LbRenderMeta = {
   title: string
@@ -71,7 +76,7 @@ function items(block: LbBlock): LbItem[] {
 
 // ── Bloques ──────────────────────────────────────────────────────────────────
 
-function renderBlock(block: LbBlock, index: number): string {
+export function renderBlock(block: LbBlock, index: number): string {
   const key = escapeHtml(block.id || `b${index}`)
 
   switch (block.type) {
@@ -300,7 +305,7 @@ function renderCover(content: LbContent, meta: LbRenderMeta): string {
   </section>`
 }
 
-function css(directives: LbDirectives): string {
+export function ovaCss(directives: LbDirectives): string {
   const brand = directives.graphic
   // La densidad ajusta el tamaño base y el aire de la composición.
   const scale = brand.density === 'compact' ? 16 : brand.density === 'airy' ? 18 : 17
@@ -785,7 +790,7 @@ export function renderOvaHtml(options: {
 <title>${escapeHtml(docTitle)}</title>
 ${noindex}
 <meta name="description" content="${escapeHtml(content.cover?.summary || meta.subtitle || '')}">
-<style>${css(directives)}</style>
+<style>${ovaCss(directives)}</style>
 </head>
 <body>
 <div class="lb-topbar">

@@ -16,8 +16,12 @@ import {
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import type { LbIssue } from './lib/blocks'
-import { isSceneKind, validateResourceContent, type LbResourceContent } from './lib/content'
+import { aiWritesFor, familyOf, validateResourceContent, type LbResourceContent } from './lib/content'
 import type { LbInteractiveContent } from './lib/interactive'
+import type { LbMirrorContent } from './lib/mirror'
+import type { LbPodcastContent } from './lib/podcast'
+import type { LbRouteContent } from './lib/route'
+import type { LbVideoContent } from './lib/video'
 import type { LbContent } from './lib/blocks'
 import type { LbDirectives } from './lib/directives'
 import { LB_ROLE_LABEL, LB_ROLE_STYLE, can, type LbRole } from './lib/roles'
@@ -30,7 +34,11 @@ import {
   type ResourceDetail, type SourceRow, type VersionRow,
 } from './lib/api'
 import { GuionEditor } from './editor/GuionEditor'
+import { MirrorEditor } from './editor/MirrorEditor'
+import { PodcastEditor } from './editor/PodcastEditor'
+import { RouteEditor } from './editor/RouteEditor'
 import { SceneEditor } from './editor/SceneEditor'
+import { VideoEditor } from './editor/VideoEditor'
 import { CommentsPanel } from './CommentsPanel'
 import type { CommentRow } from './lib/api'
 
@@ -373,8 +381,8 @@ export function ResourceBuilder() {
   // Hay tipos cuyo editor todavía no existe. En vez de abrirles el editor de
   // bloques —que no les corresponde— se muestra su ficha y se dice qué falta.
   const kindReady = spec.available
-  // El asistente escribe guiones de bloques; en escenas todavía no ayuda.
-  const showChat = editable && kindReady && !isSceneKind(resource.kind) && (desktop ? layout !== 'panel' : mobilePane === 'chat')
+  // El asistente escribe guiones de bloques; en los demás formatos todavía no ayuda.
+  const showChat = editable && kindReady && aiWritesFor(resource.kind) && (desktop ? layout !== 'panel' : mobilePane === 'chat')
   const showPanel = !showChat || (desktop ? layout !== 'chat' : mobilePane === 'panel')
   const toggleColumn = (column: 'chat' | 'panel') => {
     setLayout((prev) => {
@@ -720,27 +728,48 @@ export function ResourceBuilder() {
                 </div>
               )}
 
-              {tab === 'guion' && editable && kindReady && isSceneKind(resource.kind) && (
-                <SceneEditor
-                  content={content as LbInteractiveContent}
-                  directives={directives}
-                  issues={issues}
-                  onChange={onContentChange}
-                  commentsByAnchor={maySeeComments ? commentsByAnchor : undefined}
-                  onOpenComments={(anchor) => { setFocusAnchor(anchor); setTab('comentarios') }}
-                />
-              )}
-
-              {tab === 'guion' && editable && kindReady && !isSceneKind(resource.kind) && (
-                <GuionEditor
-                  content={content as LbContent}
-                  directives={directives}
-                  issues={issues}
-                  onChange={onContentChange}
-                  commentsByAnchor={maySeeComments ? commentsByAnchor : undefined}
-                  onOpenComments={(anchor) => { setFocusAnchor(anchor); setTab('comentarios') }}
-                />
-              )}
+              {/*
+                Un editor por familia. El reparto lo decide familyOf, el mismo
+                que usan el API y el render, así que no hay forma de que el
+                editor y lo publicado dejen de corresponderse.
+              */}
+              {tab === 'guion' && editable && kindReady && (() => {
+                const shared = {
+                  directives,
+                  issues,
+                  commentsByAnchor: maySeeComments ? commentsByAnchor : undefined,
+                  onOpenComments: (anchor: string) => { setFocusAnchor(anchor); setTab('comentarios') },
+                }
+                switch (familyOf(resource.kind)) {
+                  case 'scenes':
+                    return <SceneEditor {...shared} content={content as LbInteractiveContent} onChange={onContentChange} />
+                  case 'podcast':
+                    return (
+                      <PodcastEditor
+                        {...shared}
+                        resourceId={resource.id}
+                        content={content as LbPodcastContent}
+                        onChange={onContentChange}
+                      />
+                    )
+                  case 'video':
+                    return <VideoEditor {...shared} content={content as LbVideoContent} onChange={onContentChange} />
+                  case 'route':
+                    return <RouteEditor {...shared} content={content as LbRouteContent} onChange={onContentChange} />
+                  case 'mirror':
+                    return (
+                      <MirrorEditor
+                        resourceId={resource.id}
+                        directives={directives}
+                        issues={issues}
+                        content={content as LbMirrorContent}
+                        onChange={onContentChange}
+                      />
+                    )
+                  default:
+                    return <GuionEditor {...shared} content={content as LbContent} onChange={onContentChange} />
+                }
+              })()}
 
               {tab === 'comentarios' && maySeeComments && (
                 <CommentsPanel
