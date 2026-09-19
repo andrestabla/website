@@ -204,14 +204,18 @@ export function contentStats(kind: string, content: unknown): { screens: number;
   }
 }
 
-/** Cómo se llaman esos tres números en la ficha de cada familia. */
+/**
+ * Cómo se llaman esos tres números en la tarjeta de cada familia. Una cadena
+ * vacía oculta el número: en una presentación no hay comprobaciones que
+ * contar, y en una pieza importada las páginas ya se contaron una vez.
+ */
 export const LB_STAT_LABELS: Record<LbFamily, [string, string, string]> = {
-  blocks: ['Pantallas', 'Bloques', 'Comprobaciones'],
-  scenes: ['Escenas', 'Puntos activos', ''],
-  podcast: ['Voces', 'Intervenciones', 'Con locución'],
-  video: ['Planos', 'Segundos', 'Video montado'],
-  route: ['Módulos', 'Actividades', 'Con recurso'],
-  mirror: ['Páginas', 'Páginas', 'Textos editados'],
+  blocks: ['pantallas', 'bloques', 'comprobaciones'],
+  scenes: ['escenas', 'puntos activos', ''],
+  podcast: ['voces', 'intervenciones', 'con locución'],
+  video: ['planos', 'segundos', ''],
+  route: ['módulos', 'actividades', 'con recurso'],
+  mirror: ['páginas', '', 'textos editados'],
 }
 
 /**

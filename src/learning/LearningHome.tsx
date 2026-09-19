@@ -22,6 +22,7 @@ import {
   LB_RESOURCE_KINDS, kindSpec, LB_STATUSES, LB_STATUS_LABEL, LB_STATUS_STYLE,
   type LbResourceKind,
 } from './lib/resources'
+import { LB_STAT_LABELS, familyOf } from './lib/content'
 import { LB_ROLE_LABEL, LB_ROLE_STYLE, can } from './lib/roles'
 import {
   learningApi, timeAgo,
@@ -469,9 +470,23 @@ export function LearningHome() {
                         <p className="mt-1 text-[12.5px] text-slate-500">{[resource.course, resource.unit].filter(Boolean).join(' · ')}</p>
                       )}
                       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-slate-500">
-                        <span><b className="text-slate-700">{resource.lessonCount}</b> lecciones</span>
-                        <span><b className="text-slate-700">{resource.blockCount}</b> bloques</span>
-                        <span><b className="text-slate-700">{resource.checkCount}</b> comprobaciones</span>
+                        {/*
+                          Los tres números significan cosas distintas según el
+                          tipo —bloques en un OVA, puntos activos en una
+                          presentación, intervenciones en un pódcast—, así que
+                          el rótulo lo pone la familia y no la tarjeta.
+                        */}
+                        {([resource.lessonCount, resource.blockCount, resource.checkCount] as const).map(
+                          (value, index) => {
+                            const label = LB_STAT_LABELS[familyOf(resource.kind)][index]
+                            if (!label) return null
+                            return (
+                              <span key={label}>
+                                <b className="text-slate-700">{value}</b> {label}
+                              </span>
+                            )
+                          }
+                        )}
                         {resource.status === 'PUBLISHED' && <span><b className="text-slate-700">{resource.views}</b> lecturas</span>}
                       </div>
                       {!!resource.openComments && (

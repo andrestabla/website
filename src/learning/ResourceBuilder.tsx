@@ -863,8 +863,12 @@ export function ResourceBuilder() {
                         blocked={errors.length > 0}
                         href={learningApi.exportUrl(resource.id, 'html')}
                         icon={<Download size={18} />}
-                        title="HTML autocontenido"
-                        hint="Un solo archivo navegable, sin LMS."
+                        title={familyOf(resource.kind) === 'mirror' ? 'Sitio en ZIP' : 'HTML autocontenido'}
+                        hint={
+                          familyOf(resource.kind) === 'mirror'
+                            ? 'El paquete original con sus archivos y las ediciones aplicadas.'
+                            : 'Un solo archivo navegable, sin LMS.'
+                        }
                         onBeforeDownload={flush}
                       />
                       <ExportCard
