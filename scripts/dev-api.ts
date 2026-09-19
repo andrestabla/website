@@ -57,6 +57,14 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`)
 
+  // Espejo de la reescritura de vercel.json: el OVA publicado lo sirve el API,
+  // no el SPA. Sin esto, /ova/:publicId caería en el 404 de Vite en local.
+  const ova = url.pathname.match(/^\/ova\/([^/]+)\/?$/)
+  if (ova) {
+    url.pathname = '/api/learning/view'
+    url.searchParams.set('id', decodeURIComponent(ova[1]))
+  }
+
   if (url.pathname.startsWith('/api/')) {
     const resolved = resolveHandler(url.pathname)
     if (!resolved) {

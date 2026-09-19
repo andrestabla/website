@@ -17,8 +17,8 @@ model Hero {
 }
 
 model Service {
-  id              String  @id @default(cuid())
-  slug            String  @unique
+  id              String   @id @default(cuid())
+  slug            String   @unique
   title           String
   highlight       String?
   subtitle        String?
@@ -29,7 +29,7 @@ model Service {
   seoDescription  String?
   iconName        String
   features        String[]
-  active          Boolean @default(true)
+  active          Boolean  @default(true)
 }
 
 model Product {
@@ -47,7 +47,7 @@ model Product {
 }
 
 model SiteConfig {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String
   email       String
@@ -64,57 +64,57 @@ model CmsSnapshot {
 }
 
 model CmsSnapshotVersion {
-  id           String   @id @default(cuid())
-  snapshotId   String
-  section      String
-  data         Json
-  createdAt    DateTime @default(now())
-  createdById  String?
-  createdBy    String?
-  note         String?
+  id          String   @id @default(cuid())
+  snapshotId  String
+  section     String
+  data        Json
+  createdAt   DateTime @default(now())
+  createdById String?
+  createdBy   String?
+  note        String?
 
   @@index([snapshotId, section, createdAt(sort: Desc)])
 }
 
 model AdminAuditLog {
   id            String   @id @default(cuid())
-  actorUserId    String?
-  actorUsername  String?
-  actorRole      String?
-  action         String
-  resource       String
-  resourceId     String?
-  section        String?
-  metadata       Json?
-  createdAt      DateTime @default(now())
+  actorUserId   String?
+  actorUsername String?
+  actorRole     String?
+  action        String
+  resource      String
+  resourceId    String?
+  section       String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
 
   @@index([resource, createdAt(sort: Desc)])
   @@index([actorUserId, createdAt(sort: Desc)])
 }
 
 model TranslationCache {
-  key       String   @id
+  key        String   @id
   targetLang String
-  payload   Json
-  provider  String
-  model     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  payload    Json
+  provider   String
+  model      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model PrivacyConsentAcceptance {
   id            String   @id @default(cuid())
-  visitorId      String
-  sessionId      String?
-  policyVersion  String
-  policyHash     String
-  path           String?
-  country        String?
-  region         String?
-  city           String?
-  userAgent      String?
-  metadata       Json?
-  acceptedAt     DateTime @default(now())
+  visitorId     String
+  sessionId     String?
+  policyVersion String
+  policyHash    String
+  path          String?
+  country       String?
+  region        String?
+  city          String?
+  userAgent     String?
+  metadata      Json?
+  acceptedAt    DateTime @default(now())
 
   @@index([acceptedAt(sort: Desc)])
   @@index([visitorId, acceptedAt(sort: Desc)])
@@ -123,19 +123,19 @@ model PrivacyConsentAcceptance {
 
 model AnalyticsEvent {
   id         String   @id @default(cuid())
-  visitorId   String
-  sessionId   String?
-  eventType   String
-  path        String?
-  pageTitle   String?
-  sectionId   String?
-  durationMs  Int?
-  country     String?
-  region      String?
-  city        String?
-  referrer    String?
-  metadata    Json?
-  createdAt   DateTime @default(now())
+  visitorId  String
+  sessionId  String?
+  eventType  String
+  path       String?
+  pageTitle  String?
+  sectionId  String?
+  durationMs Int?
+  country    String?
+  region     String?
+  city       String?
+  referrer   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
 
   @@index([createdAt(sort: Desc)])
   @@index([eventType, createdAt(sort: Desc)])
@@ -145,39 +145,39 @@ model AnalyticsEvent {
 }
 
 model SimulatorRun {
-  id             String   @id @default(cuid())
-  visitorId      String
-  sessionId      String?
+  id        String  @id @default(cuid())
+  visitorId String
+  sessionId String?
 
   // Inputs capturados en el simulador
-  sector         String
-  orgType        String
-  headcount      String
-  maturity       String?
-  orgContext     String?
+  sector     String
+  orgType    String
+  headcount  String
+  maturity   String?
+  orgContext String?
 
   // Propuesta construida por IA (fases acumulativas + totales)
-  proposal       Json
-  headline       String?
-  investmentMin  Int?
-  investmentMax  Int?
-  currency       String   @default("USD")
-  providerUsed   String?
+  proposal      Json
+  headline      String?
+  investmentMin Int?
+  investmentMax Int?
+  currency      String  @default("USD")
+  providerUsed  String?
 
   // Datos de contacto (solo si el usuario solicita el envío de la propuesta)
-  leadName       String?
-  leadPhone      String?
-  leadEmail      String?
+  leadName  String?
+  leadPhone String?
+  leadEmail String?
 
-  status         String   @default("completed") // completed | sent
-  emailSentAt    DateTime?
+  status      String    @default("completed") // completed | sent
+  emailSentAt DateTime?
 
-  country        String?
-  region         String?
-  city           String?
+  country String?
+  region  String?
+  city    String?
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
@@ -213,6 +213,7 @@ enum AdminModule {
   PROFE_TABLA
   MIS_PROYECTOS
   LICENCES
+  LEARNING_BUILDER
   ADMIN_BRIDGE
 }
 
@@ -263,30 +264,30 @@ enum ShareEventType {
 }
 
 model Document {
-  id           String         @id @default(cuid())
-  title        String
-  description  String?
-  keywords     String[]
-  fileName     String
-  originalName String
-  mimeType     String
-  size         Int
-  r2Key        String         @unique
-  publicUrl    String?
-  categoryId   String
-  category     DocCategory    @relation(fields: [categoryId], references: [id])
-  status       DocumentStatus @default(ACTIVE)
-  version      Int            @default(1)
-  uploadedBy   String
+  id             String            @id @default(cuid())
+  title          String
+  description    String?
+  keywords       String[]
+  fileName       String
+  originalName   String
+  mimeType       String
+  size           Int
+  r2Key          String            @unique
+  publicUrl      String?
+  categoryId     String
+  category       DocCategory       @relation(fields: [categoryId], references: [id])
+  status         DocumentStatus    @default(ACTIVE)
+  version        Int               @default(1)
+  uploadedBy     String
   uploadedByName String?
-  aiProcessed  Boolean        @default(false)
-  metadata     Json           @default("{}")
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  versions     DocumentVersion[]
-  reviews      DocReview[]
-  comments     DocComment[]
-  shares       DocShare[]
+  aiProcessed    Boolean           @default(false)
+  metadata       Json              @default("{}")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  versions       DocumentVersion[]
+  reviews        DocReview[]
+  comments       DocComment[]
+  shares         DocShare[]
 
   @@index([categoryId])
   @@index([status])
@@ -309,19 +310,19 @@ model DocumentVersion {
 }
 
 model DocReview {
-  id          String       @id @default(cuid())
-  documentId  String
-  document    Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  requestedBy String
+  id              String       @id @default(cuid())
+  documentId      String
+  document        Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  requestedBy     String
   requestedByName String?
-  assignedTo  String?
+  assignedTo      String?
   assignedToName  String?
-  status      ReviewStatus @default(PENDING)
-  dueDate     DateTime?
-  notes       String?
-  resolution  String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  status          ReviewStatus @default(PENDING)
+  dueDate         DateTime?
+  notes           String?
+  resolution      String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@index([documentId])
   @@index([status])
@@ -381,17 +382,17 @@ model DocShareEvent {
 }
 
 model AdminUser {
-  id                    String                @id @default(cuid())
-  username              String                @unique
-  email                 String?               @unique
+  id                    String                 @id @default(cuid())
+  username              String                 @unique
+  email                 String?                @unique
   displayName           String
-  role                  AdminRole             @default(ADMIN)
+  role                  AdminRole              @default(ADMIN)
   passwordHash          String
-  active                Boolean               @default(true)
-  passwordSetupRequired Boolean               @default(false)
+  active                Boolean                @default(true)
+  passwordSetupRequired Boolean                @default(false)
   suspendedAt           DateTime?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
   lastLoginAt           DateTime?
   permissions           AdminUserPermission[]
   authTokens            AdminCredentialToken[]
@@ -412,34 +413,34 @@ model AdminUserPermission {
 }
 
 model AdminCredentialToken {
-  id              String     @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
-  tokenHash       String     @unique
+  tokenHash       String    @unique
   expiresAt       DateTime
   usedAt          DateTime?
   createdByUserId String?
   createdByName   String?
-  purpose         String     @default("SETUP_PASSWORD")
+  purpose         String    @default("SETUP_PASSWORD")
   metadata        Json?
-  createdAt       DateTime   @default(now())
-  user            AdminUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+  user            AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([expiresAt])
 }
 
 model AdminNavigationLog {
-  id          String     @id @default(cuid())
-  userId      String
-  username    String
-  role        AdminRole
-  path        String
-  action      String     @default("NAVIGATE")
-  ip          String?
-  userAgent   String?
-  metadata    Json?
-  createdAt   DateTime   @default(now())
-  user        AdminUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  userId    String
+  username  String
+  role      AdminRole
+  path      String
+  action    String    @default("NAVIGATE")
+  ip        String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
@@ -447,31 +448,31 @@ model AdminNavigationLog {
 }
 
 model ContactLead {
-  id           String   @id @default(cuid())
-  name         String
-  email        String
-  requirement  String
-  context      String?
-  serviceSlug  String?
-  path         String?
-  country      String?
-  region       String?
-  city         String?
-  status       String   @default("pending") // pending, read, replied, archived
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  requirement String
+  context     String?
+  serviceSlug String?
+  path        String?
+  country     String?
+  region      String?
+  city        String?
+  status      String   @default("pending") // pending, read, replied, archived
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([createdAt(sort: Desc)])
   @@index([status])
 }
 
 model MarketingEmailCampaign {
-  id              String                  @id @default(cuid())
+  id              String                    @id @default(cuid())
   name            String
   subject         String
   preheader       String?
-  templateId      String                  @default("executive")
+  templateId      String                    @default("executive")
   bodyText        String?
   ctaLabel        String?
   ctaHref         String?
@@ -479,32 +480,32 @@ model MarketingEmailCampaign {
   renderedText    String?
   fromName        String
   fromEmail       String
-  previewOnly     Boolean                 @default(false)
+  previewOnly     Boolean                   @default(false)
   createdByUserId String?
   createdByName   String?
-  sentCount       Int                     @default(0)
-  failedCount     Int                     @default(0)
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
+  sentCount       Int                       @default(0)
+  failedCount     Int                       @default(0)
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
   recipients      MarketingEmailRecipient[]
 
   @@index([createdAt(sort: Desc)])
 }
 
 model MarketingEmailRecipient {
-  id           String                @id @default(cuid())
-  campaignId   String
-  campaign     MarketingEmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  email        String
-  status       String                @default("pending")
-  messageId    String?
+  id            String                 @id @default(cuid())
+  campaignId    String
+  campaign      MarketingEmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email         String
+  status        String                 @default("pending")
+  messageId     String?
   failureReason String?
-  sentAt       DateTime?
-  openedAt     DateTime?
-  lastOpenedAt DateTime?
-  openCount    Int                   @default(0)
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  sentAt        DateTime?
+  openedAt      DateTime?
+  lastOpenedAt  DateTime?
+  openCount     Int                    @default(0)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
 
   @@unique([campaignId, email])
   @@index([campaignId, status])
@@ -514,21 +515,21 @@ model MarketingEmailRecipient {
 }
 
 model Appointment {
-  id              String   @id @default(cuid())
-  name            String
-  email           String
-  company         String
-  role            String
-  industry        String
-  employeeCount   String
-  website         String?
-  message         String
-  startTime       DateTime
-  endTime         DateTime
-  googleEventId   String?
-  status          String   @default("confirmed") // confirmed, cancelled
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  email         String
+  company       String
+  role          String
+  industry      String
+  employeeCount String
+  website       String?
+  message       String
+  startTime     DateTime
+  endTime       DateTime
+  googleEventId String?
+  status        String   @default("confirmed") // confirmed, cancelled
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([startTime])
   @@index([email])
@@ -657,11 +658,11 @@ model QuoteKnowledgeDoc {
 }
 
 model Quote {
-  id            String  @id @default(cuid())
-  publicId      String  @unique // id no adivinable de la URL /c/:publicId
+  id            String    @id @default(cuid())
+  publicId      String    @unique // id no adivinable de la URL /c/:publicId
   ownerId       String // AdminUser.id
-  status        String  @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED (publicación)
-  template      String  @default("PRODUCTO") // PRODUCTO | SERVICIO
+  status        String    @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED (publicación)
+  template      String    @default("PRODUCTO") // PRODUCTO | SERVICIO
   line          String? // EDUCATIVA | EMPRESARIAL (línea de negocio)
   stage         String? // seguimiento comercial: ENVIADA | EN_ESTUDIO | APROBADA | DESCARTADA (null = por enviar)
   stageAt       DateTime? // último cambio de seguimiento
@@ -671,7 +672,7 @@ model Quote {
   sector        String?
   title         String
   subtitle      String?
-  currency      String  @default("COP")
+  currency      String    @default("COP")
 
   content       Json // documento: secciones narrativas, cronograma, condiciones
   pricing       Json // { items: [{code,name,price,weeks,deliverables,on}], scale: [...] }
@@ -772,17 +773,17 @@ model QuoteVersion {
 
 /// Plantilla propia: una cotización guardada como punto de partida.
 model QuoteTemplate {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  template    String   @default("SOLUCIONES") // línea de servicio
-  currency    String   @default("COP")
-  content     Json
-  pricing     Json
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  template      String   @default("SOLUCIONES") // línea de servicio
+  currency      String   @default("COP")
+  content       Json
+  pricing       Json
   discountScale Json?
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([updatedAt(sort: Desc)])
 }
@@ -838,47 +839,47 @@ model ClaudiaDevice {
 /// por lo que esta tabla no interviene en la activación: sirve para emitir,
 /// llevar registro y poder revocar.
 model PluginLicence {
-  id          String   @id @default(cuid())
+  id           String    @id @default(cuid())
   /// Identificador legible que viaja dentro del código firmado (campo "i").
-  licenceId   String   @unique
-  customer    String
+  licenceId    String    @unique
+  customer     String
   contactEmail String?
   /// Huella del wwwroot del cliente, o "*" si el código vale en cualquier sitio.
-  siteHash    String
+  siteHash     String
   /// Funcionalidades habilitadas. ["*"] concede el catálogo completo.
-  features    Json
+  features     Json
   /// Código firmado entregado al cliente.
-  code        String
-  issuedAt    DateTime @default(now())
-  expiresAt   DateTime?
-  revokedAt   DateTime?
-  revokedNote String?
-  notes       String?
+  code         String
+  issuedAt     DateTime  @default(now())
+  expiresAt    DateTime?
+  revokedAt    DateTime?
+  revokedNote  String?
+  notes        String?
   /// Última vez que la plataforma del cliente revalidó.
-  lastCheckAt DateTime?
+  lastCheckAt  DateTime?
   /// Versión del plugin declarada en la última revalidación.
-  lastVersion String?
+  lastVersion  String?
   /// Número de revalidaciones recibidas: indicio de uso real.
-  checkCount  Int      @default(0)
+  checkCount   Int       @default(0)
 
   /// Analítica conversacional. Corre con nuestra clave de OpenAI, no con la
   /// del cliente, así que se habilita licencia por licencia.
-  aiEnabled   Boolean  @default(false)
+  aiEnabled   Boolean @default(false)
   /// Consultas incluidas para TODA la vigencia, no por mes: es una bolsa que
   /// se consume. Suma lo que trae el plan y lo que el cliente compre en
   /// paquetes. Se cuenta en consultas y no en tokens porque es lo único que
   /// el cliente puede prever y a lo que se le puede poner precio.
-  aiCredits   Int      @default(0)
+  aiCredits   Int     @default(0)
   /// Consultas gastadas desde que se emitió la licencia.
-  aiUsedTotal Int      @default(0)
+  aiUsedTotal Int     @default(0)
   /// Modelo concreto para esta licencia. Vacío usa el de las integraciones.
   aiModel     String?
   /// Parametrización remota que viaja en la revalidación diaria. Permite
   /// cambiar el comportamiento del plugin sin publicar una versión nueva.
   config      Json?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   checks      PluginLicenceCheck[]
   aiUsage     PluginAiUsage[]
@@ -894,15 +895,15 @@ model PluginLicence {
 /// Compras de créditos de IA. Es el rastro de lo facturado: sin esto, la
 /// bolsa de una licencia sería un número sin explicación.
 model PluginAiCredit {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   licence     PluginLicence @relation(fields: [licenceDbId], references: [id], onDelete: Cascade)
   licenceDbId String
   /// Consultas añadidas. Negativo para corregir una carga equivocada.
   credits     Int
   /// Importe cobrado en dólares enteros. 0 para una cortesía o un ajuste.
-  amountUsd   Int      @default(0)
+  amountUsd   Int           @default(0)
   note        String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime      @default(now())
 
   @@index([licenceDbId, createdAt(sort: Desc)])
 }
@@ -911,34 +912,239 @@ model PluginAiCredit {
 /// Se lleva agregado y no consulta a consulta: el cupo se comprueba en cada
 /// petición y una cuenta acumulada se resuelve con una sola lectura.
 model PluginAiUsage {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   licence     PluginLicence @relation(fields: [licenceDbId], references: [id], onDelete: Cascade)
   licenceDbId String
   /// Mes natural en formato AAAA-MM, en horario del servidor.
   period      String
-  calls       Int      @default(0)
+  calls       Int           @default(0)
   /// Caracteres enviados y recibidos. Es una aproximación del coste, no una
   /// medida de tokens: sirve para ver qué licencia consume de verdad.
-  chars       Int      @default(0)
+  chars       Int           @default(0)
   lastCallAt  DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@unique([licenceDbId, period])
   @@index([period])
 }
 
 model PluginLicenceCheck {
-  id         String   @id @default(cuid())
-  licence    PluginLicence @relation(fields: [licenceDbId], references: [id], onDelete: Cascade)
+  id          String        @id @default(cuid())
+  licence     PluginLicence @relation(fields: [licenceDbId], references: [id], onDelete: Cascade)
   licenceDbId String
-  siteHash   String
-  version    String?
+  siteHash    String
+  version     String?
   /// Respuesta que se devolvió: active | revoked | unknown.
-  outcome    String
-  ip         String?
-  createdAt  DateTime @default(now())
+  outcome     String
+  ip          String?
+  createdAt   DateTime      @default(now())
 
   @@index([licenceDbId, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
+}
+
+// ─── Learning Builder (Ecosistema) ───────────────────────────────────────────
+// El módulo trabaja por workspace: un workspace es un cliente, con su equipo y
+// sus directivas. Las directivas gráficas e instruccionales (LbDirectives, en
+// src/learning/lib/directives.ts) gobiernan todo lo que se produce dentro: qué
+// bloques existen, qué estructura es obligatoria, cómo se ve y cómo se entrega.
+// Nada está codificado por cliente.
+//
+// El permiso LEARNING_BUILDER de /admin/users abre el módulo; el rol dentro de
+// cada workspace (LbWorkspaceMember.role) decide qué se puede hacer allí, y un
+// mismo usuario puede tener roles distintos en workspaces distintos.
+
+model LbWorkspace {
+  id     String  @id @default(cuid())
+  name   String
+  slug   String  @unique
+  /// EDUCATIVA | EMPRESARIAL | INTERNA — solo agrupa en el listado.
+  kind   String  @default("EDUCATIVA")
+  notes  String?
+  active Boolean @default(true)
+
+  /// LbDirectives: { graphic, instructional, exports }.
+  directives   Json @default("{}")
+  /// Claves propias del workspace que sustituyen a las globales (ElevenLabs, Magnific).
+  integrations Json @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members     LbWorkspaceMember[]
+  resources   LbResource[]
+  dataSources LbDataSource[]
+
+  @@index([active, name])
+}
+
+model LbWorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  /// AdminUser.id
+  userId      String
+  /// MANAGER | EDITOR | GUEST
+  role        String   @default("EDITOR")
+  invitedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace LbWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model LbResource {
+  id          String @id @default(cuid())
+  /// Id no adivinable de la URL pública /ova/:publicId
+  publicId    String @unique
+  workspaceId String
+  ownerId     String // AdminUser.id
+
+  /// OVA | INTERACTIVE | PODCAST | VIDEO | ROUTE | IMPORT
+  kind     String   @default("OVA")
+  title    String
+  subtitle String?
+  /// Programa o curso al que pertenece.
+  course   String?
+  /// Unidad o módulo dentro del curso.
+  unit     String?
+  /// Etiquetas libres para encontrarlo en la metabiblioteca.
+  tags     String[] @default([])
+
+  /// DRAFT | REVIEW | PUBLISHED | ARCHIVED
+  status  String @default("DRAFT")
+  /// El guion, con la forma que pida el tipo de recurso.
+  content Json   @default("{}")
+  /// Medios generados o asociados (audio, video, imágenes).
+  assets  Json   @default("{}")
+
+  /// Solo en piezas importadas: BLOCKS (convertida) | MIRROR (copia fiel por capa).
+  importMode String?
+  /// De dónde vino y qué se pudo mapear.
+  importMeta Json?
+
+  /// OFF | OPEN | CODE
+  shareMode    String  @default("OFF")
+  /// Código de acceso cuando shareMode = CODE.
+  shareCode    String?
+  embedEnabled Boolean @default(false)
+
+  publishedAt DateTime?
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace LbWorkspace         @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  versions  LbResourceVersion[]
+  sources   LbResourceSource[]
+  files     LbResourceFile[]
+  comments  LbComment[]
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([workspaceId, kind, updatedAt(sort: Desc)])
+  @@index([ownerId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model LbResourceVersion {
+  id          String   @id @default(cuid())
+  resourceId  String
+  /// manual | publish | ai | restore | import
+  reason      String   @default("manual")
+  label       String?
+  content     Json
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  resource LbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([resourceId, createdAt(sort: Desc)])
+}
+
+/// Insumo del experto disciplinar (DOCX/PDF/texto) del que la IA propone el guion.
+model LbResourceSource {
+  id         String   @id @default(cuid())
+  resourceId String
+  name       String
+  /// docx | pdf | md | txt | html
+  format     String   @default("txt")
+  text       String
+  charCount  Int      @default(0)
+  truncated  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  resource LbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@index([resourceId, createdAt(sort: Desc)])
+}
+
+/// Archivo original de una pieza importada, servido tal cual en modo copia fiel.
+model LbResourceFile {
+  id          String   @id @default(cuid())
+  resourceId  String
+  /// Ruta dentro del paquete: index.html, assets/foto.jpg…
+  path        String
+  /// URL en el almacenamiento (R2).
+  url         String
+  contentType String   @default("application/octet-stream")
+  bytes       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  resource LbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, path])
+}
+
+/// Fuente de datos abiertos que la IA puede consultar al escribir contenidos.
+model LbDataSource {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  /// GENERIC | DATOS_GOV_CO | DANE | WORLD_BANK | UNESCO | OECD | CEPAL | CROSSREF | OPENALEX | SEMANTIC_SCHOLAR
+  provider    String   @default("GENERIC")
+  /// endpoint, formato, credencial y notas de uso
+  config      Json     @default("{}")
+  notes       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace LbWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, active])
+}
+
+/// Comentario de revisión anclado a una pieza concreta del recurso.
+/// Lo escribe sobre todo el auditor, que puede comentar cualquier lección,
+/// bloque, texto, imagen o interactivo, pero no editar nada. El ancla
+/// (LbAnchor, en src/learning/lib/comments.ts) dice sobre qué se habla:
+/// resource | cover | cover.<campo> | lesson:<id> | block:<id>.
+model LbComment {
+  id           String    @id @default(cuid())
+  resourceId   String
+  /// Ancla de la pieza comentada.
+  anchor       String    @default("resource")
+  /// Cómo se llamaba la pieza al comentar; sobrevive a que la borren.
+  anchorLabel  String?
+  /// Respuesta dentro de un hilo; null si abre el hilo.
+  parentId     String?
+  authorId     String // AdminUser.id
+  body         String
+  /// OPEN | RESOLVED — solo tiene sentido en el comentario raíz del hilo.
+  status       String    @default("OPEN")
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  resource LbResource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  parent   LbComment?  @relation("LbCommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  LbComment[] @relation("LbCommentThread")
+
+  @@index([resourceId, createdAt])
+  @@index([resourceId, anchor])
+  @@index([parentId])
 }

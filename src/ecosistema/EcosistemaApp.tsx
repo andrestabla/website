@@ -8,6 +8,8 @@ import { CotizadorList } from '../cotizador/CotizadorList'
 import { QuoteBuilder } from '../cotizador/QuoteBuilder'
 import { ClaudiaRemote } from './ClaudiaRemote'
 import { LicenciasPage } from './LicenciasPage'
+import { LearningHome } from '../learning/LearningHome'
+import { ResourceBuilder } from '../learning/ResourceBuilder'
 
 function Centered({ children }: { children: ReactNode }) {
   return (
@@ -28,6 +30,7 @@ export default function EcosistemaApp() {
   }
 
   const cotizadorAllowed = canAccessModule(user, 'COTIZADOR')
+  const learningAllowed = canAccessModule(user, 'LEARNING_BUILDER')
 
   return (
     <Routes>
@@ -39,6 +42,15 @@ export default function EcosistemaApp() {
       <Route
         path="cotizador/:quoteId"
         element={cotizadorAllowed ? <QuoteBuilder /> : <Navigate to="/ecosistema" replace />}
+      />
+      {/* Learning Builder: constructor de OVA. El API revalida el permiso. */}
+      <Route
+        path="learning"
+        element={learningAllowed ? <LearningHome /> : <Navigate to="/ecosistema" replace />}
+      />
+      <Route
+        path="learning/:resourceId"
+        element={learningAllowed ? <ResourceBuilder /> : <Navigate to="/ecosistema" replace />}
       />
       {/* Licencias del plugin de Moodle: el API revalida el permiso. */}
       <Route

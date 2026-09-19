@@ -25,6 +25,10 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/ova/:publicId",
+      "destination": "/api/learning/view?id=:publicId"
+    },
+    {
       "source": "/((?!api/)(?!@)(?!__)(?!.*\\..*).*)",
       "destination": "/index.html"
     }
@@ -33,6 +37,10 @@
     "api/quotes/pdf.ts": {
       "memory": 3008,
       "maxDuration": 60
+    },
+    "api/learning/export.ts": {
+      "memory": 1024,
+      "maxDuration": 30
     }
   }
 }
