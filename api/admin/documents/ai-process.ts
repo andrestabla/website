@@ -34,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(405).json({ ok: false, error: 'Method not allowed' })
     }
 
-    const session = requireAdminSession(req, res)
+    const session = await requireAdminSession(req, res)
     if (!session) return
 
     const id = String(req.query?.id || '')

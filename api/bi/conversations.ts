@@ -7,7 +7,7 @@ type VercelResponse = any
 const db = () => (prisma as any).biConversation
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { session, allowed } = biSessionState(req)
+  const { session, allowed } = await biSessionState(req)
   if (!session) return res.status(401).json({ ok: false, error: 'Unauthenticated' })
   if (!allowed) return res.status(403).json({ ok: false, error: 'No BI access' })
   const userId = session.userId

@@ -27,7 +27,7 @@ function coerce(value: unknown, render: string): number | string | null {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { session, allowed } = pcSessionState(req)
+  const { session, allowed } = await pcSessionState(req)
   if (!session) return res.status(401).json({ ok: false, error: 'Unauthenticated' })
   if (!allowed) return res.status(403).json({ ok: false, error: 'No Project Control access' })
   if (req.method !== 'POST') {

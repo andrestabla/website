@@ -1,5 +1,10 @@
 import crypto from 'node:crypto'
-import { ADMIN_MODULES, getDefaultPermissionMapForRole, type AdminModuleKey } from './admin-users.js'
+import {
+  ADMIN_MODULES,
+  getDefaultPermissionMapForRole,
+  getLiveAdminUserAccess,
+  type AdminModuleKey,
+} from './admin-users.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -92,6 +97,7 @@ function inferModuleFromRequest(req: VercelRequest): AdminModuleKey | null {
   }
   if (path === '/api/admin/navigation-log') return null
   if (path.startsWith('/api/admin/users')) return 'USERS'
+  if (path.startsWith('/api/admin/licences')) return 'LICENCES'
   if (path.startsWith('/api/admin/leads')) return 'LEADS'
   if (path.startsWith('/api/admin/seo')) return 'SEO'
   if (path.startsWith('/api/admin/marketing') || path.startsWith('/api/admin/ai-copy') || path.startsWith('/api/admin/ai-email') || path.startsWith('/api/admin/email-campaign') || path.startsWith('/api/admin/campaign-landings') || path.startsWith('/api/admin/ai-landing') || path.startsWith('/api/admin/accessibility-scan')) return 'MARKETING'
@@ -102,6 +108,7 @@ function inferModuleFromRequest(req: VercelRequest): AdminModuleKey | null {
   if (path.startsWith('/api/admin/documents')) return 'DOCUMENTS'
   if (path.startsWith('/api/admin/booking')) return 'BOOKINGS'
   if (path.startsWith('/api/pc/')) return 'PROJECT_CONTROL'
+  if (path.startsWith('/api/learning/')) return 'LEARNING_BUILDER'
   return null
 }
 
@@ -238,8 +245,45 @@ export function getAdminSession(req: VercelRequest) {
   return verifyAdminSessionToken(cookies[COOKIE_NAME])
 }
 
-export function requireAdminSession(req: VercelRequest, res: VercelResponse) {
-  const session = getAdminSession(req)
+/**
+ * Sesión con el rol y los permisos vigentes en la base de datos.
+ *
+ * La cookie firmada solo identifica al usuario; lo que puede hacer se relee en
+ * cada petición. Así, un cambio guardado en /admin/users aplica de inmediato en
+ * el Ecosistema y en las APIs, sin que el usuario tenga que volver a entrar.
+ * Devuelve null si la cuenta ya no existe o fue suspendida.
+ */
+export async function resolveLiveSession(
+  session: SessionPayload | null
+): Promise<SessionPayload | null> {
+  if (!session) return null
+  let live
+  try {
+    live = await getLiveAdminUserAccess(session.userId)
+  } catch (error) {
+    // Si la base de datos no responde, seguimos con la foto del token en lugar
+    // de dejar fuera a todo el mundo.
+    console.error('admin-auth: no se pudieron leer los permisos vigentes', error)
+    return session
+  }
+  if (!live || !live.active) return null
+  return {
+    ...session,
+    username: live.username,
+    displayName: live.displayName,
+    role: live.role,
+    permissions: sanitizePermissionPayload(live.permissions),
+    permissionsVersion: SESSION_PERMISSIONS_VERSION,
+  }
+}
+
+/** Sesión del request ya resuelta contra la base de datos. */
+export async function getLiveAdminSession(req: VercelRequest) {
+  return resolveLiveSession(getAdminSession(req))
+}
+
+export async function requireAdminSession(req: VercelRequest, res: VercelResponse) {
+  const session = await getLiveAdminSession(req)
   if (!session) {
     res.status(401).json({ ok: false, error: 'Unauthorized' })
     return null

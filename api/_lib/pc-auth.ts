@@ -1,14 +1,15 @@
-import { getAdminSession } from './admin-auth.js'
+import { getLiveAdminSession } from './admin-auth.js'
 
 type VercelRequest = any
 
 /**
  * Estado de acceso al módulo Project Control. Reutiliza la sesión firmada del
- * sitio (cookie admin_session). Acceso permitido a SUPERADMIN/ADMIN o a cualquier
- * usuario con el permiso de módulo 'PROJECT_CONTROL' (gestionado en /admin/users).
+ * sitio (cookie admin_session), pero el permiso se relee de la base de datos en
+ * cada petición: lo que se guarde en /admin/users aplica de inmediato. Acceso
+ * permitido a SUPERADMIN/ADMIN o a quien tenga el módulo 'PROJECT_CONTROL'.
  */
-export function pcSessionState(req: VercelRequest) {
-  const session = getAdminSession(req)
+export async function pcSessionState(req: VercelRequest) {
+  const session = await getLiveAdminSession(req)
   const allowed =
     !!session &&
     (session.role === 'SUPERADMIN' ||

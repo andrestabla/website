@@ -1,10 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 /**
  * Gemini Service — Handlers for text and object translation.
  */
 
-let genAI: GoogleGenerativeAI | null = null;
 const REQUEST_TIMEOUT_MS = 18000;
 const MAX_MEMORY_CACHE_ENTRIES = 120;
 const responseCache = new Map<string, unknown>();
@@ -73,69 +70,10 @@ async function translateViaServer<T>(payload: unknown, targetLang: string, mode:
     });
 }
 
-type GeminiRuntimeConfig = {
-    apiKey: string;
-    model: string;
-    maxTokens?: number;
-    temperature?: number;
-};
-
-function getGeminiConfig(): GeminiRuntimeConfig | null {
-    const envApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    const envModel = import.meta.env.VITE_GEMINI_MODEL;
-
-    const apiKey = envApiKey;
-    if (!apiKey) return null;
-
-    return {
-        apiKey,
-        model: envModel || "gemini-2.0-flash",
-        maxTokens: undefined,
-        temperature: 0.2,
-    };
-}
-
-export function getAI() {
-    if (genAI) return genAI;
-
-    const cfg = getGeminiConfig();
-    const apiKey = cfg?.apiKey;
-
-    if (!apiKey) {
-        if (import.meta.env.DEV) console.warn("Gemini API Key not found in store or env.");
-        return null;
-    }
-
-    if (import.meta.env.DEV) console.log("Gemini API Key initialized successfully");
-
-    genAI = new GoogleGenerativeAI(apiKey);
-    return genAI;
-}
-
 export function isGeminiConfigured() {
-    // Client-side env key may be absent even when server-side /api/translate is configured.
+    // Keep translations on server to avoid exposing provider keys in the browser.
     return true;
 }
-
-const LANGUAGE_NAMES: Record<string, string> = {
-    es: "Spanish",
-    en: "English",
-    fr: "French"
-};
-const PRESERVE_TERMS = [
-    'AlgoritmoT',
-    'QM',
-    'Quality Matters',
-    'LMS',
-    'API',
-    'UTB',
-    'CESA',
-    'IBERO',
-    'USTA',
-    'USANMARTÍN',
-    'San Martín',
-    'La Salle',
-];
 
 export async function translateText(text: string, targetLang: string): Promise<string> {
     if (!text || targetLang === 'es') return text;
@@ -152,56 +90,8 @@ export async function translateText(text: string, targetLang: string): Promise<s
             return serverResult;
         }
 
-        const ai = getAI();
-        if (!ai) return text;
-
-        try {
-            const cfg = getGeminiConfig();
-            const model = ai.getGenerativeModel({
-                model: cfg?.model || "gemini-2.0-flash",
-                generationConfig: {
-                    temperature: cfg?.temperature ?? 0.2,
-                    maxOutputTokens: cfg?.maxTokens,
-                }
-            });
-            const targetLanguageName = LANGUAGE_NAMES[targetLang] || targetLang;
-
-            const prompt = `Translate the following text from Spanish to ${targetLanguageName}.
-            Return ONLY the translated text without any explanations or additional formatting.
-            Keep these terms unchanged when present: ${PRESERVE_TERMS.join(', ')}.
-            
-            Text to translate:
-            "${text}"`;
-
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const translated = response.text().trim() || text;
-            setMemoryCache(key, translated);
-            return translated;
-        } catch (error) {
-            console.error("Gemini translation error:", error);
-            return text;
-        }
+        return text;
     });
-}
-
-function extractJson(text: string): string {
-    const cleaned = text.replace(/```json|```/gi, "").trim();
-    if (!cleaned) throw new Error("Empty Gemini response");
-
-    const firstBrace = cleaned.indexOf("{");
-    const lastBrace = cleaned.lastIndexOf("}");
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        return cleaned.slice(firstBrace, lastBrace + 1);
-    }
-
-    const firstBracket = cleaned.indexOf("[");
-    const lastBracket = cleaned.lastIndexOf("]");
-    if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
-        return cleaned.slice(firstBracket, lastBracket + 1);
-    }
-
-    return cleaned;
 }
 
 /**
@@ -223,44 +113,6 @@ export async function translateObject<T>(obj: T, targetLang: string): Promise<T>
             return serverResult;
         }
 
-        const ai = getAI();
-        if (!ai) {
-            throw new Error("Gemini API key is not configured. Please add it in the Admin Integrations panel.");
-        }
-
-        try {
-            const cfg = getGeminiConfig();
-            const model = ai.getGenerativeModel({
-                model: cfg?.model || "gemini-2.0-flash",
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    temperature: 0.1,
-                    maxOutputTokens: cfg?.maxTokens,
-                }
-            });
-            const targetLanguageName = LANGUAGE_NAMES[targetLang] || targetLang;
-
-            const prompt = `Translate all user-facing string values in the following JSON from Spanish to ${targetLanguageName}.
-            Preserve the JSON structure and keys exactly.
-            Do not rename keys.
-            Do not add or remove fields.
-            Keep URLs, emails, slugs, handles, and identifiers unchanged.
-            Keep these terms unchanged when present: ${PRESERVE_TERMS.join(', ')}.
-            If a value is not a string (object, array, number, boolean, null), preserve its type and structure.
-            Return valid JSON only.
-            
-            Object to translate:
-            ${JSON.stringify(obj, null, 2)}`;
-
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const cleanedText = extractJson(response.text());
-            const translated = JSON.parse(cleanedText) as T;
-            setMemoryCache(key, translated);
-            return translated;
-        } catch (error) {
-            console.error("Gemini object translation error:", error);
-            return obj;
-        }
+        return obj;
     });
 }

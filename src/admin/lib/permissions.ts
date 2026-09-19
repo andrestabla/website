@@ -19,6 +19,7 @@ export const ADMIN_MODULES = [
   'PROFE_TABLA',
   'MIS_PROYECTOS',
   'LICENCES',
+  'LEARNING_BUILDER',
   'ADMIN_BRIDGE',
 ] as const
 
@@ -45,6 +46,7 @@ export const ADMIN_MODULE_LABELS: Record<AdminModuleKey, string> = {
   BI: 'Algoritmo BI',
   PROJECT_CONTROL: 'Project Control',
   COTIZADOR: 'Cotizador',
+  LEARNING_BUILDER: 'Learning Builder',
   PROFE_TABLA: 'ProfeTabla (externo)',
   MIS_PROYECTOS: 'Mis Proyectos (externo)',
   ADMIN_BRIDGE: 'Acceso puente (panel admin)',
@@ -119,6 +121,7 @@ const ROUTE_MODULES: Array<{ prefix: string; module: AdminModuleKey }> = [
   { prefix: '/admin/documentos', module: 'DOCUMENTS' },
   { prefix: '/ecosistema/cotizador', module: 'COTIZADOR' },
   { prefix: '/ecosistema/licencias', module: 'LICENCES' },
+  { prefix: '/ecosistema/learning', module: 'LEARNING_BUILDER' },
 ]
 
 export function getAdminModuleForPath(pathname: string): AdminModuleKey | null {
@@ -133,11 +136,12 @@ export const ADMIN_ROLES: AdminRoleKey[] = ['SUPERADMIN', 'ADMIN']
 
 /**
  * Módulos de gestión del panel: solo SUPERADMIN/ADMIN. Los demás módulos
- * (LEADS, BOOKINGS, DOCUMENTS, ANALYTICS, BI, PROJECT_CONTROL, COTIZADOR) se gobiernan por
- * permiso y son accesibles a usuarios no-admin desde el Ecosistema.
+ * (LEADS, BOOKINGS, DOCUMENTS, ANALYTICS, BI, PROJECT_CONTROL, COTIZADOR, LICENCES) se
+ * gobiernan por permiso y son accesibles a usuarios no-admin desde el Ecosistema.
+ * Esta lista debe coincidir con la del servidor (api/_lib/admin-auth.ts).
  */
 export const ADMIN_ONLY_MODULES: AdminModuleKey[] = [
-  'DASHBOARD', 'SITE_BUILDER', 'SERVICES', 'PRODUCTS', 'DESIGN', 'SEO', 'MARKETING', 'INTEGRATIONS', 'SETTINGS', 'USERS', 'LICENCES',
+  'DASHBOARD', 'SITE_BUILDER', 'SERVICES', 'PRODUCTS', 'DESIGN', 'SEO', 'MARKETING', 'INTEGRATIONS', 'SETTINGS', 'USERS',
 ]
 
 export function isAdminRole(role: string | null | undefined): boolean {

@@ -10,14 +10,24 @@ export type EcoUser = {
 
 export type EcoStatus = 'checking' | 'authenticated' | 'unauthenticated'
 
-/** Sesión del Ecosistema: reutiliza la sesión del sitio. Cualquier usuario autenticado entra. */
+/** Cada cuánto se reconsultan los permisos mientras la pestaña está a la vista. */
+const REFRESH_INTERVAL_MS = 30_000
+
+/**
+ * Sesión del Ecosistema: reutiliza la sesión del sitio. Cualquier usuario
+ * autenticado entra.
+ *
+ * Los permisos los resuelve el servidor contra la base de datos, así que este
+ * hook los revalida al volver a la pestaña y cada 30 s: lo que un administrador
+ * guarde en /admin/users se refleja aquí sin que el usuario cierre sesión.
+ */
 export function useEcoSession() {
   const [status, setStatus] = useState<EcoStatus>('checking')
   const [user, setUser] = useState<EcoUser>(null)
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/session')
+      const res = await fetch('/api/admin/session', { cache: 'no-store' })
       const payload = await res.json().catch(() => null)
       if (res.ok && payload?.authenticated && payload.user) {
         setUser(payload.user)
@@ -32,6 +42,19 @@ export function useEcoSession() {
   }, [])
 
   useEffect(() => { void load() }, [load])
+
+  useEffect(() => {
+    const revalidate = () => { if (document.visibilityState === 'visible') void load() }
+    const timer = window.setInterval(revalidate, REFRESH_INTERVAL_MS)
+    document.addEventListener('visibilitychange', revalidate)
+    window.addEventListener('focus', revalidate)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', revalidate)
+      window.removeEventListener('focus', revalidate)
+    }
+  }, [load])
+
   return { status, user, refresh: load }
 }
 

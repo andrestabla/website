@@ -5,7 +5,7 @@ type VercelRequest = any
 type VercelResponse = any
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const session = requireAdminSession(req, res)
+  const session = await requireAdminSession(req, res)
   if (!session) return
 
   const { method } = req

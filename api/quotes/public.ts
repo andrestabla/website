@@ -31,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Borradores: solo el dueño (o un admin) los previsualiza.
     let preview = false
     if (quote.status !== 'PUBLISHED') {
-      const { session, allowed } = quoteSessionState(req)
+      const { session, allowed } = await quoteSessionState(req)
       const isOwner = !!session && (session.userId === quote.ownerId || session.role === 'SUPERADMIN' || session.role === 'ADMIN')
       if (!allowed || !isOwner) {
         return res.status(404).json({ ok: false, error: 'Cotización no disponible' })

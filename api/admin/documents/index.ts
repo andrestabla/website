@@ -7,7 +7,7 @@ type VercelResponse = any
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    const session = requireAdminSession(req, res)
+    const session = await requireAdminSession(req, res)
     if (!session) return
 
     // List documents with search + filters

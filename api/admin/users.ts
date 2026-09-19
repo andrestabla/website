@@ -57,6 +57,11 @@ const ADMIN_MODULE_INFO: Record<AdminModuleKey, { label: string; description: st
     description: 'Tableros de seguimiento tipo hoja de cálculo, customizables, con opción de compartir por enlace o con usuarios.',
     url: '/control',
   },
+  COTIZADOR: {
+    label: 'Cotizador',
+    description: 'Cotizaciones interactivas construidas con IA, con URL propia y métricas de lectura.',
+    url: '/ecosistema/cotizador',
+  },
   PROFE_TABLA: {
     label: 'ProfeTabla',
     description: 'Plataforma educativa ProfeTabla.',
@@ -66,6 +71,11 @@ const ADMIN_MODULE_INFO: Record<AdminModuleKey, { label: string; description: st
     label: 'Mis Proyectos',
     description: 'Plataforma de tableros y seguimiento Mis Proyectos.',
     url: 'https://misproyectos.com.co',
+  },
+  LICENCES: {
+    label: 'Licencias del plugin',
+    description: 'Emite y controla las licencias del plugin Learning Analytics para Moodle.',
+    url: '/ecosistema/licencias',
   },
   ADMIN_BRIDGE: {
     label: 'Acceso puente al panel',
@@ -254,7 +264,7 @@ async function fetchNavigationLogs(limit = 200) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const session = requireAdminSession(req, res)
+  const session = await requireAdminSession(req, res)
   if (!session) return
 
   try {

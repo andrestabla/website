@@ -26,7 +26,7 @@ const EXT_BY_MIME: Record<string, string> = {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const { session, allowed } = quoteSessionState(req)
+  const { session, allowed } = await quoteSessionState(req)
   if (!session) return res.status(401).json({ ok: false, error: 'Sesión requerida' })
   if (!allowed) return res.status(403).json({ ok: false, error: 'Sin acceso al Cotizador' })
   if (req.method !== 'POST') {

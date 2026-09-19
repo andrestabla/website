@@ -139,7 +139,7 @@ function compareTranslatedStrings(source: unknown, translated: unknown): { total
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const started = Date.now()
   try {
-    if (!requireAdminSession(req, res)) return
+    if (!await requireAdminSession(req, res)) return
     const [cmsSnapshot, integrationsSnapshot, translationCount, translationsByLang, latestTranslations, latestSnapshots] = await Promise.all([
       prisma.cmsSnapshot.findUnique({ where: { id: CMS_ID } }),
       prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } }),

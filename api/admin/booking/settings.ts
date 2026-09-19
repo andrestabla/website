@@ -4,7 +4,7 @@ import { requireAdminSession } from '../../_lib/admin-auth.js'
 import { INTEGRATIONS_SNAPSHOT_ID, sanitizeIntegrations } from '../../_lib/integrations.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const admin = requireAdminSession(req, res)
+  const admin = await requireAdminSession(req, res)
   if (!admin) return
 
   if (req.method === 'GET') {

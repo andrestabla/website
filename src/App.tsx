@@ -80,6 +80,14 @@ type AdminSessionUser = {
   permissions?: Record<string, boolean> | null
 } | null
 
+/** Cada cuánto se reconsultan rol y permisos mientras la pestaña está a la vista. */
+const ADMIN_SESSION_REFRESH_MS = 30_000
+
+/**
+ * El servidor resuelve rol y permisos contra la base de datos en cada lectura de
+ * /api/admin/session, así que revalidamos al volver a la pestaña y cada 30 s:
+ * un cambio guardado en /admin/users aplica sin cerrar sesión.
+ */
 function useAdminSessionGuard() {
   const [status, setStatus] = useState<AdminSessionStatus>('checking')
   const [sessionUser, setSessionUser] = useState<AdminSessionUser>(null)
@@ -88,7 +96,7 @@ function useAdminSessionGuard() {
     let cancelled = false
     const check = async () => {
       try {
-        const response = await fetch('/api/admin/session')
+        const response = await fetch('/api/admin/session', { cache: 'no-store' })
         const payload = await response.json().catch(() => null)
         if (cancelled) return
         if (response.ok && payload?.authenticated) {
@@ -106,8 +114,17 @@ function useAdminSessionGuard() {
       setStatus('unauthenticated')
     }
     check()
+
+    const revalidate = () => { if (document.visibilityState === 'visible') void check() }
+    const timer = window.setInterval(revalidate, ADMIN_SESSION_REFRESH_MS)
+    document.addEventListener('visibilitychange', revalidate)
+    window.addEventListener('focus', revalidate)
+
     return () => {
       cancelled = true
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', revalidate)
+      window.removeEventListener('focus', revalidate)
     }
   }, [])
 

@@ -8,7 +8,7 @@ import { es } from 'date-fns/locale'
 import { updateCalendarEvent, deleteCalendarEvent } from '../../_lib/google-calendar.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const admin = requireAdminSession(req, res)
+  const admin = await requireAdminSession(req, res)
   if (!admin) return
 
   if (req.method === 'DELETE') {

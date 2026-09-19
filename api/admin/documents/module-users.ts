@@ -12,7 +12,7 @@ type VercelResponse = any
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    const session = requireAdminSession(req, res)
+    const session = await requireAdminSession(req, res)
     if (!session) return
     if (!isDocAdmin(session)) {
       return res.status(403).json({ ok: false, error: 'Solo administradores' })

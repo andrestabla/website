@@ -21,8 +21,11 @@ export const ADMIN_MODULES = [
   'DOCUMENTS',
   'BI',
   'PROJECT_CONTROL',
+  'COTIZADOR',
   'PROFE_TABLA',
   'MIS_PROYECTOS',
+  'LICENCES',
+  'LEARNING_BUILDER',
   'ADMIN_BRIDGE',
 ] as const
 
@@ -112,14 +115,36 @@ export function sanitizePermissionInput(input: unknown): AdminPermissionMap {
   return fallback
 }
 
+/**
+ * Valores que el enum AdminModule tiene realmente en la base de datos. El
+ * código puede ir por delante de la migración (al añadir un módulo nuevo), así
+ * que filtramos antes de escribir para no romper "Guardar acceso".
+ */
+let supportedModulesCache: Set<string> | null = null
+
+async function getSupportedModules(): Promise<Set<string>> {
+  if (supportedModulesCache) return supportedModulesCache
+  try {
+    const rows: Array<{ value: string }> = await prisma.$queryRawUnsafe(
+      'SELECT unnest(enum_range(NULL::"AdminModule"))::text AS value'
+    )
+    const values = new Set(rows.map((row) => String(row.value)))
+    if (values.size) supportedModulesCache = values
+    return values
+  } catch {
+    return new Set<string>(ADMIN_MODULES)
+  }
+}
+
 export async function upsertAdminUserPermissions(
   userId: string,
   permissions: AdminPermissionMap,
   tx: any = prisma
 ) {
+  const supported = await getSupportedModules()
   await tx.adminUserPermission.deleteMany({ where: { userId } } as any)
   await tx.adminUserPermission.createMany({
-    data: ADMIN_MODULES.map((module) => ({
+    data: ADMIN_MODULES.filter((module) => supported.has(module)).map((module) => ({
       userId,
       module,
       canAccess: !!permissions[module],
@@ -265,6 +290,37 @@ export function getSessionPermissionsForUser(user: {
   permissions?: Array<{ module: string; canAccess: boolean }>
 }) {
   return mergePermissionMapWithRows(user.role, user.permissions || [])
+}
+
+export type LiveAdminUserAccess = {
+  id: string
+  username: string
+  displayName: string
+  role: AdminRoleKey
+  active: boolean
+  permissions: AdminPermissionMap
+}
+
+/**
+ * Rol y permisos tal y como están ahora mismo en la base de datos. Es la fuente
+ * de verdad: la cookie de sesión solo dice quién es el usuario, no qué puede.
+ */
+export async function getLiveAdminUserAccess(userId: string): Promise<LiveAdminUserAccess | null> {
+  if (!userId) return null
+  const user = await prisma.adminUser.findUnique({
+    where: { id: userId },
+    include: { permissions: true },
+  } as any)
+  if (!user) return null
+  const role = String(user.role || 'ANALYST') as AdminRoleKey
+  return {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    role,
+    active: !!user.active,
+    permissions: mergePermissionMapWithRows(role, user.permissions || []),
+  }
 }
 
 export async function registerAdminLogin(userId: string) {

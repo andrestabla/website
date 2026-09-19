@@ -1,14 +1,15 @@
-import { getAdminSession } from './admin-auth.js'
+import { getLiveAdminSession } from './admin-auth.js'
 
 type VercelRequest = any
 
 /**
  * Estado de acceso al módulo BI. Reutiliza la sesión firmada del sitio
- * (cookie admin_session). Acceso permitido a SUPERADMIN/ADMIN o a cualquier
- * usuario con el permiso de módulo 'BI' (gestionado en /admin/users).
+ * (cookie admin_session), pero el permiso se relee de la base de datos en cada
+ * petición: lo que se guarde en /admin/users aplica de inmediato. Acceso
+ * permitido a SUPERADMIN/ADMIN o a quien tenga el módulo 'BI'.
  */
-export function biSessionState(req: VercelRequest) {
-  const session = getAdminSession(req)
+export async function biSessionState(req: VercelRequest) {
+  const session = await getLiveAdminSession(req)
   const allowed =
     !!session &&
     (session.role === 'SUPERADMIN' ||

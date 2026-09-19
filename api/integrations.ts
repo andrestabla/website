@@ -49,7 +49,7 @@ function preserveMaskedSecrets(next: any, prev: any) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === 'GET') {
-      if (!requireAdminSession(req, res)) return
+      if (!await requireAdminSession(req, res)) return
       const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
       const raw = snapshot?.data ?? defaultIntegrations
       const effective = applyServerEnv(sanitizeIntegrations(raw))
@@ -61,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'PUT') {
-      if (!requireAdminSession(req, res)) return
+      if (!await requireAdminSession(req, res)) return
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
       const current = await prisma.cmsSnapshot.findUnique({ where: { id: INTEGRATIONS_SNAPSHOT_ID } })
       const mergedBody = preserveMaskedSecrets(body, current?.data ?? {})

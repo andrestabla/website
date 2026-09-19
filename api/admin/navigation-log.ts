@@ -11,7 +11,7 @@ function parseBody(req: VercelRequest) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const session = requireAdminSession(req, res)
+  const session = await requireAdminSession(req, res)
   if (!session) return
 
   try {
