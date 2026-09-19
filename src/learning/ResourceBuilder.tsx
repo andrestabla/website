@@ -15,7 +15,10 @@ import {
   PanelLeft, PanelRight, MessageSquare, RotateCcw, History, Check, Lock, Code2, RefreshCw,
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
-import { validateOva, type LbContent, type LbIssue } from './lib/blocks'
+import type { LbIssue } from './lib/blocks'
+import { isSceneKind, validateResourceContent, type LbResourceContent } from './lib/content'
+import type { LbInteractiveContent } from './lib/interactive'
+import type { LbContent } from './lib/blocks'
 import type { LbDirectives } from './lib/directives'
 import { LB_ROLE_LABEL, LB_ROLE_STYLE, can, type LbRole } from './lib/roles'
 import {
@@ -27,6 +30,7 @@ import {
   type ResourceDetail, type SourceRow, type VersionRow,
 } from './lib/api'
 import { GuionEditor } from './editor/GuionEditor'
+import { SceneEditor } from './editor/SceneEditor'
 import { CommentsPanel } from './CommentsPanel'
 import type { CommentRow } from './lib/api'
 
@@ -70,7 +74,7 @@ export function ResourceBuilder() {
   const [workspaceName, setWorkspaceName] = useState('')
   const [directives, setDirectives] = useState<LbDirectives | null>(null)
   const [role, setRole] = useState<LbRole | null>(null)
-  const [content, setContent] = useState<LbContent | null>(null)
+  const [content, setContent] = useState<LbResourceContent | null>(null)
   const [issues, setIssues] = useState<LbIssue[]>([])
   const [sources, setSources] = useState<SourceRow[]>([])
   const [versions, setVersions] = useState<VersionRow[]>([])
@@ -143,7 +147,7 @@ export function ResourceBuilder() {
   useEffect(() => { try { localStorage.setItem(LAYOUT_KEY, layout) } catch { /* sin persistencia */ } }, [layout])
 
   const save = useCallback(
-    async (next: LbContent) => {
+    async (next: LbResourceContent) => {
       setSaving('saving')
       try {
         const payload = await learningApi.resources.update(resourceId, { content: next })
@@ -163,14 +167,15 @@ export function ResourceBuilder() {
 
   /** El guion se guarda solo: se acumulan las pulsaciones y se envía una vez. */
   const onContentChange = useCallback(
-    (next: LbContent) => {
+    (next: LbResourceContent) => {
       setContent(next)
       dirty.current = true
-      if (directives) setIssues(validateOva(next, directives))
+      if (directives && resource) setIssues(validateResourceContent(resource.kind, next, directives))
       if (timer.current) window.clearTimeout(timer.current)
       timer.current = window.setTimeout(() => void save(next), AUTOSAVE_MS)
     },
-    [directives, save]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [directives, resource?.kind, save]
   )
 
   useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current) }, [])
@@ -368,7 +373,8 @@ export function ResourceBuilder() {
   // Hay tipos cuyo editor todavía no existe. En vez de abrirles el editor de
   // bloques —que no les corresponde— se muestra su ficha y se dice qué falta.
   const kindReady = spec.available
-  const showChat = editable && kindReady && (desktop ? layout !== 'panel' : mobilePane === 'chat')
+  // El asistente escribe guiones de bloques; en escenas todavía no ayuda.
+  const showChat = editable && kindReady && !isSceneKind(resource.kind) && (desktop ? layout !== 'panel' : mobilePane === 'chat')
   const showPanel = !showChat || (desktop ? layout !== 'chat' : mobilePane === 'panel')
   const toggleColumn = (column: 'chat' | 'panel') => {
     setLayout((prev) => {
@@ -714,9 +720,20 @@ export function ResourceBuilder() {
                 </div>
               )}
 
-              {tab === 'guion' && editable && kindReady && (
+              {tab === 'guion' && editable && kindReady && isSceneKind(resource.kind) && (
+                <SceneEditor
+                  content={content as LbInteractiveContent}
+                  directives={directives}
+                  issues={issues}
+                  onChange={onContentChange}
+                  commentsByAnchor={maySeeComments ? commentsByAnchor : undefined}
+                  onOpenComments={(anchor) => { setFocusAnchor(anchor); setTab('comentarios') }}
+                />
+              )}
+
+              {tab === 'guion' && editable && kindReady && !isSceneKind(resource.kind) && (
                 <GuionEditor
-                  content={content}
+                  content={content as LbContent}
                   directives={directives}
                   issues={issues}
                   onChange={onContentChange}
@@ -728,6 +745,7 @@ export function ResourceBuilder() {
               {tab === 'comentarios' && maySeeComments && (
                 <CommentsPanel
                   resourceId={resource.id}
+                  kind={resource.kind}
                   content={content}
                   directives={directives}
                   role={role}

@@ -47,11 +47,10 @@ export const LB_RESOURCE_KIND_SPECS: Record<LbResourceKind, LbResourceKindSpec> 
     kind: 'INTERACTIVE',
     label: 'Presentación interactiva',
     short: 'Interactiva',
-    hint: 'Escenas con puntos activos y navegación libre, al estilo Genially.',
+    hint: 'Escenas con puntos activos y navegación libre, al estilo Genially. Se compone sobre el lienzo.',
     icon: 'MousePointerClick',
     accent: 'from-violet-600 to-fuchsia-500',
-    available: false,
-    pending: 'Falta el editor de escenas y puntos activos.',
+    available: true,
   },
   PODCAST: {
     kind: 'PODCAST',

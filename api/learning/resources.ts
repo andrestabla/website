@@ -13,7 +13,9 @@ import { denied, guard, lbSessionState, requireModule, visibleWorkspaces } from 
 import {
   lbComments, lbResources, lbVersions, lbWorkspaces, loadResource, newPublicId, newShareCode, snapshot, summarize,
 } from '../_lib/lb-store.js'
-import { sanitizeContent, scaffoldContent, validateOva } from '../../src/learning/lib/blocks.js'
+import {
+  sanitizeResourceContent, scaffoldResourceContent, validateResourceContent,
+} from '../../src/learning/lib/content.js'
 import { sanitizeDirectives } from '../../src/learning/lib/directives.js'
 import { can } from '../../src/learning/lib/roles.js'
 import { resourceCodeFor, takenResourceCodes } from '../_lib/lb-codes.js'
@@ -122,7 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           course: text(body.course, 200) || null,
           unit: text(body.unit, 200) || null,
           tags: tags(body.tags),
-          content: scaffoldContent(directives, title) as any,
+          content: scaffoldResourceContent(kind, directives, title) as any,
         },
         include: { workspace: true },
       })
@@ -170,7 +172,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         workspace: { id: workspace.id, name: workspace.name, slug: workspace.slug, kind: workspace.kind },
         directives,
         role: check.role,
-        issues: validateOva(content, directives),
+        issues: validateResourceContent(resource.kind, content, directives),
         shareCode: can(check.role, 'resource.share') ? resource.shareCode : null,
       })
     }
@@ -188,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let nextContent = content
       if (body.content !== undefined) {
-        nextContent = sanitizeContent(body.content, directives)
+        nextContent = sanitizeResourceContent(resource.kind, body.content, directives)
         data.content = nextContent as any
         // Una instantánea por sesión de trabajo, no por pulsación: solo si la
         // última tiene más de diez minutos.
@@ -199,16 +201,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const updated = await lbResources().update({ where: { id: resourceId }, data, include: { workspace: true } })
-      return res.status(200).json({ ok: true, resource: summarize(updated), issues: validateOva(nextContent, directives) })
+      return res.status(200).json({ ok: true, resource: summarize(updated), issues: validateResourceContent(resource.kind, nextContent, directives) })
     }
 
     if (op === 'validate') {
-      const candidate = body.content === undefined ? content : sanitizeContent(body.content, directives)
-      return res.status(200).json({ ok: true, issues: validateOva(candidate, directives) })
+      const candidate = body.content === undefined ? content : sanitizeResourceContent(resource.kind, body.content, directives)
+      return res.status(200).json({ ok: true, issues: validateResourceContent(resource.kind, candidate, directives) })
     }
 
     if (op === 'publish') {
-      const issues = validateOva(content, directives)
+      const issues = validateResourceContent(resource.kind, content, directives)
       const errors = issues.filter((issue) => issue.level === 'error')
       if (errors.length) {
         return res.status(400).json({ ok: false, error: 'El recurso no cumple las directivas del workspace', issues })
@@ -306,9 +308,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ ok: false, error: 'Versión no encontrada' })
       }
       await snapshot(resourceId, content, 'restore', check.session.userId, 'Antes de restaurar')
-      const restored = sanitizeContent(version.content, directives)
+      const restored = sanitizeResourceContent(resource.kind, version.content, directives)
       await lbResources().update({ where: { id: resourceId }, data: { content: restored as any } })
-      return res.status(200).json({ ok: true, content: restored, issues: validateOva(restored, directives) })
+      return res.status(200).json({ ok: true, content: restored, issues: validateResourceContent(resource.kind, restored, directives) })
     }
 
     return res.status(400).json({ ok: false, error: `Operación desconocida: ${op}` })

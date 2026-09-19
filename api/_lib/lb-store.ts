@@ -7,7 +7,8 @@
  */
 import crypto from 'node:crypto'
 import { prisma } from './prisma.js'
-import { sanitizeContent, type LbContent } from '../../src/learning/lib/blocks.js'
+import { sanitizeResourceContent, type LbResourceContent } from '../../src/learning/lib/content.js'
+import { contentStats } from '../../src/learning/lib/content.js'
 import { sanitizeDirectives, type LbDirectives } from '../../src/learning/lib/directives.js'
 
 export const lbWorkspaces = () => (prisma as any).lbWorkspace
@@ -63,21 +64,31 @@ export type LoadedResource = {
   resource: any
   workspace: any
   directives: LbDirectives
-  content: LbContent
+  content: LbResourceContent
 }
 
 export async function loadResource(id: string): Promise<LoadedResource | null> {
   const resource = await lbResources().findUnique({ where: { id }, include: { workspace: true } })
   if (!resource) return null
   const directives = sanitizeDirectives(resource.workspace?.directives)
-  return { resource, workspace: resource.workspace, directives, content: sanitizeContent(resource.content, directives) }
+  return {
+    resource,
+    workspace: resource.workspace,
+    directives,
+    content: sanitizeResourceContent(resource.kind, resource.content, directives),
+  }
 }
 
 export async function loadResourceByPublicId(publicId: string): Promise<LoadedResource | null> {
   const resource = await lbResources().findUnique({ where: { publicId }, include: { workspace: true } })
   if (!resource) return null
   const directives = sanitizeDirectives(resource.workspace?.directives)
-  return { resource, workspace: resource.workspace, directives, content: sanitizeContent(resource.content, directives) }
+  return {
+    resource,
+    workspace: resource.workspace,
+    directives,
+    content: sanitizeResourceContent(resource.kind, resource.content, directives),
+  }
 }
 
 /**
@@ -102,17 +113,9 @@ export async function snapshot(resourceId: string, content: unknown, reason: str
 
 /** Resumen de un recurso para la metabiblioteca. */
 export function summarize(resource: any) {
-  const content = (resource.content && typeof resource.content === 'object' ? resource.content : {}) as any
-  const lessons = Array.isArray(content.lessons) ? content.lessons : []
-  const blocks = lessons.reduce(
-    (total: number, lesson: any) => total + (Array.isArray(lesson.blocks) ? lesson.blocks.length : 0),
-    0
-  )
-  const checks = lessons.reduce(
-    (total: number, lesson: any) =>
-      total + (Array.isArray(lesson.blocks) ? lesson.blocks.filter((block: any) => block?.type === 'check').length : 0),
-    0
-  )
+  // Pantallas y piezas significan cosas distintas según el tipo: lecciones y
+  // bloques en un OVA, escenas y puntos activos en una presentación.
+  const stats = contentStats(resource.kind, resource.content)
   return {
     id: resource.id,
     code: resource.code,
@@ -131,9 +134,9 @@ export function summarize(resource: any) {
     embedEnabled: !!resource.embedEnabled,
     importMode: resource.importMode,
     views: resource.views || 0,
-    lessonCount: lessons.length,
-    blockCount: blocks,
-    checkCount: checks,
+    lessonCount: stats.screens,
+    blockCount: stats.pieces,
+    checkCount: stats.checks,
     ownerId: resource.ownerId,
     publishedAt: resource.publishedAt,
     updatedAt: resource.updatedAt,

@@ -12,7 +12,8 @@
  * SCORM 1.2, de modo que el campus lo trata igual que a un paquete de Rise.
  */
 import { createZip, type ZipEntry } from './lb-zip.js'
-import { escapeHtml, renderOvaHtml, type LbRenderMeta } from './lb-render.js'
+import { escapeHtml, type LbRenderMeta } from './lb-render.js'
+import { renderResourceHtml } from './lb-render-any.js'
 import type { LbContent } from '../../src/learning/lib/blocks.js'
 import type { LbDirectives } from '../../src/learning/lib/directives.js'
 
@@ -133,14 +134,15 @@ export function buildScormPackage(options: {
   content: LbContent
   directives: LbDirectives
   publicId: string
+  kind: string
 }): { buffer: Buffer; fileName: string } {
-  const { meta, content, directives, publicId } = options
+  const { meta, content, directives, publicId, kind } = options
   const title = content.cover?.title || meta.title
   const identifier = scormIdentifier(directives.exports.scormPrefix, title, publicId)
 
-  const index = renderOvaHtml({ meta, content, directives, mode: 'scorm' })
+  const index = renderResourceHtml({ kind, meta, content, directives, mode: 'scorm' })
   const entries: ZipEntry[] = [
-    { path: 'imsmanifest.xml', data: manifest({ identifier, title, lessons: (content.lessons || []).map((lesson) => lesson.title) }) },
+    { path: 'imsmanifest.xml', data: manifest({ identifier, title, lessons: ((content as any).lessons || (content as any).scenes || []).map((row: any) => row.title) }) },
     { path: 'index.html', data: index },
     { path: 'scorm-api.js', data: SCORM_API_JS },
   ]

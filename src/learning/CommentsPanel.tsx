@@ -15,9 +15,9 @@ import {
   CheckCircle2, RotateCcw, Filter,
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
-import type { LbContent } from './lib/blocks'
 import type { LbDirectives } from './lib/directives'
-import { anchorTargets, type LbAnchorTarget } from './lib/comments'
+import type { LbAnchorTarget } from './lib/comments'
+import { anchorTargetsFor, type LbResourceContent } from './lib/content'
 import { can, type LbRole } from './lib/roles'
 import { learningApi, timeAgo, type CommentRow } from './lib/api'
 
@@ -31,6 +31,7 @@ const FILTER_LABEL: Record<Filter, string> = {
 
 export function CommentsPanel({
   resourceId,
+  kind,
   content,
   directives,
   role,
@@ -39,7 +40,8 @@ export function CommentsPanel({
   focusAnchor,
 }: {
   resourceId: string
-  content: LbContent
+  kind: string
+  content: LbResourceContent
   directives: LbDirectives
   role: LbRole
   /** Los hilos ya cargados: el builder también los usa para los globos del editor. */
@@ -62,8 +64,8 @@ export function CommentsPanel({
   useEffect(() => { if (focusAnchor) setOpenAnchor(focusAnchor) }, [focusAnchor])
 
   const targets = useMemo(
-    () => anchorTargets(content, directives.instructional.lessonLabel),
-    [content, directives.instructional.lessonLabel]
+    () => anchorTargetsFor(kind, content, directives.instructional.lessonLabel),
+    [kind, content, directives.instructional.lessonLabel]
   )
 
   const byAnchor = useMemo(() => {

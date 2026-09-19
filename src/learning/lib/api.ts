@@ -1,6 +1,8 @@
 /** Cliente de la API del Learning Builder (sesión por cookie del sitio). */
-import type { LbContent, LbIssue } from './blocks.js'
+import type { LbIssue } from './blocks.js'
+import type { LbResourceContent } from './content.js'
 import type { LbDirectives } from './directives.js'
+import type { LbContent } from './blocks.js'
 import type { LbCapability, LbRole } from './roles.js'
 import type { LbResourceKind, LbShareMode, LbStatus } from './resources.js'
 
@@ -70,7 +72,7 @@ export type ResourceRow = {
   openComments?: number
 }
 
-export type ResourceDetail = ResourceRow & { content: LbContent; createdAt: string }
+export type ResourceDetail = ResourceRow & { content: LbResourceContent; createdAt: string }
 
 export type SourceRow = {
   id: string
@@ -170,7 +172,7 @@ export const learningApi = {
     remove: (resourceId: string) => post('/api/learning/resources', { op: 'delete', resourceId }),
     versions: (resourceId: string): Promise<{ versions: VersionRow[] }> =>
       post('/api/learning/resources', { op: 'versions', resourceId }),
-    restore: (resourceId: string, versionId: string): Promise<{ content: LbContent; issues: LbIssue[] }> =>
+    restore: (resourceId: string, versionId: string): Promise<{ content: LbResourceContent; issues: LbIssue[] }> =>
       post('/api/learning/resources', { op: 'restore', resourceId, versionId }),
   },
   sources: {

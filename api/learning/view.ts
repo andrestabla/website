@@ -13,7 +13,7 @@
  */
 import crypto from 'node:crypto'
 import { guard, lbSessionState } from '../_lib/lb-auth.js'
-import { renderOvaHtml } from '../_lib/lb-render.js'
+import { renderResourceHtml } from '../_lib/lb-render-any.js'
 import { lbResources, loadResource, loadResourceByPublicId } from '../_lib/lb-store.js'
 
 type VercelRequest = any
@@ -124,7 +124,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.setHeader('Cache-Control', 'no-store')
       res.setHeader('X-Frame-Options', 'SAMEORIGIN')
       return res.status(200).send(
-        renderOvaHtml({
+        renderResourceHtml({
+          kind: loaded.resource.kind,
           meta: {
             title: loaded.resource.title,
             subtitle: loaded.resource.subtitle,
@@ -183,7 +184,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!resource.embedEnabled) res.setHeader('X-Frame-Options', 'SAMEORIGIN')
 
     return res.status(200).send(
-      renderOvaHtml({
+      renderResourceHtml({
+        kind: resource.kind,
         meta: {
           title: resource.title,
           subtitle: resource.subtitle,

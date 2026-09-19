@@ -11,10 +11,10 @@
  * subirlo.
  */
 import { denied, guard, requireModule } from '../_lib/lb-auth.js'
-import { renderOvaHtml } from '../_lib/lb-render.js'
+import { renderResourceHtml } from '../_lib/lb-render-any.js'
 import { buildScormPackage, safeFileName } from '../_lib/lb-scorm.js'
 import { loadResource } from '../_lib/lb-store.js'
-import { validateOva } from '../../src/learning/lib/blocks.js'
+import { validateResourceContent } from '../../src/learning/lib/content.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const check = await guard(req, resource.workspaceId, 'resource.export', gate.session)
     if (!check.ok) return denied(res, check)
 
-    const errors = validateOva(content, directives).filter((issue) => issue.level === 'error')
+    const errors = validateResourceContent(resource.kind, content, directives).filter((issue) => issue.level === 'error')
     if (errors.length) {
       return res.status(400).json({
         ok: false,
@@ -70,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (format === 'html') {
       if (!directives.exports.html) return res.status(403).json({ ok: false, error: 'Las directivas de este workspace no habilitan la descarga HTML' })
-      const html = renderOvaHtml({ meta, content, directives, mode: 'html' })
+      const html = renderResourceHtml({ kind: resource.kind, meta, content, directives, mode: 'html' })
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
       res.setHeader('Content-Disposition', `attachment; filename="${baseName}.html"`)
       return res.status(200).send(html)
@@ -78,7 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (format === 'scorm') {
       if (!directives.exports.scorm) return res.status(403).json({ ok: false, error: 'Las directivas de este workspace no habilitan el paquete SCORM' })
-      const { buffer, fileName } = buildScormPackage({ meta, content, directives, publicId: resource.publicId })
+      const { buffer, fileName } = buildScormPackage({ kind: resource.kind, meta, content, directives, publicId: resource.publicId })
       res.setHeader('Content-Type', 'application/zip')
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
       res.setHeader('Content-Length', String(buffer.length))

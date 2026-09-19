@@ -11,7 +11,8 @@
  */
 import { denied, guard, requireModule } from '../_lib/lb-auth.js'
 import { lbComments, loadResource, usersByIds } from '../_lib/lb-store.js'
-import { labelForAnchor, parseAnchor } from '../../src/learning/lib/comments.js'
+import { parseAnchor } from '../../src/learning/lib/comments.js'
+import { anchorTargetsFor } from '../../src/learning/lib/content.js'
 import { can } from '../../src/learning/lib/roles.js'
 
 type VercelRequest = any
@@ -108,7 +109,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         data: {
           resourceId,
           anchor,
-          anchorLabel: labelForAnchor(anchor, content, directives.instructional.lessonLabel),
+          anchorLabel:
+            anchorTargetsFor(resource.kind, content, directives.instructional.lessonLabel)
+              .find((target) => target.anchor === anchor)?.label || 'Pieza eliminada',
           parentId: parentId || null,
           authorId: me,
           body: content_,
