@@ -14,7 +14,7 @@
  * saneador antes de llegar a la UI.
  */
 import { generateJsonWithAI } from '../_lib/ai.js'
-import { denied, guard } from '../_lib/lb-auth.js'
+import { denied, guard, requireModule } from '../_lib/lb-auth.js'
 import { lbDataSources, lbSources, loadResource } from '../_lib/lb-store.js'
 import { LB_BLOCK_SPECS, sanitizeContent, validateOva, type LbBlockType } from '../../src/learning/lib/blocks.js'
 import type { LbDirectives } from '../../src/learning/lib/directives.js'
@@ -89,11 +89,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!resourceId) return res.status(400).json({ ok: false, error: 'Falta el recurso' })
 
   try {
+    const gate = await requireModule(req)
+    if (!gate.ok) return denied(res, gate)
+
     const loaded = await loadResource(resourceId)
     if (!loaded) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
     const { resource, workspace, directives, content } = loaded
 
-    const check = await guard(req, resource.workspaceId, 'ai.use')
+    const check = await guard(req, resource.workspaceId, 'ai.use', gate.session)
     if (!check.ok) return denied(res, check)
 
     // Las fuentes de datos abiertas del workspace se le nombran a la IA para

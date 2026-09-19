@@ -6,7 +6,7 @@
  * Se reutiliza el conversor del Cotizador: mismo tratamiento de imágenes,
  * tablas y truncado.
  */
-import { denied, guard } from '../_lib/lb-auth.js'
+import { denied, guard, requireModule } from '../_lib/lb-auth.js'
 import { lbSources, loadResource } from '../_lib/lb-store.js'
 import { ATTACHMENT_MAX_BYTES, extractMarkdown } from '../_lib/quote-attachments.js'
 
@@ -36,11 +36,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!resourceId) return res.status(400).json({ ok: false, error: 'Falta el recurso' })
 
   try {
+    const gate = await requireModule(req)
+    if (!gate.ok) return denied(res, gate)
+
     const loaded = await loadResource(resourceId)
     if (!loaded) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
 
     // Los insumos son material de trabajo: los ve y los mueve quien edita.
-    const check = await guard(req, loaded.resource.workspaceId, 'sources.manage')
+    const check = await guard(req, loaded.resource.workspaceId, 'sources.manage', gate.session)
     if (!check.ok) return denied(res, check)
 
     if (op === 'list') {

@@ -9,7 +9,7 @@
  * Quien edita lee los hilos, responde y los da por atendidos. Cada quien puede
  * borrar lo suyo; borrar lo ajeno es cosa del gestor.
  */
-import { denied, guard } from '../_lib/lb-auth.js'
+import { denied, guard, requireModule } from '../_lib/lb-auth.js'
 import { lbComments, loadResource, usersByIds } from '../_lib/lb-store.js'
 import { labelForAnchor, parseAnchor } from '../../src/learning/lib/comments.js'
 import { can } from '../../src/learning/lib/roles.js'
@@ -35,11 +35,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!resourceId) return res.status(400).json({ ok: false, error: 'Falta el recurso' })
 
   try {
+    const gate = await requireModule(req)
+    if (!gate.ok) return denied(res, gate)
+
     const loaded = await loadResource(resourceId)
     if (!loaded) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
     const { resource, directives, content } = loaded
 
-    const check = await guard(req, resource.workspaceId, 'comment.view')
+    const check = await guard(req, resource.workspaceId, 'comment.view', gate.session)
     if (!check.ok) return denied(res, check)
     const role = check.role
     const me = check.session.userId

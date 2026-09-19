@@ -10,7 +10,7 @@
  * errores estructurales llega al campus y ya no se puede corregir sin volver a
  * subirlo.
  */
-import { denied, guard } from '../_lib/lb-auth.js'
+import { denied, guard, requireModule } from '../_lib/lb-auth.js'
 import { renderOvaHtml } from '../_lib/lb-render.js'
 import { buildScormPackage, safeFileName } from '../_lib/lb-scorm.js'
 import { loadResource } from '../_lib/lb-store.js'
@@ -30,11 +30,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!id) return res.status(400).json({ ok: false, error: 'Falta el recurso' })
 
   try {
+    // Identificarse antes de tocar la base: si no, un anónimo distinguiría
+    // «no existe» de «no autorizado» y sabría qué ids existen.
+    const gate = await requireModule(req)
+    if (!gate.ok) return denied(res, gate)
+
     const loaded = await loadResource(id)
     if (!loaded) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
     const { resource, workspace, directives, content } = loaded
 
-    const check = await guard(req, resource.workspaceId, 'resource.export')
+    const check = await guard(req, resource.workspaceId, 'resource.export', gate.session)
     if (!check.ok) return denied(res, check)
 
     const errors = validateOva(content, directives).filter((issue) => issue.level === 'error')

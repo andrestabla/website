@@ -9,7 +9,7 @@
  * El invitado solo llega a la biblioteca y a los recursos publicados; nada de
  * lo que no puede hacer llega siquiera a ejecutarse.
  */
-import { denied, guard, lbSessionState, visibleWorkspaces } from '../_lib/lb-auth.js'
+import { denied, guard, lbSessionState, requireModule, visibleWorkspaces } from '../_lib/lb-auth.js'
 import {
   lbComments, lbResources, lbVersions, lbWorkspaces, loadResource, newPublicId, newShareCode, snapshot, summarize,
 } from '../_lib/lb-store.js'
@@ -123,6 +123,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── A partir de aquí todo cuelga de un recurso concreto ──
+    const gate = await requireModule(req)
+    if (!gate.ok) return denied(res, gate)
+
     const resourceId = text(body.resourceId, 40)
     if (!resourceId) return res.status(400).json({ ok: false, error: 'Falta el recurso' })
     const loaded = await loadResource(resourceId)
@@ -137,7 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : op === 'share' ? 'resource.share'
       : op === 'duplicate' ? 'resource.create'
       : 'resource.edit'
-    const check = await guard(req, resource.workspaceId, capability as any)
+    const check = await guard(req, resource.workspaceId, capability as any, gate.session)
     if (!check.ok) return denied(res, check)
 
     // El invitado tiene 'resource.view', pero solo sobre lo ya publicado.

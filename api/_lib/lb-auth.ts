@@ -64,22 +64,47 @@ export async function visibleWorkspaces(session: LbSession): Promise<Array<{ wor
     .map((membership: any) => ({ workspace: membership.workspace, role: membership.role as LbRole }))
 }
 
+export type Denial = { ok: false; status: number; error: string }
+
 export type Guard =
   | { ok: true; session: LbSession; role: LbRole }
-  | { ok: false; status: number; error: string }
+  | Denial
+
+/**
+ * Puerta previa a tocar la base: exige sesión y permiso del módulo, sin mirar
+ * todavía ningún workspace.
+ *
+ * Va **antes** de cargar el recurso. Si se cargara primero, un anónimo podría
+ * distinguir «no existe» de «no autorizado» —y por tanto averiguar qué ids
+ * existen— y además haría trabajar a la base sin haberse identificado.
+ */
+export async function requireModule(req: VercelRequest): Promise<{ ok: true; session: LbSession } | Denial> {
+  const { session, allowed } = await lbSessionState(req)
+  if (!session) return { ok: false, status: 401, error: 'Unauthenticated' }
+  if (!allowed) return { ok: false, status: 403, error: 'Sin acceso a Learning Builder' }
+  return { ok: true, session }
+}
 
 /**
  * Puerta única de los endpoints: módulo abierto, pertenencia al workspace y
  * capacidad concreta. Devuelve el rol para que el handler no vuelva a mirarlo.
+ *
+ * Si el handler ya pasó por requireModule, que le pase aquí la sesión: así el
+ * rol y los permisos se leen de la base una vez por petición y no dos.
  */
 export async function guard(
   req: VercelRequest,
   workspaceId: string,
-  capability: LbCapability
+  capability: LbCapability,
+  known?: LbSession
 ): Promise<Guard> {
-  const { session, allowed } = await lbSessionState(req)
-  if (!session) return { ok: false, status: 401, error: 'Unauthenticated' }
-  if (!allowed) return { ok: false, status: 403, error: 'Sin acceso a Learning Builder' }
+  let session = known ?? null
+  if (!session) {
+    const state = await lbSessionState(req)
+    if (!state.session) return { ok: false, status: 401, error: 'Unauthenticated' }
+    if (!state.allowed) return { ok: false, status: 403, error: 'Sin acceso a Learning Builder' }
+    session = state.session
+  }
   if (!workspaceId) return { ok: false, status: 400, error: 'Falta el workspace' }
 
   const role = await roleInWorkspace(session, workspaceId)
@@ -90,8 +115,8 @@ export async function guard(
   return { ok: true, session, role }
 }
 
-/** Atajo para responder un guard fallido. */
-export function denied(res: VercelResponse, result: Extract<Guard, { ok: false }>) {
+/** Atajo para responder una puerta cerrada. */
+export function denied(res: VercelResponse, result: Denial) {
   return res.status(result.status).json({ ok: false, error: result.error })
 }
 

@@ -114,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const loaded = await loadResource(previewId)
       if (!loaded) return shell('No encontrado', 'Este recurso ya no existe.', 404, res)
 
-      const check = await guard(req, loaded.resource.workspaceId, 'resource.view')
+      const check = await guard(req, loaded.resource.workspaceId, 'resource.view', session)
       if (!check.ok) return shell('Vista previa restringida', check.error, check.status, res)
       if (check.role === 'GUEST' && loaded.resource.status !== 'PUBLISHED') {
         return shell('Todavía en construcción', 'Este recurso aún no está publicado.', 403, res)
