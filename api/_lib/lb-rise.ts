@@ -18,6 +18,8 @@
  *     __jsonp("runtime-data.js","eyJjb3Vyc2UiOn...")
  */
 
+import type { LbPatch } from '../../src/learning/lib/final.js'
+
 /** Dónde vive el contenido de un Rise dentro del paquete. */
 export const RISE_DATA_PATH = 'scormcontent/runtime-data.js'
 
@@ -118,19 +120,19 @@ export function isRiseLessonPath(path: string): boolean {
  */
 export function riseWithEdits(
   data: RiseData,
-  edits: Record<string, Record<string, string>>,
-  inject: (html: string, pageEdits: Record<string, string>) => string
+  patches: Record<string, LbPatch[]>,
+  inject: (html: string, pagePatches: LbPatch[]) => string
 ): RiseData {
   const lessons = (data.course?.lessons || []).map((lesson: any) => {
-    const pageEdits = edits[riseLessonPath(String(lesson?.id || ''))]
-    if (!pageEdits || !Object.keys(pageEdits).length) return lesson
+    const pagePatches = patches[riseLessonPath(String(lesson?.id || ''))]
+    if (!pagePatches?.length) return lesson
     const found = htmlHolder(lesson)
     if (!found) return lesson
 
     const items = lesson.items.map((block: any) => {
       if (block?.type !== 'html') return block
       const inner = (block.items || []).map((row: any) =>
-        row === found.holder ? { ...row, srcdoc: inject(row.srcdoc, pageEdits) } : row
+        row === found.holder ? { ...row, srcdoc: inject(row.srcdoc, pagePatches) } : row
       )
       return { ...block, items: inner }
     })

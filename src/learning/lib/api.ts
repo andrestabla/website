@@ -251,6 +251,11 @@ export const learningApi = {
     speak: (resourceId: string, cueId: string): Promise<{ content: LbPodcastContent; bytes: number }> =>
       post('/api/learning/voice', { op: 'speak', resourceId, cueId }),
   },
+  media: {
+    /** Sube una imagen al almacenamiento del workspace y devuelve su URL. */
+    image: (resourceId: string, dataUrl: string, fileName: string): Promise<{ url: string; bytes: number }> =>
+      post('/api/learning/media', { op: 'image', resourceId, dataUrl, fileName }),
+  },
   /** Subida por trozos del paquete original de una pieza importada. */
   importPkg: {
     begin: (resourceId: string, bytes: number): Promise<{ uploadId: string; maxPartBytes: number }> =>

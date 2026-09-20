@@ -258,7 +258,7 @@ export function deliverablePackage(
     const mirror = content as LbMirrorContent
     return mirror.pages?.length ? mirror : null
   }
-  return final?.kind === 'PACKAGE' && final.pages.length ? final : null
+  return final?.kind === 'PACKAGE' && final.deliver && final.pages.length ? final : null
 }
 
 /** ¿Se entrega este recurso tal cual salió de producción? */
@@ -285,7 +285,7 @@ export function deliveryIssues(
   final: LbFinal | null,
   directives: LbDirectives
 ): LbIssue[] {
-  if (final?.kind === 'MEDIA') {
+  if (final?.kind === 'MEDIA' && final.deliver) {
     return final.media?.url ? [] : [{ level: 'error', message: 'La pieza final no tiene archivo.' }]
   }
 

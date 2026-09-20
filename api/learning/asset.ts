@@ -117,8 +117,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // poder editar.
     if (wanted === RISE_DATA_PATH) {
       const data = parseRise(body.toString('utf8'))
-      if (data && Object.keys(pkg.edits).length) {
-        body = Buffer.from(encodeRise(riseWithEdits(data, pkg.edits, injectEditsOnly)), 'utf8')
+      if (data && Object.keys(pkg.patches).length) {
+        body = Buffer.from(encodeRise(riseWithEdits(data, pkg.patches, injectEditsOnly)), 'utf8')
       }
     }
 

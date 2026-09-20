@@ -72,7 +72,7 @@ export async function buildMirrorPackage(options: {
       const data = parseRise(bytes.toString('utf8'))
       entries.push({
         path: file.path,
-        data: data ? Buffer.from(encodeRise(riseWithEdits(data, pkg.edits, injectEditsOnly)), 'utf8') : bytes,
+        data: data ? Buffer.from(encodeRise(riseWithEdits(data, pkg.patches, injectEditsOnly)), 'utf8') : bytes,
       })
       continue
     }
@@ -91,7 +91,7 @@ export async function buildMirrorPackage(options: {
       data: injectMirrorLayer(bytes.toString('utf8'), {
         baseHref: './',
         packageRoot: depth ? '../'.repeat(depth) : './',
-        edits: pkg.edits[file.path] || {},
+        patches: pkg.patches[file.path] || [],
       }),
     })
   }

@@ -248,9 +248,9 @@ export async function ingestPackage(options: {
       origin: { kind, fileName, importedAt: origin.importedAt, manifestTitle: manifest.title, scormVersion: manifest.version },
       entry,
       pages,
-      // Las ediciones no sobreviven a un paquete nuevo: sus números apuntaban
+      // Los retoques no sobreviven a un paquete nuevo: sus números apuntaban
       // a los nodos del anterior y caerían sobre textos distintos.
-      edits: {},
+      patches: {},
     })
     await lbResources().update({
       where: { id: resource.id },
@@ -259,7 +259,7 @@ export async function ingestPackage(options: {
     return { content, final: null, files: stored.length, bytes: archive.length, kind }
   }
 
-  const final = sanitizeFinal({ kind: 'PACKAGE', origin, entry, pages, edits: {} })
+  const final = sanitizeFinal({ kind: 'PACKAGE', origin, entry, pages, patches: {} })
   await lbResources().update({
     where: { id: resource.id },
     data: { assets: final as any, importMeta: importMeta as any },

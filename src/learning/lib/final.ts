@@ -27,9 +27,32 @@ export type LbPackagePage = {
 }
 
 /**
+ * Un retoque sobre la pieza original. Nunca se reescribe el archivo: se
+ * guarda la lista de retoques y se aplican encima al servirlo, de modo que
+ * quitar uno devuelve la pieza a como llegó.
+ *
+ * Cada retoque apunta a una posición dentro del documento, y hay tres
+ * numeraciones distintas porque se cuentan cosas distintas: los textos
+ * sueltos, las imágenes y los bloques. Las tres las calcula el navegador con
+ * el mismo recorrido, y por eso no pueden discrepar entre el editor y lo
+ * publicado.
+ */
+export type LbPatch =
+  /** Cambiar el texto suelto número `at`. */
+  | { op: 'text'; at: number; value: string }
+  /** Cambiar la imagen número `at` por otra. */
+  | { op: 'image'; at: number; url: string; alt?: string }
+  /** Meter contenido nuevo junto al bloque número `at`. */
+  | { op: 'insert'; at: number; where: 'before' | 'after'; html: string }
+  /** Quitar el bloque número `at`. */
+  | { op: 'remove'; at: number }
+
+export const LB_PATCH_OPS = ['text', 'image', 'insert', 'remove'] as const
+
+/**
  * Lo que hace falta para servir un paquete: por dónde se entra, qué páginas
- * tiene y qué textos se han corregido. Lo comparten la pieza importada —cuyo
- * guion ES su paquete— y la pieza final de cualquier otro tipo.
+ * tiene y qué se le ha retocado. Lo comparten la pieza importada —cuyo guion
+ * ES su paquete— y la pieza final de cualquier otro tipo.
  */
 export type LbPackage = {
   /**
@@ -40,8 +63,8 @@ export type LbPackage = {
   entry: string
   /** Las unidades editables: páginas del sitio, o lecciones del Rise. */
   pages: LbPackagePage[]
-  /** `edits[ruta][índice de nodo] = texto nuevo`. Lo demás se sirve intacto. */
-  edits: Record<string, Record<string, string>>
+  /** Los retoques de cada página, en orden. Lo demás se sirve intacto. */
+  patches: Record<string, LbPatch[]>
 }
 
 export const LB_FINAL_KINDS = ['PACKAGE', 'MEDIA'] as const
@@ -50,6 +73,12 @@ export type LbFinalKind = (typeof LB_FINAL_KINDS)[number]
 export type LbFinal = LbPackage & {
   /** PACKAGE: sitio HTML con sus archivos · MEDIA: un solo archivo reproducible. */
   kind: LbFinalKind
+  /**
+   * Si esta pieza es la que se entrega. Lo decide quien edita: adjuntarla no
+   * obliga a publicarla, y a veces se quiere tener el original guardado
+   * mientras se sigue entregando lo que sale del guion.
+   */
+  deliver: boolean
   origin: {
     fileName: string
     importedAt: string
@@ -72,13 +101,39 @@ export type LbFinal = LbPackage & {
 // ── Saneamiento ──────────────────────────────────────────────────────────────
 
 const MAX_PAGES = 300
-const MAX_EDITS_PER_PAGE = 2000
+const MAX_PATCHES_PER_PAGE = 2000
 
 /** Ruta dentro del paquete: relativa, sin subir de directorio ni salir a la red. */
 export function safePath(value: unknown): string {
   const raw = str(value, 400).trim().replace(/\\/g, '/').replace(/^\/+/, '')
   if (!raw || raw.includes('..') || /^[a-z]+:/i.test(raw)) return ''
   return raw
+}
+
+function sanitizePatch(value: unknown): LbPatch | null {
+  const raw = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
+  const at = Number(raw.at)
+  if (!Number.isInteger(at) || at < 0 || at > 99_999) return null
+
+  switch (raw.op) {
+    case 'text':
+      return { op: 'text', at, value: str(raw.value, 8000) }
+    case 'image': {
+      const url = safeUrl(raw.url)
+      if (!url) return null
+      const alt = str(raw.alt, 300)
+      return alt ? { op: 'image', at, url, alt } : { op: 'image', at, url }
+    }
+    case 'insert': {
+      const html = str(raw.html, 20_000)
+      if (!html) return null
+      return { op: 'insert', at, where: raw.where === 'before' ? 'before' : 'after', html }
+    }
+    case 'remove':
+      return { op: 'remove', at }
+    default:
+      return null
+  }
 }
 
 function sanitizePage(value: unknown): LbPackagePage | null {
@@ -98,22 +153,38 @@ export function sanitizePackage(value: unknown): LbPackage {
   }
 
   const known = new Set(pages.map((page) => page.path))
-  const edits: Record<string, Record<string, string>> = {}
-  const rawEdits = (raw.edits && typeof raw.edits === 'object' ? raw.edits : {}) as Record<string, unknown>
-  for (const [rawKey, rawValue] of Object.entries(rawEdits)) {
-    const path = safePath(rawKey)
-    // Una edición sobre una página que ya no está en el paquete no se sirve
+
+  const patches: Record<string, LbPatch[]> = {}
+  const add = (path: string, patch: LbPatch) => {
+    // Un retoque sobre una página que ya no está en el paquete no se aplica
     // nunca: se descarta para que el guion no acumule restos invisibles.
-    if (!path || !known.has(path) || !rawValue || typeof rawValue !== 'object') continue
-    const page: Record<string, string> = {}
-    for (const [slot, text] of Object.entries(rawValue as Record<string, unknown>).slice(0, MAX_EDITS_PER_PAGE)) {
-      if (!/^\d{1,5}$/.test(slot)) continue
-      page[slot] = str(text, 8000)
-    }
-    if (Object.keys(page).length) edits[path] = page
+    if (!known.has(path)) return
+    ;(patches[path] ||= []).push(patch)
   }
 
-  return { entry: safePath(raw.entry) || pages[0]?.path || '', pages, edits }
+  const rawPatches = (raw.patches && typeof raw.patches === 'object' ? raw.patches : {}) as Record<string, unknown>
+  for (const [rawKey, list] of Object.entries(rawPatches)) {
+    const path = safePath(rawKey)
+    if (!path || !Array.isArray(list)) continue
+    for (const candidate of (list as unknown[]).slice(0, MAX_PATCHES_PER_PAGE)) {
+      const patch = sanitizePatch(candidate)
+      if (patch) add(path, patch)
+    }
+  }
+
+  // Formato anterior: `edits[ruta][índice] = texto`. Se lee para no perder lo
+  // que ya estuviera guardado; se escribe siempre en el nuevo.
+  const legacy = (raw.edits && typeof raw.edits === 'object' ? raw.edits : {}) as Record<string, unknown>
+  for (const [rawKey, value] of Object.entries(legacy)) {
+    const path = safePath(rawKey)
+    if (!path || !value || typeof value !== 'object') continue
+    for (const [slot, text] of Object.entries(value as Record<string, unknown>).slice(0, MAX_PATCHES_PER_PAGE)) {
+      if (!/^\d{1,5}$/.test(slot)) continue
+      add(path, { op: 'text', at: Number(slot), value: str(text, 8000) })
+    }
+  }
+
+  return { entry: safePath(raw.entry) || pages[0]?.path || '', pages, patches }
 }
 
 /**
@@ -136,6 +207,9 @@ export function sanitizeFinal(value: unknown): LbFinal | null {
   const manifestTitle = str(rawOrigin.manifestTitle, 300); if (manifestTitle) origin.manifestTitle = manifestTitle
 
   const base = sanitizePackage(raw)
+  // Por omisión se entrega: quien adjunta una pieza final casi siempre la
+  // adjunta para entregarla, y desmarcarlo es un gesto deliberado.
+  const deliver = raw.deliver !== false
 
   if (kind === 'MEDIA') {
     const rawMedia = (raw.media && typeof raw.media === 'object' ? raw.media : {}) as Record<string, unknown>
@@ -149,19 +223,19 @@ export function sanitizeFinal(value: unknown): LbFinal | null {
     const captionsUrl = safeUrl(rawMedia.captionsUrl); if (captionsUrl) media.captionsUrl = captionsUrl
     const posterUrl = safeUrl(rawMedia.posterUrl); if (posterUrl) media.posterUrl = posterUrl
     if (rawMedia.seconds !== undefined) media.seconds = num(rawMedia.seconds, 0, 0, 360000)
-    return { ...base, kind, origin, media }
+    return { ...base, kind, deliver, origin, media }
   }
 
   // Un PACKAGE sin páginas o sin entrada no sirve para nada.
   if (!base.pages.length || !base.entry) return null
-  return { ...base, kind, origin }
+  return { ...base, kind, deliver, origin }
 }
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
 
 export function packageEditCount(value: LbPackage | null | undefined): number {
   if (!value) return 0
-  return Object.values(value.edits).reduce((total, page) => total + Object.keys(page).length, 0)
+  return Object.values(value.patches).reduce((total, list) => total + list.length, 0)
 }
 
 export function pageAt(value: LbPackage | null | undefined, path: string): LbPackagePage | null {
@@ -179,5 +253,5 @@ export function describeFinal(final: LbFinal | null): string {
     return `Archivo final${final.media?.captionsUrl ? ' con subtítulos' : ''}${mb}`
   }
   const edits = packageEditCount(final)
-  return `Paquete de ${final.origin.files} archivo(s)${edits ? ` · ${edits} texto(s) editado(s)` : ''}`
+  return `Paquete de ${final.origin.files} archivo(s)${edits ? ` · ${edits} retoque(s)` : ''}`
 }

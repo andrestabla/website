@@ -67,7 +67,7 @@ export function scaffoldMirror(title: string): LbMirrorContent {
     origin: { kind: 'HTML', fileName: '', importedAt: '' },
     entry: '',
     pages: [],
-    edits: {},
+    patches: {},
   }
 }
 

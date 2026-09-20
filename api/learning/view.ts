@@ -147,7 +147,7 @@ async function servePackage(options: {
     injectMirrorLayer(original, {
       baseHref,
       packageRoot,
-      edits: pkg.edits[wanted] || {},
+      patches: pkg.patches[wanted] || [],
       viewBase,
       editable,
     })

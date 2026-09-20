@@ -13,7 +13,7 @@
  * El guion no se pierde ni se congela: sigue editándose al lado, y sirve de
  * fuente para rehacer la pieza cuando haga falta.
  */
-import { CheckCircle2, FileVideo, Package } from 'lucide-react'
+import { CheckCircle2, FileText, FileVideo, Package } from 'lucide-react'
 import { describeFinal, type LbFinal, type LbPackage } from '../lib/final'
 import { PackagePanel } from './PackagePanel'
 
@@ -37,7 +37,7 @@ export function FinalPanel({
     const video = final.media!.contentType.startsWith('video/')
     return (
       <div className="h-full overflow-y-auto p-4 sm:p-6">
-        <Banner final={final} />
+        <Banner final={final} onToggle={(deliver) => onChange({ ...final, deliver })} />
         <div className="mx-auto mt-4 max-w-3xl space-y-4">
           {video ? (
             <video controls poster={final.media!.posterUrl} className="w-full rounded-xl border border-slate-200 bg-black">
@@ -72,7 +72,11 @@ export function FinalPanel({
 
   return (
     <div className="flex h-full flex-col">
-      {final && <div className="px-4 pt-4"><Banner final={final} /></div>}
+      {final && (
+        <div className="px-4 pt-4">
+          <Banner final={final} onToggle={(deliver) => onChange({ ...final, deliver })} />
+        </div>
+      )}
       <div className="min-h-0 flex-1">
         <PackagePanel
           resourceId={resourceId}
@@ -93,22 +97,40 @@ export function FinalPanel({
   )
 }
 
-function Banner({ final }: { final: LbFinal }) {
+/**
+ * Qué se entrega lo decide quien edita. Adjuntar la pieza no obliga a
+ * publicarla: a veces se quiere tenerla guardada mientras se sigue
+ * entregando lo que sale del guion, y ese interruptor tiene que estar donde
+ * se ve el efecto, no escondido en la ficha.
+ */
+function Banner({ final, onToggle }: { final: LbFinal; onToggle: (deliver: boolean) => void }) {
+  const on = final.deliver
   return (
-    <div className="flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-      <span className="mt-0.5 shrink-0 text-emerald-600">
-        {final.kind === 'MEDIA' ? <FileVideo size={16} /> : <Package size={16} />}
+    <div className={`flex flex-wrap items-start gap-2.5 rounded-xl border px-4 py-3 ${
+      on ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50'
+    }`}>
+      <span className={`mt-0.5 shrink-0 ${on ? 'text-emerald-600' : 'text-slate-400'}`}>
+        {on ? (final.kind === 'MEDIA' ? <FileVideo size={16} /> : <Package size={16} />) : <FileText size={16} />}
       </span>
-      <div className="min-w-0 text-[12.5px] text-emerald-900">
+      <div className={`min-w-0 flex-1 text-[12.5px] ${on ? 'text-emerald-900' : 'text-slate-600'}`}>
         <div className="font-bold">
-          <CheckCircle2 size={12} className="mr-1 inline" />
-          Se está entregando la pieza original
+          {on ? <><CheckCircle2 size={12} className="mr-1 inline" />Se está entregando esta pieza</> : 'Guardada, pero no se entrega'}
         </div>
         <div className="opacity-90">
-          {describeFinal(final)}. El enlace público, el incrustado y la descarga sirven este archivo,
-          no el guion.
+          {describeFinal(final)}.{' '}
+          {on
+            ? 'El enlace público, el incrustado y la descarga sirven este archivo, no el guion.'
+            : 'Lo que se publica sale del guion. Enciéndelo para entregar el archivo original.'}
         </div>
       </div>
+      <button
+        onClick={() => onToggle(!on)}
+        className={`shrink-0 rounded-lg px-3 py-1.5 text-[12.5px] font-bold ${
+          on ? 'border border-emerald-300 text-emerald-800 hover:bg-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+        }`}
+      >
+        {on ? 'Entregar el guion' : 'Entregar esta pieza'}
+      </button>
     </div>
   )
 }
