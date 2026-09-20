@@ -58,9 +58,29 @@ export function LearningLogin({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <div className="grid min-h-screen bg-white md:grid-cols-[1.1fr_0.9fr]">
-      <section className="relative hidden flex-col justify-between overflow-hidden bg-slate-900 p-14 text-white md:flex">
+      {/*
+        La foto va de fondo y el color de marca encima, como en las puertas de
+        BI, el Ecosistema y Project Control. El degradado no es decorativo: es
+        lo que sostiene el contraste del texto, así que si la imagen falta o
+        tarda en cargar el panel sigue legible sobre el gris de abajo.
+      */}
+      <section
+        className="relative hidden flex-col justify-between overflow-hidden bg-slate-900 p-14 text-white md:flex"
+        style={{ backgroundImage: 'url(/back-learning.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+      >
         <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-rose-600/90 via-orange-500/70 to-amber-400/60"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-rose-700/95 via-orange-600/80 to-amber-400/65"
+          aria-hidden
+        />
+        {/*
+          El ámbar de la esquina deja pasar las zonas claras de la foto —la
+          mesa de madera, las pantallas— y ahí el texto blanco se queda sin
+          contraste. Este segundo velo asienta el conjunto y el de abajo
+          oscurece justo donde se apoyan el párrafo y la línea de cierre.
+        */}
+        <div className="pointer-events-none absolute inset-0 bg-rose-950/25" aria-hidden />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-rose-950/60 to-transparent"
           aria-hidden
         />
         <div
