@@ -13,8 +13,13 @@
  * base de datos, solo unos trozos huérfanos que el siguiente intento pisa.
  *
  * Lo que se guarda son los archivos tal cual venían, con sus rutas relativas
- * intactas. Esa es la promesa del modo copia fiel: lo que se publica es el
- * original, no una interpretación suya.
+ * intactas. Esa es la promesa: lo que se publica es el original, no una
+ * interpretación suya.
+ *
+ * Vale para cualquier tipo de recurso, no solo para el importado. Un OVA, una
+ * lectura o una presentación pueden llevar adjunta su pieza final —el HTML que
+ * salió de producción, el paquete Rise— y desde ese momento es eso lo que se
+ * entrega, mientras el guion sigue siendo editable al lado.
  */
 import crypto from 'node:crypto'
 import { denied, guard, requireModule } from '../_lib/lb-auth.js'
@@ -56,10 +61,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const check = await guard(req, resource.workspaceId, 'resource.edit', gate.session)
     if (!check.ok) return denied(res, check)
-
-    if (familyOf(resource.kind) !== 'mirror') {
-      return res.status(400).json({ ok: false, error: 'Solo las piezas importadas admiten un paquete original.' })
-    }
 
     const bucket = await workspaceBucket(workspace)
     const folder = resourceFolder(workspace.code, resource.code)
@@ -103,13 +104,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const files = await lbFiles().findMany({ where: { resourceId: resource.id }, select: { id: true, path: true } })
       await bucket.remove(files.map((file: any) => `${folder}/pkg/${file.path}`))
       await lbFiles().deleteMany({ where: { resourceId: resource.id } })
-      const empty: LbMirrorContent = sanitizeMirror({ cover: { title: resource.title } })
       await snapshot(resource.id, resource.content, 'import', check.session.userId, 'Antes de borrar el paquete')
+
+      // En una pieza importada el paquete era el guion, así que hay que dejar
+      // un guion vacío; en los demás tipos el guion no se toca, solo se
+      // desprende la pieza final.
+      if (familyOf(resource.kind) === 'mirror') {
+        const empty: LbMirrorContent = sanitizeMirror({ cover: { title: resource.title } })
+        await lbResources().update({
+          where: { id: resource.id },
+          data: { content: empty as any, assets: {}, importMode: null, importMeta: null },
+        })
+        return res.status(200).json({ ok: true, content: empty, final: null })
+      }
       await lbResources().update({
         where: { id: resource.id },
-        data: { content: empty as any, importMode: null, importMeta: null },
+        data: { assets: {}, importMode: null, importMeta: null },
       })
-      return res.status(200).json({ ok: true, content: empty })
+      return res.status(200).json({ ok: true, content: null, final: null })
     }
 
     if (op !== 'ingest') return res.status(400).json({ ok: false, error: `Operación desconocida: ${op}` })

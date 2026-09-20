@@ -15,7 +15,13 @@
  * Lo importa la UI y también el API, así que no puede depender de React.
  */
 import type { LbCover } from './blocks.js'
-import { coverAnchors, ident, pick, sanitizeCover, str, type LbAnchorTarget, type LbIssue } from './common.js'
+import { coverAnchors, pick, sanitizeCover, str, type LbAnchorTarget, type LbIssue } from './common.js'
+import { packageEditCount, safePath, sanitizePackage, type LbPackage, type LbPackagePage } from './final.js'
+
+// La ruta y las páginas son las mismas que las de cualquier pieza final: el
+// modo copia fiel no es más que un recurso cuyo guion ES su paquete.
+export { safePath }
+export type LbMirrorPage = LbPackagePage
 
 export const LB_MIRROR_ORIGINS = ['SCORM', 'HTML', 'ZIP'] as const
 export type LbMirrorOrigin = (typeof LB_MIRROR_ORIGINS)[number]
@@ -26,16 +32,7 @@ export const LB_MIRROR_ORIGIN_LABEL: Record<LbMirrorOrigin, string> = {
   ZIP: 'Sitio comprimido',
 }
 
-export type LbMirrorPage = {
-  id: string
-  /** Ruta dentro del paquete: index.html, res/tema2.html… */
-  path: string
-  title: string
-  /** Cuántos nodos de texto encontró el importador: el tope de la numeración. */
-  slots?: number
-}
-
-export type LbMirrorContent = {
+export type LbMirrorContent = LbPackage & {
   cover: LbCover
   origin: {
     kind: LbMirrorOrigin
@@ -45,71 +42,13 @@ export type LbMirrorContent = {
     manifestTitle?: string
     scormVersion?: string
   }
-  /** Página por la que se entra. */
-  entry: string
-  pages: LbMirrorPage[]
-  /**
-   * Ediciones por página: `edits[ruta][índice de nodo] = texto nuevo`. Lo que
-   * no esté aquí se sirve exactamente como llegó.
-   */
-  edits: Record<string, Record<string, string>>
 }
 
 // ── Saneamiento ──────────────────────────────────────────────────────────────
 
-const MAX_PAGES = 300
-const MAX_EDITS_PER_PAGE = 2000
-
-/** Ruta dentro del paquete: relativa, sin subir de directorio ni salir a la red. */
-export function safePath(value: unknown): string {
-  const raw = str(value, 400).trim().replace(/\\/g, '/').replace(/^\/+/, '')
-  if (!raw || raw.includes('..') || /^[a-z]+:/i.test(raw)) return ''
-  return raw
-}
-
-function sanitizePage(value: unknown): LbMirrorPage | null {
-  const raw = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
-  const path = safePath(raw.path)
-  if (!path) return null
-  const page: LbMirrorPage = {
-    id: ident(raw.id, 'pg'),
-    path,
-    title: str(raw.title, 240) || path,
-  }
-  if (raw.slots !== undefined) {
-    const slots = Number(raw.slots)
-    if (Number.isFinite(slots) && slots >= 0) page.slots = Math.min(MAX_EDITS_PER_PAGE, Math.round(slots))
-  }
-  return page
-}
-
 export function sanitizeMirror(value: unknown): LbMirrorContent {
   const raw = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>
   const rawOrigin = (raw.origin && typeof raw.origin === 'object' ? raw.origin : {}) as Record<string, unknown>
-
-  const pages: LbMirrorPage[] = []
-  for (const candidate of Array.isArray(raw.pages) ? (raw.pages as unknown[]).slice(0, MAX_PAGES) : []) {
-    const page = sanitizePage(candidate)
-    if (page) pages.push(page)
-  }
-
-  const known = new Set(pages.map((page) => page.path))
-  const edits: Record<string, Record<string, string>> = {}
-  const rawEdits = (raw.edits && typeof raw.edits === 'object' ? raw.edits : {}) as Record<string, unknown>
-  for (const [rawKey, rawValue] of Object.entries(rawEdits)) {
-    const path = safePath(rawKey)
-    // Una edición sobre una página que ya no está en el paquete no se sirve
-    // nunca: se descarta para que el guion no acumule restos invisibles.
-    if (!path || !known.has(path) || !rawValue || typeof rawValue !== 'object') continue
-    const page: Record<string, string> = {}
-    for (const [slot, text] of Object.entries(rawValue as Record<string, unknown>).slice(0, MAX_EDITS_PER_PAGE)) {
-      if (!/^\d{1,5}$/.test(slot)) continue
-      page[slot] = str(text, 8000)
-    }
-    if (Object.keys(page).length) edits[path] = page
-  }
-
-  const entry = safePath(raw.entry) || pages[0]?.path || 'index.html'
 
   const origin: LbMirrorContent['origin'] = {
     kind: pick(rawOrigin.kind, LB_MIRROR_ORIGINS, 'HTML'),
@@ -119,7 +58,7 @@ export function sanitizeMirror(value: unknown): LbMirrorContent {
   const manifestTitle = str(rawOrigin.manifestTitle, 300); if (manifestTitle) origin.manifestTitle = manifestTitle
   const scormVersion = str(rawOrigin.scormVersion, 40); if (scormVersion) origin.scormVersion = scormVersion
 
-  return { cover: sanitizeCover(raw.cover), origin, entry, pages, edits }
+  return { ...sanitizePackage(raw), cover: sanitizeCover(raw.cover), origin }
 }
 
 export function scaffoldMirror(title: string): LbMirrorContent {
@@ -160,7 +99,7 @@ export function validateMirror(content: LbMirrorContent): LbIssue[] {
 // ── Utilidades ───────────────────────────────────────────────────────────────
 
 export function mirrorEditCount(content: LbMirrorContent): number {
-  return Object.values(content.edits).reduce((total, page) => total + Object.keys(page).length, 0)
+  return packageEditCount(content)
 }
 
 export function mirrorAnchorTargets(content: LbMirrorContent): LbAnchorTarget[] {

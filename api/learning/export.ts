@@ -16,8 +16,7 @@ import { renderResourceHtml } from '../_lib/lb-render-any.js'
 import { buildScormPackage, safeFileName } from '../_lib/lb-scorm.js'
 import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
 import { lbFiles, loadResource } from '../_lib/lb-store.js'
-import { familyOf, validateResourceContent } from '../../src/learning/lib/content.js'
-import type { LbMirrorContent } from '../../src/learning/lib/mirror.js'
+import { deliverablePackage, deliveryIssues } from '../../src/learning/lib/content.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -40,12 +39,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const loaded = await loadResource(id)
     if (!loaded) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
-    const { resource, workspace, directives, content } = loaded
+    const { resource, workspace, directives, content, final } = loaded
 
     const check = await guard(req, resource.workspaceId, 'resource.export', gate.session)
     if (!check.ok) return denied(res, check)
 
-    const errors = validateResourceContent(resource.kind, content, directives).filter((issue) => issue.level === 'error')
+    const errors = deliveryIssues(resource.kind, content, final, directives).filter((issue) => issue.level === 'error')
     if (errors.length) {
       return res.status(400).json({
         ok: false,
@@ -71,13 +70,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       )
     }
 
-    // Una copia fiel se entrega como el paquete que entró, no como un solo
+    // Lo producido se entrega como el paquete que es, no como un solo
     // archivo: sus estilos, imágenes y scripts son parte de la pieza.
-    if (familyOf(resource.kind) === 'mirror' && (format === 'html' || format === 'scorm')) {
-      const mirror = content as LbMirrorContent
-      if (!mirror.pages.length) {
-        return res.status(400).json({ ok: false, error: 'Esta pieza todavía no tiene paquete que descargar.' })
-      }
+    const pkg = deliverablePackage(resource.kind, content, final)
+    if (pkg && (format === 'html' || format === 'scorm')) {
       const files = await lbFiles().findMany({
         where: { resourceId: resource.id },
         orderBy: { path: 'asc' },
@@ -85,12 +81,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
       const bucket = await workspaceBucket(workspace)
       const { buffer, fileName } = await buildMirrorPackage({
-        content: mirror,
+        pkg,
         directives,
         bucket,
         folder: resourceFolder(workspace.code, resource.code),
         files,
-        title: mirror.cover.title || resource.title,
+        title: content.cover?.title || resource.title,
         publicId: resource.publicId,
         format,
       })

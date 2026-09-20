@@ -4,6 +4,7 @@ import type { LbResourceContent } from './content.js'
 import type { LbDirectives } from './directives.js'
 import type { LbContent } from './blocks.js'
 import type { LbProvider, LbProviderSpec, LbProviderStatus } from './integrations.js'
+import type { LbFinal } from './final.js'
 import type { LbMirrorContent } from './mirror.js'
 import type { LbPodcastContent } from './podcast.js'
 import type { LbCapability, LbRole } from './roles.js'
@@ -62,6 +63,9 @@ export type ResourceRow = {
   shareMode: LbShareMode
   embedEnabled: boolean
   importMode?: string | null
+  /** PACKAGE | MEDIA | null — qué se entrega además del guion. */
+  finalKind?: 'PACKAGE' | 'MEDIA' | null
+  finalFiles?: number
   views: number
   lessonCount: number
   blockCount: number
@@ -75,7 +79,12 @@ export type ResourceRow = {
   openComments?: number
 }
 
-export type ResourceDetail = ResourceRow & { content: LbResourceContent; createdAt: string }
+export type ResourceDetail = ResourceRow & {
+  content: LbResourceContent
+  /** La pieza tal como se entregó, cuando el recurso ya se produjo. */
+  final: LbFinal | null
+  createdAt: string
+}
 
 export type SourceRow = {
   id: string
@@ -248,12 +257,14 @@ export const learningApi = {
       post('/api/learning/import', { op: 'begin', resourceId, bytes }),
     part: (resourceId: string, uploadId: string, index: number, data: string) =>
       post('/api/learning/import', { op: 'part', resourceId, uploadId, index, data }),
+    /** Devuelve el guion cuando el recurso es una pieza importada, y si no la pieza final. */
     ingest: (resourceId: string, uploadId: string, parts: number, fileName: string): Promise<{
-      content: LbMirrorContent
+      content: LbMirrorContent | null
+      final: LbFinal | null
       files: number
       bytes: number
     }> => post('/api/learning/import', { op: 'ingest', resourceId, uploadId, parts, fileName }),
-    clear: (resourceId: string): Promise<{ content: LbMirrorContent }> =>
+    clear: (resourceId: string): Promise<{ content: LbMirrorContent | null; final: LbFinal | null }> =>
       post('/api/learning/import', { op: 'clear', resourceId }),
   },
   previewUrl: (resourceId: string) => `/api/learning/view?preview=${encodeURIComponent(resourceId)}`,

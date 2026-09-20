@@ -19,6 +19,7 @@ import {
 import { anchorTargets } from './comments.js'
 import type { LbAnchorTarget, LbIssue } from './common.js'
 import type { LbDirectives } from './directives.js'
+import type { LbFinal, LbPackage } from './final.js'
 import {
   interactiveAnchorTargets, sanitizeInteractive, scaffoldInteractive, validateInteractive,
   type LbInteractiveContent,
@@ -237,4 +238,64 @@ export function screenTitles(kind: string, content: unknown): string[] {
     case 'mirror': return named(list(raw.pages), 'Página')
     default: return named(list(raw.lessons), 'Lección')
   }
+}
+
+/**
+ * El paquete que hay que servir para que el recurso se vea **igual que el
+ * original**, o null si todavía no hay ninguno y toca renderizar el guion.
+ *
+ * Una pieza importada lleva su paquete en el propio guion —es todo lo que
+ * tiene—; cualquier otro tipo lo lleva adjunto como pieza final. Distinguirlo
+ * es cosa de esta función y de nadie más: el visor, la descarga y el editor
+ * preguntan aquí y no vuelven a razonar sobre dónde está guardado.
+ */
+export function deliverablePackage(
+  kind: string,
+  content: LbResourceContent,
+  final: LbFinal | null
+): LbPackage | null {
+  if (familyOf(kind) === 'mirror') {
+    const mirror = content as LbMirrorContent
+    return mirror.pages?.length ? mirror : null
+  }
+  return final?.kind === 'PACKAGE' && final.pages.length ? final : null
+}
+
+/** ¿Se entrega este recurso tal cual salió de producción? */
+export function servesOriginal(kind: string, content: LbResourceContent, final: LbFinal | null): boolean {
+  return deliverablePackage(kind, content, final) !== null
+}
+
+/**
+ * Lo que impide **entregar** el recurso, que no siempre es lo mismo que lo
+ * que la revisión le reprocha al guion.
+ *
+ * Cuando el recurso entrega su pieza original, el guion deja de ser lo que se
+ * publica: pasa a ser la memoria de cómo se construyó. Seguir bloqueando la
+ * descarga porque a ese guion le falta la presentación de la portada sería
+ * impedir entregar un archivo que ya está terminado y aprobado. Lo que sí
+ * impide entregarlo es que su paquete esté roto.
+ *
+ * La revisión completa sigue viéndose en su pestaña: el guion incompleto es
+ * una deuda real, solo que no es una deuda que justifique parar la entrega.
+ */
+export function deliveryIssues(
+  kind: string,
+  content: LbResourceContent,
+  final: LbFinal | null,
+  directives: LbDirectives
+): LbIssue[] {
+  if (final?.kind === 'MEDIA') {
+    return final.media?.url ? [] : [{ level: 'error', message: 'La pieza final no tiene archivo.' }]
+  }
+
+  const pkg = deliverablePackage(kind, content, final)
+  if (!pkg) return validateResourceContent(kind, content, directives)
+
+  const issues: LbIssue[] = []
+  if (!pkg.pages.length) issues.push({ level: 'error', message: 'El paquete no tiene páginas.' })
+  else if (!pkg.pages.some((page) => page.path === pkg.entry)) {
+    issues.push({ level: 'error', message: 'La página de entrada no está entre las del paquete.' })
+  }
+  return issues
 }

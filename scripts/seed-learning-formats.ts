@@ -3,11 +3,11 @@
  *
  *   npx tsx scripts/seed-learning-formats.ts
  *
- * Los tres salen del mismo curso —Educación y Neurociencia, de La Salle— y de
- * sus documentos reales de trabajo:
+ * Los tres salen de cursos reales de La Salle y de sus documentos de trabajo:
  *
- *   VIDEO   · UNISALLE-VID-004 ← guion de Etapa 3 `EN_RED1_VID.docx`, con sus
- *             cuatro escenas, sus tiempos y su locución literal.
+ *   VIDEO   · UNISALLE-VID-011 ← guion de Etapa 3 `MD_RED1_VID.docx`, con sus
+ *             seis escenas, sus tiempos y su locución literal. Es el que
+ *             conserva su pieza final: el MP4 que se entregó.
  *   ROUTE   · la ruta del curso ← esquema instruccional de Etapa 1, con sus
  *             tres unidades, sus entregas del portafolio y los códigos de los
  *             recursos que ya existen en la metabiblioteca.
@@ -46,67 +46,86 @@ if (!workspace) {
 const directives = sanitizeDirectives(workspace.directives)
 const owner = await (prisma as any).adminUser.findFirst({ where: { role: 'SUPERADMIN' }, select: { id: true } })
 
-// ── VIDEO · el guion de Etapa 3, escena por escena ──────────────────────────
+// ── VIDEO · el guion de Etapa 3, escena por escena ─────────────────────────
 
 const VIDEO = {
   cover: {
-    kicker: 'Educación y Neurociencia · RED C-01',
+    kicker: 'Misterio de Dios · RED C-01',
     title: 'Video de presentación del curso',
-    subtitle: 'Pieza única de apertura y cierre · voz en off y motion graphics, sin presentador',
+    subtitle: 'Voz en off y motion graphics sobre el sistema visual del vitral',
     summary:
-      'Presenta el espacio académico en menos de noventa segundos: anticipa las tres preguntas que estructuran el curso y el método del portafolio pedagógico digital, para que el estudiante llegue a la Unidad 1 sabiendo qué va a construir y cómo se evalúa.',
+      'Un minuto y veintidós segundos para plantear la pregunta que abre el espacio académico, nombrar sus tres unidades y decir cómo se trabaja: ocho semanas y cinco encuentros.',
     outcomes: [
-      'Reconocer las tres preguntas que orientan el curso, una por unidad.',
-      'Identificar el portafolio pedagógico digital como método de evaluación, en cuatro entregas del veinte por ciento.',
+      'Reconocer la pregunta que estructura el espacio académico.',
+      'Identificar las tres unidades y el ritmo de trabajo del curso.',
     ],
   },
   shots: [
     {
       id: newLbId('p'),
-      title: 'Carátula',
+      title: 'La pregunta',
       kind: 'title' as const,
+      seconds: 13,
+      visual:
+        'Cielo estrellado y horizonte abierto, en plano lento. Sobre la imagen entra el haz de luz amarillo en diagonal, que es el gesto del sistema visual, y con él el título del espacio académico.',
+      onScreen: 'ESPACIO ACADÉMICO · MISTERIO DE DIOS',
+      narration:
+        'Hay preguntas que no se responden de inmediato, pero cambian la manera de ver la vida. ¿Quién es realmente Dios?',
+      notes: 'Nada más en pantalla: sin dependencia, sin autor y sin palabra clave.',
+    },
+    {
+      id: newLbId('p'),
+      title: 'Misterio, no problema',
+      kind: 'animation' as const,
+      seconds: 18,
+      visual:
+        'Los plomos de un vitral se trazan uno a uno sobre el fondo oscuro; al nombrarse «contemplar», la luz entra por detrás y enciende los vidrios. La composición no se cierra: queda un panel abierto.',
+      onScreen: 'Misterio, no problema · dar razón al creyente y al que no cree',
+      narration:
+        'Este espacio te pide contemplar un misterio, y dar razón de él: al creyente y al que no cree.',
+      notes: '«Misterio» compuesto en amarillo institucional; la segunda línea en serifa, sin atribución.',
+    },
+    {
+      id: newLbId('p'),
+      title: 'Tres ventanas',
+      kind: 'animation' as const,
+      seconds: 22,
+      visual:
+        'Tres ventanas de arco de medio punto se abren en secuencia, cada una con su vidrio. La luz las atraviesa en el orden en que la voz las nombra.',
+      onScreen: 'UNIDAD 1 · Experiencia — UNIDAD 2 · Doctrina e historia — UNIDAD 3 · Educación y contexto',
+      narration:
+        'Lo harás en tres momentos. La experiencia: cómo el ser humano se abre a lo divino. La historia: fe y razón, mística y diálogo. Y el aula: enseñar lo sagrado en la diversidad.',
+    },
+    {
+      id: newLbId('p'),
+      title: 'Cómo se trabaja',
+      kind: 'animation' as const,
       seconds: 12,
       visual:
-        'Noche neuronal #061C26. Una red de nodos tenue; un impulso azul cielo la recorre y, al tocar el nodo central, salta el destello amarillo. Sobre él, la carátula.',
-      onScreen: 'ESPACIO ACADÉMICO · EDUCACIÓN Y NEUROCIENCIA',
+        'El camino con hitos del sistema recorre ocho tramos; cinco marcas de encuentro se encienden en amarillo a su paso.',
+      onScreen: 'Video · Mapa · Foro · Pódcast · Diario — 8 semanas — 5 encuentros',
       narration:
-        '¿Qué pasa en el cerebro cuando alguien aprende? Este curso te invita a mirar el aprendizaje desde adentro: desde las conexiones que lo hacen posible.',
-      notes: 'Sin presentador en cámara. Cierra dos segundos después de terminar la locución.',
+        'Desarrollarás diferentes actividades durante ocho semanas y tendrás cinco encuentros con tu docente.',
     },
     {
       id: newLbId('p'),
-      title: 'Las tres preguntas',
-      kind: 'animation' as const,
-      seconds: 20,
-      visual:
-        'Tres nodos se encienden en secuencia sobre la red, cada uno con el color de su unidad: azul cielo (U1), bosque (U2), lima (U3). Los enlaces entre ellos se dibujan al nombrarlos.',
-      onScreen:
-        'U1 · ¿Cómo ayuda conocer el cerebro? · U2 · ¿Neurociencia y aprendizaje? · U3 · ¿Neurodidáctica y enseñanza?',
-      narration:
-        'Tres preguntas orientan este recorrido: cómo el conocimiento del cerebro contribuye a comprender el aprendizaje, qué relación existe entre neurociencia y aprendizaje, y de qué manera la neurodidáctica puede enriquecer las prácticas de enseñanza.',
-    },
-    {
-      id: newLbId('p'),
-      title: 'El método: un portafolio que se construye',
-      kind: 'animation' as const,
-      seconds: 23,
-      visual:
-        'Cuatro nodos en línea se conectan uno a uno hasta formar una red consolidada en bosque: concepto y reflexión → análisis de caso → diseño de estrategia → versión final. Debajo, la línea de 8 semanas con 5 encuentros.',
-      onScreen: 'TU PORTAFOLIO PEDAGÓGICO · 4 entregas · 20 % cada una · 8 semanas · 5 encuentros · Evaluación final',
-      narration:
-        'A lo largo del curso construirás un portafolio pedagógico digital en cuatro entregas: partirás del concepto, analizarás un caso, diseñarás una estrategia y cerrarás con la versión final. Cada entrega vale el veinte por ciento, y una evaluación final completa la nota.',
-    },
-    {
-      id: newLbId('p'),
-      title: 'Cierre y cortinilla',
+      title: 'La mirada abierta',
       kind: 'outro' as const,
-      seconds: 15,
+      seconds: 11,
       visual:
-        'La red completa del curso, ya consolidada, respira sobre la noche neuronal; el destello amarillo recorre los tres nodos-unidad y se funde con la cortinilla institucional.',
-      onScreen: 'Empieza por la unidad 1 · Tu portafolio te espera',
+        'El vitral de la escena 2 vuelve completo salvo por el panel que quedó abierto, y por ahí sigue entrando la luz. La imagen se aquieta.',
+      onScreen: 'La mirada abierta · Primer encuentro · Semana 1',
       narration:
-        'Cada unidad suma una conexión a tu portafolio. Empecemos: tu primera entrega comienza en la unidad 1.',
-      notes: 'Cortinilla institucional del proyecto, versión sin zoom.',
+        'Al final, tendrás una mirada más abierta para preguntarte por lo divino, por lo humano y por las formas en que esas preguntas atraviesan la vida. Nos vemos en el primer encuentro.',
+    },
+    {
+      id: newLbId('p'),
+      title: 'Cortinilla de cierre',
+      kind: 'outro' as const,
+      seconds: 6,
+      visual:
+        'Cortinilla estándar de la librería del proyecto con el logotipo institucional animado, empalmada con crossfade de 0,6 s.',
+      notes: 'Sin locución. La música de fondo la cubre y cierra con desvanecimiento.',
     },
   ],
 }
@@ -351,10 +370,10 @@ async function upsert(kind: string, title: string, extra: Record<string, unknown
   return { resource, content: clean, issues }
 }
 
-const video = await upsert('VIDEO', 'Video de presentación · Educación y Neurociencia', {
-  course: 'Educación y Neurociencia',
+const video = await upsert('VIDEO', 'Video de presentación · Misterio de Dios', {
+  course: 'Misterio de Dios',
   unit: 'Curso',
-  subtitle: 'RED C-01 · pieza única de apertura y cierre',
+  subtitle: 'RED C-01 · voz en off y motion graphics',
   tags: ['video', 'presentación', 'C-01'],
 }, VIDEO)
 

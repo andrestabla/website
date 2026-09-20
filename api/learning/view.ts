@@ -11,47 +11,16 @@
  * descarga HTML y el paquete SCORM salgan del mismo motor: lo que el diseñador
  * revisa es exactamente lo que recibe el estudiante.
  */
-import crypto from 'node:crypto'
 import { guard, lbSessionState } from '../_lib/lb-auth.js'
+import { accessCookie, hasAccess } from '../_lib/lb-access.js'
 import { injectMirrorLayer } from '../_lib/lb-mirror-html.js'
 import { renderResourceHtml } from '../_lib/lb-render-any.js'
 import { lbFiles, lbResources, loadResource, loadResourceByPublicId } from '../_lib/lb-store.js'
-import { familyOf } from '../../src/learning/lib/content.js'
-import { safePath, type LbMirrorContent } from '../../src/learning/lib/mirror.js'
+import { deliverablePackage } from '../../src/learning/lib/content.js'
+import { pageAt, type LbPackage } from '../../src/learning/lib/final.js'
 
 type VercelRequest = any
 type VercelResponse = any
-
-/** 12 horas: suficiente para una sesión de estudio sin volver a pedir el código. */
-const ACCESS_TTL_SECONDS = 60 * 60 * 12
-
-function secret(): string {
-  const configured = process.env.ADMIN_SESSION_SECRET
-  if (configured && configured.trim()) return configured
-  if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV) {
-    throw new Error('Missing ADMIN_SESSION_SECRET')
-  }
-  return 'algoritmot-admin-session-dev-secret'
-}
-
-/** Prueba de que este visitante ya acertó el código de este recurso. */
-function accessToken(publicId: string, code: string): string {
-  return crypto.createHmac('sha256', secret()).update(`lb-access:${publicId}:${code}`).digest('base64url')
-}
-
-function cookieName(publicId: string): string {
-  return `lb_a_${publicId.replace(/[^A-Za-z0-9]/g, '')}`
-}
-
-function readCookie(req: VercelRequest, name: string): string {
-  const raw = req.headers?.cookie
-  if (!raw || typeof raw !== 'string') return ''
-  for (const part of raw.split(';')) {
-    const [key, ...rest] = part.trim().split('=')
-    if (key === name) return decodeURIComponent(rest.join('='))
-  }
-  return ''
-}
 
 /** El código puede llegar por formulario (POST) o en el cuerpo JSON. */
 function readSubmittedCode(req: VercelRequest): string {
@@ -102,24 +71,27 @@ function codeForm(publicId: string, error: string, res: VercelResponse) {
 
 
 /**
- * Sirve una página de una pieza importada: el HTML original, tal cual salió
- * del almacenamiento, con la capa de ediciones añadida en la cabecera.
+ * Sirve una página del paquete de un recurso: el HTML tal cual salió de
+ * producción, con la capa de ediciones añadida en la cabecera. Da igual si el
+ * paquete es el guion de una pieza importada o la pieza final adjunta a un
+ * OVA, una lectura o una presentación: lo que se entrega es el original.
  *
  * Solo se sirven rutas que estén registradas como archivos de ESTE recurso.
  * Es lo que impide que el parámetro `path` se convierta en una forma de pedirle
  * al servidor que descargue cualquier cosa.
  */
-async function serveMirror(options: {
+async function servePackage(options: {
   res: VercelResponse
   resourceId: string
-  content: LbMirrorContent
+  /** Los archivos del paquete se sirven bajo /ova/:publicId/a/… */
+  publicId: string
+  pkg: LbPackage
   requested: string
   viewBase: string
   editable: boolean
 }): Promise<unknown> {
-  const { res, resourceId, content, requested, viewBase, editable } = options
-  const wanted = safePath(requested) || content.entry
-  const page = content.pages.find((row) => row.path === wanted)
+  const { res, resourceId, publicId, pkg, requested, viewBase, editable } = options
+  const page = pageAt(pkg, requested)
   if (!page) return shell('Página no encontrada', 'Esa página no está en el paquete.', 404, res)
 
   const file = await lbFiles().findUnique({ where: { resourceId_path: { resourceId, path: page.path } } })
@@ -133,12 +105,14 @@ async function serveMirror(options: {
   }
   const original = await response.text()
 
+  // Los archivos del paquete se piden al propio sitio, no al almacenamiento.
+  // Si se pidieran allí, el navegador bloquearía las tipografías por CORS y la
+  // pieza se pintaría con otra letra: parecida, pero no igual.
+  const packageRoot = `/ova/${encodeURIComponent(publicId)}/a/`
+  const dir = page.path.includes('/') ? `${page.path.slice(0, page.path.lastIndexOf('/'))}/` : ''
   // El <base> es la carpeta de ESTA página, para que sus rutas relativas
   // resuelvan igual que resolvían dentro del paquete original.
-  const pageUrl = new URL(file.url)
-  const baseHref = file.url.slice(0, file.url.length - pageUrl.pathname.split('/').pop()!.length)
-  const depth = page.path.split('/').length - 1
-  const packageRoot = depth ? new URL('../'.repeat(depth), baseHref).href : baseHref
+  const baseHref = `${packageRoot}${dir}`
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
   res.setHeader('Cache-Control', 'no-store')
@@ -146,7 +120,7 @@ async function serveMirror(options: {
     injectMirrorLayer(original, {
       baseHref,
       packageRoot,
-      edits: content.edits[page.path] || {},
+      edits: pkg.edits[page.path] || {},
       viewBase,
       editable,
     })
@@ -178,21 +152,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       res.setHeader('X-Frame-Options', 'SAMEORIGIN')
 
-      // Una copia fiel no se rehace: se sirve su propio HTML. Dentro del
+      // Lo producido no se rehace: se sirve su propio HTML. Dentro del
       // builder, además, con la capa que lo hace editable.
-      if (familyOf(loaded.resource.kind) === 'mirror') {
-        const mirror = loaded.content as LbMirrorContent
-        if (mirror.pages.length) {
-          const base = `/api/learning/view?preview=${encodeURIComponent(previewId)}${req.query?.edit ? '&edit=1' : ''}&path=`
-          return serveMirror({
-            res,
-            resourceId: loaded.resource.id,
-            content: mirror,
-            requested: String(req.query?.path || ''),
-            viewBase: base,
-            editable: !!req.query?.edit && check.role !== 'GUEST' && check.role !== 'AUDITOR',
-          })
-        }
+      const previewPkg = deliverablePackage(loaded.resource.kind, loaded.content, loaded.final)
+      if (previewPkg) {
+        const base = `/api/learning/view?preview=${encodeURIComponent(previewId)}${req.query?.edit ? '&edit=1' : ''}&path=`
+        return servePackage({
+          res,
+          resourceId: loaded.resource.id,
+          publicId: loaded.resource.publicId,
+          pkg: previewPkg,
+          requested: String(req.query?.path || ''),
+          viewBase: base,
+          editable: !!req.query?.edit && check.role !== 'GUEST' && check.role !== 'AUDITOR',
+        })
       }
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
@@ -227,25 +200,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (resource.shareMode === 'CODE') {
-      const expected = resource.shareCode ? accessToken(publicId, resource.shareCode) : ''
-      const granted = !!expected && readCookie(req, cookieName(publicId)) === expected
-
-      if (!granted) {
+      if (!hasAccess(req, publicId, resource.shareCode)) {
         const submitted = req.method === 'POST' ? readSubmittedCode(req) : ''
         if (!submitted) return codeForm(publicId, '', res)
         if (!resource.shareCode || submitted.toUpperCase() !== String(resource.shareCode).toUpperCase()) {
           return codeForm(publicId, 'Ese código no es válido.', res)
         }
-        // Acertó: se recuerda en una cookie firmada para no pedirlo en cada pantalla.
-        const parts = [
-          `${cookieName(publicId)}=${encodeURIComponent(expected)}`,
-          'Path=/',
-          'HttpOnly',
-          'SameSite=Lax',
-          `Max-Age=${ACCESS_TTL_SECONDS}`,
-        ]
-        if (process.env.VERCEL_ENV || process.env.NODE_ENV === 'production') parts.push('Secure')
-        res.setHeader('Set-Cookie', parts.join('; '))
+        // Acertó: se recuerda en una cookie firmada para no pedirlo en cada
+        // pantalla, y con ella se sirven también los archivos del paquete.
+        res.setHeader('Set-Cookie', accessCookie(publicId, resource.shareCode))
       }
     }
 
@@ -254,18 +217,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!resource.embedEnabled) res.setHeader('X-Frame-Options', 'SAMEORIGIN')
 
-    if (familyOf(resource.kind) === 'mirror') {
-      const mirror = content as LbMirrorContent
-      if (mirror.pages.length) {
-        return serveMirror({
-          res,
-          resourceId: resource.id,
-          content: mirror,
-          requested: String(req.query?.path || ''),
-          viewBase: `/ova/${encodeURIComponent(publicId)}?path=`,
-          editable: false,
-        })
-      }
+    const publicPkg = deliverablePackage(resource.kind, content, loaded.final)
+    if (publicPkg) {
+      return servePackage({
+        res,
+        resourceId: resource.id,
+        publicId,
+        pkg: publicPkg,
+        requested: String(req.query?.path || ''),
+        viewBase: `/ova/${encodeURIComponent(publicId)}?path=`,
+        editable: false,
+      })
     }
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8')

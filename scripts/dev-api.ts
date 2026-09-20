@@ -57,8 +57,16 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`)
 
-  // Espejo de la reescritura de vercel.json: el OVA publicado lo sirve el API,
-  // no el SPA. Sin esto, /ova/:publicId caería en el 404 de Vite en local.
+  // Espejo de las reescrituras de vercel.json: el recurso publicado y los
+  // archivos de su paquete los sirve el API, no el SPA. Sin esto caerían en el
+  // 404 de Vite en local. El de los archivos va primero, o se lo comería el
+  // otro patrón.
+  const asset = url.pathname.match(/^\/ova\/([^/]+)\/a\/(.+)$/)
+  if (asset) {
+    url.pathname = '/api/learning/asset'
+    url.searchParams.set('id', decodeURIComponent(asset[1]))
+    url.searchParams.set('path', decodeURIComponent(asset[2]))
+  }
   const ova = url.pathname.match(/^\/ova\/([^/]+)\/?$/)
   if (ova) {
     url.pathname = '/api/learning/view'

@@ -7,8 +7,8 @@
  */
 import crypto from 'node:crypto'
 import { prisma } from './prisma.js'
-import { sanitizeResourceContent, type LbResourceContent } from '../../src/learning/lib/content.js'
-import { contentStats } from '../../src/learning/lib/content.js'
+import { contentStats, sanitizeResourceContent, type LbResourceContent } from '../../src/learning/lib/content.js'
+import { sanitizeFinal, type LbFinal } from '../../src/learning/lib/final.js'
 import { sanitizeDirectives, type LbDirectives } from '../../src/learning/lib/directives.js'
 
 export const lbWorkspaces = () => (prisma as any).lbWorkspace
@@ -65,6 +65,8 @@ export type LoadedResource = {
   workspace: any
   directives: LbDirectives
   content: LbResourceContent
+  /** La pieza final adjunta, cuando el recurso ya se produjo. */
+  final: LbFinal | null
 }
 
 export async function loadResource(id: string): Promise<LoadedResource | null> {
@@ -76,6 +78,7 @@ export async function loadResource(id: string): Promise<LoadedResource | null> {
     workspace: resource.workspace,
     directives,
     content: sanitizeResourceContent(resource.kind, resource.content, directives),
+    final: sanitizeFinal(resource.assets),
   }
 }
 
@@ -88,6 +91,7 @@ export async function loadResourceByPublicId(publicId: string): Promise<LoadedRe
     workspace: resource.workspace,
     directives,
     content: sanitizeResourceContent(resource.kind, resource.content, directives),
+    final: sanitizeFinal(resource.assets),
   }
 }
 
@@ -113,6 +117,7 @@ export async function snapshot(resourceId: string, content: unknown, reason: str
 
 /** Resumen de un recurso para la metabiblioteca. */
 export function summarize(resource: any) {
+  const final = sanitizeFinal(resource.assets)
   // Pantallas y piezas significan cosas distintas según el tipo: lecciones y
   // bloques en un OVA, escenas y puntos activos en una presentación.
   const stats = contentStats(resource.kind, resource.content)
@@ -133,6 +138,9 @@ export function summarize(resource: any) {
     shareMode: resource.shareMode,
     embedEnabled: !!resource.embedEnabled,
     importMode: resource.importMode,
+    /** PACKAGE | MEDIA | null — qué se entrega además del guion. */
+    finalKind: final?.kind || null,
+    finalFiles: final?.origin.files || 0,
     views: resource.views || 0,
     lessonCount: stats.screens,
     blockCount: stats.pieces,

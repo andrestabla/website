@@ -16,7 +16,8 @@ import {
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import type { LbIssue } from './lib/blocks'
-import { aiWritesFor, familyOf, validateResourceContent, type LbResourceContent } from './lib/content'
+import { aiWritesFor, familyOf, servesOriginal, validateResourceContent, type LbResourceContent } from './lib/content'
+import type { LbFinal } from './lib/final'
 import type { LbInteractiveContent } from './lib/interactive'
 import type { LbMirrorContent } from './lib/mirror'
 import type { LbPodcastContent } from './lib/podcast'
@@ -34,6 +35,7 @@ import {
   type ResourceDetail, type SourceRow, type VersionRow,
 } from './lib/api'
 import { GuionEditor } from './editor/GuionEditor'
+import { FinalPanel } from './editor/FinalPanel'
 import { MirrorEditor } from './editor/MirrorEditor'
 import { PodcastEditor } from './editor/PodcastEditor'
 import { RouteEditor } from './editor/RouteEditor'
@@ -42,7 +44,7 @@ import { VideoEditor } from './editor/VideoEditor'
 import { CommentsPanel } from './CommentsPanel'
 import type { CommentRow } from './lib/api'
 
-type Tab = 'guion' | 'ficha' | 'vista' | 'comentarios' | 'revision' | 'entrega'
+type Tab = 'guion' | 'final' | 'ficha' | 'vista' | 'comentarios' | 'revision' | 'entrega'
 type Layout = 'both' | 'chat' | 'panel'
 
 const LAYOUT_KEY = 'learning:layout'
@@ -83,6 +85,7 @@ export function ResourceBuilder() {
   const [directives, setDirectives] = useState<LbDirectives | null>(null)
   const [role, setRole] = useState<LbRole | null>(null)
   const [content, setContent] = useState<LbResourceContent | null>(null)
+  const [final, setFinal] = useState<LbFinal | null>(null)
   const [issues, setIssues] = useState<LbIssue[]>([])
   const [sources, setSources] = useState<SourceRow[]>([])
   const [versions, setVersions] = useState<VersionRow[]>([])
@@ -134,6 +137,7 @@ export function ResourceBuilder() {
       setDirectives(payload.directives)
       setRole(payload.role)
       setContent(payload.resource.content)
+      setFinal(payload.resource.final ?? null)
       setIssues(payload.issues || [])
       setShareCode(payload.shareCode)
       const ready = kindSpec(payload.resource.kind)?.available !== false
@@ -153,6 +157,28 @@ export function ResourceBuilder() {
   useEffect(() => { void load() }, [load])
 
   useEffect(() => { try { localStorage.setItem(LAYOUT_KEY, layout) } catch { /* sin persistencia */ } }, [layout])
+
+  /**
+   * La pieza final se guarda aparte del guion. Son dos cosas distintas —el
+   * original entregado y el texto que lo describe— y mezclarlas haría que
+   * corregir una palabra sobre el HTML reescribiera el guion entero.
+   */
+  const saveFinal = useCallback(
+    async (next: LbFinal | null) => {
+      setFinal(next)
+      setSaving('saving')
+      try {
+        await learningApi.resources.update(resourceId, { final: next })
+        setSaving('saved')
+        setPreviewNonce((value) => value + 1)
+        window.setTimeout(() => setSaving((state) => (state === 'saved' ? 'idle' : state)), 2000)
+      } catch (e: any) {
+        setError(e.message)
+        setSaving('idle')
+      }
+    },
+    [resourceId]
+  )
 
   const save = useCallback(
     async (next: LbResourceContent) => {
@@ -398,6 +424,10 @@ export function ResourceBuilder() {
     : editable
     ? [
         ['guion', 'Guion', FileText],
+        // La pieza importada no tiene pestaña aparte: su guion ya ES el paquete.
+        ...(familyOf(resource.kind) !== 'mirror'
+          ? ([['final', 'Pieza final', Package]] as Array<[Tab, string, any]>)
+          : []),
         ['vista', 'Vista previa', Eye],
         ...(maySeeComments ? ([['comentarios', 'Comentarios', MessageSquare]] as Array<[Tab, string, any]>) : []),
         ['revision', 'Revisión', ShieldCheck],
@@ -428,6 +458,19 @@ export function ResourceBuilder() {
         <span className={`hidden shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold lg:inline-flex ${LB_ROLE_STYLE[role]}`}>
           {LB_ROLE_LABEL[role]}
         </span>
+        {/*
+          Saber qué se está entregando —el original o el guion— cambia lo que
+          significa todo lo demás de esta pantalla, así que va en la cabecera.
+        */}
+        {servesOriginal(resource.kind, content, final) && (
+          <button
+            onClick={() => setTab(familyOf(resource.kind) === 'mirror' ? 'guion' : 'final')}
+            title="Lo que se publica es el archivo tal como salió de producción"
+            className="hidden shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 lg:inline-flex"
+          >
+            <Package size={11} /> Entrega el original
+          </button>
+        )}
         {editable && (
           <span className="hidden shrink-0 text-[11.5px] text-slate-400 md:inline">
             {saving === 'saving' ? 'Guardando…' : saving === 'saved' ? 'Guardado' : `Editado ${timeAgo(resource.updatedAt)}`}
@@ -770,6 +813,15 @@ export function ResourceBuilder() {
                     return <GuionEditor {...shared} content={content as LbContent} onChange={onContentChange} />
                 }
               })()}
+
+              {tab === 'final' && editable && kindReady && familyOf(resource.kind) !== 'mirror' && (
+                <FinalPanel
+                  resourceId={resource.id}
+                  final={final}
+                  kindLabel={spec.label}
+                  onChange={saveFinal}
+                />
+              )}
 
               {tab === 'comentarios' && maySeeComments && (
                 <CommentsPanel

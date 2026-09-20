@@ -17,7 +17,7 @@ import { createZip, type ZipEntry } from './lb-zip.js'
 import { safeFileName, scormIdentifier } from './lb-scorm.js'
 import { escapeHtml } from '../../src/learning/lib/render-ova.js'
 import type { LbBucket } from './lb-storage.js'
-import type { LbMirrorContent } from '../../src/learning/lib/mirror.js'
+import type { LbPackage } from '../../src/learning/lib/final.js'
 import type { LbDirectives } from '../../src/learning/lib/directives.js'
 
 /** Manifiesto mínimo para un paquete que no traía el suyo. */
@@ -46,7 +46,7 @@ ${files.map((file) => `      <file href="${escapeHtml(file)}"/>`).join('\n')}
 }
 
 export async function buildMirrorPackage(options: {
-  content: LbMirrorContent
+  pkg: LbPackage
   directives: LbDirectives
   bucket: LbBucket
   /** Prefijo de las claves del paquete en el almacenamiento. */
@@ -57,7 +57,7 @@ export async function buildMirrorPackage(options: {
   /** scorm añade manifiesto si falta; html entrega el sitio tal cual. */
   format: 'scorm' | 'html'
 }): Promise<{ buffer: Buffer; fileName: string }> {
-  const { content, directives, bucket, folder, files, title, publicId, format } = options
+  const { pkg, directives, bucket, folder, files, title, publicId, format } = options
 
   const entries: ZipEntry[] = []
   let hasManifest = false
@@ -80,7 +80,7 @@ export async function buildMirrorPackage(options: {
       data: injectMirrorLayer(bytes.toString('utf8'), {
         baseHref: './',
         packageRoot: depth ? '../'.repeat(depth) : './',
-        edits: content.edits[file.path] || {},
+        edits: pkg.edits[file.path] || {},
       }),
     })
   }
@@ -91,7 +91,7 @@ export async function buildMirrorPackage(options: {
       data: wrapperManifest({
         identifier: scormIdentifier(directives.exports.scormPrefix, title, publicId),
         title,
-        entry: content.entry,
+        entry: pkg.entry,
         files: files.map((file) => file.path),
       }),
     })

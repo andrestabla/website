@@ -16,8 +16,9 @@ import {
 } from '../_lib/lb-store.js'
 import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
 import {
-  sanitizeResourceContent, scaffoldResourceContent, validateResourceContent,
+  deliveryIssues, sanitizeResourceContent, scaffoldResourceContent, validateResourceContent,
 } from '../../src/learning/lib/content.js'
+import { sanitizeFinal } from '../../src/learning/lib/final.js'
 import { sanitizeDirectives } from '../../src/learning/lib/directives.js'
 import { can } from '../../src/learning/lib/roles.js'
 import { resourceCodeFor, takenResourceCodes } from '../_lib/lb-codes.js'
@@ -150,7 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!resourceId) return res.status(400).json({ ok: false, error: 'Falta el recurso' })
     const loaded = await loadResource(resourceId)
     if (!loaded) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
-    const { resource, workspace, directives, content } = loaded
+    const { resource, workspace, directives, content, final } = loaded
 
     const capability =
       op === 'get' ? 'resource.view'
@@ -171,7 +172,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (op === 'get') {
       return res.status(200).json({
         ok: true,
-        resource: { ...summarize(resource), content, createdAt: resource.createdAt },
+        resource: { ...summarize(resource), content, final, createdAt: resource.createdAt },
         workspace: { id: workspace.id, name: workspace.name, slug: workspace.slug, kind: workspace.kind },
         directives,
         role: check.role,
@@ -189,6 +190,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (Array.isArray(body.tags)) data.tags = tags(body.tags)
       if (typeof body.status === 'string' && LB_STATUSES.includes(body.status as never) && body.status !== 'PUBLISHED') {
         data.status = body.status
+      }
+
+      // La pieza final se guarda aparte del guion: editar un texto sobre el
+      // original no toca el guion, y reescribir el guion no toca el original.
+      if (body.final !== undefined) {
+        data.assets = (sanitizeFinal(body.final) ?? {}) as any
       }
 
       let nextContent = content
@@ -213,7 +220,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (op === 'publish') {
-      const issues = validateResourceContent(resource.kind, content, directives)
+      const issues = deliveryIssues(resource.kind, content, final, directives)
       const errors = issues.filter((issue) => issue.level === 'error')
       if (errors.length) {
         return res.status(400).json({ ok: false, error: 'El recurso no cumple las directivas del workspace', issues })

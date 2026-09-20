@@ -40,3 +40,6 @@ next-env.d.ts
 /back__ecosistema.jpg
 /back_project_control.jpg
 .claude/
+
+# Volcado de la poda de la metabiblioteca: histórico local, no del repo.
+.learning-podados-*.json

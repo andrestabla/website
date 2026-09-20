@@ -16,7 +16,12 @@ import { missingCredential, resolveCredential } from './lb-integrations.js'
 
 export type LbBucket = {
   source: 'own' | 'inherited'
-  put: (key: string, body: Buffer, contentType: string) => Promise<{ url: string; key: string; bytes: number }>
+  /**
+   * `maxBytes` solo lo levanta quien sube desde un script: dentro de una
+   * función serverless el tope existe para no agotar su memoria, pero un MP4
+   * de producción pesa lo que pesa y hay que poder subirlo.
+   */
+  put: (key: string, body: Buffer, contentType: string, maxBytes?: number) => Promise<{ url: string; key: string; bytes: number }>
   get: (key: string) => Promise<Buffer>
   remove: (keys: string[]) => Promise<number>
 }
@@ -38,11 +43,11 @@ export async function workspaceBucket(workspace: { integrations?: unknown }): Pr
 
   return {
     source: credential.source,
-    async put(key, body, contentType) {
+    async put(key, body, contentType, maxBytes = LB_MAX_FILE_BYTES) {
       const clean = key.replace(/^\/+/, '')
       if (!clean || clean.includes('..')) throw new Error(`Ruta no válida: ${key}`)
-      if (body.length > LB_MAX_FILE_BYTES) {
-        throw new Error(`«${clean}» pesa más de ${Math.round(LB_MAX_FILE_BYTES / 1024 / 1024)} MB.`)
+      if (body.length > maxBytes) {
+        throw new Error(`«${clean}» pesa más de ${Math.round(maxBytes / 1024 / 1024)} MB.`)
       }
       const response = await aws.fetch(new URL(`${bucketUrl}/${clean}`), {
         method: 'PUT',

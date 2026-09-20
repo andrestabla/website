@@ -15,7 +15,9 @@ import { contentTypeFor, isHtmlPath } from './lb-mirror-html.js'
 import { lbFiles, lbResources, snapshot } from './lb-store.js'
 import { resourceFolder, type LbBucket } from './lb-storage.js'
 import { LbZipError, stripCommonRoot, unzip, type LbZipEntry } from './lb-unzip.js'
-import { sanitizeMirror, type LbMirrorContent, type LbMirrorPage } from '../../src/learning/lib/mirror.js'
+import { sanitizeMirror, type LbMirrorContent } from '../../src/learning/lib/mirror.js'
+import { sanitizeFinal, type LbFinal, type LbPackagePage } from '../../src/learning/lib/final.js'
+import { familyOf } from '../../src/learning/lib/content.js'
 import { newLbId } from '../../src/learning/lib/common.js'
 
 export { LbZipError }
@@ -71,7 +73,7 @@ function htmlTitle(bytes: Buffer): string {
 /** Por dónde se entra cuando no hay manifiesto: la convención de siempre. */
 function guessEntry(paths: string[]): string {
   const html = paths.filter(isHtmlPath)
-  const preferred = ['index.html', 'index.htm', 'story.html', 'scormdriver/indexAPI.html', 'default.html']
+  const preferred = ['index.html', 'index.htm', 'story.html', 'default.html']
   for (const candidate of preferred) {
     const found = html.find((path) => path.toLowerCase() === candidate.toLowerCase())
     if (found) return found
@@ -80,15 +82,44 @@ function guessEntry(paths: string[]): string {
   return [...html].sort((a, b) => a.split('/').length - b.split('/').length || a.localeCompare(b))[0] || ''
 }
 
+/**
+ * La página por la que se entra **al verla fuera de un LMS**.
+ *
+ * El manifiesto de un SCORM no apunta al contenido sino a su envoltorio: el
+ * de Rise entra por `scormdriver/indexAPI.html`, que lo primero que hace es
+ * buscar la API del LMS. Servido en un enlace público eso se queda en
+ * «Loading course» para siempre. El contenido real está al lado, y es lo que
+ * hay que abrir.
+ *
+ * El manifiesto no se toca: la exportación sigue entregando el paquete tal
+ * cual, con su envoltorio, para que en el campus funcione como siempre.
+ */
+const DRIVERS = [/^scormdriver\//i, /indexapi\.html$/i, /^goodbye\.html$/i, /^blank\.html$/i]
+
+function standaloneEntry(manifestEntry: string, paths: string[]): string {
+  const known = new Set(paths)
+  const usable = manifestEntry && known.has(manifestEntry) ? manifestEntry : ''
+  if (usable && !DRIVERS.some((driver) => driver.test(usable))) return usable
+
+  // Envoltorio: se busca el contenido que empaquetan las herramientas al uso.
+  const inside = ['scormcontent/index.html', 'content/index.html', 'res/index.html', 'story_html5.html']
+  for (const candidate of inside) {
+    const found = paths.find((path) => path.toLowerCase() === candidate)
+    if (found) return found
+  }
+  return guessEntry(paths.filter((path) => !DRIVERS.some((driver) => driver.test(path)))) || usable
+}
+
 async function storePackage(
   bucket: LbBucket,
   folder: string,
-  entries: LbZipEntry[]
+  entries: LbZipEntry[],
+  maxFileBytes?: number
 ): Promise<Array<{ path: string; url: string; contentType: string; bytes: number }>> {
   const stored: Array<{ path: string; url: string; contentType: string; bytes: number }> = []
   for (const entry of entries) {
     const contentType = contentTypeFor(entry.path)
-    const result = await bucket.put(`${folder}/pkg/${entry.path}`, entry.bytes, contentType)
+    const result = await bucket.put(`${folder}/pkg/${entry.path}`, entry.bytes, contentType, maxFileBytes)
     stored.push({ path: entry.path, url: result.url, contentType, bytes: result.bytes })
   }
   return stored
@@ -97,7 +128,10 @@ async function storePackage(
 
 /** Lo que el paquete resultó ser, para contarlo en la respuesta. */
 export type IngestResult = {
-  content: LbMirrorContent
+  /** Solo cuando el recurso es una pieza importada: su guion es el paquete. */
+  content: LbMirrorContent | null
+  /** La pieza final adjunta, para los demás tipos. */
+  final: LbFinal | null
   files: number
   bytes: number
   kind: 'SCORM' | 'ZIP' | 'HTML'
@@ -111,12 +145,18 @@ export type IngestResult = {
 export async function ingestPackage(options: {
   archive: Buffer
   fileName: string
-  resource: { id: string; title: string; code: string; content: unknown }
+  resource: { id: string; title: string; code: string; kind: string; content: unknown }
   workspace: { code: string }
   bucket: LbBucket
   userId?: string
+  /**
+   * Tope por archivo dentro del paquete. Un Rise real trae videos de más de
+   * 25 MB incrustados, así que quien sube desde un script lo levanta; dentro
+   * de la función se deja el de siempre, que protege su memoria.
+   */
+  maxFileBytes?: number
 }): Promise<IngestResult> {
-  const { archive, fileName, resource, workspace, bucket, userId } = options
+  const { archive, fileName, resource, workspace, bucket, userId, maxFileBytes } = options
   const folder = resourceFolder(workspace.code, resource.code)
 
   const isZip = archive.length > 4 && archive.readUInt32LE(0) === 0x04034b50
@@ -138,7 +178,7 @@ export async function ingestPackage(options: {
     ? readManifest(manifestEntry.bytes.toString('utf8'))
     : { entry: '', title: '', version: '', titles: new Map<string, string>() }
 
-  const entry = (manifest.entry && paths.includes(manifest.entry) ? manifest.entry : '') || guessEntry(paths)
+  const entry = standaloneEntry(manifest.entry, paths)
   if (!entry) throw new LbZipError('No se encontró la página de entrada del paquete.')
 
   const previous = await lbFiles().findMany({ where: { resourceId: resource.id }, select: { path: true } })
@@ -147,7 +187,7 @@ export async function ingestPackage(options: {
     await lbFiles().deleteMany({ where: { resourceId: resource.id } })
   }
 
-  const stored = await storePackage(bucket, folder, entries)
+  const stored = await storePackage(bucket, folder, entries, maxFileBytes)
   await lbFiles().createMany({
     data: stored.map((file) => ({
       resourceId: resource.id,
@@ -158,7 +198,7 @@ export async function ingestPackage(options: {
     })),
   })
 
-  const pages: LbMirrorPage[] = entries
+  const pages: LbPackagePage[] = entries
     .filter((candidate) => isHtmlPath(candidate.path))
     .map((candidate) => ({
       id: newLbId('pg'),
@@ -169,42 +209,46 @@ export async function ingestPackage(options: {
     .sort((a, b) => (a.path === entry ? -1 : b.path === entry ? 1 : a.path.localeCompare(b.path)))
 
   const kind = isZip ? (manifestEntry ? 'SCORM' : 'ZIP') : 'HTML'
-  const previousContent = resource.content as any
-  const content = sanitizeMirror({
-    // Se conserva lo que ya hubiera escrito el equipo en la portada.
-    cover: {
-      ...(previousContent && typeof previousContent === 'object' ? previousContent.cover : {}),
-      title: previousContent?.cover?.title || manifest.title || htmlTitle(entries[0].bytes) || resource.title,
-    },
-    origin: {
-      kind,
-      fileName,
-      importedAt: new Date().toISOString(),
-      manifestTitle: manifest.title,
-      scormVersion: manifest.version,
-    },
-    entry,
-    pages,
-    // Las ediciones no sobreviven a un paquete nuevo: sus números apuntaban a
-    // los nodos del anterior y caerían sobre textos distintos.
-    edits: {},
-  })
+  const origin = {
+    fileName,
+    importedAt: new Date().toISOString(),
+    bytes: archive.length,
+    files: stored.length,
+    manifestTitle: manifest.title,
+    scormVersion: manifest.version,
+  }
+  const importMeta = { fileName, bytes: archive.length, files: stored.length, entry, scormVersion: manifest.version || null }
 
-  await snapshot(resource.id, previousContent, 'import', userId, `Antes de importar «${fileName}»`)
+  await snapshot(resource.id, resource.content, 'import', userId, `Antes de importar «${fileName}»`)
+
+  // Una pieza importada es su paquete: va en el guion. En cualquier otro tipo
+  // el guion sigue siendo el guion y el paquete se adjunta como pieza final,
+  // de modo que se puede seguir editando el uno sin perder la otra.
+  if (familyOf(resource.kind) === 'mirror') {
+    const previousContent = resource.content as any
+    const content = sanitizeMirror({
+      cover: {
+        ...(previousContent && typeof previousContent === 'object' ? previousContent.cover : {}),
+        title: previousContent?.cover?.title || manifest.title || htmlTitle(entries[0].bytes) || resource.title,
+      },
+      origin: { kind, fileName, importedAt: origin.importedAt, manifestTitle: manifest.title, scormVersion: manifest.version },
+      entry,
+      pages,
+      // Las ediciones no sobreviven a un paquete nuevo: sus números apuntaban
+      // a los nodos del anterior y caerían sobre textos distintos.
+      edits: {},
+    })
+    await lbResources().update({
+      where: { id: resource.id },
+      data: { content: content as any, importMode: 'MIRROR', importMeta: importMeta as any },
+    })
+    return { content, final: null, files: stored.length, bytes: archive.length, kind }
+  }
+
+  const final = sanitizeFinal({ kind: 'PACKAGE', origin, entry, pages, edits: {} })
   await lbResources().update({
     where: { id: resource.id },
-    data: {
-      content: content as any,
-      importMode: 'MIRROR',
-      importMeta: {
-        fileName,
-        bytes: archive.length,
-        files: stored.length,
-        entry,
-        scormVersion: manifest.version || null,
-      } as any,
-    },
+    data: { assets: final as any, importMeta: importMeta as any },
   })
-
-  return { content, files: stored.length, bytes: archive.length, kind }
+  return { content: null, final, files: stored.length, bytes: archive.length, kind }
 }

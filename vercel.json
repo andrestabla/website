@@ -25,6 +25,10 @@
       "destination": "/api/sitemap"
     },
     {
+      "source": "/ova/:publicId/a/:path*",
+      "destination": "/api/learning/asset?id=:publicId&path=:path*"
+    },
+    {
       "source": "/ova/:publicId",
       "destination": "/api/learning/view?id=:publicId"
     },
