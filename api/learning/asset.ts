@@ -22,6 +22,8 @@
  */
 import { hasAccess } from '../_lib/lb-access.js'
 import { guard, lbSessionState } from '../_lib/lb-auth.js'
+import { injectEditsOnly } from '../_lib/lb-mirror-html.js'
+import { RISE_DATA_PATH, encodeRise, parseRise, riseWithEdits } from '../_lib/lb-rise.js'
 import { lbFiles, loadResourceByPublicId } from '../_lib/lb-store.js'
 import { deliverablePackage } from '../../src/learning/lib/content.js'
 import { safePath } from '../../src/learning/lib/final.js'
@@ -98,14 +100,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!file?.url) return res.status(404).send('Ese archivo no está en el paquete')
 
     // Los pesados no pasan por aquí: el navegador los pide al almacenamiento.
-    if (file.bytes > PROXY_LIMIT_BYTES) {
+    // Los datos de un Rise son la excepción: por grandes que sean, hay que
+    // leerlos para meterles las correcciones antes de servirlos.
+    if (file.bytes > PROXY_LIMIT_BYTES && wanted !== RISE_DATA_PATH) {
       res.setHeader('Cache-Control', open ? `public, max-age=60, s-maxage=${EDGE_SECONDS}` : 'private, no-store')
       return res.redirect(302, file.url)
     }
 
     const upstream = await fetch(file.url)
     if (!upstream.ok) return res.status(502).send(`El almacenamiento respondió ${upstream.status}`)
-    const body = Buffer.from(await upstream.arrayBuffer())
+    let body = Buffer.from(await upstream.arrayBuffer())
+
+    // El contenido de un Rise no está en sus archivos HTML sino aquí, así que
+    // aquí es donde tienen que entrar las correcciones. Sin esto, editar una
+    // lección se vería en el editor y no en lo publicado, que es peor que no
+    // poder editar.
+    if (wanted === RISE_DATA_PATH) {
+      const data = parseRise(body.toString('utf8'))
+      if (data && Object.keys(pkg.edits).length) {
+        body = Buffer.from(encodeRise(riseWithEdits(data, pkg.edits, injectEditsOnly)), 'utf8')
+      }
+    }
 
     res.setHeader('Content-Type', file.contentType || 'application/octet-stream')
     res.setHeader('Content-Length', String(body.length))

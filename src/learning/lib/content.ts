@@ -294,8 +294,6 @@ export function deliveryIssues(
 
   const issues: LbIssue[] = []
   if (!pkg.pages.length) issues.push({ level: 'error', message: 'El paquete no tiene páginas.' })
-  else if (!pkg.pages.some((page) => page.path === pkg.entry)) {
-    issues.push({ level: 'error', message: 'La página de entrada no está entre las del paquete.' })
-  }
+  if (!pkg.entry) issues.push({ level: 'error', message: 'El paquete no dice por dónde se abre.' })
   return issues
 }

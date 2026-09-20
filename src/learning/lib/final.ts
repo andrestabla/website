@@ -32,7 +32,13 @@ export type LbPackagePage = {
  * guion ES su paquete— y la pieza final de cualquier otro tipo.
  */
 export type LbPackage = {
+  /**
+   * El archivo que abre la pieza publicada. No tiene por qué ser una de las
+   * páginas: un Rise abre por su reproductor y se edita por lecciones, que
+   * no son archivos.
+   */
   entry: string
+  /** Las unidades editables: páginas del sitio, o lecciones del Rise. */
   pages: LbPackagePage[]
   /** `edits[ruta][índice de nodo] = texto nuevo`. Lo demás se sirve intacto. */
   edits: Record<string, Record<string, string>>
@@ -146,7 +152,7 @@ export function sanitizeFinal(value: unknown): LbFinal | null {
     return { ...base, kind, origin, media }
   }
 
-  // Un PACKAGE sin páginas tampoco sirve para nada.
+  // Un PACKAGE sin páginas o sin entrada no sirve para nada.
   if (!base.pages.length || !base.entry) return null
   return { ...base, kind, origin }
 }
@@ -160,7 +166,8 @@ export function packageEditCount(value: LbPackage | null | undefined): number {
 
 export function pageAt(value: LbPackage | null | undefined, path: string): LbPackagePage | null {
   if (!value) return null
-  const wanted = safePath(path) || value.entry
+  const wanted = safePath(path)
+  if (!wanted) return value.pages[0] || null
   return value.pages.find((page) => page.path === wanted) || null
 }
 

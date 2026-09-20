@@ -19,7 +19,7 @@
  * el de verdad, trozo a trozo.
  */
 import { useEffect, useRef, useState } from 'react'
-import { ExternalLink, FileText, Loader2, RotateCcw, Trash2, Upload } from 'lucide-react'
+import { Check, ExternalLink, FileText, Loader2, RotateCcw, Trash2, Upload } from 'lucide-react'
 import { packageEditCount, type LbPackage } from '../lib/final'
 import { learningApi } from '../lib/api'
 import { eyebrowCls, sideItemCls } from './ui'
@@ -39,6 +39,7 @@ export function PackagePanel({
   onCleared,
   emptyTitle,
   emptyHint,
+  saving = 'idle',
 }: {
   resourceId: string
   /** null mientras no haya paquete. */
@@ -49,8 +50,12 @@ export function PackagePanel({
   onCleared: (payload: { content: unknown; final: unknown }) => void
   emptyTitle: string
   emptyHint: string
+  /** Estado de guardado del builder, para decirlo aquí y no solo arriba. */
+  saving?: 'idle' | 'saving' | 'saved'
 }) {
-  const [page, setPage] = useState(pkg?.entry || '')
+  // La entrada abre la pieza publicada, pero no siempre es editable: en un
+  // Rise es su reproductor. Lo que se edita es siempre una página.
+  const [page, setPage] = useState(pkg?.pages[0]?.path || '')
   const [uploading, setUploading] = useState('')
   const [error, setError] = useState('')
   const frame = useRef<HTMLIFrameElement>(null)
@@ -77,7 +82,7 @@ export function PackagePanel({
   }, [page, onChange])
 
   useEffect(() => {
-    if (pkg && !pkg.pages.some((row) => row.path === page)) setPage(pkg.entry)
+    if (pkg && !pkg.pages.some((row) => row.path === page)) setPage(pkg.pages[0]?.path || '')
   }, [pkg, page])
 
   const upload = async (file: File) => {
@@ -146,7 +151,7 @@ export function PackagePanel({
               <button key={row.id} onClick={() => setPage(row.path)} className={sideItemCls(page === row.path)} title={row.path}>
                 <FileText size={13} className="shrink-0" />
                 <span className="truncate">{row.title}</span>
-                {row.path === pkg.entry && (
+                {row.path === pkg.entry && pkg.pages.length > 1 && (
                   <span className={`shrink-0 text-[9.5px] font-black uppercase tracking-wider ${
                     page === row.path ? 'text-white/70' : 'text-indigo-500'
                   }`}>entrada</span>
@@ -162,10 +167,25 @@ export function PackagePanel({
         </div>
 
         <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
-          <div className="flex justify-between text-[12px]">
-            <span className="text-slate-500">Textos editados</span>
+          <div className="flex items-center justify-between text-[12px]">
+            <span className="text-slate-500">Textos corregidos</span>
             <b className={packageEditCount(pkg) ? 'text-emerald-600' : ''}>{packageEditCount(pkg)}</b>
           </div>
+          <div className="flex items-center gap-1.5 text-[11.5px] text-slate-400">
+            {saving === 'saving' ? (
+              <><Loader2 size={11} className="animate-spin" /> Guardando…</>
+            ) : (
+              <><Check size={11} className="text-emerald-500" /> Todo guardado</>
+            )}
+          </div>
+          {packageEditCount(pkg) > 0 && (
+            <button
+              onClick={() => { onChange({ ...pkg, edits: {} }); setFrameKey((value) => value + 1) }}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-[12px] font-semibold text-slate-600 hover:bg-white"
+            >
+              <RotateCcw size={12} /> Descartar todas las correcciones
+            </button>
+          )}
           <UploadButton uploading={uploading} onPick={upload} compact label="Reemplazar paquete" />
           <button
             onClick={clearPackage}
@@ -211,8 +231,8 @@ export function PackagePanel({
         </div>
 
         <p className="border-b border-slate-100 bg-amber-50/60 px-3 py-1.5 text-[11.5px] text-amber-800">
-          Pulsa cualquier texto de la pieza para corregirlo. La diagramación, los estilos y las
-          interacciones son los del original y no se tocan.
+          Pasa el ratón por encima y pulsa cualquier texto para corregirlo; lo corregido queda en
+          verde. La diagramación, los estilos y las interacciones son los del original y no se tocan.
         </p>
 
         <iframe

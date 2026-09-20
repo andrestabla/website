@@ -820,6 +820,7 @@ export function ResourceBuilder() {
                   final={final}
                   kindLabel={spec.label}
                   onChange={saveFinal}
+                  saving={saving}
                 />
               )}
 

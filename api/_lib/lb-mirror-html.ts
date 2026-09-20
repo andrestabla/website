@@ -104,7 +104,8 @@ function linkRewriter(viewBase: string, packageRoot: string, baseHref: string): 
 }
 
 /** Bridge del editor: solo en el marco del builder, nunca en lo publicado. */
-const EDITOR_BRIDGE = `
+function editorBridge(edits: Record<string, string>): string {
+  return `
 (function(){
   var nodes = lbTextNodes();
   nodes.forEach(function(node, index){
@@ -115,9 +116,19 @@ const EDITOR_BRIDGE = `
     span.appendChild(node);
     span.setAttribute('contenteditable', 'plaintext-only');
   });
+  // Lo que ya llegaba corregido se marca desde el principio; lo que se
+  // corrija ahora, en cuanto se escriba. Así se ve de un vistazo qué se ha
+  // tocado en esta página.
+  var yaEditados = ${jsonInScript(Object.keys(edits))};
+  yaEditados.forEach(function(slot){
+    var el = document.querySelector('[data-lb-slot="' + slot + '"]');
+    if (el) el.classList.add('lb-changed');
+  });
+
   document.addEventListener('input', function(event){
     var span = event.target && event.target.closest ? event.target.closest('[data-lb-slot]') : null;
     if (!span) return;
+    span.classList.add('lb-changed');
     parent.postMessage({
       source: 'lb-mirror', type: 'edit',
       slot: span.getAttribute('data-lb-slot'),
@@ -132,10 +143,19 @@ const EDITOR_BRIDGE = `
   parent.postMessage({ source: 'lb-mirror', type: 'ready', slots: nodes.length }, '*');
 })();
 `
+}
 
+/**
+ * Lo editable tiene que verse editable antes de pulsarlo. Sin una señal al
+ * pasar por encima, quien abre la pieza no distingue esto de una vista
+ * previa y no llega a intentarlo.
+ */
 const EDITOR_CSS = `
-.lb-slot:hover{outline:1px dashed rgba(79,70,229,.8);outline-offset:2px;cursor:text}
-.lb-slot:focus{outline:2px solid #4f46e5;outline-offset:2px;background:rgba(79,70,229,.08)}
+.lb-slot{border-radius:3px;transition:background .12s,box-shadow .12s}
+.lb-slot:hover{cursor:text;background:rgba(79,70,229,.10);box-shadow:0 0 0 2px rgba(79,70,229,.25)}
+.lb-slot:focus{outline:0;background:rgba(79,70,229,.14);box-shadow:0 0 0 2px #4f46e5}
+.lb-slot.lb-changed{background:rgba(16,185,129,.14);box-shadow:0 0 0 2px rgba(16,185,129,.45)}
+.lb-slot.lb-changed:hover,.lb-slot.lb-changed:focus{box-shadow:0 0 0 2px #10b981}
 `
 
 export type MirrorLayer = {
@@ -185,7 +205,7 @@ ${WALKER}${APPLY}${REVEAL}
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();
-${layer.editable ? `function lbEditor(){${EDITOR_BRIDGE}}` : ''}
+${layer.editable ? `function lbEditor(){${editorBridge(edits)}}` : ''}
 </script>`,
     layer.viewBase ? `<script>${linkRewriter(layer.viewBase, layer.packageRoot, layer.baseHref)}</script>` : '',
   ]
@@ -201,6 +221,35 @@ ${layer.editable ? `function lbEditor(){${EDITOR_BRIDGE}}` : ''}
     return html.replace(/<html[^>]*>/i, (match) => `${match}\n<head>\n${head}\n</head>`)
   }
   return `<!DOCTYPE html><html><head>\n${head}\n</head><body>\n${html}\n</body></html>`
+}
+
+/**
+ * Las correcciones y nada más: sin <base> y sin el puente del editor.
+ *
+ * Lo usa el contenido que ya vive dentro de otra página —los bloques HTML de
+ * un Rise, que su propio reproductor pinta en un marco— donde meter un <base>
+ * rompería las rutas que ese reproductor ya resuelve bien.
+ */
+export function injectEditsOnly(html: string, edits: Record<string, string>): string {
+  if (!Object.keys(edits).length) return html
+  const patch = `<style>html.lb-pending{visibility:hidden}</style>
+<script>
+${WALKER}${APPLY}${REVEAL}
+(function(){
+  var edits = ${jsonInScript(edits)};
+  document.documentElement.classList.add('lb-pending');
+  setTimeout(lbReveal, 1500);
+  function start(){
+    try { lbApply(lbTextNodes(), edits); } catch (e) { /* el original manda */ }
+    lbReveal();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+</script>`
+  if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (match) => `${match}\n${patch}`)
+  if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (match) => `${match}\n<head>${patch}</head>`)
+  return `${patch}${html}`
 }
 
 /** Tipos de contenido por extensión, para servir el paquete tal cual. */

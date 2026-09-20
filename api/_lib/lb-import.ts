@@ -15,6 +15,7 @@ import { contentTypeFor, isHtmlPath } from './lb-mirror-html.js'
 import { lbFiles, lbResources, snapshot } from './lb-store.js'
 import { resourceFolder, type LbBucket } from './lb-storage.js'
 import { LbZipError, stripCommonRoot, unzip, type LbZipEntry } from './lb-unzip.js'
+import { RISE_DATA_PATH, parseRise, riseLessonPath, riseLessons } from './lb-rise.js'
 import { sanitizeMirror, type LbMirrorContent } from '../../src/learning/lib/mirror.js'
 import { sanitizeFinal, type LbFinal, type LbPackagePage } from '../../src/learning/lib/final.js'
 import { familyOf } from '../../src/learning/lib/content.js'
@@ -181,6 +182,7 @@ export async function ingestPackage(options: {
   const entry = standaloneEntry(manifest.entry, paths)
   if (!entry) throw new LbZipError('No se encontró la página de entrada del paquete.')
 
+
   const previous = await lbFiles().findMany({ where: { resourceId: resource.id }, select: { path: true } })
   if (previous.length) {
     await bucket.remove(previous.map((file: any) => `${folder}/pkg/${file.path}`))
@@ -198,15 +200,27 @@ export async function ingestPackage(options: {
     })),
   })
 
-  const pages: LbPackagePage[] = entries
-    .filter((candidate) => isHtmlPath(candidate.path))
-    .map((candidate) => ({
-      id: newLbId('pg'),
-      path: candidate.path,
-      title: manifest.titles.get(candidate.path) || htmlTitle(candidate.bytes) || candidate.path,
-    }))
-    // La de entrada primero: es la que abre el visor y la que se edita antes.
-    .sort((a, b) => (a.path === entry ? -1 : b.path === entry ? 1 : a.path.localeCompare(b.path)))
+  // Un Rise no tiene páginas: tiene lecciones, y sus archivos HTML son el
+  // armazón del reproductor. Listar el armazón sería enseñar las tripas en
+  // vez del contenido, así que las páginas son las lecciones.
+  const riseFile = entries.find((candidate) => candidate.path === RISE_DATA_PATH)
+  const rise = riseFile ? parseRise(riseFile.bytes.toString('utf8')) : null
+
+  const pages: LbPackagePage[] = rise
+    ? riseLessons(rise).map((lesson) => ({
+        id: newLbId('pg'),
+        path: riseLessonPath(lesson.id),
+        title: lesson.title,
+      }))
+    : entries
+        .filter((candidate) => isHtmlPath(candidate.path))
+        .map((candidate) => ({
+          id: newLbId('pg'),
+          path: candidate.path,
+          title: manifest.titles.get(candidate.path) || htmlTitle(candidate.bytes) || candidate.path,
+        }))
+        // La de entrada primero: es la que abre el visor y la que se edita antes.
+        .sort((a, b) => (a.path === entry ? -1 : b.path === entry ? 1 : a.path.localeCompare(b.path)))
 
   const kind = isZip ? (manifestEntry ? 'SCORM' : 'ZIP') : 'HTML'
   const origin = {

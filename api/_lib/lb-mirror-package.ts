@@ -11,8 +11,8 @@
  * romper justo lo que el cliente quiere conservar. Solo se añade un manifiesto
  * cuando el paquete no traía ninguno.
  */
-import { injectMirrorLayer } from './lb-mirror-html.js'
-import { isHtmlPath } from './lb-mirror-html.js'
+import { injectEditsOnly, injectMirrorLayer, isHtmlPath } from './lb-mirror-html.js'
+import { RISE_DATA_PATH, encodeRise, parseRise, riseWithEdits } from './lb-rise.js'
 import { createZip, type ZipEntry } from './lb-zip.js'
 import { safeFileName, scormIdentifier } from './lb-scorm.js'
 import { escapeHtml } from '../../src/learning/lib/render-ova.js'
@@ -65,6 +65,17 @@ export async function buildMirrorPackage(options: {
   for (const file of files) {
     const bytes = await bucket.get(`${folder}/pkg/${file.path}`)
     if (file.path.toLowerCase() === 'imsmanifest.xml') hasManifest = true
+
+    // En un Rise el contenido vive en sus datos, no en sus HTML: es ahí donde
+    // hay que meter las correcciones para que el paquete descargado las lleve.
+    if (file.path === RISE_DATA_PATH) {
+      const data = parseRise(bytes.toString('utf8'))
+      entries.push({
+        path: file.path,
+        data: data ? Buffer.from(encodeRise(riseWithEdits(data, pkg.edits, injectEditsOnly)), 'utf8') : bytes,
+      })
+      continue
+    }
 
     if (!isHtmlPath(file.path)) {
       entries.push({ path: file.path, data: bytes })

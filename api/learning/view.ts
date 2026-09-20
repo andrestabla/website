@@ -14,10 +14,11 @@
 import { guard, lbSessionState } from '../_lib/lb-auth.js'
 import { accessCookie, hasAccess } from '../_lib/lb-access.js'
 import { injectMirrorLayer } from '../_lib/lb-mirror-html.js'
+import { RISE_DATA_PATH, RISE_SANDBOX_DIR, isRiseLessonPath, parseRise, riseLessonId, riseLessons } from '../_lib/lb-rise.js'
 import { renderResourceHtml } from '../_lib/lb-render-any.js'
 import { lbFiles, lbResources, loadResource, loadResourceByPublicId } from '../_lib/lb-store.js'
 import { deliverablePackage } from '../../src/learning/lib/content.js'
-import { pageAt, type LbPackage } from '../../src/learning/lib/final.js'
+import { safePath, type LbPackage } from '../../src/learning/lib/final.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -91,28 +92,54 @@ async function servePackage(options: {
   editable: boolean
 }): Promise<unknown> {
   const { res, resourceId, publicId, pkg, requested, viewBase, editable } = options
-  const page = pageAt(pkg, requested)
-  if (!page) return shell('Página no encontrada', 'Esa página no está en el paquete.', 404, res)
-
-  const file = await lbFiles().findUnique({ where: { resourceId_path: { resourceId, path: page.path } } })
-  if (!file?.url) {
-    return shell('Paquete incompleto', 'El archivo original de esta página ya no está en el almacenamiento.', 404, res)
-  }
-
-  const response = await fetch(file.url)
-  if (!response.ok) {
-    return shell('No se pudo leer', `El almacenamiento respondió ${response.status}.`, 502, res)
-  }
-  const original = await response.text()
-
   // Los archivos del paquete se piden al propio sitio, no al almacenamiento.
   // Si se pidieran allí, el navegador bloquearía las tipografías por CORS y la
   // pieza se pintaría con otra letra: parecida, pero no igual.
   const packageRoot = `/ova/${encodeURIComponent(publicId)}/a/`
-  const dir = page.path.includes('/') ? `${page.path.slice(0, page.path.lastIndexOf('/'))}/` : ''
-  // El <base> es la carpeta de ESTA página, para que sus rutas relativas
-  // resuelvan igual que resolvían dentro del paquete original.
-  const baseHref = `${packageRoot}${dir}`
+
+  const fetchFile = async (path: string): Promise<string | null> => {
+    const file = await lbFiles().findUnique({ where: { resourceId_path: { resourceId, path } } })
+    if (!file?.url) return null
+    const response = await fetch(file.url)
+    return response.ok ? await response.text() : null
+  }
+
+  // Sin ruta pedida se abre la pieza por donde abre de verdad: su entrada.
+  // Con ruta, tiene que ser una de sus páginas editables o uno de sus
+  // archivos; en ambos casos se comprueba contra este recurso y no contra
+  // una ruta cualquiera.
+  const asked = safePath(requested)
+  const page = asked ? pkg.pages.find((row) => row.path === asked) : null
+  const wanted = page?.path || asked || pkg.entry
+  if (asked && !page && isRiseLessonPath(asked)) {
+    return shell('Lección no encontrada', 'Esa lección no está en el paquete.', 404, res)
+  }
+
+  let original: string | null
+  let baseHref: string
+
+  if (isRiseLessonPath(wanted)) {
+    // Una lección de Rise no es un archivo: su HTML vive dentro de los datos
+    // del curso. Se sirve con la base del marco en que el propio reproductor
+    // la pinta, o se quedaría sin tipografías.
+    const raw = await fetchFile(RISE_DATA_PATH)
+    const data = raw ? parseRise(raw) : null
+    const lesson = data ? riseLessons(data).find((row) => row.id === riseLessonId(wanted)) : null
+    if (!lesson?.html) {
+      return shell('Lección no encontrada', 'Esa lección ya no está en el paquete.', 404, res)
+    }
+    original = lesson.html
+    baseHref = `${packageRoot}${RISE_SANDBOX_DIR}`
+  } else {
+    original = await fetchFile(wanted)
+    if (original === null) {
+      return shell('Paquete incompleto', 'Ese archivo ya no está en el almacenamiento.', 404, res)
+    }
+    // El <base> es la carpeta de ESTA página, para que sus rutas relativas
+    // resuelvan igual que resolvían dentro del paquete original.
+    const dir = wanted.includes('/') ? `${wanted.slice(0, wanted.lastIndexOf('/'))}/` : ''
+    baseHref = `${packageRoot}${dir}`
+  }
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8')
   res.setHeader('Cache-Control', 'no-store')
@@ -120,7 +147,7 @@ async function servePackage(options: {
     injectMirrorLayer(original, {
       baseHref,
       packageRoot,
-      edits: pkg.edits[page.path] || {},
+      edits: pkg.edits[wanted] || {},
       viewBase,
       editable,
     })

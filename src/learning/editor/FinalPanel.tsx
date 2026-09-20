@@ -22,12 +22,14 @@ export function FinalPanel({
   final,
   kindLabel,
   onChange,
+  saving,
 }: {
   resourceId: string
   final: LbFinal | null
   /** Cómo se llama este tipo de recurso, para hablar en su idioma. */
   kindLabel: string
   onChange: (next: LbFinal | null) => void
+  saving?: 'idle' | 'saving' | 'saved'
 }) {
   // Un archivo de medios no se edita por dentro: se reproduce. Lo que se ve
   // aquí es de dónde salió y cómo suena o se ve.
@@ -78,6 +80,7 @@ export function FinalPanel({
           onChange={(next: LbPackage) => (final ? onChange({ ...final, ...next }) : undefined)}
           onUploaded={(payload) => onChange((payload.final as LbFinal) ?? null)}
           onCleared={() => onChange(null)}
+          saving={saving}
           emptyTitle="Adjunta la pieza tal como se entregó"
           emptyHint={
             `Mientras no la haya, el ${kindLabel.toLowerCase()} se publica desde su guion. ` +

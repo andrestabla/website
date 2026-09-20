@@ -87,8 +87,8 @@ export function validateMirror(content: LbMirrorContent): LbIssue[] {
     })
     return issues
   }
-  if (!content.pages.some((page) => page.path === content.entry)) {
-    issues.push({ level: 'error', message: 'La página de entrada no está entre las del paquete.' })
+  if (!content.entry) {
+    issues.push({ level: 'error', message: 'El paquete no dice por dónde se abre.' })
   }
   if (!content.cover.title) {
     issues.push({ level: 'warning', message: 'La pieza no tiene título propio; se usará el del archivo.' })
