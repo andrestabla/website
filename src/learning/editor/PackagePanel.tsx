@@ -19,7 +19,7 @@
  * más lento y es lo correcto: lo que se ve después de insertar es la pieza
  * servida con sus retoques aplicados, que es exactamente lo que se publica.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import {
   Check, ExternalLink, Image as ImageIcon, Loader2, Plus, RotateCcw, Trash2, Upload, X,
 } from 'lucide-react'
@@ -27,11 +27,55 @@ import { packageEditCount, type LbPackage, type LbPatch } from '../lib/final'
 import { learningApi, readAsDataUrl } from '../lib/api'
 import { eyebrowCls, fieldCls, sideItemCls } from './ui'
 
+/**
+ * Una división de la página abierta, tal como la lee el marco de los propios
+ * encabezados del documento. `t`, `i` y `b` dicen por dónde empieza dentro de
+ * cada numeración; la numeración sigue siendo la del documento entero, así que
+ * esto solo sirve para repartir en el menú lo que ya estaba contado.
+ */
+type Seccion = { title: string; t: number; i: number; b: number }
+
 type Incoming =
-  | { source: 'lb-mirror'; type: 'ready'; textos: number; imagenes: number; bloques: number }
+  | {
+      source: 'lb-mirror'; type: 'ready'
+      textos: number; imagenes: number; bloques: number; secciones?: Seccion[]
+    }
   | { source: 'lb-mirror'; type: 'text'; at: number; value: string }
   | { source: 'lb-mirror'; type: 'image'; at: number; src: string; alt: string }
   | { source: 'lb-mirror'; type: 'add-before' | 'add-after' | 'remove'; at: number }
+  | { source: 'lb-mirror'; type: 'at'; at: number }
+
+/**
+ * Por debajo de tres encabezados no hay índice que valga: son un título y su
+ * remate, y partirlos en el menú estorba más de lo que orienta.
+ */
+const MIN_SECCIONES = 3
+
+/**
+ * Cuántos retoques lleva cada división. Cada operación se cuenta en la
+ * numeración que le corresponde —los textos con los textos, las imágenes con
+ * las imágenes, añadir y quitar con los bloques— porque son tres recorridos
+ * distintos y mezclarlos daría el reparto equivocado.
+ */
+function porSeccion(patches: LbPatch[], secciones: Seccion[]): number[] {
+  const total = secciones.map(() => 0)
+  if (!secciones.length) return total
+  const inicios = {
+    text: secciones.map((row) => row.t),
+    image: secciones.map((row) => row.i),
+    block: secciones.map((row) => row.b),
+  }
+  for (const row of patches) {
+    const starts = row.op === 'text' ? inicios.text : row.op === 'image' ? inicios.image : inicios.block
+    let cual = 0
+    for (let s = 0; s < starts.length; s += 1) {
+      if (starts[s] <= row.at) cual = s
+      else break
+    }
+    total[cual] += 1
+  }
+  return total
+}
 
 /** Lo que cabe subir de una vez; el endpoint aplica el mismo tope. */
 export const MAX_PACKAGE_MB = 60
@@ -85,6 +129,9 @@ export function PackagePanel({
   const [uploading, setUploading] = useState('')
   const [error, setError] = useState('')
   const [counts, setCounts] = useState<{ textos: number; imagenes: number; bloques: number } | null>(null)
+  /** Las divisiones de la página abierta y en cuál está puesta la vista. */
+  const [secciones, setSecciones] = useState<Seccion[]>([])
+  const [seccion, setSeccion] = useState(0)
   /** Lo que el marco acaba de señalar y espera respuesta. */
   const [asking, setAsking] = useState<
     | { kind: 'image'; at: number; src: string; alt: string }
@@ -124,6 +171,10 @@ export function PackagePanel({
       switch (data.type) {
         case 'ready':
           setCounts({ textos: data.textos, imagenes: data.imagenes, bloques: data.bloques })
+          setSecciones(data.secciones?.length ? data.secciones : [])
+          return
+        case 'at':
+          setSeccion(data.at)
           return
         case 'text':
           patch({ op: 'text', at: data.at, value: data.value })
@@ -150,6 +201,20 @@ export function PackagePanel({
   useEffect(() => {
     if (pkg && !pkg.pages.some((row) => row.path === page)) setPage(pkg.pages[0]?.path || '')
   }, [pkg, page])
+
+  // Mientras la página nueva carga, lo de la anterior ya no vale: el menú se
+  // queda vacío un instante en vez de ofrecer saltos que no llevan a nada.
+  useEffect(() => {
+    setCounts(null)
+    setSecciones([])
+    setSeccion(0)
+  }, [page, frameKey])
+
+  /** Saltar a una sección. La pieza se queda donde está; solo se desplaza. */
+  const irA = (at: number) => {
+    setSeccion(at)
+    frame.current?.contentWindow?.postMessage({ source: 'lb-panel', type: 'goto', at }, window.location.origin)
+  }
 
   const upload = async (file: File) => {
     setError('')
@@ -212,35 +277,74 @@ export function PackagePanel({
   const pagePatches = pkg.patches[page] || []
   const previewBase = learningApi.previewUrl(resourceId)
 
+  // Una lectura es un solo archivo, pero se lee por secciones y así es como
+  // hay que poder recorrerla. Cuando el paquete trae varias páginas, las
+  // secciones cuelgan de la que esté abierta y las páginas siguen mandando.
+  const hayIndice = secciones.length >= MIN_SECCIONES
+  const unaSola = pkg.pages.length === 1
+  const soloSecciones = unaSola && hayIndice
+  const conteo = hayIndice ? porSeccion(pagePatches, secciones) : []
+
   return (
     <div className="grid h-full grid-cols-1 md:grid-cols-[236px_minmax(0,1fr)]">
       <aside className="flex min-h-0 flex-col border-b border-slate-200 bg-slate-50 p-3 md:border-b-0 md:border-r">
-        <div className={`mb-1 px-3 ${eyebrowCls}`}>Páginas · {pkg.pages.length}</div>
+        <div className={`mb-1 px-3 ${eyebrowCls}`}>
+          {soloSecciones ? `Secciones · ${secciones.length}` : `Páginas · ${pkg.pages.length}`}
+        </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {pkg.pages.map((row, index) => {
-            const count = (pkg.patches[row.path] || []).length
-            return (
-              <button key={row.id} onClick={() => setPage(row.path)} className={sideItemCls(page === row.path)} title={row.path}>
-                <span
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10.5px] font-bold ${
-                    page === row.path ? 'bg-white/20' : 'bg-slate-200 text-slate-500'
-                  }`}
-                >
-                  {index + 1}
-                </span>
-                <span className="truncate">{row.title}</span>
-                {count > 0 && (
-                  <span
-                    className={`ml-auto shrink-0 text-[11px] font-bold ${
-                      page === row.path ? 'text-white/80' : 'text-emerald-600'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            )
-          })}
+          {soloSecciones
+            ? secciones.map((row, index) => (
+                <SeccionRow
+                  key={index}
+                  n={index + 1}
+                  title={row.title}
+                  active={seccion === index}
+                  count={conteo[index]}
+                  onClick={() => irA(index)}
+                />
+              ))
+            : pkg.pages.map((row, index) => {
+                const count = (pkg.patches[row.path] || []).length
+                const abierta = page === row.path
+                return (
+                  <Fragment key={row.id}>
+                    <button onClick={() => setPage(row.path)} className={sideItemCls(abierta)} title={row.path}>
+                      <span
+                        className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10.5px] font-bold ${
+                          abierta ? 'bg-white/20' : 'bg-slate-200 text-slate-500'
+                        }`}
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="truncate">{row.title}</span>
+                      {count > 0 && (
+                        <span
+                          className={`ml-auto shrink-0 text-[11px] font-bold ${
+                            abierta ? 'text-white/80' : 'text-emerald-600'
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                    {abierta && hayIndice && (
+                      <div className="my-1 ml-4 border-l border-slate-200 pl-1">
+                        {secciones.map((sub, at) => (
+                          <SeccionRow
+                            key={at}
+                            n={at + 1}
+                            title={sub.title}
+                            active={seccion === at}
+                            count={conteo[at]}
+                            onClick={() => irA(at)}
+                            anidada
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </Fragment>
+                )
+              })}
         </div>
 
         <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
@@ -285,6 +389,11 @@ export function PackagePanel({
       <div className="relative flex min-h-0 min-w-0 flex-col">
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-3 py-2 text-[12px]">
           <span className="font-mono text-slate-500">{page}</span>
+          {hayIndice && secciones[seccion] && (
+            <span className="min-w-0 max-w-[40ch] truncate font-semibold text-slate-700">
+              {secciones[seccion].title}
+            </span>
+          )}
           {counts && (
             <span className="text-slate-400">
               {counts.textos} textos · {counts.imagenes} imágenes · {counts.bloques} bloques
@@ -352,6 +461,45 @@ export function PackagePanel({
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Una sección en el menú. Pulsarla no cambia de página —la pieza es una sola—
+ * sino que lleva el marco hasta ella, igual que haría su propio índice.
+ */
+function SeccionRow({
+  n, title, active, count, onClick, anidada,
+}: {
+  n: number
+  title: string
+  active: boolean
+  count: number
+  onClick: () => void
+  anidada?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`flex w-full min-w-0 items-center gap-2 rounded-lg px-3 py-1.5 text-left ${
+        anidada ? 'text-[12px]' : 'text-[13px]'
+      } ${active ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-600 hover:bg-white'}`}
+    >
+      <span
+        className={`w-5 shrink-0 text-right text-[10.5px] font-bold tabular-nums ${
+          active ? 'text-white/70' : 'text-slate-400'
+        }`}
+      >
+        {n}
+      </span>
+      <span className="truncate">{title}</span>
+      {count > 0 && (
+        <span className={`ml-auto shrink-0 text-[11px] font-bold ${active ? 'text-white/80' : 'text-emerald-600'}`}>
+          {count}
+        </span>
+      )}
+    </button>
   )
 }
 

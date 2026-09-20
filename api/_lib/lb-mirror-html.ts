@@ -165,6 +165,52 @@ const EDITOR_BRIDGE = `
 (function(){
   var textos = lbTextNodes(), imagenes = lbImages(), bloques = lbBlocks();
 
+  function lbAntes(a, b){
+    return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+  }
+
+  /**
+   * Dónde empieza cada división dentro de una de las numeraciones. Las dos
+   * listas van en orden de lectura, así que se recorren a la vez y no hace
+   * falta comparar todo contra todo.
+   */
+  function lbInicios(items, cabezas){
+    var inicio = [], i = 0;
+    for (var s = 0; s < cabezas.length; s++) {
+      while (i < items.length && lbAntes(items[i], cabezas[s])) i++;
+      inicio.push(i);
+    }
+    return inicio;
+  }
+
+  /**
+   * Las divisiones del documento. No se inventan: se leen de sus propios
+   * encabezados, tomando el nivel más alto que se repita, que es el que marca
+   * las secciones de verdad y no sus subapartados. Una lectura larga trae su
+   * índice escrito y esto es exactamente ese índice.
+   *
+   * Lo que se numera sigue siendo el documento entero. Estas divisiones solo
+   * dicen por dónde va cada una, y por eso partir la lectura en el menú no
+   * invalida ningún retoque ya guardado.
+   */
+  var cabezas = [];
+  for (var nivel = 1; nivel <= 3 && !cabezas.length; nivel++) {
+    var halladas = Array.prototype.slice.call(document.body.querySelectorAll('h' + nivel));
+    if (halladas.length >= 3) cabezas = halladas.slice(0, 200);
+  }
+
+  var enTextos = lbInicios(textos, cabezas);
+  var enImagenes = lbInicios(imagenes, cabezas);
+  var enBloques = lbInicios(bloques, cabezas);
+  // El rótulo se toma ahora, antes de que el paso del ratón cuelgue barras de
+  // botones dentro de los encabezados.
+  var secciones = cabezas.map(function(el, index){
+    return {
+      title: (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 160) || ('Sección ' + (index + 1)),
+      t: enTextos[index], i: enImagenes[index], b: enBloques[index]
+    };
+  });
+
   textos.forEach(function(node, index){
     var span = document.createElement('span');
     span.setAttribute('data-lb-t', String(index));
@@ -238,7 +284,42 @@ const EDITOR_BRIDGE = `
     el.appendChild(bar);
   });
 
-  avisar({ type: 'ready', textos: textos.length, imagenes: imagenes.length, bloques: bloques.length });
+  // Ir a una sección desde el menú, y decirle al menú en cuál se está. Solo
+  // se atiende al panel que tiene esta pieza dentro: cualquier otra ventana
+  // podría mandar mensajes.
+  window.addEventListener('message', function(event){
+    if (event.source !== parent) return;
+    var data = event.data;
+    if (!data || data.source !== 'lb-panel' || data.type !== 'goto') return;
+    var cabeza = cabezas[data.at];
+    if (!cabeza) return;
+    // El salto es seco a propósito: una lectura larga mide cientos de miles de
+    // píxeles y el desplazamiento suave, ahí, no llega nunca. El destello de
+    // abajo es lo que dice dónde ha caído.
+    cabeza.scrollIntoView({ block: 'start', behavior: 'instant' });
+    cabeza.classList.add('lb-aqui');
+    setTimeout(function(){ cabeza.classList.remove('lb-aqui'); }, 1200);
+  });
+
+  if (cabezas.length) {
+    var ultima = -1, pedido = 0;
+    function lbMirar(){
+      pedido = 0;
+      var actual = 0;
+      for (var s = 0; s < cabezas.length; s++) {
+        if (cabezas[s].getBoundingClientRect().top <= 80) actual = s; else break;
+      }
+      if (actual !== ultima) { ultima = actual; avisar({ type: 'at', at: actual }); }
+    }
+    window.addEventListener('scroll', function(){
+      if (!pedido) pedido = requestAnimationFrame(lbMirar);
+    }, { passive: true });
+  }
+
+  avisar({
+    type: 'ready', textos: textos.length, imagenes: imagenes.length,
+    bloques: bloques.length, secciones: secciones
+  });
 })();
 `
 
@@ -261,6 +342,10 @@ const EDITOR_CSS = `
 .lb-block:hover > .lb-bar{display:flex}
 .lb-bar button{all:unset;cursor:pointer;color:#fff;font:600 11px/1 system-ui;padding:5px 7px;border-radius:4px}
 .lb-bar button:hover{background:rgba(255,255,255,.28)}
+/* Al saltar desde el menú, la sección se señala un momento: en un documento
+   largo, sin eso no se sabe dónde ha caído el salto. */
+@keyframes lb-aqui{from{background:rgba(79,70,229,.22)}to{background:transparent}}
+.lb-aqui{animation:lb-aqui 1.2s ease-out}
 `
 
 export type MirrorLayer = {
