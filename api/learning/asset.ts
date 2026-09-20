@@ -37,6 +37,17 @@ type VercelResponse = any
  */
 const PROXY_LIMIT_BYTES = 4 * 1024 * 1024
 
+/**
+ * Sin caché de borde, cada archivo del paquete despertaría la función y su
+ * conexión a la base: se han medido arranques en frío de veintiséis segundos,
+ * y una página de un Rise pide veinte archivos. Cacheado, la función se
+ * ejecuta una vez por archivo y el resto lo sirve el borde.
+ *
+ * Solo para lo abierto. Lo que va con código o con sesión no se cachea
+ * compartido: se serviría a quien no ha pasado por la puerta.
+ */
+const EDGE = 's-maxage=86400, stale-while-revalidate=604800'
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.setHeader('Allow', 'GET, HEAD')
@@ -83,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Los pesados no pasan por aquí: el navegador los pide al almacenamiento.
     if (file.bytes > PROXY_LIMIT_BYTES) {
-      res.setHeader('Cache-Control', 'public, max-age=3600')
+      res.setHeader('Cache-Control', open ? `public, max-age=3600, ${EDGE}` : 'private, max-age=600')
       return res.redirect(302, file.url)
     }
 
@@ -94,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Content-Type', file.contentType || 'application/octet-stream')
     res.setHeader('Content-Length', String(body.length))
     // Las rutas incluyen el recurso y su paquete no cambia sin reimportarse.
-    res.setHeader('Cache-Control', open ? 'public, max-age=86400' : 'private, max-age=600')
+    res.setHeader('Cache-Control', open ? `public, max-age=86400, ${EDGE}` : 'private, max-age=600')
     if (req.method === 'HEAD') return res.status(200).end()
     return res.status(200).send(body)
   } catch (error: any) {
