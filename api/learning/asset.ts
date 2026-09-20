@@ -38,15 +38,20 @@ type VercelResponse = any
 const PROXY_LIMIT_BYTES = 4 * 1024 * 1024
 
 /**
- * Sin caché de borde, cada archivo del paquete despertaría la función y su
- * conexión a la base: se han medido arranques en frío de veintiséis segundos,
- * y una página de un Rise pide veinte archivos. Cacheado, la función se
- * ejecuta una vez por archivo y el resto lo sirve el borde.
+ * Cuánto vive un archivo abierto en la caché del borde.
  *
- * Solo para lo abierto. Lo que va con código o con sesión no se cachea
- * compartido: se serviría a quien no ha pasado por la puerta.
+ * Cachearlo importa: cada petición que llega a la función despierta su
+ * conexión a la base, y se han medido arranques en frío de veintiséis
+ * segundos con veinte archivos por página. Con caché, una página entera
+ * cuesta un arranque en vez de veinte.
+ *
+ * Pero la caché es compartida y no se puede purgar al vuelo, así que mide lo
+ * que se tarda en revocar: quien cierre el enlace de un recurso seguirá
+ * sirviéndose desde el borde durante este rato. Cinco minutos cubre de sobra
+ * la ráfaga de una visita y deja la revocación en algo defendible; un día,
+ * que es lo que el CDN aplica por su cuenta, no lo era.
  */
-const EDGE = 's-maxage=86400, stale-while-revalidate=604800'
+const EDGE_SECONDS = 300
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -94,7 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Los pesados no pasan por aquí: el navegador los pide al almacenamiento.
     if (file.bytes > PROXY_LIMIT_BYTES) {
-      res.setHeader('Cache-Control', open ? `public, max-age=3600, ${EDGE}` : 'private, max-age=600')
+      res.setHeader('Cache-Control', open ? `public, max-age=60, s-maxage=${EDGE_SECONDS}` : 'private, no-store')
       return res.redirect(302, file.url)
     }
 
@@ -105,7 +110,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Content-Type', file.contentType || 'application/octet-stream')
     res.setHeader('Content-Length', String(body.length))
     // Las rutas incluyen el recurso y su paquete no cambia sin reimportarse.
-    res.setHeader('Cache-Control', open ? `public, max-age=86400, ${EDGE}` : 'private, max-age=600')
+    res.setHeader('Cache-Control', open ? `public, max-age=60, s-maxage=${EDGE_SECONDS}` : 'private, no-store')
     if (req.method === 'HEAD') return res.status(200).end()
     return res.status(200).send(body)
   } catch (error: any) {
