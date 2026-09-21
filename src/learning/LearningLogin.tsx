@@ -66,7 +66,7 @@ export function LearningLogin({ onSuccess }: { onSuccess: () => void }) {
       */}
       <section
         className="relative hidden flex-col justify-between overflow-hidden bg-slate-900 p-14 text-white md:flex"
-        style={{ backgroundImage: 'url(/back-learning.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+        style={{ backgroundImage: 'url(/back-learning.webp)', backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
         <div
           className="pointer-events-none absolute inset-0 bg-gradient-to-br from-rose-700/95 via-orange-600/80 to-amber-400/65"

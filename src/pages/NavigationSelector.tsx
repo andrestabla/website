@@ -12,7 +12,7 @@ export function NavigationSelector() {
             >
                 <div 
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
-                    style={{ backgroundImage: 'url("/assets/landing/corporate.png")' }}
+                    style={{ backgroundImage: 'url("/assets/landing/corporate.webp")' }}
                 />
                 <div className="absolute inset-0 bg-blue-900/40 mix-blend-multiply transition-colors group-hover:bg-blue-800/20" />
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-950 via-transparent to-transparent opacity-80" />
@@ -45,7 +45,7 @@ export function NavigationSelector() {
             >
                 <div 
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
-                    style={{ backgroundImage: 'url("/assets/landing/education.png")' }}
+                    style={{ backgroundImage: 'url("/assets/landing/education.webp")' }}
                 />
                 <div className="absolute inset-0 bg-emerald-950/40 mix-blend-multiply transition-colors group-hover:bg-emerald-800/20" />
                 <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-transparent to-transparent opacity-80" />

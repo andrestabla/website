@@ -184,7 +184,7 @@ export function createHazloTuMismoLandingBlocks() {
             title: 'ProfeTabla',
             body:
               'Acompaño a personas y equipos a sistematizar procesos con IA y no-code, pasando de la idea a soluciones funcionales con impacto medible.',
-            imageUrl: '/assets/landing/tuprofe-mockup.png',
+            imageUrl: '/assets/landing/tuprofe-mockup.webp',
           },
           {
             eyebrow: 'Detalles del webinar',

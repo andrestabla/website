@@ -1921,7 +1921,7 @@ function renderTuProfeBlock(block: SitePageBlock) {
     const body = toText(block.content.body)
     const items = ensureObjectItems(block.content.items)
     const primaryHref = normalizeCmsHref(block.content.primaryHref, 'https://profetabla.com/', '/')
-    const imageUrl = toText(block.content.imageUrl) || '/assets/landing/tuprofe-mockup.png'
+    const imageUrl = toText(block.content.imageUrl) || '/assets/landing/tuprofe-mockup.webp'
     const isCompact = block.id === 'maturity360' || Boolean(block.content.hideImage)
 
     return (

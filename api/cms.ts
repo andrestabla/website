@@ -44,15 +44,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // del CDN. El sitio publico se sirve cacheado: sin esto, cada visita
       // ejecutaba la funcion y consultaba la base para devolver ~122 KB de JSON.
       //
-      // s-maxage=5 sin stale-while-revalidate: lo que se guarda en el panel sale
-      // publicado como mucho 5 s despues. La ventana sigue colapsando las rafagas
-      // (todas las visitas de esos 5 s cuestan una sola consulta), que es de donde
-      // venia casi todo el ahorro. Con SWR el CDN podia servir una copia vieja
-      // mucho despues de caducar, y eso es justo lo que no queremos al editar.
+      // La ventana corta se mantiene: lo que se guarda en el panel sale
+      // publicado enseguida, que es la razon de que aqui no hubiera SWR.
+      //
+      // Lo que se anade es stale-while-revalidate, y no es lo mismo que alargar
+      // la ventana. Al caducar los 10 s, el CDN entrega al instante la copia que
+      // tiene y va a buscar la nueva por detras: nadie espera a que la funcion
+      // arranque y la base conteste. El precio es que una visita puede ver, como
+      // mucho, contenido de hace ~70 s; a cambio, ninguna paga el viaje al origen
+      // —que es de donde salia el segundo largo en el primer pintado de la home.
       if (req.query?.fresh === '1') {
         res.setHeader('Cache-Control', 'private, no-store')
       } else {
-        res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=5')
+        res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=10, stale-while-revalidate=60')
       }
 
       const snapshot = await prisma.cmsSnapshot.findUnique({ where: { id: SNAPSHOT_ID } })

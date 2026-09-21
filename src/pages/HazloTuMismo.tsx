@@ -311,7 +311,7 @@ export default function HazloTuMismo() {
             <div className="relative">
               <div className="aspect-[4/3] rounded-3xl bg-slate-100 overflow-hidden shadow-2xl shadow-cyan-500/5 relative group border border-slate-200">
                 <img 
-                  src="/assets/landing/tuprofe-mockup.png" 
+                  src="/assets/landing/tuprofe-mockup.webp" 
                   alt="ProfeTabla" 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   onError={(e) => {

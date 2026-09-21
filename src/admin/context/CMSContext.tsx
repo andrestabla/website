@@ -2330,9 +2330,22 @@ export function CMSProvider({ children }: { children: ReactNode }) {
             try {
                 // En publico la respuesta la sirve el CDN (ver api/cms.ts); en el
                 // panel pedimos siempre la version viva para no editar sobre cache.
-                const res = await fetch(isAdminSurface ? '/api/cms?fresh=1' : '/api/cms')
-                if (!res.ok) throw new Error(`HTTP ${res.status}`)
-                const json = await res.json()
+                //
+                // index.html ya lanzo esta peticion con el HTML, antes de que
+                // existiera el bundle. Si esa promesa esta ahi se espera y no se
+                // pide dos veces; si no —panel, fallo, navegador sin fetch— se
+                // hace el viaje de siempre.
+                const arranque = isAdminSurface
+                    ? null
+                    : (window as unknown as { __cmsBoot?: Promise<unknown> }).__cmsBoot ?? null
+                let json: any
+                if (arranque) {
+                    json = await arranque
+                } else {
+                    const res = await fetch(isAdminSurface ? '/api/cms?fresh=1' : '/api/cms')
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+                    json = await res.json()
+                }
                 const next = normalizeCMSState(json?.data ?? {})
                 if (cancelled) return
                 lastServerHash.current = stateHash(next)

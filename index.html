@@ -1,15 +1,77 @@
 <!doctype html>
 <html lang="es">
   <head>
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18121588367"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AlgoritmoT | Soluciones digitales con sentido humano</title>
+    <meta name="description" content="Soluciones digitales con sentido humano para empresas y educación." />
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AlgoritmoT | Soluciones digitales con sentido humano" />
+    <meta property="og:description" content="Soluciones digitales con sentido humano para empresas y educación." />
+    <meta property="og:image" content="/assets/og-default.svg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="https://imageneseiconos.s3.us-east-1.amazonaws.com/sitioweb/T.svg" />
 
-      gtag('config', 'AW-18121588367');
+    <!--
+      Space Grotesk se sirve desde aqui, no desde Google Fonts. Antes la hoja
+      de fonts.googleapis.com bloqueaba el primer pintado contra un tercero:
+      habia que resolver DNS, abrir TLS y descargar un CSS antes de poder
+      pintar nada. Ahora son dos archivos del propio dominio, 39 kB en total,
+      que viajan por la conexion ya abierta. La fuente es SIL OFL, asi que
+      alojarla esta permitido.
+
+      Solo van los subconjuntos latin y latin-ext: el sitio esta en espanol y
+      el vietnamita que servia Google no se usaba nunca.
+    -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/space-grotesk-latin.woff2" crossorigin />
+    <style>
+      @font-face {
+        font-family: 'Space Grotesk';
+        font-style: normal;
+        font-weight: 300 700;
+        font-display: swap;
+        src: url(/fonts/space-grotesk-latin.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+          U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: 'Space Grotesk';
+        font-style: normal;
+        font-weight: 300 700;
+        font-display: swap;
+        src: url(/fonts/space-grotesk-latin-ext.woff2) format('woff2');
+        unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+          U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+      }
+    </style>
+
+    <!--
+      La raiz no sabe que pintar hasta que /api/cms contesta, y esa peticion
+      salia despues de descargar y ejecutar el bundle: medido, arrancaba sobre
+      el segundo. Aqui sale con el HTML, en paralelo con el JavaScript, y
+      CMSContext se limita a esperar la promesa que ya esta en marcha.
+
+      Si algo falla —red, 500, navegador raro— no se guarda nada y el contexto
+      hace su fetch de siempre. El panel se excluye porque pide ?fresh=1 para
+      no editar encima de la cache.
+    -->
+    <script>
+      (function () {
+        if (location.pathname.indexOf('/admin') === 0) return
+        try {
+          var arranque = fetch('/api/cms').then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status)
+            return res.json()
+          })
+          // Sin esto, un fallo aqui seria una promesa rechazada sin dueno
+          // hasta que el contexto la recoja, y la consola lo cantaria.
+          arranque.catch(function () {})
+          window.__cmsBoot = arranque
+        } catch (e) {}
+      })()
     </script>
+
     <!-- Avatar 3D de Claudia (solo se descarga si se abre su módulo) -->
     <script type="importmap">
       {
@@ -20,25 +82,40 @@
         }
       }
     </script>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://imageneseiconos.s3.us-east-1.amazonaws.com/sitioweb/T.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AlgoritmoT | Soluciones digitales con sentido humano</title>
-    <meta name="description" content="Soluciones digitales con sentido humano para empresas y educación." />
-    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="AlgoritmoT | Soluciones digitales con sentido humano" />
-    <meta property="og:description" content="Soluciones digitales con sentido humano para empresas y educación." />
-    <meta property="og:image" content="/assets/og-default.svg" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- La tipografia real del sitio es Space Grotesk (design.fontBody/fontDisplay
-         en el CMS) y CMSContext la trata como "built-in", es decir, da por hecho
-         que se carga aqui. Antes se pedian Inter y Playfair Display, que no se
-         referencian en ningun sitio, mientras Space Grotesk no se descargaba nunca. -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap">
+
+    <!--
+      Google Ads (gtag). La cola de dataLayer se crea aqui, asi que las
+      llamadas se registran desde el primer momento; lo que se retrasa es
+      descargar el script, que traia consigo cinco hosts mas (doubleclick,
+      google.com) compitiendo por la red con lo que el usuario vino a ver.
+
+      Se carga tras el load, o antes si la persona toca algo. Nada se pierde:
+      gtag solo empuja a dataLayer y el script real vacia la cola al llegar.
+    -->
+    <script>
+      (function () {
+        window.dataLayer = window.dataLayer || []
+        window.gtag = function () { window.dataLayer.push(arguments) }
+        gtag('js', new Date())
+        gtag('config', 'AW-18121588367')
+
+        var pedido = false
+        function cargar() {
+          if (pedido) return
+          pedido = true
+          var s = document.createElement('script')
+          s.async = true
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=AW-18121588367'
+          document.head.appendChild(s)
+        }
+        function tras(ms) { setTimeout(cargar, ms) }
+        if (document.readyState === 'complete') tras(1200)
+        else window.addEventListener('load', function () { tras(1200) })
+        ;['pointerdown', 'keydown', 'touchstart'].forEach(function (evento) {
+          window.addEventListener(evento, cargar, { once: true, passive: true })
+        })
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

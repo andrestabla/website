@@ -68,7 +68,7 @@ export function BiLogin({ onSuccess }: { onSuccess: () => void }) {
     <div className="grid min-h-screen bg-white md:grid-cols-[1.1fr_0.9fr]">
       <section
         className="relative hidden flex-col justify-between overflow-hidden p-14 text-white md:flex"
-        style={{ backgroundImage: 'url(/bi-login-bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+        style={{ backgroundImage: 'url(/bi-login-bg.webp)', backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
         {/* La imagen de fondo se conserva bajo el color de marca a modo de filtro */}
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/95 via-indigo-800/85 to-indigo-600/75" />

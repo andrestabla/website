@@ -33,6 +33,38 @@
       "destination": "/api/learning/view?id=:publicId"
     },
     {
+      "source": "/assets/landing/education.png",
+      "destination": "/assets/landing/education.webp"
+    },
+    {
+      "source": "/assets/landing/corporate.png",
+      "destination": "/assets/landing/corporate.webp"
+    },
+    {
+      "source": "/assets/landing/tuprofe-mockup.png",
+      "destination": "/assets/landing/tuprofe-mockup.webp"
+    },
+    {
+      "source": "/back-ecosistema.jpg",
+      "destination": "/back-ecosistema.webp"
+    },
+    {
+      "source": "/back-project-control.jpg",
+      "destination": "/back-project-control.webp"
+    },
+    {
+      "source": "/bi-login-bg.jpg",
+      "destination": "/bi-login-bg.webp"
+    },
+    {
+      "source": "/back-learning.jpg",
+      "destination": "/back-learning.webp"
+    },
+    {
+      "source": "/assets/landing/hazlo-tu-mismo-demo.gif",
+      "destination": "/assets/landing/hazlo-tu-mismo-demo.webp"
+    },
+    {
       "source": "/((?!api/)(?!@)(?!__)(?!.*\\..*).*)",
       "destination": "/index.html"
     }
@@ -46,5 +78,34 @@
       "memory": 1024,
       "maxDuration": 30
     }
-  }
+  },
+  "headers": [
+    {
+      "source": "/(.*)\\.(webp|png|jpg|jpeg|gif|svg|ico|woff|woff2|mp4)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/build/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }

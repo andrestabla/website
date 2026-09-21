@@ -516,7 +516,7 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
             >
                 <div 
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
-                    style={{ backgroundImage: `url("${corporateImage || '/assets/landing/corporate.png'}")` }}
+                    style={{ backgroundImage: `url("${corporateImage || '/assets/landing/corporate.webp'}")` }}
                 />
                 <div 
                     className="absolute inset-0 transition-colors group-hover:bg-blue-800/20" 
@@ -547,7 +547,7 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
             >
                 <div 
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-1000 group-hover:scale-110"
-                    style={{ backgroundImage: `url("${educationImage || '/assets/landing/education.png'}")` }}
+                    style={{ backgroundImage: `url("${educationImage || '/assets/landing/education.webp'}")` }}
                 />
                 <div 
                     className="absolute inset-0 transition-colors group-hover:bg-emerald-800/20" 

@@ -46,7 +46,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (row && row.quoteId === quote.id) recipient = { id: row.id, name: row.name }
     }
 
-    if (!preview) res.setHeader('Cache-Control', 'public, max-age=30')
+    // El navegador revalida siempre y es el CDN quien guarda: asi una rafaga
+    // de visitas cuesta una sola consulta, pero cerrar el enlace deja de
+    // servirse en cuanto caduquen estos 30 s. Sin stale-while-revalidate a
+    // proposito — alargaria esa ventana, y aqui lo que se comparte tambien se
+    // puede querer dejar de compartir.
+    if (!preview) res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30')
     return res.status(200).json({
       ok: true,
       preview,

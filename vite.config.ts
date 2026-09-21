@@ -14,6 +14,10 @@ export default defineConfig({
     preloadCriticalChunks(['ManagedCustomPage', 'DynamicPageRenderer', 'NavigationSelector']),
   ],
   build: {
+    // La salida con hash vive aparte de public/assets, que se copia tal cual y
+    // NO lleva hash. Sin esa separación no se puede decir «cachea esto para
+    // siempre» sin congelar de paso una imagen que sí se reemplaza.
+    assetsDir: 'build',
     rollupOptions: {
       // 'talkinghead' (avatar 3D de Claudia) lo resuelve el navegador con el
       // importmap de index.html, desde CDN. No debe entrar al bundle.

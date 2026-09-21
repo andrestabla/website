@@ -51,7 +51,7 @@ export function EcosistemaLogin({ onSuccess }: { onSuccess: () => void }) {
     <div className="grid min-h-screen bg-white md:grid-cols-[1.1fr_0.9fr]">
       <section
         className="relative hidden flex-col justify-between overflow-hidden p-14 text-white md:flex"
-        style={{ backgroundImage: 'url(/back-ecosistema.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}
+        style={{ backgroundImage: 'url(/back-ecosistema.webp)', backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-900/85 via-indigo-900/75 to-indigo-800/70" aria-hidden />
         <div className="relative grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur"><LayoutGrid size={24} /></div>
