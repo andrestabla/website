@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink, FileSignature, Bot, KeyRound } from 'lucide-react'
+import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink, FileSignature, Bot, KeyRound, Lock } from 'lucide-react'
 import { canAccessModule, hasAdminBridge, type AdminModuleKey } from '../admin/lib/permissions'
 import { ecoLogout, type EcoUser } from './lib/session'
 
@@ -19,9 +19,75 @@ const MODULES: Mod[] = [
   { module: 'ANALYTICS', name: 'Analítica', desc: 'Consulta estadísticas de tráfico y comportamiento.', to: '/admin/analytics', accent: 'from-cyan-600 to-blue-500', icon: BarChart2, tag: 'Métricas' },
 ]
 
+/**
+ * La tarjeta de un módulo. Apagada es la misma tarjeta sin color y sin
+ * enlace: se ve que existe y se ve que no es tuyo, que es justo lo que hay
+ * que saber para pedirlo.
+ */
+function ModuleCard({ mod, off }: { mod: Mod; off?: boolean }) {
+  const inner = (
+    <>
+      <div
+        className={`grid h-12 w-12 place-items-center rounded-xl ${
+          off ? 'bg-slate-200 text-slate-400' : `bg-gradient-to-br ${mod.accent} text-white`
+        }`}
+      >
+        <mod.icon size={22} />
+      </div>
+      <h3 className={`mt-3 flex items-center gap-1.5 text-[17px] font-bold tracking-tight ${off ? 'text-slate-400' : ''}`}>
+        {mod.name}
+        {mod.external && <ExternalLink size={14} className="text-slate-300" />}
+      </h3>
+      <p className={`mt-1 text-[13px] leading-relaxed ${off ? 'text-slate-400' : 'text-slate-600'}`}>{mod.desc}</p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        <span
+          className={`rounded-full border border-slate-200 px-2.5 py-0.5 text-[10.5px] ${
+            off ? 'bg-white text-slate-400' : 'bg-slate-50 text-slate-500'
+          }`}
+        >
+          {mod.tag}
+        </span>
+      </div>
+      {off ? (
+        <div className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-slate-400">
+          <Lock size={14} /> Sin acceso
+        </div>
+      ) : (
+        <div className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-indigo-600">
+          Abrir <ArrowRight size={15} className="transition group-hover:translate-x-0.5" />
+        </div>
+      )}
+    </>
+  )
+
+  if (off) {
+    return (
+      <div
+        className="relative overflow-hidden rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6"
+        title="Tu cuenta no tiene habilitado este módulo"
+      >
+        {inner}
+      </div>
+    )
+  }
+
+  const cls =
+    'group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-lg'
+  return mod.external ? (
+    <a href={mod.to} target="_blank" rel="noreferrer" className={cls}>{inner}</a>
+  ) : (
+    <Link to={mod.to} className={cls}>{inner}</Link>
+  )
+}
+
 export function EcosistemaHub({ user, onLogout }: { user: EcoUser; onLogout: () => void }) {
   const navigate = useNavigate()
-  const modules = MODULES.filter((m) => canAccessModule(user, m.module))
+  // Primero lo que se puede abrir; después, apagado, el resto del Ecosistema.
+  // Enseñar lo que no se tiene no es ruido: es la única forma de que alguien
+  // sepa que existe y lo pida. Y en ambos grupos manda el orden de MODULES,
+  // que es el que el Ecosistema considera suyo.
+  const abiertos = MODULES.filter((m) => canAccessModule(user, m.module))
+  const apagados = MODULES.filter((m) => !canAccessModule(user, m.module))
   const admin = hasAdminBridge(user)
 
   const initials = (user?.displayName || user?.username || 'AT')
@@ -46,69 +112,55 @@ export function EcosistemaHub({ user, onLogout }: { user: EcoUser; onLogout: () 
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         <h1 className="text-2xl font-black tracking-tight">Hola, {(user?.displayName || 'usuario').split(' ')[0]}</h1>
-        <p className="mb-8 mt-1 text-sm text-slate-500">Estos son los módulos habilitados para tu cuenta. Entra con un clic.</p>
+        <p className="mb-8 mt-1 text-sm text-slate-500">
+          {abiertos.length > 0 ? (
+            <>
+              Estos son los módulos habilitados para tu cuenta. Entra con un clic.
+              {apagados.length > 0 &&
+                ' Debajo, apagados, los demás del Ecosistema: existen, pero tu cuenta todavía no los tiene.'}
+            </>
+          ) : (
+            'Este es el Ecosistema completo. Sale apagado porque tu cuenta todavía no tiene ningún módulo: pídeselos a un administrador.'
+          )}
+        </p>
 
-        {modules.length === 0 && !admin ? (
-          <div className="grid min-h-[40vh] place-items-center rounded-2xl border border-dashed border-slate-300 text-center">
-            <div>
-              <div className="text-sm font-semibold text-slate-600">Aún no tienes módulos habilitados</div>
-              <div className="mt-1 text-[13px] text-slate-400">Solicita acceso a un administrador.</div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {modules.map((m) => {
-              const inner = (
-                <>
-                  <div className={`grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br ${m.accent} text-white`}><m.icon size={22} /></div>
-                  <h3 className="mt-3 flex items-center gap-1.5 text-[17px] font-bold tracking-tight">
-                    {m.name}
-                    {m.external && <ExternalLink size={14} className="text-slate-300" />}
-                  </h3>
-                  <p className="mt-1 text-[13px] leading-relaxed text-slate-600">{m.desc}</p>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10.5px] text-slate-500">{m.tag}</span>
-                  </div>
-                  <div className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-indigo-600">Abrir <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></div>
-                </>
-              )
-              const cls = 'group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-lg'
-              return m.external ? (
-                <a key={m.module} href={m.to} target="_blank" rel="noreferrer" className={cls}>{inner}</a>
-              ) : (
-                <Link key={m.module} to={m.to} className={cls}>{inner}</Link>
-              )
-            })}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {abiertos.map((m) => (
+            <ModuleCard key={m.module} mod={m} />
+          ))}
 
-            {user?.role === 'SUPERADMIN' && (
-              <Link
-                to="/ecosistema/claudia"
-                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-lg"
-              >
-                <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-500 text-white"><Bot size={22} /></div>
-                <h3 className="mt-3 text-[17px] font-bold tracking-tight">Claudia remoto</h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-slate-600">Envía tareas a tu asistente en la Mac desde cualquier lugar y consulta los resultados.</p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10.5px] text-slate-500">Asistente</span>
-                  <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[10.5px] text-violet-600">Solo propietario</span>
-                </div>
-                <div className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-indigo-600">Abrir <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></div>
-              </Link>
-            )}
+          {user?.role === 'SUPERADMIN' && (
+            <Link
+              to="/ecosistema/claudia"
+              className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-lg"
+            >
+              <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-500 text-white"><Bot size={22} /></div>
+              <h3 className="mt-3 text-[17px] font-bold tracking-tight">Claudia remoto</h3>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-600">Envía tareas a tu asistente en la Mac desde cualquier lugar y consulta los resultados.</p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10.5px] text-slate-500">Asistente</span>
+                <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[10.5px] text-violet-600">Solo propietario</span>
+              </div>
+              <div className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-indigo-600">Abrir <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></div>
+            </Link>
+          )}
 
-            {admin && (
-              <Link
-                to="/admin/dashboard"
-                className="group relative overflow-hidden rounded-2xl border border-slate-900/10 bg-slate-900 p-6 text-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur"><ShieldCheck size={22} /></div>
-                <h3 className="mt-3 text-[17px] font-bold tracking-tight">Panel de administración</h3>
-                <p className="mt-1 text-[13px] leading-relaxed text-slate-300">Gestión del sitio, usuarios, marketing, SEO y configuración.</p>
-                <div className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-indigo-300">Abrir <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></div>
-              </Link>
-            )}
-          </div>
-        )}
+          {admin && (
+            <Link
+              to="/admin/dashboard"
+              className="group relative overflow-hidden rounded-2xl border border-slate-900/10 bg-slate-900 p-6 text-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur"><ShieldCheck size={22} /></div>
+              <h3 className="mt-3 text-[17px] font-bold tracking-tight">Panel de administración</h3>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-300">Gestión del sitio, usuarios, marketing, SEO y configuración.</p>
+              <div className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-indigo-300">Abrir <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></div>
+            </Link>
+          )}
+
+          {apagados.map((m) => (
+            <ModuleCard key={m.module} mod={m} off />
+          ))}
+        </div>
       </main>
     </div>
   )
