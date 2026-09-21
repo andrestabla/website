@@ -177,8 +177,18 @@ export function LearningHome() {
       {dialogs}
 
       <header className="flex h-14 items-center gap-2 border-b border-slate-200 bg-white px-4 sm:gap-3 sm:px-6">
-        <Link to="/ecosistema" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600">
-          <ArrowLeft size={16} /> <span className="hidden sm:inline">Ecosistema</span>
+        {/*
+          La flecha sube un escalón, no se va del módulo. Dentro de un
+          workspace lo de arriba son los workspaces, igual que dentro de un
+          recurso lo de arriba es su biblioteca; solo desde la portada del
+          módulo tiene sentido salir al Ecosistema.
+        */}
+        <Link
+          to="/ecosistema/learning"
+          aria-label="Volver a tus workspaces"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600"
+        >
+          <ArrowLeft size={16} /> <span className="hidden sm:inline">Workspaces</span>
         </Link>
         <div className="h-5 w-px bg-slate-200" />
         <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 text-white">
