@@ -586,6 +586,13 @@ export function QuoteBuilder() {
       setQuote(payload.quote)
     } catch (e: any) { setError(e.message) }
   }
+  /** Nombre del cliente, título, subtítulo, sector y contacto: campos de la cotización, no del contenido. */
+  const saveIdentity = async (data: { clientName?: string; title?: string; subtitle?: string; sector?: string; clientContact?: string }) => {
+    try {
+      const payload = await quotesApi.update(quoteId, data)
+      setQuote(payload.quote)
+    } catch (e: any) { setError(e.message) }
+  }
   const isDoc = content.documentUrl !== undefined
   /** Quita el documento externo: la cotización pasa a mostrarse y valorarse con sus páginas y líneas. */
   const detachDocument = async () => {
@@ -1101,6 +1108,49 @@ export function QuoteBuilder() {
                   </div>
                 </div>
                 )}
+
+                {/* Datos de la cotización: nombre del cliente, título y contacto, editables a mano */}
+                <div className="rounded-2xl border border-slate-200 bg-white">
+                  <div className="border-b border-slate-100 px-4 py-3 text-[12px] font-bold uppercase tracking-wide text-slate-400">Datos de la cotización</div>
+                  <div className="grid gap-3 p-4 sm:grid-cols-2" key={`identity-${quote.updatedAt}`}>
+                    <label className="block text-[12px] font-semibold text-slate-500 sm:col-span-2">
+                      Nombre del cliente · es el nombre con el que aparece en la lista
+                      <input defaultValue={quote.clientName} maxLength={160}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (!v) { e.target.value = quote.clientName; return } if (v !== quote.clientName) void saveIdentity({ clientName: v }) }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px] font-semibold text-slate-800" />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500 sm:col-span-2">
+                      Título de la cotización
+                      <input defaultValue={quote.title} maxLength={200}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (!v) { e.target.value = quote.title; return } if (v !== quote.title) void saveIdentity({ title: v }) }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px]" />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500 sm:col-span-2">
+                      Subtítulo (opcional)
+                      <input defaultValue={quote.subtitle || ''} maxLength={400}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (v !== (quote.subtitle || '')) void saveIdentity({ subtitle: v }) }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px]" />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Sector
+                      <input defaultValue={quote.sector || ''} maxLength={120}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (v !== (quote.sector || '')) void saveIdentity({ sector: v }) }}
+                        placeholder="Educación superior, editorial…" className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px]" />
+                    </label>
+                    <label className="block text-[12px] font-semibold text-slate-500">
+                      Contacto en el cliente
+                      <input defaultValue={quote.clientContact || ''} maxLength={160}
+                        onBlur={(e) => { const v = e.target.value.trim(); if (v !== (quote.clientContact || '')) void saveIdentity({ clientContact: v }) }}
+                        placeholder="Nombre y cargo" className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-[13px]" />
+                    </label>
+                  </div>
+                  <p className="border-t border-slate-100 px-4 py-2 text-[11.5px] leading-relaxed text-slate-400">
+                    Se guardan al salir del campo o con Enter. El título también se puede editar en la portada desde el Editor del documento.
+                  </p>
+                </div>
 
                 {/* Ajustes del documento */}
                 <div className="rounded-2xl border border-slate-200 bg-white">
