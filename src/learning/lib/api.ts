@@ -9,6 +9,7 @@ import type { LbMirrorContent } from './mirror.js'
 import type { LbPodcastContent } from './podcast.js'
 import type { LbCapability, LbRole } from './roles.js'
 import type { LbResourceKind, LbShareMode, LbStatus } from './resources.js'
+import type { LbReviewTarget } from './review.js'
 
 export type WorkspaceRow = {
   id: string
@@ -62,6 +63,8 @@ export type ResourceRow = {
   status: LbStatus
   shareMode: LbShareMode
   embedEnabled: boolean
+  /** Enlace de revisión externa abierto. */
+  reviewEnabled?: boolean
   importMode?: string | null
   /** PACKAGE | MEDIA | null — qué se entrega además del guion. */
   finalKind?: 'PACKAGE' | 'MEDIA' | null
@@ -118,8 +121,12 @@ export type CommentRow = {
   anchor: string
   anchorLabel: string | null
   parentId: string | null
-  authorId: string
+  authorId: string | null
   authorName: string | null
+  /** Revisor externo (enlace de revisión); null si es del equipo. */
+  guest: { name: string; email: string; org: string } | null
+  /** El elemento exacto que señaló, cuando se comentó sobre la pieza. */
+  target: LbReviewTarget | null
   body: string
   status: 'OPEN' | 'RESOLVED'
   resolvedAt: string | null
@@ -198,6 +205,7 @@ export const learningApi = {
       role: LbRole
       issues: LbIssue[]
       shareCode: string | null
+      reviewToken?: string | null
     }> =>
       post('/api/learning/resources', /^[A-Z0-9]+-[A-Z]{3}-\d{3}$/i.test(resourceIdOrCode)
         ? { op: 'get', code: resourceIdOrCode }
@@ -211,6 +219,8 @@ export const learningApi = {
     archive: (resourceId: string) => post('/api/learning/resources', { op: 'archive', resourceId }),
     share: (resourceId: string, data: { mode: LbShareMode; embedEnabled?: boolean; rotateCode?: boolean }): Promise<{ resource: ResourceRow; shareCode: string | null }> =>
       post('/api/learning/resources', { op: 'share', resourceId, ...data }),
+    review: (resourceId: string, data: { enabled: boolean; rotate?: boolean }): Promise<{ resource: ResourceRow; reviewToken: string }> =>
+      post('/api/learning/resources', { op: 'review', resourceId, ...data }),
     duplicate: (resourceId: string) => post('/api/learning/resources', { op: 'duplicate', resourceId }),
     remove: (resourceId: string) => post('/api/learning/resources', { op: 'delete', resourceId }),
     versions: (resourceId: string): Promise<{ versions: VersionRow[] }> =>

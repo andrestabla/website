@@ -39,6 +39,7 @@ const ControlApp = lazyWithRetry(() => import('./control/ControlApp'))
 const PublicBoard = lazyWithRetry(() => import('./control/PublicBoard'))
 const EcosistemaApp = lazyWithRetry(() => import('./ecosistema/EcosistemaApp'))
 const QuoteViewer = lazyWithRetry(() => import('./cotizacion/QuoteViewer'))
+const PublicReview = lazyWithRetry(() => import('./learning/review/PublicReview'))
 
 const LoginPage = lazyWithRetry(() => import('./admin/pages/LoginPage').then((module) => ({ default: module.LoginPage })))
 const Dashboard = lazyWithRetry(() => import('./admin/pages/Dashboard').then((module) => ({ default: module.Dashboard })))
@@ -304,6 +305,7 @@ function App() {
           <Routes>
             <Route path="/board/:token" element={<PublicBoard />} />
             <Route path="/c/:publicId" element={<QuoteViewer />} />
+            <Route path="/revision/:token" element={<PublicReview />} />
             <Route path="/control/*" element={<ControlApp />} />
             <Route path="/ecosistema/*" element={<EcosistemaApp />} />
             <Route path="/*" element={<BiApp />} />
@@ -359,6 +361,7 @@ function App() {
               <Route path="/control/*" element={<ControlApp />} />
               <Route path="/board/:token" element={<PublicBoard />} />
               <Route path="/c/:publicId" element={<QuoteViewer />} />
+              <Route path="/revision/:token" element={<PublicReview />} />
 
               {/* Ecosistema digital Algoritmo T (portal de módulos por permiso) */}
               <Route path="/ecosistema/*" element={<EcosistemaApp />} />

@@ -22,6 +22,7 @@
  */
 import { hasAccess } from '../_lib/lb-access.js'
 import { guard, lbSessionState } from '../_lib/lb-auth.js'
+import { reviewOpen } from '../_lib/lb-review.js'
 import { injectEditsOnly } from '../_lib/lb-mirror-html.js'
 import { RISE_DATA_PATH, encodeRise, parseRise, riseWithEdits } from '../_lib/lb-rise.js'
 import { lbFiles, loadResourceByPublicId } from '../_lib/lb-store.js'
@@ -86,7 +87,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       (resource.shareMode === 'OPEN' ||
         (resource.shareMode === 'CODE' && hasAccess(req, publicId, resource.shareCode)))
 
-    if (!open) {
+    // Quien revisa por el enlace de revisión, identificado, ve los mismos
+    // archivos que la página que se le sirve, aunque aún sea un borrador.
+    if (!open && !reviewOpen(req, resource)) {
       const { session, allowed } = await lbSessionState(req)
       if (!session || !allowed) return res.status(403).send('Sin acceso')
       const check = await guard(req, resource.workspaceId, 'resource.view', session)

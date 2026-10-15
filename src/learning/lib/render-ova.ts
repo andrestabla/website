@@ -290,7 +290,7 @@ function renderCheck(block: LbBlock, key: string): string {
 function renderCover(content: LbContent, meta: LbRenderMeta): string {
   const cover = content.cover || {}
   const outcomes = cover.outcomes || []
-  return `<section class="lb-screen lb-cover" data-screen="0" id="lb-screen-0">
+  return `<section class="lb-screen lb-cover" data-screen="0" id="lb-screen-0" data-lb-anchor="cover">
     <div class="lb-cover__inner">
       ${cover.kicker || meta.course ? `<div class="lb-cover__kicker">${inline(cover.kicker || meta.course)}</div>` : ''}
       <h1>${inline(cover.title || meta.title)}</h1>
@@ -764,12 +764,12 @@ export function renderOvaHtml(options: {
   const screens = [
     renderCover(content, meta),
     ...lessons.map(
-      (lesson, i) => `<section class="lb-screen" data-screen="${i + 1}" id="lb-screen-${i + 1}">
+      (lesson, i) => `<section class="lb-screen" data-screen="${i + 1}" id="lb-screen-${i + 1}" data-lb-anchor="lesson:${escapeHtml(lesson.id)}">
         <header class="lb-screen__head">
           <div class="lb-screen__kicker">${escapeHtml(label)} ${i + 1}</div>
           <h1>${inline(lesson.title)}</h1>
         </header>
-        ${lesson.blocks.map((block, j) => `<div class="lb-block">${renderBlock(block, j)}</div>`).join('')}
+        ${lesson.blocks.map((block, j) => `<div class="lb-block" data-lb-anchor="block:${escapeHtml(block.id || '')}">${renderBlock(block, j)}</div>`).join('')}
         <div class="lb-foot">
           ${i > 0 ? `<button type="button" class="lb-btn lb-btn--ghost" data-go="${i}">Anterior</button>` : '<span></span>'}
           ${i + 1 < lessons.length ? `<button type="button" class="lb-btn" data-go="${i + 2}">Siguiente</button>` : '<span class="lb-foot__note">Fin de la unidad</span>'}

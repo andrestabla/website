@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   MessageSquare, MessageSquarePlus, Check, CornerDownRight, Loader2, Trash2, Pencil, X,
-  CheckCircle2, RotateCcw, Filter,
+  CheckCircle2, RotateCcw, Filter, Crosshair, UserRound,
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import type { LbDirectives } from './lib/directives'
@@ -20,6 +20,7 @@ import type { LbAnchorTarget } from './lib/comments'
 import { anchorTargetsFor, type LbResourceContent } from './lib/content'
 import { can, type LbRole } from './lib/roles'
 import { learningApi, timeAgo, type CommentRow } from './lib/api'
+import { describeTarget } from './lib/review'
 
 type Filter = 'all' | 'commented' | 'open'
 
@@ -202,6 +203,14 @@ export function CommentsPanel({
     <div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[12.5px] font-bold text-slate-700">{comment.authorName}</span>
+        {comment.guest && (
+          <span
+            title={comment.guest.email}
+            className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10.5px] font-bold text-amber-800"
+          >
+            <UserRound size={10} /> Revisión externa{comment.guest.org ? ` · ${comment.guest.org}` : ''}
+          </span>
+        )}
         <span className="text-[11px] text-slate-400">{timeAgo(comment.createdAt)}</span>
         {comment.updatedAt !== comment.createdAt && <span className="text-[11px] text-slate-300">editado</span>}
         <div className="flex-1" />
@@ -237,7 +246,19 @@ export function CommentsPanel({
           </div>
         </div>
       ) : (
-        <p className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-slate-700">{comment.body}</p>
+        <>
+          {comment.target && !comment.parentId && (
+            <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-slate-50 px-2 py-1.5 text-[11.5px] text-slate-500">
+              <Crosshair size={12} className="mt-0.5 shrink-0 text-amber-600" />
+              <span className="min-w-0">
+                <span className="font-semibold text-slate-600">{describeTarget(comment.target)}</span>
+                {comment.target.section && <span> · en «{comment.target.section}»</span>}
+                {comment.target.page && <span className="text-slate-400"> · {comment.target.page}</span>}
+              </span>
+            </div>
+          )}
+          <p className="mt-1 whitespace-pre-wrap text-[13.5px] leading-relaxed text-slate-700">{comment.body}</p>
+        </>
       )}
     </div>
   )

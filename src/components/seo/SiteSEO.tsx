@@ -169,6 +169,11 @@ export function SiteSEO() {
       description = 'Ecosistema digital Algoritmo T: acceso unificado a tus módulos y herramientas.'
       isKnownRoute = true
       shouldNoIndex = true
+    } else if (normalizedPath.startsWith('/revision/')) {
+      title = `Revisión · Learning Builder | ${siteName}`
+      description = 'Revisión comentada de un recurso de aprendizaje.'
+      isKnownRoute = true
+      shouldNoIndex = true
     } else if (normalizedPath.startsWith('/board/')) {
       title = `Tablero · Project Control | ${siteName}`
       description = 'Vista pública de un tablero de seguimiento.'
