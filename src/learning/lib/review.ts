@@ -36,8 +36,13 @@ export const LB_TARGET_LABEL: Record<LbTargetKind, string> = {
 export type LbReviewTarget = {
   /** Página del paquete; vacío en las piezas de una sola página. */
   page: string
-  /** Ruta CSS desde <body> para volver a dar con el elemento. */
+  /**
+   * Ruta CSS desde <body> para volver a dar con el elemento. Si vive dentro de
+   * marcos anidados, la ruta de cada marco va delante, separada por « >>> ».
+   */
   selector: string
+  /** Ruta interna de la pieza (Rise: «#/lessons/…»): la lección en que estaba. */
+  hash?: string
   kind: LbTargetKind
   /** Lo que decía, o el texto alternativo si es una imagen. */
   text: string
@@ -65,7 +70,7 @@ function fraction(value: unknown): number | undefined {
 export function sanitizeTarget(raw: unknown): LbReviewTarget | null {
   if (!raw || typeof raw !== 'object') return null
   const value = raw as Record<string, unknown>
-  const selector = clip(value.selector, 600)
+  const selector = clip(value.selector, 1500)
   if (!selector) return null
   const kind = LB_TARGET_KINDS.includes(value.kind as LbTargetKind) ? (value.kind as LbTargetKind) : 'element'
   const target: LbReviewTarget = {
@@ -74,6 +79,8 @@ export function sanitizeTarget(raw: unknown): LbReviewTarget | null {
     kind,
     text: clip(value.text, 240),
   }
+  const hash = clip(value.hash, 300)
+  if (/^#[!/]/.test(hash)) target.hash = hash
   const src = clip(value.src, 500)
   if (src) target.src = src
   const section = clip(value.section, 160)
