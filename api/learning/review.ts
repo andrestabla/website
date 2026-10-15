@@ -18,6 +18,7 @@
 import { appendToBody, servePackage, shell } from '../_lib/lb-serve-package.js'
 import { clearReviewerCookie, readReviewer, reviewLayer, reviewerCookie, type LbReviewer } from '../_lib/lb-review.js'
 import { renderResourceHtml } from '../_lib/lb-render-any.js'
+import { riseLessonPath } from '../_lib/lb-rise.js'
 import { lbComments, lbResources, loadResource, usersByIds } from '../_lib/lb-store.js'
 import { parseAnchor } from '../../src/learning/lib/comments.js'
 import { anchorTargetsFor, deliverablePackage, familyOf } from '../../src/learning/lib/content.js'
@@ -222,7 +223,11 @@ async function api(req: VercelRequest, res: VercelResponse) {
     let anchor = parseAnchor(body.anchor).key
     if (!targets.some((row) => row.anchor === anchor)) anchor = 'resource'
     if (anchor === 'resource' && target?.page && familyOf(resource.kind) === 'mirror') {
-      const page = (content as any)?.pages?.find?.((row: any) => row?.path === target.page)
+      // En un Rise todas las lecciones comparten página; la lección la dice su ruta interna.
+      const riseLesson = /^#\/lessons\/([A-Za-z0-9_-]+)/.exec(target.hash || '')?.[1]
+      const path = riseLesson ? riseLessonPath(riseLesson) : target.page
+      const pages: any[] = Array.isArray((content as any)?.pages) ? (content as any).pages : []
+      const page = pages.find((row) => row?.path === path) || pages.find((row) => row?.path === target.page)
       if (page?.id && targets.some((row) => row.anchor === `lesson:${page.id}`)) anchor = `lesson:${page.id}`
     }
     const label = targets.find((row) => row.anchor === anchor)?.label || 'El recurso completo'

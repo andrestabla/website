@@ -175,6 +175,8 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
   const frameRef = useRef<HTMLIFrameElement>(null)
   const [frameSrc, setFrameSrc] = useState(`/api/learning/review?token=${encodeURIComponent(token)}&frame=1`)
   const [page, setPage] = useState<string | null>(null)
+  /** Lección dentro de la página, en piezas que navegan por ruta interna (Rise). */
+  const [route, setRoute] = useState('')
   const [pointing, setPointing] = useState(false)
   const [pick, setPick] = useState<Pick | null>(null)
   const [draft, setDraft] = useState('')
@@ -231,8 +233,10 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
       if (event.origin !== window.location.origin || event.source !== frameRef.current?.contentWindow) return
       const data = event.data
       if (!data || data.source !== 'lb-review-frame') return
+      if (data.type === 'route') setRoute(String(data.hash || ''))
       if (data.type === 'ready') {
         setPage(String(data.page || ''))
+        setRoute(String(data.hash || ''))
         const wanted = pendingFocus.current
         if (wanted && (wanted.page || '') === String(data.page || '')) {
           pendingFocus.current = null
@@ -308,7 +312,9 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
     onLeave()
   }
 
-  const visibleRoots = scope === 'all' ? roots : roots.filter((row) => (row.target?.page || '') === (page ?? '') || !row.target)
+  const visibleRoots = scope === 'all'
+    ? roots
+    : roots.filter((row) => !row.target || ((row.target.page || '') === (page ?? '') && (!row.target.hash || row.target.hash === route)))
   const openCount = roots.filter((row) => row.status === 'OPEN').length
 
   const Body = ({ row }: { row: ReviewComment }) => (
