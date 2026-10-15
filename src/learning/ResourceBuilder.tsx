@@ -13,6 +13,7 @@ import {
   ArrowLeft, Sparkles, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, FileText, Eye,
   Trash2, MoreVertical, CopyPlus, Archive, Paperclip, X, Package, Download, ShieldCheck, AlertTriangle,
   PanelLeft, PanelRight, MessageSquare, RotateCcw, History, Check, Lock, Code2, RefreshCw,
+  MessageSquarePlus,
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import type { LbIssue } from './lib/blocks'
@@ -90,6 +91,7 @@ export function ResourceBuilder() {
   const [sources, setSources] = useState<SourceRow[]>([])
   const [versions, setVersions] = useState<VersionRow[]>([])
   const [shareCode, setShareCode] = useState<string | null>(null)
+  const [reviewToken, setReviewToken] = useState<string | null>(null)
   const [comments, setComments] = useState<CommentRow[]>([])
   const [focusAnchor, setFocusAnchor] = useState('')
 
@@ -140,6 +142,7 @@ export function ResourceBuilder() {
       setFinal(payload.resource.final ?? null)
       setIssues(payload.issues || [])
       setShareCode(payload.shareCode)
+      setReviewToken(payload.reviewToken ?? null)
       const ready = kindSpec(payload.resource.kind)?.available !== false
       if (!ready) setTab('ficha')
       else if (!can(payload.role, 'resource.edit')) setTab(can(payload.role, 'comment.view') ? 'comentarios' : 'vista')
@@ -246,6 +249,7 @@ export function ResourceBuilder() {
   const warnings = useMemo(() => issues.filter((issue) => issue.level === 'warning'), [issues])
   const published = resource?.status === 'PUBLISHED'
   const publicUrl = resource ? `${window.location.origin}${learningApi.publicUrl(resource.publicId)}` : ''
+  const reviewUrl = reviewToken ? `${window.location.origin}/revision/${reviewToken}` : ''
 
   const copy = (value: string, key: string) => {
     void navigator.clipboard.writeText(value)
@@ -281,6 +285,16 @@ export function ResourceBuilder() {
       })
       setResource((prev) => (prev ? { ...prev, ...payload.resource } : prev))
       setShareCode(payload.shareCode)
+    } catch (e: any) { setError(e.message) } finally { setBusy('') }
+  }
+
+  const setReview = async (enabled: boolean, rotate = false) => {
+    if (!resource) return
+    setBusy('review'); setError('')
+    try {
+      const payload = await learningApi.resources.review(resource.id, { enabled, rotate })
+      setResource((prev) => (prev ? { ...prev, ...payload.resource } : prev))
+      setReviewToken(payload.reviewToken)
     } catch (e: any) { setError(e.message) } finally { setBusy('') }
   }
 
@@ -933,6 +947,49 @@ export function ResourceBuilder() {
                         hint="Para archivo o para el pipeline de producción."
                         onBeforeDownload={flush}
                       />
+                    </div>
+                  )}
+
+                  {can(role, 'resource.share') && resource.status !== 'ARCHIVED' && (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <div className="flex items-center gap-2 text-[14px] font-bold">
+                        <MessageSquarePlus size={15} className="text-slate-400" /> Revisión externa
+                        <div className="flex-1" />
+                        <label className="inline-flex items-center gap-2 text-[12.5px] font-semibold text-slate-600">
+                          <input
+                            type="checkbox"
+                            checked={!!resource.reviewEnabled}
+                            disabled={busy === 'review'}
+                            onChange={(e) => setReview(e.target.checked)}
+                            className="h-4 w-4 accent-indigo-600"
+                          />
+                          {resource.reviewEnabled ? 'Abierta' : 'Cerrada'}
+                        </label>
+                      </div>
+                      <p className="mt-1.5 text-[12.5px] leading-snug text-slate-500">
+                        Un enlace aparte para clientes y pares: se identifican con nombre y correo, y comentan sobre la
+                        foto, el texto o el botón exacto que señalan. Funciona aunque el recurso no esté publicado; sus
+                        comentarios llegan a la pestaña de comentarios.
+                      </p>
+                      {resource.reviewEnabled && reviewUrl && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <code className="min-w-0 flex-1 truncate rounded-lg bg-slate-100 px-3 py-2 text-[12.5px]">{reviewUrl}</code>
+                          <button onClick={() => copy(reviewUrl, 'review')} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-[12.5px] font-semibold text-slate-600 hover:bg-slate-100">
+                            {copied === 'review' ? <CheckCircle2 size={14} className="text-emerald-600" /> : <Copy size={14} />} Copiar
+                          </button>
+                          <a href={reviewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-[12.5px] font-semibold text-slate-600 hover:bg-slate-100">
+                            <ExternalLink size={14} /> Abrir
+                          </a>
+                          <button
+                            onClick={() => setReview(true, true)}
+                            disabled={busy === 'review'}
+                            title="El enlace anterior deja de funcionar"
+                            className="inline-flex items-center gap-1 text-[12px] font-semibold text-slate-500 hover:text-slate-800 hover:underline"
+                          >
+                            <RefreshCw size={12} /> Generar otro
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 

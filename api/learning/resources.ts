@@ -11,7 +11,7 @@
  */
 import { denied, guard, lbSessionState, requireModule, visibleWorkspaces } from '../_lib/lb-auth.js'
 import {
-  lbComments, lbFiles, lbResources, lbVersions, lbWorkspaces, loadResource, newPublicId, newShareCode,
+  lbComments, lbFiles, lbResources, lbVersions, lbWorkspaces, loadResource, newPublicId, newReviewToken, newShareCode,
   snapshot, summarize,
 } from '../_lib/lb-store.js'
 import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
@@ -158,7 +158,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       : op === 'versions' ? 'resource.view'
       : op === 'delete' ? 'resource.delete'
       : op === 'publish' || op === 'unpublish' || op === 'archive' ? 'resource.publish'
-      : op === 'share' ? 'resource.share'
+      : op === 'share' || op === 'review' ? 'resource.share'
       : op === 'duplicate' ? 'resource.create'
       : 'resource.edit'
     const check = await guard(req, resource.workspaceId, capability as any, gate.session)
@@ -178,6 +178,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         role: check.role,
         issues: validateResourceContent(resource.kind, content, directives),
         shareCode: can(check.role, 'resource.share') ? resource.shareCode : null,
+        reviewToken: can(check.role, 'resource.share') ? resource.reviewToken : null,
       })
     }
 
@@ -271,6 +272,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         include: { workspace: true },
       })
       return res.status(200).json({ ok: true, resource: summarize(updated), shareCode })
+    }
+
+    // Revisión externa: independiente del enlace público y de la publicación.
+    if (op === 'review') {
+      if (resource.status === 'ARCHIVED') {
+        return res.status(400).json({ ok: false, error: 'Un recurso archivado no se pone en revisión' })
+      }
+      const enabled = body.enabled === true
+      const reviewToken = body.rotate === true || !resource.reviewToken ? newReviewToken() : resource.reviewToken
+      const updated = await lbResources().update({
+        where: { id: resourceId },
+        data: { reviewEnabled: enabled, reviewToken },
+        include: { workspace: true },
+      })
+      return res.status(200).json({ ok: true, resource: summarize(updated), reviewToken })
     }
 
     if (op === 'duplicate') {

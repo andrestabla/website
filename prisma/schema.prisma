@@ -1037,6 +1037,12 @@ model LbResource {
   shareCode    String?
   embedEnabled Boolean @default(false)
 
+  /// Revisión externa: un enlace aparte, para clientes y pares, que deja
+  /// comentar sobre la pieza tras identificarse. Funciona aunque no esté
+  /// publicado; el token se rota para revocarlo.
+  reviewEnabled Boolean @default(false)
+  reviewToken   String? @unique
+
   publishedAt DateTime?
   views       Int       @default(0)
   createdAt   DateTime  @default(now())
@@ -1136,7 +1142,15 @@ model LbComment {
   anchorLabel  String?
   /// Respuesta dentro de un hilo; null si abre el hilo.
   parentId     String?
-  authorId     String // AdminUser.id
+  /// AdminUser.id; null cuando lo escribe un revisor externo.
+  authorId     String?
+  /// Revisor externo identificado en el enlace de revisión.
+  guestName    String?
+  guestEmail   String?
+  guestOrg     String?
+  /// El elemento exacto señalado en la pieza: página, selector, tipo, texto,
+  /// punto sobre una imagen… (src/learning/lib/review.ts).
+  target       Json?
   body         String
   /// OPEN | RESOLVED — solo tiene sentido en el comentario raíz del hilo.
   status       String    @default("OPEN")

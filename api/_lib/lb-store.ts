@@ -25,6 +25,11 @@ export function newPublicId(): string {
   return crypto.randomBytes(9).toString('base64url')
 }
 
+/** Token del enlace de revisión externa: largo, porque abre también borradores. */
+export function newReviewToken(): string {
+  return crypto.randomBytes(18).toString('base64url')
+}
+
 /**
  * Código de acceso de un enlace protegido. Seis caracteres sin vocales ni
  * parecidos (0/O, 1/I): se dicta por teléfono sin equivocaciones.
@@ -137,6 +142,7 @@ export function summarize(resource: any) {
     status: resource.status,
     shareMode: resource.shareMode,
     embedEnabled: !!resource.embedEnabled,
+    reviewEnabled: !!resource.reviewEnabled,
     importMode: resource.importMode,
     /** PACKAGE | MEDIA | null — qué se entrega además del guion. */
     finalKind: final?.kind || null,

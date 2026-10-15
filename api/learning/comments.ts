@@ -69,7 +69,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           anchorLabel: row.anchorLabel,
           parentId: row.parentId,
           authorId: row.authorId,
-          authorName: named(row.authorId),
+          authorName: row.authorId ? named(row.authorId) : row.guestName || 'Revisor externo',
+          /** Quien comentó desde el enlace de revisión, sin cuenta en el Ecosistema. */
+          guest: row.authorId ? null : { name: row.guestName || '', email: row.guestEmail || '', org: row.guestOrg || '' },
+          target: row.target ?? null,
           body: row.body,
           status: row.status,
           resolvedAt: row.resolvedAt,

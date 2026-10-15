@@ -40,6 +40,8 @@ export function SmartPopup() {
     const popupHref = site.popupCtaHref || '/#contacto'
     const isExternalPopupHref = /^https?:\/\//i.test(popupHref)
     const isPathAllowed = useMemo(() => {
+        // La revisión externa de un recurso es trabajo de un cliente: nada de campañas encima.
+        if (pathname.startsWith('/revision/')) return false
         if (popupPages === 'all') return true
         if (popupPages === 'home') return pathname === '/'
         if (popupPages === 'services') return pathname.startsWith('/servicios')

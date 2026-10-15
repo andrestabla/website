@@ -22,6 +22,8 @@ export function DataConsentModal({ onDecision }: Props) {
   const shouldShow = useMemo(() => {
     if (!enabled) return false
     if (pathname.startsWith('/admin')) return false
+    // La revisión externa pide su propia autorización al identificarse.
+    if (pathname.startsWith('/revision/')) return false
     if (dismissedForVersion === policyVersion) return false
     const consent = getStoredConsent()
     if (!consent) return true
