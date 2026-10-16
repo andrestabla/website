@@ -129,6 +129,7 @@ export function summarize(resource: any) {
   return {
     id: resource.id,
     code: resource.code,
+    clientCode: resource.clientCode || null,
     publicId: resource.publicId,
     workspaceId: resource.workspaceId,
     workspaceCode: resource.workspace?.code || '',

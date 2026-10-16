@@ -1001,7 +1001,12 @@ model LbWorkspaceMember {
 model LbResource {
   id          String @id @default(cuid())
   /// Identificador legible, derivado del código del workspace: UNICAFAM-OVA-001.
+  /// Es el ID del recurso dentro de la plataforma y no cambia nunca.
   code        String @unique
+  /// La codificación del cliente, si su proyecto tiene la suya: FE_RED5_ACT.
+  /// Cuando existe manda en pantalla —es la que el cliente conoce y busca— y
+  /// `code` se queda detrás, como identificador interno.
+  clientCode  String?
   /// Id no adivinable de la URL pública /ova/:publicId — separado del código a
   /// propósito: un enlace abierto no debe poder adivinarse contando recursos.
   publicId    String @unique

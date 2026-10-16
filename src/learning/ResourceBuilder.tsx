@@ -460,7 +460,16 @@ export function ResourceBuilder() {
         </Link>
         <div className="h-5 w-px shrink-0 bg-slate-200" />
         <div className="min-w-0 flex-1 sm:flex-none">
-          <div className="truncate text-sm font-black tracking-tight">{resource.title}</div>
+          <div className="flex min-w-0 items-center gap-2">
+            {resource.clientCode && (
+              <span className="shrink-0 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 font-mono text-[10.5px] font-bold tracking-wide text-indigo-700">
+                {resource.clientCode}
+              </span>
+            )}
+            <span className="truncate text-sm font-black tracking-tight">{resource.title}</span>
+          </div>
+          {/* El código de la plataforma sigue aquí, detrás: es el identificador
+              del recurso, pero no lo que el cliente busca. */}
           <div className="truncate text-[11px] text-slate-400">
             <span className="font-mono">{resource.code}</span> · {workspaceName} · {spec.short}
             {resource.course ? ` · ${resource.course}` : ''}

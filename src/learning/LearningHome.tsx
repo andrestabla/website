@@ -15,7 +15,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Eye, Copy, Trash2, CopyPlus, Search, Loader2, CheckCircle2, X, Settings2,
   ChevronDown, Layers, Lock, GraduationCap, BookOpen, MousePointerClick, Mic, Clapperboard, Route, PackageOpen,
-  Library, Users, AlertTriangle, MessageSquare,
+  Library, Users, AlertTriangle, MessageSquare, Folder, FolderOpen, ChevronRight,
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import {
@@ -60,6 +60,8 @@ export function LearningHome() {
   const [query, setQuery] = useState('')
   const [kindFilter, setKindFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  /** Carpetas desplegadas a mano. Buscar las abre todas sin tocar esto. */
+  const [abiertas, setAbiertas] = useState<string[]>([])
 
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ kind: 'OVA' as LbResourceKind, title: '', course: '', unit: '' })
@@ -99,13 +101,49 @@ export function LearningHome() {
       resources.filter((resource) => {
         const matchesText =
           !needle ||
-          [resource.title, resource.course, resource.unit, ...(resource.tags || [])].some((value) =>
+          [resource.title, resource.clientCode, resource.course, resource.unit, ...(resource.tags || [])].some((value) =>
             (value || '').toLowerCase().includes(needle)
           )
         return matchesText && (!kindFilter || resource.kind === kindFilter) && (!statusFilter || resource.status === statusFilter)
       }),
     [resources, needle, kindFilter, statusFilter]
   )
+
+  /**
+   * La biblioteca se ve por carpetas, una por curso.
+   *
+   * Con sesenta y siete recursos de ocho asignaturas, una rejilla plana obliga
+   * a buscar para encontrar nada; agrupados por curso, el workspace se lee de
+   * un vistazo y cada quien abre el suyo. Lo que no declara curso no se
+   * esconde: cae en una carpeta al final, para que nada quede fuera del
+   * recuento.
+   */
+  const SIN_CURSO = 'Sin curso asignado'
+  const carpetas = useMemo(() => {
+    const porCurso = new Map<string, ResourceRow[]>()
+    for (const resource of filtered) {
+      const clave = (resource.course || '').trim() || SIN_CURSO
+      const lista = porCurso.get(clave)
+      if (lista) lista.push(resource)
+      else porCurso.set(clave, [resource])
+    }
+    return [...porCurso.entries()]
+      .sort((a, b) =>
+        a[0] === SIN_CURSO ? 1 : b[0] === SIN_CURSO ? -1 : a[0].localeCompare(b[0], 'es'))
+      .map(([curso, lista]) => ({
+        curso,
+        recursos: lista,
+        publicados: lista.filter((r) => r.status === 'PUBLISHED').length,
+      }))
+  }, [filtered])
+
+  /* Buscar o filtrar abre todas las carpetas: si no, el resultado queda
+     escondido detrás de un clic y la búsqueda parece no encontrar nada. */
+  const filtrando = Boolean(needle || kindFilter || statusFilter)
+  const abierta = (curso: string) => filtrando || abiertas.includes(curso)
+  const alternar = (curso: string) =>
+    setAbiertas((previas) =>
+      previas.includes(curso) ? previas.filter((c) => c !== curso) : [...previas, curso])
 
   const countByKind = useMemo(() => {
     const counts = new Map<string, number>()
@@ -457,108 +495,148 @@ export function LearningHome() {
                 </div>
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {filtered.map((resource) => {
-                  const spec = kindSpec(resource.kind)
-                  const editable = can(role, 'resource.edit')
-                  return (
-                    <div
-                      key={resource.id}
-                      className="group flex cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-400 hover:shadow-md"
-                      onClick={() => navigate(`/ecosistema/learning/${resource.workspaceCode}/${resource.code}`)}
+              <div className="space-y-3">
+                {carpetas.map(({ curso, recursos, publicados }) => (
+                  <section key={curso} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                    <button
+                      onClick={() => alternar(curso)}
+                      aria-expanded={abierta(curso)}
+                      className="flex w-full items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-50"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
-                          <KindIcon kind={resource.kind} size={12} /> {spec.short}
+                      <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-indigo-50 text-indigo-600">
+                        {abierta(curso) ? <FolderOpen size={17} /> : <Folder size={17} />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-bold tracking-tight text-slate-800">{curso}</span>
+                        <span className="block text-[12px] text-slate-500">
+                          {recursos.length} {recursos.length === 1 ? 'recurso' : 'recursos'}
+                          {publicados > 0 && <> · {publicados} publicado{publicados === 1 ? '' : 's'}</>}
                         </span>
-                        <span className={`rounded-full border px-2.5 py-0.5 text-[10.5px] font-semibold ${LB_STATUS_STYLE[resource.status]}`}>
-                          {LB_STATUS_LABEL[resource.status]}
-                        </span>
-                      </div>
-                      <h3 className="mt-3 text-[16px] font-bold leading-snug tracking-tight">{resource.title}</h3>
-                      {(resource.course || resource.unit) && (
-                        <p className="mt-1 text-[12.5px] text-slate-500">{[resource.course, resource.unit].filter(Boolean).join(' · ')}</p>
-                      )}
-                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-slate-500">
-                        {/*
-                          Los tres números significan cosas distintas según el
-                          tipo —bloques en un OVA, puntos activos en una
-                          presentación, intervenciones en un pódcast—, así que
-                          el rótulo lo pone la familia y no la tarjeta.
-                        */}
-                        {([resource.lessonCount, resource.blockCount, resource.checkCount] as const).map(
-                          (value, index) => {
-                            const label = LB_STAT_LABELS[familyOf(resource.kind)][index]
-                            if (!label) return null
-                            return (
-                              <span key={label}>
-                                <b className="text-slate-700">{value}</b> {label}
+                      </span>
+                      <ChevronRight
+                        size={17}
+                        className={`flex-none text-slate-400 transition-transform ${abierta(curso) ? 'rotate-90' : ''}`}
+                      />
+                    </button>
+                    {abierta(curso) && (
+                      <div className="grid gap-3 border-t border-slate-100 bg-slate-50/60 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {recursos.map((resource) => {
+                        const spec = kindSpec(resource.kind)
+                        const editable = can(role, 'resource.edit')
+                        return (
+                          <div
+                            key={resource.id}
+                            className="group flex cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-400 hover:shadow-md"
+                            onClick={() => navigate(`/ecosistema/learning/${resource.workspaceCode}/${resource.code}`)}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
+                                <KindIcon kind={resource.kind} size={12} /> {spec.short}
                               </span>
-                            )
-                          }
-                        )}
-                        {resource.status === 'PUBLISHED' && <span><b className="text-slate-700">{resource.views}</b> lecturas</span>}
+                              <span className={`rounded-full border px-2.5 py-0.5 text-[10.5px] font-semibold ${LB_STATUS_STYLE[resource.status]}`}>
+                                {LB_STATUS_LABEL[resource.status]}
+                              </span>
+                            </div>
+                            {/*
+                              La codificación del cliente va delante del
+                              título: es la que su equipo conoce, la que
+                              escribe en los correos y la que busca aquí. El
+                              código de la plataforma no se enseña en la
+                              tarjeta; vive en la cabecera del editor.
+                            */}
+                            {resource.clientCode && (
+                              <p className="mt-3 font-mono text-[11.5px] font-bold tracking-wide text-indigo-600">
+                                {resource.clientCode}
+                              </p>
+                            )}
+                            <h3 className={`${resource.clientCode ? 'mt-0.5' : 'mt-3'} text-[16px] font-bold leading-snug tracking-tight`}>{resource.title}</h3>
+                            {(resource.course || resource.unit) && (
+                              <p className="mt-1 text-[12.5px] text-slate-500">{[resource.course, resource.unit].filter(Boolean).join(' · ')}</p>
+                            )}
+                            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-slate-500">
+                              {/*
+                                Los tres números significan cosas distintas según el
+                                tipo —bloques en un OVA, puntos activos en una
+                                presentación, intervenciones en un pódcast—, así que
+                                el rótulo lo pone la familia y no la tarjeta.
+                              */}
+                              {([resource.lessonCount, resource.blockCount, resource.checkCount] as const).map(
+                                (value, index) => {
+                                  const label = LB_STAT_LABELS[familyOf(resource.kind)][index]
+                                  if (!label) return null
+                                  return (
+                                    <span key={label}>
+                                      <b className="text-slate-700">{value}</b> {label}
+                                    </span>
+                                  )
+                                }
+                              )}
+                              {resource.status === 'PUBLISHED' && <span><b className="text-slate-700">{resource.views}</b> lecturas</span>}
+                            </div>
+                            {!!resource.openComments && (
+                              <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                                <MessageSquare size={11} /> {resource.openComments} de revisión sin atender
+                              </div>
+                            )}
+                            {resource.tags.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {resource.tags.map((tag) => (
+                                  <span key={tag} className="rounded bg-slate-50 px-1.5 py-0.5 text-[10.5px] text-slate-500">{tag}</span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="mt-auto flex items-center justify-between pt-4">
+                              <span className="text-[11.5px] text-slate-400">Editado {timeAgo(resource.updatedAt)}</span>
+                              <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                                {resource.shareMode !== 'OFF' && (
+                                  <>
+                                    <button
+                                      onClick={() => copyLink(resource)}
+                                      title={resource.shareMode === 'CODE' ? 'Copiar enlace (pide código)' : 'Copiar enlace público'}
+                                      aria-label="Copiar enlace"
+                                      className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                                    >
+                                      {copied === resource.id ? <CheckCircle2 size={15} className="text-emerald-600" /> : resource.shareMode === 'CODE' ? <Lock size={15} /> : <Copy size={15} />}
+                                    </button>
+                                    <a
+                                      href={learningApi.publicUrl(resource.publicId)} target="_blank" rel="noreferrer"
+                                      title="Ver publicado" aria-label="Ver publicado"
+                                      className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                                    >
+                                      <Eye size={15} />
+                                    </a>
+                                  </>
+                                )}
+                                {can(role, 'resource.create') && (
+                                  <button
+                                    onClick={() => duplicate(resource)}
+                                    title="Duplicar" aria-label="Duplicar"
+                                    className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+                                  >
+                                    <CopyPlus size={15} />
+                                  </button>
+                                )}
+                                {can(role, 'resource.delete') && (
+                                  <button
+                                    onClick={() => remove(resource)}
+                                    title="Eliminar" aria-label="Eliminar"
+                                    className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                )}
+                                {!editable && can(role, 'resource.view') && (
+                                  <span className="px-2 text-[11px] text-slate-400">solo lectura</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                        })}
                       </div>
-                      {!!resource.openComments && (
-                        <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                          <MessageSquare size={11} /> {resource.openComments} de revisión sin atender
-                        </div>
-                      )}
-                      {resource.tags.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {resource.tags.map((tag) => (
-                            <span key={tag} className="rounded bg-slate-50 px-1.5 py-0.5 text-[10.5px] text-slate-500">{tag}</span>
-                          ))}
-                        </div>
-                      )}
-                      <div className="mt-auto flex items-center justify-between pt-4">
-                        <span className="text-[11.5px] text-slate-400">Editado {timeAgo(resource.updatedAt)}</span>
-                        <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                          {resource.shareMode !== 'OFF' && (
-                            <>
-                              <button
-                                onClick={() => copyLink(resource)}
-                                title={resource.shareMode === 'CODE' ? 'Copiar enlace (pide código)' : 'Copiar enlace público'}
-                                aria-label="Copiar enlace"
-                                className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                              >
-                                {copied === resource.id ? <CheckCircle2 size={15} className="text-emerald-600" /> : resource.shareMode === 'CODE' ? <Lock size={15} /> : <Copy size={15} />}
-                              </button>
-                              <a
-                                href={learningApi.publicUrl(resource.publicId)} target="_blank" rel="noreferrer"
-                                title="Ver publicado" aria-label="Ver publicado"
-                                className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                              >
-                                <Eye size={15} />
-                              </a>
-                            </>
-                          )}
-                          {can(role, 'resource.create') && (
-                            <button
-                              onClick={() => duplicate(resource)}
-                              title="Duplicar" aria-label="Duplicar"
-                              className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                            >
-                              <CopyPlus size={15} />
-                            </button>
-                          )}
-                          {can(role, 'resource.delete') && (
-                            <button
-                              onClick={() => remove(resource)}
-                              title="Eliminar" aria-label="Eliminar"
-                              className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          )}
-                          {!editable && can(role, 'resource.view') && (
-                            <span className="px-2 text-[11px] text-slate-400">solo lectura</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
+                    )}
+                  </section>
+                ))}
               </div>
             )}
 

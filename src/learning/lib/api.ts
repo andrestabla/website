@@ -50,6 +50,12 @@ export type ResourceRow = {
   id: string
   /** Identificador legible derivado del workspace: UNICAFAM-OVA-001. */
   code: string
+  /**
+   * La codificación del cliente, cuando su proyecto trae la suya
+   * (`FE_RED5_ACT`). Donde existe, es la que se enseña: `code` queda como
+   * identificador interno.
+   */
+  clientCode?: string | null
   publicId: string
   workspaceId: string
   workspaceCode: string
