@@ -7,6 +7,7 @@
 import { injectMirrorLayer } from './lb-mirror-html.js'
 import { RISE_DATA_PATH, RISE_SANDBOX_DIR, isRiseLessonPath, parseRise, riseLessonId, riseLessons } from './lb-rise.js'
 import { lbFiles } from './lb-store.js'
+import { readStored } from './lb-storage.js'
 import { safePath, type LbPackage } from '../../src/learning/lib/final.js'
 
 type VercelResponse = any
@@ -76,6 +77,8 @@ export async function servePackage(options: {
    * versión anterior llevan «~v/N/» delante para no mezclarse con los vivos.
    */
   live?: boolean
+  /** Workspace dueño del recurso: permite leer el bucket por su API y no por la URL pública. */
+  workspace?: { id?: string; integrations?: unknown } | null
 }): Promise<unknown> {
   const { res, resourceId, publicId, pkg, requested, viewBase, editable, extra } = options
   const version = options.version ?? 1
@@ -88,7 +91,7 @@ export async function servePackage(options: {
   const fetchFile = async (path: string): Promise<string | null> => {
     const file = await lbFiles().findUnique({ where: { resourceId_version_path: { resourceId, version, path } } })
     if (!file?.url) return null
-    const response = await fetch(file.url)
+    const response = await readStored(options.workspace, file.url)
     return response.ok ? await response.text() : null
   }
 

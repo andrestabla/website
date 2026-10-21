@@ -23,6 +23,10 @@ export type LbBucket = {
    */
   put: (key: string, body: Buffer, contentType: string, maxBytes?: number) => Promise<{ url: string; key: string; bytes: number }>
   get: (key: string) => Promise<Buffer>
+  /** Lectura por la API S3 firmada; devuelve la respuesta tal cual, sin lanzar. */
+  read: (key: string) => Promise<Response>
+  /** La clave dentro del bucket de una URL pública suya, o null si es de otro sitio. */
+  keyFor: (url: string) => string | null
   remove: (keys: string[]) => Promise<number>
 }
 
@@ -57,6 +61,13 @@ export async function workspaceBucket(workspace: { integrations?: unknown }): Pr
       if (!response.ok) throw new Error(`R2 respondió ${response.status} al subir «${clean}».`)
       return { url: `${publicBase}/${clean}`, key: clean, bytes: body.length }
     },
+    read(key) {
+      return aws.fetch(new URL(`${bucketUrl}/${key.replace(/^\/+/, '')}`))
+    },
+    keyFor(url) {
+      const prefix = `${publicBase}/`
+      return url.startsWith(prefix) ? decodeURIComponent(url.slice(prefix.length)) : null
+    },
     async get(key) {
       const response = await aws.fetch(new URL(`${bucketUrl}/${key.replace(/^\/+/, '')}`))
       if (!response.ok) throw new Error(`R2 respondió ${response.status} al leer «${key}».`)
@@ -82,4 +93,74 @@ export async function workspaceBucket(workspace: { integrations?: unknown }): Pr
 export function resourceFolder(workspaceCode: string, resourceCode: string): string {
   const safe = (value: string) => String(value || '').toUpperCase().replace(/[^A-Z0-9-]/g, '') || 'SIN-CODIGO'
   return `learning/${safe(workspaceCode)}/${safe(resourceCode)}`
+}
+
+/** Respuestas del almacenamiento que conviene volver a pedir: saturación o falla pasajera. */
+const RETRYABLE = new Set([429, 500, 502, 503, 504])
+
+/**
+ * Lee un archivo del paquete por su URL pública, reintentando lo pasajero.
+ *
+ * La URL pública de R2 (`*.r2.dev`) limita el tráfico: al abrir un OVA el
+ * navegador pide sus cuarenta o cincuenta archivos casi a la vez y, con una
+ * versión recién subida —sin nada aún en la caché del borde—, el bucket
+ * responde 429 a algunos. Sin reintento, ese archivo llega roto a la pantalla
+ * aunque esté bien guardado. Se espera lo que pida `Retry-After` (con tope) o
+ * un poco más en cada intento; si al final sigue fallando, se devuelve la
+ * última respuesta para que quien llama decida.
+ */
+export async function fetchStored(url: string, attempts = 4): Promise<Response> {
+  let last: Response | null = null
+  let failure: unknown = null
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) {
+      const asked = Number(last?.headers.get('retry-after'))
+      const wait = Number.isFinite(asked) && asked > 0 ? Math.min(asked * 1000, 3000) : 250 * 2 ** attempt
+      await new Promise((resolve) => setTimeout(resolve, wait + Math.random() * 150))
+    }
+    try {
+      last = await fetch(url)
+      failure = null
+      if (!RETRYABLE.has(last.status)) return last
+      if (attempt < attempts - 1) await last.arrayBuffer().catch(() => null) // libera la conexión
+    } catch (error) {
+      failure = error
+    }
+  }
+  if (last) return last
+  throw failure
+}
+
+/** Bucket de cada workspace, para no resolver la credencial en cada archivo de una ráfaga. */
+const bucketCache = new Map<string, { bucket: LbBucket; until: number }>()
+
+/**
+ * Lee un archivo guardado por la API S3 firmada del bucket en vez de por su URL
+ * pública. La API no tiene el límite de tráfico de `*.r2.dev`, que es el que
+ * dejaba imágenes rotas al abrir una versión recién subida. Si el archivo no
+ * es de este bucket, o la API falla, se cae a la URL pública con reintento.
+ */
+export async function readStored(workspace: { id?: string; integrations?: unknown } | null | undefined, url: string): Promise<Response> {
+  if (workspace) {
+    try {
+      const id = String(workspace.id || '')
+      let hit = id ? bucketCache.get(id) : undefined
+      if (!hit || hit.until < Date.now()) {
+        hit = { bucket: await workspaceBucket(workspace), until: Date.now() + 5 * 60 * 1000 }
+        if (id) bucketCache.set(id, hit)
+      }
+      const key = hit.bucket.keyFor(url)
+      if (key) {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt))
+          const response = await hit.bucket.read(key)
+          if (response.ok || !RETRYABLE.has(response.status)) return response
+          await response.arrayBuffer().catch(() => null)
+        }
+      }
+    } catch (error) {
+      console.error('readStored: la API S3 falló, se usa la URL pública', error)
+    }
+  }
+  return fetchStored(url)
 }

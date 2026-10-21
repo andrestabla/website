@@ -68,6 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const base = `/api/learning/view?preview=${encodeURIComponent(previewId)}${edit ? '&edit=1' : ''}${previewAt.live ? '' : `&v=${previewAt.version}`}&path=`
         return servePackage({
           res,
+          workspace: loaded.workspace,
           resourceId: loaded.resource.id,
           publicId: loaded.resource.publicId,
           pkg: previewAt.pkg,
@@ -133,6 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (publicAt) {
       return servePackage({
         res,
+        workspace: loaded.workspace,
         resourceId: resource.id,
         publicId,
         pkg: publicAt.pkg,
