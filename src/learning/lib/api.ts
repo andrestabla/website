@@ -46,6 +46,22 @@ export type DataSourceRow = {
   active: boolean
 }
 
+/** Una versión entregada del paquete (V1, V2…) y lo que la revisión dijo de ella. */
+export type DeliveryRow = {
+  id: string
+  version: number
+  fileName: string
+  bytes: number
+  files: number
+  /** Qué se ajustó en esta versión. */
+  notes: string | null
+  createdAt: string
+  createdByName: string | null
+  live: boolean
+  /** Hilos abiertos sobre esta versión: sin atender y atendidos. */
+  comments: { open: number; resolved: number }
+}
+
 /** Carpeta de la biblioteca de un workspace; parentId null = la raíz. */
 export type FolderRow = {
   id: string
@@ -67,6 +83,8 @@ export type ResourceRow = {
   workspaceId: string
   /** Carpeta de la biblioteca; null = la raíz del workspace. */
   folderId?: string | null
+  /** Versión entregada vigente del paquete (V1, V2…). */
+  packageVersion?: number
   workspaceCode: string
   workspaceName: string
   kind: LbResourceKind
@@ -142,6 +160,8 @@ export type CommentRow = {
   guest: { name: string; email: string; org: string } | null
   /** El elemento exacto que señaló, cuando se comentó sobre la pieza. */
   target: LbReviewTarget | null
+  /** Versión entregada sobre la que se comentó (V1, V2…). */
+  version: number | null
   body: string
   status: 'OPEN' | 'RESOLVED'
   resolvedAt: string | null
@@ -250,6 +270,9 @@ export const learningApi = {
       post('/api/learning/resources', { op: 'review', resourceId, ...data }),
     duplicate: (resourceId: string) => post('/api/learning/resources', { op: 'duplicate', resourceId }),
     remove: (resourceId: string) => post('/api/learning/resources', { op: 'delete', resourceId }),
+    /** Versiones entregadas del paquete, con los comentarios que recibió cada una. */
+    deliveries: (resourceId: string): Promise<{ live: number; deliveries: DeliveryRow[] }> =>
+      post('/api/learning/resources', { op: 'deliveries', resourceId }),
     versions: (resourceId: string): Promise<{ versions: VersionRow[] }> =>
       post('/api/learning/resources', { op: 'versions', resourceId }),
     restore: (resourceId: string, versionId: string): Promise<{ content: LbResourceContent; issues: LbIssue[] }> =>
@@ -300,16 +323,26 @@ export const learningApi = {
     part: (resourceId: string, uploadId: string, index: number, data: string) =>
       post('/api/learning/import', { op: 'part', resourceId, uploadId, index, data }),
     /** Devuelve el guion cuando el recurso es una pieza importada, y si no la pieza final. */
-    ingest: (resourceId: string, uploadId: string, parts: number, fileName: string): Promise<{
+    /**
+     * mode «version» abre una versión nueva (V2, V3…) y conserva la anterior;
+     * «replace» corrige la vigente.
+     */
+    ingest: (
+      resourceId: string, uploadId: string, parts: number, fileName: string,
+      options: { mode?: 'version' | 'replace'; notes?: string } = {}
+    ): Promise<{
       content: LbMirrorContent | null
       final: LbFinal | null
+      version: number
       files: number
       bytes: number
-    }> => post('/api/learning/import', { op: 'ingest', resourceId, uploadId, parts, fileName }),
+    }> => post('/api/learning/import', { op: 'ingest', resourceId, uploadId, parts, fileName, ...options }),
     clear: (resourceId: string): Promise<{ content: LbMirrorContent | null; final: LbFinal | null }> =>
       post('/api/learning/import', { op: 'clear', resourceId }),
   },
-  previewUrl: (resourceId: string) => `/api/learning/view?preview=${encodeURIComponent(resourceId)}`,
+  /** Con version, abre esa versión entregada en lugar de la vigente. */
+  previewUrl: (resourceId: string, version?: number) =>
+    `/api/learning/view?preview=${encodeURIComponent(resourceId)}${version ? `&v=${version}` : ''}`,
   publicUrl: (publicId: string) => `/ova/${encodeURIComponent(publicId)}`,
   exportUrl: (resourceId: string, format: 'scorm' | 'html' | 'json') =>
     `/api/learning/export?id=${encodeURIComponent(resourceId)}&format=${format}`,

@@ -1014,6 +1014,8 @@ model LbResource {
   workspaceId String
   /// Carpeta de la biblioteca; null = la raíz del workspace.
   folderId    String?
+  /// Versión entregada que está viva (V1, V2…): la que se publica y se revisa.
+  packageVersion Int @default(1)
   ownerId     String // AdminUser.id
 
   /// OVA | INTERACTIVE | PODCAST | VIDEO | ROUTE | IMPORT
@@ -1062,6 +1064,7 @@ model LbResource {
   sources   LbResourceSource[]
   files     LbResourceFile[]
   comments  LbComment[]
+  deliveries LbDelivery[]
 
   @@index([workspaceId, updatedAt(sort: Desc)])
   @@index([workspaceId, kind, updatedAt(sort: Desc)])
@@ -1126,6 +1129,8 @@ model LbResourceFile {
   resourceId  String
   /// Ruta dentro del paquete: index.html, assets/foto.jpg…
   path        String
+  /// Versión entregada a la que pertenece (LbDelivery.version).
+  version     Int      @default(1)
   /// URL en el almacenamiento (R2).
   url         String
   contentType String   @default("application/octet-stream")
@@ -1134,7 +1139,29 @@ model LbResourceFile {
 
   resource LbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 
-  @@unique([resourceId, path])
+  @@unique([resourceId, version, path])
+}
+
+/// Una versión entregada del paquete (V1, V2, V3…). Subir una nueva no borra
+/// las anteriores: cada una conserva sus archivos y cómo estaba al cerrarse,
+/// para que la revisión pueda rastrear qué se señaló y qué se corrigió.
+model LbDelivery {
+  id          String   @id @default(cuid())
+  resourceId  String
+  version     Int
+  fileName    String
+  bytes       Int      @default(0)
+  files       Int      @default(0)
+  /// Qué cambió respecto a la anterior: los ajustes atendidos.
+  notes       String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  /// Cómo quedó la versión: { content } en una pieza importada, { final } en las demás.
+  snapshot    Json     @default("{}")
+
+  resource LbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, version])
 }
 
 /// Fuente de datos abiertos que la IA puede consultar al escribir contenidos.
@@ -1179,6 +1206,8 @@ model LbComment {
   /// El elemento exacto señalado en la pieza: página, selector, tipo, texto,
   /// punto sobre una imagen… (src/learning/lib/review.ts).
   target       Json?
+  /// Versión entregada sobre la que se comentó; null si el recurso no tiene paquete.
+  version      Int?
   body         String
   /// OPEN | RESOLVED — solo tiene sentido en el comentario raíz del hilo.
   status       String    @default("OPEN")

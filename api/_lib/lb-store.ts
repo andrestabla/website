@@ -134,6 +134,8 @@ export function summarize(resource: any) {
     publicId: resource.publicId,
     workspaceId: resource.workspaceId,
     folderId: resource.folderId || null,
+    /** Versión entregada viva del paquete (V1, V2…). */
+    packageVersion: resource.packageVersion || 1,
     workspaceCode: resource.workspace?.code || '',
     workspaceName: resource.workspace?.name || '',
     kind: resource.kind,

@@ -13,6 +13,7 @@
  */
 import { contentTypeFor, isHtmlPath } from './lb-mirror-html.js'
 import { lbFiles, lbResources, snapshot } from './lb-store.js'
+import { lbDeliveries, liveVersion, pkgPrefix, snapshotOf } from './lb-delivery.js'
 import { resourceFolder, type LbBucket } from './lb-storage.js'
 import { LbZipError, stripCommonRoot, unzip, type LbZipEntry } from './lb-unzip.js'
 import { RISE_DATA_PATH, parseRise, riseLessonPath, riseLessons } from './lb-rise.js'
@@ -113,14 +114,14 @@ function standaloneEntry(manifestEntry: string, paths: string[]): string {
 
 async function storePackage(
   bucket: LbBucket,
-  folder: string,
+  prefix: string,
   entries: LbZipEntry[],
   maxFileBytes?: number
 ): Promise<Array<{ path: string; url: string; contentType: string; bytes: number }>> {
   const stored: Array<{ path: string; url: string; contentType: string; bytes: number }> = []
   for (const entry of entries) {
     const contentType = contentTypeFor(entry.path)
-    const result = await bucket.put(`${folder}/pkg/${entry.path}`, entry.bytes, contentType, maxFileBytes)
+    const result = await bucket.put(`${prefix}/${entry.path}`, entry.bytes, contentType, maxFileBytes)
     stored.push({ path: entry.path, url: result.url, contentType, bytes: result.bytes })
   }
   return stored
@@ -133,6 +134,8 @@ export type IngestResult = {
   content: LbMirrorContent | null
   /** La pieza final adjunta, para los demás tipos. */
   final: LbFinal | null
+  /** La versión entregada que quedó viva. */
+  version: number
   files: number
   bytes: number
   kind: 'SCORM' | 'ZIP' | 'HTML'
@@ -146,7 +149,7 @@ export type IngestResult = {
 export async function ingestPackage(options: {
   archive: Buffer
   fileName: string
-  resource: { id: string; title: string; code: string; kind: string; content: unknown }
+  resource: { id: string; title: string; code: string; kind: string; content: unknown; assets?: unknown; packageVersion?: number | null }
   workspace: { code: string }
   bucket: LbBucket
   userId?: string
@@ -156,6 +159,14 @@ export async function ingestPackage(options: {
    * de la función se deja el de siempre, que protege su memoria.
    */
   maxFileBytes?: number
+  /**
+   * «version»: abre una versión nueva (V2, V3…) y conserva la anterior con
+   * sus archivos, para poder rastrear la revisión. «replace» (por defecto)
+   * corrige la versión viva: se usa para un paquete subido por error.
+   */
+  mode?: 'version' | 'replace'
+  /** Qué cambia en la versión nueva: los ajustes atendidos. */
+  notes?: string
 }): Promise<IngestResult> {
   const { archive, fileName, resource, workspace, bucket, userId, maxFileBytes } = options
   const folder = resourceFolder(workspace.code, resource.code)
@@ -183,16 +194,44 @@ export async function ingestPackage(options: {
   if (!entry) throw new LbZipError('No se encontró la página de entrada del paquete.')
 
 
-  const previous = await lbFiles().findMany({ where: { resourceId: resource.id }, select: { path: true } })
-  if (previous.length) {
-    await bucket.remove(previous.map((file: any) => `${folder}/pkg/${file.path}`))
-    await lbFiles().deleteMany({ where: { resourceId: resource.id } })
+  // ¿Qué versión se escribe? La primera subida es la V1; después, una versión
+  // nueva va a continuación de la última, y reemplazar reescribe la viva.
+  const current = liveVersion(resource)
+  const hasFiles = (await lbFiles().count({ where: { resourceId: resource.id } })) > 0
+  const lastDelivery = await lbDeliveries().findFirst({
+    where: { resourceId: resource.id },
+    orderBy: { version: 'desc' },
+    select: { version: true },
+  })
+  const newVersion = options.mode === 'version' && hasFiles
+  const version = newVersion ? Math.max(current, lastDelivery?.version || 0) + 1 : current
+
+  if (newVersion) {
+    // La versión que se cierra guarda cómo quedó, retoques incluidos: es lo
+    // que se revisó y a lo que apuntan sus comentarios.
+    await lbDeliveries().upsert({
+      where: { resourceId_version: { resourceId: resource.id, version: current } },
+      update: { snapshot: snapshotOf({ kind: resource.kind, content: resource.content, assets: resource.assets }) as any },
+      create: {
+        resourceId: resource.id,
+        version: current,
+        fileName: String((resource as any)?.importMeta?.fileName || 'paquete'),
+        snapshot: snapshotOf({ kind: resource.kind, content: resource.content, assets: resource.assets }) as any,
+      },
+    })
+  } else {
+    const previous = await lbFiles().findMany({ where: { resourceId: resource.id, version }, select: { path: true } })
+    if (previous.length) {
+      await bucket.remove(previous.map((file: any) => `${pkgPrefix(folder, version)}/${file.path}`))
+      await lbFiles().deleteMany({ where: { resourceId: resource.id, version } })
+    }
   }
 
-  const stored = await storePackage(bucket, folder, entries, maxFileBytes)
+  const stored = await storePackage(bucket, pkgPrefix(folder, version), entries, maxFileBytes)
   await lbFiles().createMany({
     data: stored.map((file) => ({
       resourceId: resource.id,
+      version,
       path: file.path,
       url: file.url,
       contentType: file.contentType,
@@ -254,15 +293,43 @@ export async function ingestPackage(options: {
     })
     await lbResources().update({
       where: { id: resource.id },
-      data: { content: content as any, importMode: 'MIRROR', importMeta: importMeta as any },
+      data: { content: content as any, importMode: 'MIRROR', importMeta: importMeta as any, packageVersion: version },
     })
-    return { content, final: null, files: stored.length, bytes: archive.length, kind }
+    await recordDelivery({ resourceId: resource.id, version, fileName, archive, files: stored.length, userId, notes: options.notes, snapshot: { content } })
+    return { content, final: null, version, files: stored.length, bytes: archive.length, kind }
   }
 
   const final = sanitizeFinal({ kind: 'PACKAGE', origin, entry, pages, patches: {} })
   await lbResources().update({
     where: { id: resource.id },
-    data: { assets: final as any, importMeta: importMeta as any },
+    data: { assets: final as any, importMeta: importMeta as any, packageVersion: version },
   })
-  return { content: null, final, files: stored.length, bytes: archive.length, kind }
+  await recordDelivery({ resourceId: resource.id, version, fileName, archive, files: stored.length, userId, notes: options.notes, snapshot: { final } })
+  return { content: null, final, version, files: stored.length, bytes: archive.length, kind }
+}
+
+/** La ficha de la versión que acaba de quedar viva. */
+async function recordDelivery(options: {
+  resourceId: string
+  version: number
+  fileName: string
+  archive: Buffer
+  files: number
+  userId?: string
+  notes?: string
+  snapshot: unknown
+}) {
+  const data = {
+    fileName: options.fileName,
+    bytes: options.archive.length,
+    files: options.files,
+    createdById: options.userId || null,
+    snapshot: options.snapshot as any,
+    ...(options.notes !== undefined ? { notes: options.notes.trim().slice(0, 4000) || null } : {}),
+  }
+  await lbDeliveries().upsert({
+    where: { resourceId_version: { resourceId: options.resourceId, version: options.version } },
+    update: { ...data, createdAt: new Date() },
+    create: { resourceId: options.resourceId, version: options.version, ...data },
+  })
 }

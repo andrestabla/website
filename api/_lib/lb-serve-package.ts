@@ -69,15 +69,24 @@ export async function servePackage(options: {
   editable: boolean
   /** Capa que se suma al final de la página —la de revisión—, sabiendo cuál es. */
   extra?: (page: string) => string
+  /** Versión entregada que se sirve; por defecto la 1. */
+  version?: number
+  /**
+   * Si es la versión viva. Sus archivos van por la ruta de siempre; los de una
+   * versión anterior llevan «~v/N/» delante para no mezclarse con los vivos.
+   */
+  live?: boolean
 }): Promise<unknown> {
   const { res, resourceId, publicId, pkg, requested, viewBase, editable, extra } = options
+  const version = options.version ?? 1
+  const live = options.live ?? true
   // Los archivos del paquete se piden al propio sitio, no al almacenamiento.
   // Si se pidieran allí, el navegador bloquearía las tipografías por CORS y la
   // pieza se pintaría con otra letra: parecida, pero no igual.
-  const packageRoot = `/ova/${encodeURIComponent(publicId)}/a/`
+  const packageRoot = `/ova/${encodeURIComponent(publicId)}/a/${live ? '' : `~v/${version}/`}`
 
   const fetchFile = async (path: string): Promise<string | null> => {
-    const file = await lbFiles().findUnique({ where: { resourceId_path: { resourceId, path } } })
+    const file = await lbFiles().findUnique({ where: { resourceId_version_path: { resourceId, version, path } } })
     if (!file?.url) return null
     const response = await fetch(file.url)
     return response.ok ? await response.text() : null

@@ -18,10 +18,11 @@
 import { appendToBody, servePackage, shell } from '../_lib/lb-serve-package.js'
 import { clearReviewerCookie, readReviewer, reviewLayer, reviewerCookie, type LbReviewer } from '../_lib/lb-review.js'
 import { renderResourceHtml } from '../_lib/lb-render-any.js'
+import { lbDeliveries, liveVersion, packageAt } from '../_lib/lb-delivery.js'
 import { riseLessonPath } from '../_lib/lb-rise.js'
 import { lbComments, lbResources, loadResource, usersByIds } from '../_lib/lb-store.js'
 import { parseAnchor } from '../../src/learning/lib/comments.js'
-import { anchorTargetsFor, deliverablePackage, familyOf } from '../../src/learning/lib/content.js'
+import { anchorTargetsFor, familyOf } from '../../src/learning/lib/content.js'
 import { describeTarget, sanitizeTarget } from '../../src/learning/lib/review.js'
 
 type VercelRequest = any
@@ -73,17 +74,22 @@ async function frame(req: VercelRequest, res: VercelResponse) {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN')
   res.setHeader('Cache-Control', 'private, no-store')
 
-  const pkg = deliverablePackage(resource.kind, content, loaded.final)
-  if (pkg) {
+  // ?v=N revisa una versión entregada anterior: se ve con sus comentarios, sin añadir más.
+  const askedVersion = Number(req.query?.v) || null
+  const at = await packageAt(loaded, askedVersion)
+  if (askedVersion && !at) return shell('Versión no encontrada', 'Esa versión del paquete no existe.', 404, res)
+  if (at) {
     return servePackage({
       res,
       resourceId: resource.id,
       publicId: resource.publicId,
-      pkg,
+      pkg: at.pkg,
       requested: String(req.query?.path || ''),
-      viewBase: `/api/learning/review?token=${encodeURIComponent(token)}&frame=1&path=`,
+      viewBase: `/api/learning/review?token=${encodeURIComponent(token)}&frame=1${at.live ? '' : `&v=${at.version}`}&path=`,
       editable: false,
       extra: reviewLayer,
+      version: at.version,
+      live: at.live,
     })
   }
 
@@ -113,7 +119,15 @@ async function api(req: VercelRequest, res: VercelResponse) {
   const reviewer = readReviewer(req, resource.publicId, resource.reviewToken)
 
   if (op === 'open') {
+    // Las versiones entregadas, para que quien revisa pueda volver a las anteriores.
+    const versions = await lbDeliveries().findMany({
+      where: { resourceId: resource.id },
+      orderBy: { version: 'desc' },
+      select: { version: true, notes: true, createdAt: true },
+    })
     return res.status(200).json({
+      live: liveVersion(resource),
+      versions: versions.map((row: any) => ({ ...row, live: row.version === liveVersion(resource) })),
       ok: true,
       resource: {
         title: resource.title,
@@ -176,6 +190,7 @@ async function api(req: VercelRequest, res: VercelResponse) {
       authorOrg: row.authorId ? (workspace?.name ? `Equipo · ${workspace.name}` : 'Equipo') : row.guestOrg || '',
       fromTeam: !!row.authorId,
       mine: !row.authorId && row.guestEmail === reviewer.email,
+      version: row.version ?? null,
     })
     return res.status(200).json({
       ok: true,
@@ -194,6 +209,14 @@ async function api(req: VercelRequest, res: VercelResponse) {
     })
     if (recent >= 12) return res.status(429).json({ ok: false, error: 'Vas muy rápido: espera un momento' })
 
+    // Se comenta sobre la versión vigente; las anteriores quedan como registro.
+    const live = liveVersion(resource)
+    const viewing = Number(body.version) || null
+    const hasPackage = !!(await packageAt(loaded))
+    if (hasPackage && viewing && viewing !== live) {
+      return res.status(400).json({ ok: false, error: `Estás viendo la V${viewing}; los comentarios nuevos van sobre la V${live}, la vigente` })
+    }
+
     const parentId = text(body.parentId, 40)
     if (parentId) {
       const parent = await lbComments().findUnique({ where: { id: parentId } })
@@ -206,6 +229,7 @@ async function api(req: VercelRequest, res: VercelResponse) {
           anchor: parent.anchor,
           anchorLabel: parent.anchorLabel,
           parentId,
+          version: parent.version ?? null,
           body: content_,
           guestName: reviewer.name,
           guestEmail: reviewer.email,
@@ -238,6 +262,7 @@ async function api(req: VercelRequest, res: VercelResponse) {
         anchor,
         anchorLabel: target ? `${label} · ${describeTarget(target)}`.slice(0, 300) : label,
         target: target ?? undefined,
+        version: hasPackage ? live : null,
         body: content_,
         guestName: reviewer.name,
         guestEmail: reviewer.email,

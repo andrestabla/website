@@ -12,7 +12,8 @@
 import { denied, guard, requireModule } from '../_lib/lb-auth.js'
 import { lbComments, loadResource, usersByIds } from '../_lib/lb-store.js'
 import { parseAnchor } from '../../src/learning/lib/comments.js'
-import { anchorTargetsFor } from '../../src/learning/lib/content.js'
+import { anchorTargetsFor, servesOriginal } from '../../src/learning/lib/content.js'
+import { liveVersion } from '../_lib/lb-delivery.js'
 import { can } from '../../src/learning/lib/roles.js'
 
 type VercelRequest = any
@@ -73,6 +74,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           /** Quien comentó desde el enlace de revisión, sin cuenta en el Ecosistema. */
           guest: row.authorId ? null : { name: row.guestName || '', email: row.guestEmail || '', org: row.guestOrg || '' },
           target: row.target ?? null,
+          /** Versión entregada sobre la que se comentó (V1, V2…). */
+          version: row.version ?? null,
           body: row.body,
           status: row.status,
           resolvedAt: row.resolvedAt,
@@ -108,9 +111,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         anchor = parent.anchor
       }
 
+      // Un comentario dice sobre qué versión del paquete se hizo; una respuesta, la de su hilo.
+      const parentRow = parentId ? await lbComments().findUnique({ where: { id: parentId }, select: { version: true } }) : null
+      const version = parentId
+        ? parentRow?.version ?? null
+        : servesOriginal(resource.kind, content, loaded.final) ? liveVersion(resource) : null
       const created = await lbComments().create({
         data: {
           resourceId,
+          version,
           anchor,
           anchorLabel:
             anchorTargetsFor(resource.kind, content, directives.instructional.lessonLabel)

@@ -35,6 +35,8 @@ type ReviewComment = {
   authorOrg: string
   fromTeam: boolean
   mine: boolean
+  /** Versión entregada sobre la que se comentó. */
+  version: number | null
 }
 
 type Info = {
@@ -45,6 +47,9 @@ type Info = {
   status: string
   workspaceName: string
 }
+
+/** Versiones entregadas del paquete (V1, V2…); vacío si el recurso no tiene paquete. */
+type Versions = { live: number; list: Array<{ version: number; notes: string | null; createdAt: string; live: boolean }> }
 
 type Pick = { target: LbReviewTarget; anchor: string } | { target: null; anchor: '' }
 
@@ -67,6 +72,7 @@ async function call<T = any>(token: string, op: string, data: Record<string, unk
 export default function PublicReview() {
   const { token = '' } = useParams()
   const [info, setInfo] = useState<Info | null>(null)
+  const [versions, setVersions] = useState<Versions>({ live: 1, list: [] })
   const [reviewer, setReviewer] = useState<Reviewer | null>(null)
   const [fatal, setFatal] = useState('')
   const [loading, setLoading] = useState(true)
@@ -74,7 +80,12 @@ export default function PublicReview() {
   useEffect(() => {
     let alive = true
     call(token, 'open')
-      .then((payload) => { if (alive) { setInfo(payload.resource); setReviewer(payload.reviewer) } })
+      .then((payload) => {
+        if (!alive) return
+        setInfo(payload.resource)
+        setReviewer(payload.reviewer)
+        setVersions({ live: payload.live || 1, list: payload.versions || [] })
+      })
       .catch((e) => { if (alive) setFatal(e.message) })
       .finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
@@ -98,7 +109,7 @@ export default function PublicReview() {
     )
   }
   if (!reviewer) return <Identify token={token} info={info} onDone={setReviewer} />
-  return <Workspace token={token} info={info} reviewer={reviewer} onLeave={() => setReviewer(null)} />
+  return <Workspace token={token} info={info} versions={versions} reviewer={reviewer} onLeave={() => setReviewer(null)} />
 }
 
 // ── Identificación ───────────────────────────────────────────────────────────
@@ -171,9 +182,17 @@ function Identify({ token, info, onDone }: { token: string; info: Info; onDone: 
 
 // ── Revisión ─────────────────────────────────────────────────────────────────
 
-function Workspace({ token, info, reviewer, onLeave }: { token: string; info: Info; reviewer: Reviewer; onLeave: () => void }) {
+function Workspace({ token, info, versions, reviewer, onLeave }: { token: string; info: Info; versions: Versions; reviewer: Reviewer; onLeave: () => void }) {
   const frameRef = useRef<HTMLIFrameElement>(null)
-  const [frameSrc, setFrameSrc] = useState(`/api/learning/review?token=${encodeURIComponent(token)}&frame=1`)
+  /*
+   * La versión que se mira. La vigente es la que se comenta; las anteriores se
+   * abren para ver qué se señaló sobre ellas y comprobar que se corrigió.
+   */
+  const [viewing, setViewing] = useState(versions.live)
+  const isLive = viewing === versions.live
+  const frameUrl = (version: number, path?: string) =>
+    `/api/learning/review?token=${encodeURIComponent(token)}&frame=1${version !== versions.live ? `&v=${version}` : ''}${path ? `&path=${encodeURIComponent(path)}` : ''}`
+  const [frameSrc, setFrameSrc] = useState(frameUrl(versions.live))
   const [page, setPage] = useState<string | null>(null)
   /** Lección dentro de la página, en piezas que navegan por ruta interna (Rise). */
   const [route, setRoute] = useState('')
@@ -222,10 +241,23 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
     return map
   }, [comments])
 
+  /** ¿Se hizo sobre la versión que se está mirando? Los anteriores a las versiones cuentan como la V1. */
+  const onViewing = useCallback((row: ReviewComment) => (row.version ?? 1) === viewing || versions.list.length === 0, [viewing, versions.list.length])
+
+  // Solo se pintan los pines de la versión que se mira: los de otra versión
+  // apuntan a una pieza distinta.
   const pins = useMemo(
-    () => roots.filter((row) => row.target).map((row) => ({ id: row.id, n: row.n, status: row.status, target: row.target })),
-    [roots]
+    () => roots.filter((row) => row.target && onViewing(row)).map((row) => ({ id: row.id, n: row.n, status: row.status, target: row.target })),
+    [roots, onViewing]
   )
+
+  const switchVersion = (version: number, path?: string) => {
+    setViewing(version)
+    setPointing(false)
+    setPick(null)
+    setPage(null)
+    setFrameSrc(frameUrl(version, path))
+  }
 
   // La pieza recibe sus pines cada vez que cambian o que carga una página.
   useEffect(() => { if (page !== null) toFrame({ type: 'pins', pins }) }, [pins, page, toFrame])
@@ -282,9 +314,15 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
   const goTo = (row: ReviewComment) => {
     setActiveId(row.id)
     if (!row.target) return
+    // Un hilo de otra versión se mira sobre esa versión.
+    if (versions.list.length && (row.version ?? 1) !== viewing) {
+      pendingFocus.current = row.target
+      switchVersion(row.version ?? 1, row.target.page)
+      return
+    }
     if ((row.target.page || '') !== (page ?? '')) {
       pendingFocus.current = row.target
-      setFrameSrc(`/api/learning/review?token=${encodeURIComponent(token)}&frame=1&path=${encodeURIComponent(row.target.page)}`)
+      setFrameSrc(frameUrl(viewing, row.target.page))
       return
     }
     toFrame({ type: 'focus', target: row.target })
@@ -297,7 +335,7 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
 
   const send = () => run('new', async () => {
     if (!pick || !draft.trim()) return
-    await call(token, 'create', { body: draft.trim(), target: pick.target, anchor: pick.anchor })
+    await call(token, 'create', { body: draft.trim(), target: pick.target, anchor: pick.anchor, version: viewing })
     setDraft(''); setPick(null)
   })
 
@@ -329,7 +367,8 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
     : roots.filter((row) => !row.target || (
         (row.target.page || '') === (page ?? '') &&
         (!row.target.hash || row.target.hash === route) &&
-        (!row.target.slide || row.target.slide === slide)
+        (!row.target.slide || row.target.slide === slide) &&
+      onViewing(row)
       ))
   const openCount = roots.filter((row) => row.status === 'OPEN').length
 
@@ -379,17 +418,34 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
           <div className="text-[10.5px] font-black uppercase tracking-[0.16em] text-indigo-600">Revisión · {info.workspaceName}</div>
           <div className="truncate text-[15px] font-bold text-slate-900">{info.title}</div>
         </div>
+        {versions.list.length > 0 && (
+          <select
+            value={viewing}
+            onChange={(e) => switchVersion(Number(e.target.value))}
+            aria-label="Versión que se revisa"
+            className={`rounded-xl border px-3 py-2 text-[13px] font-bold ${isLive ? 'border-slate-300 text-slate-700' : 'border-amber-400 bg-amber-50 text-amber-900'}`}
+          >
+            {versions.list.map((row) => (
+              <option key={row.version} value={row.version}>
+                V{row.version}{row.live ? ' · vigente' : ` · ${new Date(row.createdAt).toLocaleDateString('es-CO')}`}
+              </option>
+            ))}
+          </select>
+        )}
         <button
+          disabled={!isLive}
+          title={isLive ? undefined : 'Las versiones anteriores son solo de consulta'}
           onClick={() => { setPointing((on) => !on); setPick(null) }}
-          className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13.5px] font-bold transition ${
+          className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13.5px] font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${
             pointing ? 'bg-amber-500 text-amber-950 shadow-inner' : 'bg-indigo-600 text-white hover:bg-indigo-700'
           }`}
         >
           <Crosshair size={15} /> {pointing ? 'Señalando… (Esc para salir)' : 'Señalar para comentar'}
         </button>
         <button
+          disabled={!isLive}
           onClick={() => { setPick({ target: null, anchor: '' }); setPointing(false); setPanelOpen(true) }}
-          className="hidden items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-2 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 sm:inline-flex"
+          className="hidden disabled:opacity-40 items-center gap-1.5 rounded-xl border border-slate-300 px-3 py-2 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 sm:inline-flex"
         >
           <MessageSquarePlus size={14} /> Comentario general
         </button>
@@ -406,6 +462,18 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
         </div>
       </header>
 
+      {!isLive && (
+        <div className="shrink-0 bg-amber-100 px-4 py-1.5 text-center text-[12.5px] font-semibold text-amber-900">
+          Estás viendo la V{viewing}, una versión anterior, con los comentarios que se hicieron sobre ella. Es solo de
+          consulta: los comentarios nuevos van sobre la V{versions.live}.{' '}
+          <button onClick={() => switchVersion(versions.live)} className="underline">Ir a la vigente</button>
+        </div>
+      )}
+      {isLive && versions.list.length > 1 && versions.list.find((row) => row.live)?.notes && (
+        <div className="shrink-0 bg-indigo-50 px-4 py-1.5 text-center text-[12.5px] text-indigo-900">
+          <b>Novedades de la V{versions.live}:</b> {versions.list.find((row) => row.live)?.notes}
+        </div>
+      )}
       {pointing && (
         <div className="shrink-0 bg-amber-100 px-4 py-1.5 text-center text-[12.5px] font-semibold text-amber-900">
           Pasa el ratón por la pieza y haz clic sobre la foto, el texto o el botón que quieras comentar. En una imagen, el
@@ -509,6 +577,11 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
                       {root.n}
                     </span>
                     <span className="min-w-0 flex-1 text-[11.5px] leading-snug text-slate-500">
+                      {versions.list.length > 0 && (
+                        <span className={`mr-1 rounded px-1 py-px text-[10px] font-bold ${(root.version ?? 1) === versions.live ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
+                          V{root.version ?? 1}
+                        </span>
+                      )}
                       <span className="font-semibold text-slate-700">{root.target ? describeTarget(root.target) : 'Comentario general'}</span>
                       {root.target?.section && <span> · {root.target.section}</span>}
                     </span>

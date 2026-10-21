@@ -17,6 +17,7 @@ import { buildScormPackage, safeFileName } from '../_lib/lb-scorm.js'
 import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
 import { lbFiles, loadResource } from '../_lib/lb-store.js'
 import { deliverablePackage, deliveryIssues } from '../../src/learning/lib/content.js'
+import { liveVersion } from '../_lib/lb-delivery.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -75,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const pkg = deliverablePackage(resource.kind, content, final)
     if (pkg && (format === 'html' || format === 'scorm')) {
       const files = await lbFiles().findMany({
-        where: { resourceId: resource.id },
+        where: { resourceId: resource.id, version: liveVersion(resource) },
         orderBy: { path: 'asc' },
         select: { path: true },
       })
@@ -85,6 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         directives,
         bucket,
         folder: resourceFolder(workspace.code, resource.code),
+        version: liveVersion(resource),
         files,
         title: content.cover?.title || resource.title,
         publicId: resource.publicId,
