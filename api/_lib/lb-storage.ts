@@ -83,3 +83,39 @@ export function resourceFolder(workspaceCode: string, resourceCode: string): str
   const safe = (value: string) => String(value || '').toUpperCase().replace(/[^A-Z0-9-]/g, '') || 'SIN-CODIGO'
   return `learning/${safe(workspaceCode)}/${safe(resourceCode)}`
 }
+
+/** Respuestas del almacenamiento que conviene volver a pedir: saturación o falla pasajera. */
+const RETRYABLE = new Set([429, 500, 502, 503, 504])
+
+/**
+ * Lee un archivo del paquete por su URL pública, reintentando lo pasajero.
+ *
+ * La URL pública de R2 (`*.r2.dev`) limita el tráfico: al abrir un OVA el
+ * navegador pide sus cuarenta o cincuenta archivos casi a la vez y, con una
+ * versión recién subida —sin nada aún en la caché del borde—, el bucket
+ * responde 429 a algunos. Sin reintento, ese archivo llega roto a la pantalla
+ * aunque esté bien guardado. Se espera lo que pida `Retry-After` (con tope) o
+ * un poco más en cada intento; si al final sigue fallando, se devuelve la
+ * última respuesta para que quien llama decida.
+ */
+export async function fetchStored(url: string, attempts = 4): Promise<Response> {
+  let last: Response | null = null
+  let failure: unknown = null
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) {
+      const asked = Number(last?.headers.get('retry-after'))
+      const wait = Number.isFinite(asked) && asked > 0 ? Math.min(asked * 1000, 3000) : 250 * 2 ** attempt
+      await new Promise((resolve) => setTimeout(resolve, wait + Math.random() * 150))
+    }
+    try {
+      last = await fetch(url)
+      failure = null
+      if (!RETRYABLE.has(last.status)) return last
+      if (attempt < attempts - 1) await last.arrayBuffer().catch(() => null) // libera la conexión
+    } catch (error) {
+      failure = error
+    }
+  }
+  if (last) return last
+  throw failure
+}

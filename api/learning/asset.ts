@@ -26,6 +26,7 @@ import { reviewOpen } from '../_lib/lb-review.js'
 import { injectEditsOnly } from '../_lib/lb-mirror-html.js'
 import { RISE_DATA_PATH, encodeRise, parseRise, riseWithEdits } from '../_lib/lb-rise.js'
 import { lbFiles, loadResourceByPublicId } from '../_lib/lb-store.js'
+import { fetchStored } from '../_lib/lb-storage.js'
 import { packageAt, splitVersionPath } from '../_lib/lb-delivery.js'
 import { safePath } from '../../src/learning/lib/final.js'
 
@@ -115,8 +116,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.redirect(302, file.url)
     }
 
-    const upstream = await fetch(file.url)
-    if (!upstream.ok) return res.status(502).send(`El almacenamiento respondió ${upstream.status}`)
+    const upstream = await fetchStored(file.url)
+    if (!upstream.ok) {
+      // Ni el borde ni el navegador deben guardar el error: el archivo existe y
+      // la siguiente petición puede traerlo.
+      res.setHeader('Cache-Control', 'no-store')
+      if (upstream.status === 429) res.setHeader('Retry-After', '2')
+      return res.status(upstream.status === 429 ? 503 : 502).send(`El almacenamiento respondió ${upstream.status}`)
+    }
     let body = Buffer.from(await upstream.arrayBuffer())
 
     // El contenido de un Rise no está en sus archivos HTML sino aquí, así que

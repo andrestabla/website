@@ -7,6 +7,7 @@
 import { injectMirrorLayer } from './lb-mirror-html.js'
 import { RISE_DATA_PATH, RISE_SANDBOX_DIR, isRiseLessonPath, parseRise, riseLessonId, riseLessons } from './lb-rise.js'
 import { lbFiles } from './lb-store.js'
+import { fetchStored } from './lb-storage.js'
 import { safePath, type LbPackage } from '../../src/learning/lib/final.js'
 
 type VercelResponse = any
@@ -88,7 +89,7 @@ export async function servePackage(options: {
   const fetchFile = async (path: string): Promise<string | null> => {
     const file = await lbFiles().findUnique({ where: { resourceId_version_path: { resourceId, version, path } } })
     if (!file?.url) return null
-    const response = await fetch(file.url)
+    const response = await fetchStored(file.url)
     return response.ok ? await response.text() : null
   }
 
