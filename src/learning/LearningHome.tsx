@@ -10,7 +10,7 @@
  * aplica la misma regla, así que la interfaz no esconde nada que igual se
  * pudiera llamar.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Plus, Eye, Copy, Trash2, CopyPlus, Search, Loader2, CheckCircle2, X, Settings2,
@@ -62,6 +62,8 @@ export function LearningHome() {
   const [statusFilter, setStatusFilter] = useState('')
   /** Carpetas desplegadas a mano. Buscar las abre todas sin tocar esto. */
   const [abiertas, setAbiertas] = useState<string[]>([])
+  /** Subcarpetas plegadas por quien mira; las demás se ven abiertas al abrir el curso. */
+  const [subPlegadas, setSubPlegadas] = useState<string[]>([])
 
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ kind: 'OVA' as LbResourceKind, title: '', course: '', unit: '' })
@@ -144,6 +146,61 @@ export function LearningHome() {
   const alternar = (curso: string) =>
     setAbiertas((previas) =>
       previas.includes(curso) ? previas.filter((c) => c !== curso) : [...previas, curso])
+
+  /*
+   * Dentro de un curso, la unidad hace de subcarpeta, y «›» separa niveles:
+   * «Inicio del curso» o «UT1 › 2. Comprensión». Un proyecto que organiza cada
+   * unidad por momentos los ve así sin otra columna, y uno que solo escribe
+   * «Módulo 1» ve una subcarpeta por módulo. Si nadie en el curso declara
+   * unidad, la rejilla sigue plana, como antes.
+   */
+  const REJILLA = 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3'
+  const tramos = (resource: ResourceRow) =>
+    (resource.unit || '').split('›').map((tramo) => tramo.trim()).filter(Boolean)
+  const alternarSub = (clave: string) =>
+    setSubPlegadas((previas) =>
+      previas.includes(clave) ? previas.filter((c) => c !== clave) : [...previas, clave])
+  const nivel = (clave: string, lista: ResourceRow[], profundidad: number, tarjeta: (r: ResourceRow) => ReactNode): ReactNode => {
+    const sueltos = lista.filter((r) => tramos(r).length <= profundidad)
+    const grupos = new Map<string, ResourceRow[]>()
+    for (const r of lista) {
+      const nombre = tramos(r)[profundidad]
+      if (!nombre) continue
+      const grupo = grupos.get(nombre)
+      if (grupo) grupo.push(r)
+      else grupos.set(nombre, [r])
+    }
+    const nombres = [...grupos.keys()].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }))
+    return (
+      <div className="space-y-3">
+        {sueltos.length > 0 && <div className={REJILLA}>{sueltos.map(tarjeta)}</div>}
+        {nombres.map((nombre) => {
+          const id = `${clave} › ${nombre}`
+          const grupo = grupos.get(nombre)!
+          const abiertaSub = filtrando || !subPlegadas.includes(id)
+          return (
+            <div key={id} className="rounded-xl border border-slate-200 bg-white/70">
+              <button
+                onClick={() => alternarSub(id)}
+                aria-expanded={abiertaSub}
+                className="flex w-full items-center gap-2.5 rounded-xl px-4 py-2.5 text-left transition hover:bg-slate-50"
+              >
+                <span className="flex-none text-indigo-500">{abiertaSub ? <FolderOpen size={15} /> : <Folder size={15} />}</span>
+                <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-slate-700">{nombre}</span>
+                <span className="text-[11.5px] text-slate-400">{grupo.length}</span>
+                <ChevronRight size={15} className={`flex-none text-slate-400 transition-transform ${abiertaSub ? 'rotate-90' : ''}`} />
+              </button>
+              {abiertaSub && <div className="border-t border-slate-100 p-3">{nivel(id, grupo, profundidad + 1, tarjeta)}</div>}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+  const porUnidad = (curso: string, lista: ResourceRow[], tarjeta: (r: ResourceRow) => ReactNode): ReactNode =>
+    lista.some((r) => tramos(r).length)
+      ? nivel(curso, lista, 0, tarjeta)
+      : <div className={REJILLA}>{lista.map(tarjeta)}</div>
 
   const countByKind = useMemo(() => {
     const counts = new Map<string, number>()
@@ -519,8 +576,8 @@ export function LearningHome() {
                       />
                     </button>
                     {abierta(curso) && (
-                      <div className="grid gap-3 border-t border-slate-100 bg-slate-50/60 p-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {recursos.map((resource) => {
+                      <div className="border-t border-slate-100 bg-slate-50/60 p-4">
+                        {porUnidad(curso, recursos, (resource) => {
                         const spec = kindSpec(resource.kind)
                         const editable = can(role, 'resource.edit')
                         return (
