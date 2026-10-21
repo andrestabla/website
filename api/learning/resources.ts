@@ -11,7 +11,7 @@
  */
 import { denied, guard, lbSessionState, requireModule, visibleWorkspaces } from '../_lib/lb-auth.js'
 import {
-  lbComments, lbFiles, lbResources, lbVersions, lbWorkspaces, loadResource, newPublicId, newReviewToken, newShareCode,
+  lbComments, lbFiles, lbFolders, lbResources, lbVersions, lbWorkspaces, loadResource, newPublicId, newReviewToken, newShareCode,
   snapshot, summarize,
 } from '../_lib/lb-store.js'
 import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
@@ -97,7 +97,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         openComments: openBy.get(row.id) || 0,
       }))
 
-      return res.status(200).json({ ok: true, resources })
+      // Las carpetas solo tienen sentido dentro de un workspace concreto.
+      const folders = scope.length === 1
+        ? await lbFolders()
+            .findMany({ where: { workspaceId: scope[0].workspace.id }, select: { id: true, parentId: true, name: true } })
+            .catch(() => [])
+        : []
+
+      return res.status(200).json({ ok: true, resources, folders })
     }
 
     if (op === 'create') {
@@ -116,11 +123,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const directives = sanitizeDirectives(workspace.directives)
       const title = text(body.title, 200) || 'Recurso sin título'
+      // Se crea en la carpeta que se está viendo, si es de este workspace.
+      const folderId = text(body.folderId, 40)
+      const folder = folderId ? await lbFolders().findUnique({ where: { id: folderId } }) : null
       const created = await lbResources().create({
         data: {
           publicId: newPublicId(),
           code: resourceCodeFor(workspace.code, kind, await takenResourceCodes(lbResources(), workspaceId)),
           workspaceId,
+          folderId: folder?.workspaceId === workspaceId ? folder.id : null,
           ownerId: check.session.userId,
           kind,
           title,
@@ -299,6 +310,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             await takenResourceCodes(lbResources(), resource.workspaceId)
           ),
           workspaceId: resource.workspaceId,
+          folderId: resource.folderId || null,
           ownerId: check.session.userId,
           kind: resource.kind,
           title: `${resource.title} (copia)`.slice(0, 200),
