@@ -51,6 +51,8 @@ export async function buildMirrorPackage(options: {
   bucket: LbBucket
   /** Prefijo de las claves del paquete en el almacenamiento. */
   folder: string
+  /** Versión entregada que se exporta; por defecto la 1. */
+  version?: number
   files: Array<{ path: string }>
   title: string
   publicId: string
@@ -58,12 +60,14 @@ export async function buildMirrorPackage(options: {
   format: 'scorm' | 'html'
 }): Promise<{ buffer: Buffer; fileName: string }> {
   const { pkg, directives, bucket, folder, files, title, publicId, format } = options
+  // Los archivos de la versión que se exporta: la V1 vive en «pkg», las demás en «vN/pkg».
+  const prefix = options.version && options.version > 1 ? `${folder}/v${options.version}/pkg` : `${folder}/pkg`
 
   const entries: ZipEntry[] = []
   let hasManifest = false
 
   for (const file of files) {
-    const bytes = await bucket.get(`${folder}/pkg/${file.path}`)
+    const bytes = await bucket.get(`${prefix}/${file.path}`)
     if (file.path.toLowerCase() === 'imsmanifest.xml') hasManifest = true
 
     // En un Rise el contenido vive en sus datos, no en sus HTML: es ahí donde

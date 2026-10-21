@@ -26,7 +26,7 @@ import { reviewOpen } from '../_lib/lb-review.js'
 import { injectEditsOnly } from '../_lib/lb-mirror-html.js'
 import { RISE_DATA_PATH, encodeRise, parseRise, riseWithEdits } from '../_lib/lb-rise.js'
 import { lbFiles, loadResourceByPublicId } from '../_lib/lb-store.js'
-import { deliverablePackage } from '../../src/learning/lib/content.js'
+import { packageAt, splitVersionPath } from '../_lib/lb-delivery.js'
 import { safePath } from '../../src/learning/lib/final.js'
 
 type VercelRequest = any
@@ -66,7 +66,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const publicId = String(req.query?.id || '')
     // Vercel entrega el comodín como arreglo o como cadena, según la ruta.
     const raw = req.query?.path
-    const wanted = safePath(Array.isArray(raw) ? raw.join('/') : String(raw || ''))
+    // «~v/N/…» pide un archivo de una versión entregada anterior.
+    const split = splitVersionPath(safePath(Array.isArray(raw) ? raw.join('/') : String(raw || '')))
+    const wanted = safePath(split.path)
     if (!publicId || !wanted) return res.status(400).send('Petición incompleta')
 
     const loaded = await loadResourceByPublicId(publicId)
@@ -74,15 +76,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { resource, content, final } = loaded
 
     // El archivo tiene que pertenecer al paquete que este recurso publica.
-    const pkg = deliverablePackage(resource.kind, content, final)
-    if (!pkg) return res.status(404).send('Este recurso no tiene paquete')
+    const at = await packageAt({ resource, content, final, directives: loaded.directives }, split.version)
+    if (!at) return res.status(404).send('Este recurso no tiene paquete')
+    const pkg = at.pkg
 
     // Exactamente la misma puerta que la página: abierto de par en par, con
     // código, o con sesión. Si los archivos fueran más permisivos que la
     // página, pedir «…/a/index.html» saltaría el código y no habría
     // protección ninguna.
     const published = resource.status === 'PUBLISHED'
+    // Una versión anterior nunca es pública: solo la ven el equipo y quien revisa.
     const open =
+      at.live &&
       published &&
       (resource.shareMode === 'OPEN' ||
         (resource.shareMode === 'CODE' && hasAccess(req, publicId, resource.shareCode)))
@@ -98,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const file = await lbFiles().findUnique({
-      where: { resourceId_path: { resourceId: resource.id, path: wanted } },
+      where: { resourceId_version_path: { resourceId: resource.id, version: at.version, path: wanted } },
     })
     if (!file?.url) return res.status(404).send('Ese archivo no está en el paquete')
 

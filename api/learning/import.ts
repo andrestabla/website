@@ -3,7 +3,9 @@
  *
  *   op=begin   → abre una subida por trozos
  *   op=part    → recibe un trozo
- *   op=ingest  → recompone el archivo, lo abre y publica sus páginas
+ *   op=ingest  → recompone el archivo, lo abre y publica sus páginas; con
+ *                mode=version abre una versión nueva (V2, V3…) y conserva la
+ *                anterior, con mode=replace corrige la viva
  *   op=clear   → borra el paquete y deja el recurso vacío
  *
  * La subida va por trozos porque un paquete real pesa decenas de megas y el
@@ -26,6 +28,7 @@ import { denied, guard, requireModule } from '../_lib/lb-auth.js'
 import { LbZipError, ingestPackage } from '../_lib/lb-import.js'
 import { lbFiles, lbResources, loadResource, snapshot } from '../_lib/lb-store.js'
 import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
+import { lbDeliveries, pkgPrefix } from '../_lib/lb-delivery.js'
 import { familyOf } from '../../src/learning/lib/content.js'
 import { sanitizeMirror, type LbMirrorContent } from '../../src/learning/lib/mirror.js'
 
@@ -101,9 +104,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── Borrar el paquete ──
     if (op === 'clear') {
-      const files = await lbFiles().findMany({ where: { resourceId: resource.id }, select: { id: true, path: true } })
-      await bucket.remove(files.map((file: any) => `${folder}/pkg/${file.path}`))
+      // Quitar el paquete se lleva todas sus versiones: es empezar de cero.
+      const files = await lbFiles().findMany({ where: { resourceId: resource.id }, select: { id: true, path: true, version: true } })
+      await bucket.remove(files.map((file: any) => `${pkgPrefix(folder, file.version || 1)}/${file.path}`))
       await lbFiles().deleteMany({ where: { resourceId: resource.id } })
+      await lbDeliveries().deleteMany({ where: { resourceId: resource.id } })
       await snapshot(resource.id, resource.content, 'import', check.session.userId, 'Antes de borrar el paquete')
 
       // En una pieza importada el paquete era el guion, así que hay que dejar
@@ -113,13 +118,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const empty: LbMirrorContent = sanitizeMirror({ cover: { title: resource.title } })
         await lbResources().update({
           where: { id: resource.id },
-          data: { content: empty as any, assets: {}, importMode: null, importMeta: null },
+          data: { content: empty as any, assets: {}, importMode: null, importMeta: null, packageVersion: 1 },
         })
         return res.status(200).json({ ok: true, content: empty, final: null })
       }
       await lbResources().update({
         where: { id: resource.id },
-        data: { assets: {}, importMode: null, importMeta: null },
+        data: { assets: {}, importMode: null, importMeta: null, packageVersion: 1 },
       })
       return res.status(200).json({ ok: true, content: null, final: null })
     }
@@ -153,6 +158,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         workspace,
         bucket,
         userId: check.session.userId,
+        mode: body.mode === 'version' ? 'version' : 'replace',
+        notes: typeof body.notes === 'string' ? body.notes : undefined,
       })
       return res.status(200).json({ ok: true, ...result, storage: bucket.source })
     } catch (error) {

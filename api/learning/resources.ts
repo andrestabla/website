@@ -12,9 +12,10 @@
 import { denied, guard, lbSessionState, requireModule, visibleWorkspaces } from '../_lib/lb-auth.js'
 import {
   lbComments, lbFiles, lbFolders, lbResources, lbVersions, lbWorkspaces, loadResource, newPublicId, newReviewToken, newShareCode,
-  snapshot, summarize,
+  snapshot, summarize, usersByIds,
 } from '../_lib/lb-store.js'
 import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
+import { lbDeliveries, liveVersion, pkgPrefix } from '../_lib/lb-delivery.js'
 import {
   deliveryIssues, sanitizeResourceContent, scaffoldResourceContent, validateResourceContent,
 } from '../../src/learning/lib/content.js'
@@ -166,7 +167,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const capability =
       op === 'get' ? 'resource.view'
-      : op === 'versions' ? 'resource.view'
+      : op === 'versions' || op === 'deliveries' ? 'resource.view'
       : op === 'delete' ? 'resource.delete'
       : op === 'publish' || op === 'unpublish' || op === 'archive' ? 'resource.publish'
       : op === 'share' || op === 'review' ? 'resource.share'
@@ -329,13 +330,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Los archivos del recurso —paquete importado, locuciones, fotogramas—
       // no los borra la base: si falla el almacenamiento se avisa, pero no se
       // deja el registro a medias, que es lo que dejaría huérfano lo demás.
-      const files = await lbFiles().findMany({ where: { resourceId }, select: { path: true } })
+      const files = await lbFiles().findMany({ where: { resourceId }, select: { path: true, version: true } })
       let orphans = 0
       if (files.length) {
         try {
           const bucket = await workspaceBucket(workspace)
           const folder = resourceFolder(workspace.code, resource.code)
-          const removed = await bucket.remove(files.map((file: any) => `${folder}/pkg/${file.path}`))
+          const removed = await bucket.remove(files.map((file: any) => `${pkgPrefix(folder, file.version || 1)}/${file.path}`))
           orphans = files.length - removed
         } catch {
           orphans = files.length
@@ -347,6 +348,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         warning: orphans
           ? `Quedaron ${orphans} archivo(s) en el almacenamiento: bórralos a mano si hace falta.`
           : null,
+      })
+    }
+
+    // Versiones entregadas del paquete, con lo que la revisión dijo de cada una.
+    if (op === 'deliveries') {
+      const rows = await lbDeliveries().findMany({
+        where: { resourceId },
+        orderBy: { version: 'desc' },
+        select: { id: true, version: true, fileName: true, bytes: true, files: true, notes: true, createdById: true, createdAt: true },
+      })
+      const counts = await lbComments().groupBy({
+        by: ['version', 'status'],
+        where: { resourceId, parentId: null },
+        _count: { _all: true },
+      })
+      const tally = (version: number, status: string) =>
+        (counts as any[]).find((row) => row.version === version && row.status === status)?._count?._all || 0
+      const authors = await usersByIds(rows.map((row: any) => row.createdById).filter(Boolean))
+      return res.status(200).json({
+        ok: true,
+        live: liveVersion(resource),
+        deliveries: rows.map((row: any) => ({
+          ...row,
+          createdByName: row.createdById ? authors.get(row.createdById)?.displayName || null : null,
+          live: row.version === liveVersion(resource),
+          comments: { open: tally(row.version, 'OPEN'), resolved: tally(row.version, 'RESOLVED') },
+        })),
       })
     }
 

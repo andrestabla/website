@@ -54,6 +54,8 @@ export function CommentsPanel({
   const { confirm, dialogs } = useDialogs()
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
+  /** Versión entregada que se mira (0 = todas): la trazabilidad de V1, V2… */
+  const [versionFilter, setVersionFilter] = useState(0)
   const [openAnchor, setOpenAnchor] = useState<string>(focusAnchor || '')
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [editing, setEditing] = useState<{ id: string; body: string } | null>(null)
@@ -69,10 +71,20 @@ export function CommentsPanel({
     [kind, content, directives.instructional.lessonLabel]
   )
 
+  const versions = useMemo(
+    () => [...new Set(comments.map((comment) => comment.version).filter((v): v is number => typeof v === 'number'))].sort((a, b) => b - a),
+    [comments]
+  )
+  // Una respuesta lleva la versión de su hilo, así que filtrar no parte ningún hilo.
+  const shown = useMemo(
+    () => (versionFilter ? comments.filter((comment) => comment.version === versionFilter) : comments),
+    [comments, versionFilter]
+  )
+
   const byAnchor = useMemo(() => {
     type Entry = { roots: CommentRow[]; repliesOf: Map<string, CommentRow[]> }
     const map = new Map<string, Entry>()
-    for (const comment of comments) {
+    for (const comment of shown) {
       const entry: Entry = map.get(comment.anchor) || { roots: [], repliesOf: new Map() }
       if (comment.parentId) {
         entry.repliesOf.set(comment.parentId, [...(entry.repliesOf.get(comment.parentId) || []), comment])
@@ -82,20 +94,20 @@ export function CommentsPanel({
       map.set(comment.anchor, entry)
     }
     return map
-  }, [comments])
+  }, [shown])
 
-  const openThreads = comments.filter((comment) => !comment.parentId && comment.status === 'OPEN').length
+  const openThreads = shown.filter((comment) => !comment.parentId && comment.status === 'OPEN').length
 
   /** Hilos cuya pieza ya no existe en el guion. */
   const orphans = useMemo(() => {
     const known = new Set(targets.map((target) => target.anchor))
     const groups = new Map<string, CommentRow[]>()
-    for (const comment of comments) {
+    for (const comment of shown) {
       if (comment.parentId || known.has(comment.anchor)) continue
       groups.set(comment.anchor, [...(groups.get(comment.anchor) || []), comment])
     }
     return groups
-  }, [comments, targets])
+  }, [shown, targets])
 
   const visible = useMemo(() => {
     if (filter === 'all') return targets
@@ -209,6 +221,11 @@ export function CommentsPanel({
             className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10.5px] font-bold text-amber-800"
           >
             <UserRound size={10} /> Revisión externa{comment.guest.org ? ` · ${comment.guest.org}` : ''}
+          </span>
+        )}
+        {!comment.parentId && typeof comment.version === 'number' && (
+          <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10.5px] font-bold text-indigo-700" title="Versión entregada sobre la que se comentó">
+            V{comment.version}
           </span>
         )}
         <span className="text-[11px] text-slate-400">{timeAgo(comment.createdAt)}</span>
@@ -352,10 +369,21 @@ export function CommentsPanel({
             </button>
           ))}
         </div>
+        {versions.length > 0 && (
+          <select
+            value={versionFilter}
+            onChange={(e) => setVersionFilter(Number(e.target.value))}
+            aria-label="Filtrar por versión"
+            className="rounded-lg border border-slate-200 px-2 py-1 text-[12.5px] font-semibold text-slate-600"
+          >
+            <option value={0}>Todas las versiones</option>
+            {versions.map((v) => <option key={v} value={v}>Comentarios sobre la V{v}</option>)}
+          </select>
+        )}
         <div className="flex-1" />
         <span className="inline-flex items-center gap-1.5 text-[12.5px] text-slate-500">
           <Filter size={13} className="text-slate-400" />
-          {openThreads} hilo(s) sin atender de {comments.filter((c) => !c.parentId).length}
+          {openThreads} hilo(s) sin atender de {shown.filter((c) => !c.parentId).length}
         </span>
       </div>
 

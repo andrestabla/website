@@ -82,12 +82,12 @@ let removedFiles = 0
 for (const entry of doomed) {
   const row = await store.lbResources().findUnique({ where: { code: entry.code }, include: { workspace: true } })
   if (!row) continue
-  const files = await store.lbFiles().findMany({ where: { resourceId: row.id }, select: { path: true } })
+  const files = await store.lbFiles().findMany({ where: { resourceId: row.id }, select: { path: true, version: true } })
   if (files.length) {
     try {
       const bucket = await workspaceBucket(row.workspace)
       removedFiles += await bucket.remove(
-        files.map((file: any) => `${resourceFolder(row.workspace.code, row.code)}/pkg/${file.path}`)
+        files.map((file: any) => `${resourceFolder(row.workspace.code, row.code)}/${(file.version || 1) > 1 ? `v${file.version}/` : ''}pkg/${file.path}`)
       )
     } catch {
       console.log(`  ${row.code}: no se pudieron borrar sus ${files.length} archivo(s) del almacenamiento`)

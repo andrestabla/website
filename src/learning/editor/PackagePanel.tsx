@@ -22,9 +22,10 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import {
   Check, ExternalLink, Image as ImageIcon, Loader2, Plus, RotateCcw, Trash2, Upload, X,
+  History, MessageSquare, CheckCircle2,
 } from 'lucide-react'
 import { packageEditCount, type LbPackage, type LbPatch } from '../lib/final'
-import { learningApi, readAsDataUrl } from '../lib/api'
+import { learningApi, readAsDataUrl, timeAgo, type DeliveryRow } from '../lib/api'
 import { eyebrowCls, fieldCls, sideItemCls } from './ui'
 
 /**
@@ -138,6 +139,19 @@ export function PackagePanel({
     | { kind: 'add'; at: number; where: 'before' | 'after' }
     | null
   >(null)
+  /** Versiones entregadas del paquete (V1, V2…), la más reciente primero. */
+  const [deliveries, setDeliveries] = useState<DeliveryRow[]>([])
+  const [live, setLive] = useState(1)
+  const [newVersion, setNewVersion] = useState(false)
+  const loadDeliveries = useCallback(async () => {
+    try {
+      const payload = await learningApi.resources.deliveries(resourceId)
+      setDeliveries(payload.deliveries || [])
+      setLive(payload.live || 1)
+    } catch { /* el historial es informativo: si falla, el panel sigue */ }
+  }, [resourceId])
+  useEffect(() => { void loadDeliveries() }, [loadDeliveries, pkg === null])
+
   const frame = useRef<HTMLIFrameElement>(null)
   const [frameKey, setFrameKey] = useState(0)
   const reload = () => setFrameKey((value) => value + 1)
@@ -216,7 +230,7 @@ export function PackagePanel({
     frame.current?.contentWindow?.postMessage({ source: 'lb-panel', type: 'goto', at }, window.location.origin)
   }
 
-  const upload = async (file: File) => {
+  const upload = async (file: File, mode: 'version' | 'replace' = 'replace', notes?: string) => {
     setError('')
     setUploading('Preparando…')
     try {
@@ -234,8 +248,10 @@ export function PackagePanel({
         )
       }
       setUploading('Abriendo el paquete…')
-      onUploaded(await learningApi.importPkg.ingest(resourceId, begin.uploadId, parts, file.name))
+      onUploaded(await learningApi.importPkg.ingest(resourceId, begin.uploadId, parts, file.name, { mode, notes }))
+      setNewVersion(false)
       reload()
+      void loadDeliveries()
     } catch (caught: any) {
       setError(caught?.message || 'No se pudo subir el paquete')
     } finally {
@@ -347,6 +363,55 @@ export function PackagePanel({
               })}
         </div>
 
+        {deliveries.length > 0 && (
+          <div className="mt-3 border-t border-slate-200 pt-3">
+            <div className={`mb-1.5 flex items-center gap-1.5 px-1 ${eyebrowCls}`}>
+              <History size={12} /> Versiones · {deliveries.length}
+            </div>
+            <div className="max-h-56 space-y-1.5 overflow-y-auto">
+              {deliveries.map((row) => (
+                <div
+                  key={row.id}
+                  className={`rounded-lg border px-2.5 py-2 text-[11.5px] ${row.live ? 'border-indigo-300 bg-white' : 'border-slate-200 bg-slate-50'}`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <b className="text-[12.5px] text-slate-800">V{row.version}</b>
+                    {row.live && <span className="rounded-full bg-indigo-600 px-1.5 py-px text-[10px] font-bold text-white">vigente</span>}
+                    <span className="ml-auto text-slate-400" title={new Date(row.createdAt).toLocaleString('es-CO')}>{timeAgo(row.createdAt)}</span>
+                  </div>
+                  <div className="truncate text-slate-500" title={row.fileName}>
+                    {row.fileName}{row.createdByName ? ` · ${row.createdByName}` : ''}
+                  </div>
+                  {row.notes && <p className="mt-1 whitespace-pre-wrap text-slate-600">{row.notes}</p>}
+                  <div className="mt-1 flex items-center gap-2">
+                    {row.comments.open + row.comments.resolved > 0 ? (
+                      <span className="inline-flex items-center gap-1 text-slate-500" title="Comentarios de revisión hechos sobre esta versión">
+                        <MessageSquare size={11} /> {row.comments.open + row.comments.resolved}
+                        {row.comments.resolved > 0 && (
+                          <span className="inline-flex items-center gap-0.5 text-emerald-600"><CheckCircle2 size={11} /> {row.comments.resolved}</span>
+                        )}
+                        {row.comments.open > 0 && <span className="text-amber-600">· {row.comments.open} sin atender</span>}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">Sin comentarios</span>
+                    )}
+                    {!row.live && (
+                      <a
+                        href={learningApi.previewUrl(resourceId, row.version)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-auto inline-flex items-center gap-1 font-semibold text-indigo-600 hover:underline"
+                      >
+                        <ExternalLink size={11} /> Ver
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
           <div className="flex items-center justify-between text-[12px]">
             <span className="text-slate-500">Retoques</span>
@@ -374,7 +439,14 @@ export function PackagePanel({
               <RotateCcw size={12} /> Descartar todo
             </button>
           )}
-          <PackageButton uploading={uploading} onPick={upload} compact label="Reemplazar paquete" />
+          <button
+            onClick={() => setNewVersion(true)}
+            disabled={!!uploading}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[12px] font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+          >
+            <Upload size={12} /> Subir nueva versión (V{live + 1})
+          </button>
+          <PackageButton uploading={uploading} onPick={(file) => upload(file, 'replace')} compact label={`Reemplazar la V${live}`} />
           <button
             onClick={clearPackage}
             disabled={!!uploading}
@@ -437,6 +509,14 @@ export function PackagePanel({
           className="min-h-0 w-full flex-1 border-0 bg-white"
         />
 
+        {newVersion && (
+          <NewVersionDialog
+            next={live + 1}
+            uploading={uploading}
+            onClose={() => setNewVersion(false)}
+            onSubmit={(file, notes) => upload(file, 'version', notes)}
+          />
+        )}
         {asking?.kind === 'image' && (
           <ImageDialog
             resourceId={resourceId}
@@ -693,4 +773,72 @@ function toBase64(bytes: Uint8Array): string {
     binary += String.fromCharCode(...bytes.subarray(at, at + step))
   }
   return btoa(binary)
+}
+
+/**
+ * Subir una versión nueva: el archivo y qué se ajustó. La nota es la que
+ * cuenta la historia en el historial y en la revisión; no es obligatoria,
+ * pero sin ella la trazabilidad se queda en «algo cambió».
+ */
+function NewVersionDialog({
+  next, uploading, onClose, onSubmit,
+}: {
+  next: number
+  uploading: string
+  onClose: () => void
+  onSubmit: (file: File, notes: string) => void
+}) {
+  const [file, setFile] = useState<File | null>(null)
+  const [notes, setNotes] = useState('')
+  const input = useRef<HTMLInputElement>(null)
+  return (
+    <div className="absolute inset-0 z-30 grid place-items-center bg-slate-900/40 p-4" onClick={uploading ? undefined : onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <History size={17} className="text-indigo-600" />
+          <h3 className="flex-1 text-[15px] font-bold">Subir la V{next}</h3>
+          <button onClick={onClose} disabled={!!uploading} aria-label="Cerrar" className="text-slate-400 hover:text-slate-700"><X size={16} /></button>
+        </div>
+        <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">
+          La versión vigente queda guardada con sus archivos, sus retoques y sus comentarios. La V{next} pasa a ser la
+          que se publica y la que se revisa.
+        </p>
+        <input
+          ref={input}
+          type="file"
+          accept=".zip,.html,.htm,application/zip,text/html"
+          className="hidden"
+          onChange={(event) => { setFile(event.target.files?.[0] || null); event.target.value = '' }}
+        />
+        <button
+          onClick={() => input.current?.click()}
+          disabled={!!uploading}
+          className="mt-4 flex w-full items-center gap-2 rounded-xl border border-dashed border-slate-300 px-3 py-3 text-left text-[13px] hover:border-indigo-400 disabled:opacity-60"
+        >
+          <Upload size={15} className="text-slate-400" />
+          <span className={`min-w-0 flex-1 truncate ${file ? 'font-semibold text-slate-700' : 'text-slate-400'}`}>
+            {file ? file.name : 'Elegir el paquete (SCORM, ZIP o HTML)'}
+          </span>
+        </button>
+        <label className="mt-3 block text-[12.5px] font-semibold text-slate-600">
+          ¿Qué se ajustó?
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={4}
+            disabled={!!uploading}
+            placeholder="Ajustes atendidos de la revisión: pregunta problema bajo la foto, color del botón…"
+            className={`mt-1 ${fieldCls}`}
+          />
+        </label>
+        <button
+          onClick={() => file && onSubmit(file, notes)}
+          disabled={!file || !!uploading}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-[14px] font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {uploading ? <><Loader2 size={15} className="animate-spin" /> {uploading}</> : <><Upload size={15} /> Subir la V{next}</>}
+        </button>
+      </div>
+    </div>
+  )
 }

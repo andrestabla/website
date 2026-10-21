@@ -16,7 +16,7 @@ import { accessCookie, hasAccess } from '../_lib/lb-access.js'
 import { renderResourceHtml } from '../_lib/lb-render-any.js'
 import { codeForm, servePackage, shell } from '../_lib/lb-serve-package.js'
 import { lbResources, loadResource, loadResourceByPublicId } from '../_lib/lb-store.js'
-import { deliverablePackage } from '../../src/learning/lib/content.js'
+import { packageAt } from '../_lib/lb-delivery.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -59,17 +59,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Lo producido no se rehace: se sirve su propio HTML. Dentro del
       // builder, además, con la capa que lo hace editable.
-      const previewPkg = deliverablePackage(loaded.resource.kind, loaded.content, loaded.final)
-      if (previewPkg) {
-        const base = `/api/learning/view?preview=${encodeURIComponent(previewId)}${req.query?.edit ? '&edit=1' : ''}&path=`
+      // ?v=N abre una versión entregada anterior, solo para leerla.
+      const askedVersion = Number(req.query?.v) || null
+      const previewAt = await packageAt(loaded, askedVersion)
+      if (askedVersion && !previewAt) return shell('Versión no encontrada', 'Esa versión del paquete no existe.', 404, res)
+      if (previewAt) {
+        const edit = !!req.query?.edit && previewAt.live
+        const base = `/api/learning/view?preview=${encodeURIComponent(previewId)}${edit ? '&edit=1' : ''}${previewAt.live ? '' : `&v=${previewAt.version}`}&path=`
         return servePackage({
           res,
           resourceId: loaded.resource.id,
           publicId: loaded.resource.publicId,
-          pkg: previewPkg,
+          pkg: previewAt.pkg,
           requested: String(req.query?.path || ''),
           viewBase: base,
-          editable: !!req.query?.edit && check.role !== 'GUEST' && check.role !== 'AUDITOR',
+          editable: edit && check.role !== 'GUEST' && check.role !== 'AUDITOR',
+          version: previewAt.version,
+          live: previewAt.live,
         })
       }
 
@@ -122,13 +128,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!resource.embedEnabled) res.setHeader('X-Frame-Options', 'SAMEORIGIN')
 
-    const publicPkg = deliverablePackage(resource.kind, content, loaded.final)
-    if (publicPkg) {
+    // El enlace público entrega siempre la versión viva.
+    const publicAt = await packageAt(loaded)
+    if (publicAt) {
       return servePackage({
         res,
         resourceId: resource.id,
         publicId,
-        pkg: publicPkg,
+        pkg: publicAt.pkg,
+        version: publicAt.version,
+        live: true,
         requested: String(req.query?.path || ''),
         viewBase: `/ova/${encodeURIComponent(publicId)}?path=`,
         editable: false,
