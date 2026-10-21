@@ -73,8 +73,10 @@ export async function servePackage(options: {
   /** Versión entregada que se sirve; por defecto la 1. */
   version?: number
   /**
-   * Si es la versión viva. Sus archivos van por la ruta de siempre; los de una
-   * versión anterior llevan «~v/N/» delante para no mezclarse con los vivos.
+   * Si es la versión viva. Ya no cambia la ruta de los archivos: los de toda
+   * versión, viva o no, llevan «~v/N/» delante, para que cada versión tenga sus
+   * propias URL y una V2 nunca herede de la caché del navegador una imagen de
+   * la V1 con el mismo nombre.
    */
   live?: boolean
   /** Workspace dueño del recurso: permite leer el bucket por su API y no por la URL pública. */
@@ -82,11 +84,10 @@ export async function servePackage(options: {
 }): Promise<unknown> {
   const { res, resourceId, publicId, pkg, requested, viewBase, editable, extra } = options
   const version = options.version ?? 1
-  const live = options.live ?? true
   // Los archivos del paquete se piden al propio sitio, no al almacenamiento.
   // Si se pidieran allí, el navegador bloquearía las tipografías por CORS y la
   // pieza se pintaría con otra letra: parecida, pero no igual.
-  const packageRoot = `/ova/${encodeURIComponent(publicId)}/a/${live ? '' : `~v/${version}/`}`
+  const packageRoot = `/ova/${encodeURIComponent(publicId)}/a/~v/${version}/`
 
   const fetchFile = async (path: string): Promise<string | null> => {
     const file = await lbFiles().findUnique({ where: { resourceId_version_path: { resourceId, version, path } } })
