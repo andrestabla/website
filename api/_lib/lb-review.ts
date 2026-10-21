@@ -93,7 +93,8 @@ function jsonInScript(value: unknown): string {
  *         focus {target}   llevar al revisor hasta un elemento
  *         draft {target}   el pin provisional del comentario que se escribe
  *  sale   ready {page, hash} la página cargó (también al navegar dentro)
- *         route {hash}     cambió de lección sin cambiar de página (Rise)
+ *         route {hash, slide} cambió de lección o de pantalla sin cambiar de página
+ *         elsewhere {slide} el hilo pedido está en otra pantalla
  *         pick {target}    el revisor señaló un elemento
  *         open {id}        pulsó un pin
  *         mode-off         salió con Esc
@@ -184,6 +185,42 @@ const REVIEW_SCRIPT = `
   function routeHash(){
     var h = location.hash || '';
     return /^#[!/]/.test(h) ? h.slice(0, 300) : '';
+  }
+
+  /**
+   * La pantalla en que se está, en reproductores que pintan cada pantalla en
+   * el mismo contenedor (el motor CONACED, presentaciones, Storyline…): la
+   * misma ruta CSS existe en todas, y sin esto un comentario de la pantalla 3
+   * aparecería también en la 9. Se lee del rótulo de avance que el propio
+   * reproductor muestra («Pantalla 9 de 44», «Diapositiva 3 de 12»…).
+   */
+  var SLIDE = /\\b(Pantalla|Diapositiva|L[aá]mina|P[aá]gina|Slide|Screen|Page)\\s+(\\d{1,4})\\s*(?:de|of|\\/)\\s*\\d{1,4}\\b/i;
+  var slideCache = { at: 0, value: '' };
+  function slideIn(doc){
+    if (!doc.body) return '';
+    var walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null), node;
+    while ((node = walker.nextNode())) {
+      var v = node.nodeValue;
+      if (!v || v.length > 80) continue;
+      var m = SLIDE.exec(v);
+      if (!m) continue;
+      var host = node.parentElement;
+      if (!host || isUi(host)) continue;
+      var r = host.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      var word = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
+      return word + ' ' + m[2];
+    }
+    return '';
+  }
+  function currentSlide(){
+    var now = Date.now();
+    if (now - slideCache.at < 250) return slideCache.value;
+    var value = '';
+    var docs = allDocs();
+    for (var i = 0; i < docs.length && !value; i++) { try { value = slideIn(docs[i]); } catch (e) {} }
+    slideCache = { at: now, value: value };
+    return value;
   }
 
   function realTarget(event){
@@ -339,6 +376,8 @@ const REVIEW_SCRIPT = `
   function describe(el, event){
     var target = { page: PAGE, selector: selectorOf(el), kind: kindOf(el), text: textOf(el) };
     var route = routeHash(); if (route) target.hash = route;
+    slideCache.at = 0;
+    var slide = currentSlide(); if (slide) target.slide = slide;
     var src = srcOf(el); if (src) target.src = src;
     var section = sectionOf(el); if (section) target.section = section;
     var screen = closestUp(el, '[data-screen]');
@@ -361,16 +400,25 @@ const REVIEW_SCRIPT = `
     var el = null;
     try { el = doc.querySelector(selector); } catch (e) {}
     if (!last) return el && /^(IFRAME|FRAME)$/.test(el.tagName) ? el : null;
-    if (el && !isUi(el) && kindOf(el) === target.kind) return el;
+    // La ruta sola no basta: en un reproductor que repinta cada pantalla, la
+    // misma ruta lleva a otro elemento. Tiene que decir lo mismo (o mostrar el
+    // mismo archivo) que cuando se comentó.
+    if (el && !isUi(el) && kindOf(el) === target.kind && sameAs(el, target)) return el;
     var tail = String(selector || '').split('>').pop().trim().split(':')[0];
-    if (!tail || tail.charAt(0) === '#' || !doc.body) return el;
+    if (!tail || tail.charAt(0) === '#' || !doc.body) return el && sameAs(el, target) ? el : null;
     var pool = doc.body.querySelectorAll(tail), want = norm(target.text).slice(0, 60);
     for (var i = 0; i < pool.length; i++) {
       if (isUi(pool[i])) continue;
       if (target.src && srcOf(pool[i]) === target.src) return pool[i];
       if (want && textOf(pool[i]).slice(0, 60) === want) return pool[i];
     }
-    return el;
+    return null;
+  }
+
+  function sameAs(el, target){
+    if (target.src) return srcOf(el) === target.src;
+    var want = norm(target.text).slice(0, 60);
+    return !want || textOf(el).slice(0, 60) === want;
   }
 
   /** Recorre la ruta marco a marco; si un marco cambió de sitio, lo busca en todos. */
@@ -397,7 +445,14 @@ const REVIEW_SCRIPT = `
     // En una pieza que cambia de lección sin cambiar de página (Rise), la
     // misma ruta existe en todas: solo vale la de la lección en que se dijo.
     if (!ignoreHash && target.hash && target.hash !== routeHash()) return null;
-    return walk(document, String(target.selector || '').split(SEP), target);
+    // Y en un reproductor de pantallas, solo vale la pantalla en que se dijo.
+    if (!ignoreHash && target.slide && target.slide !== currentSlide()) return null;
+    var el = walk(document, String(target.selector || '').split(SEP), target);
+    if (el && typeof target.screen === 'number') {
+      var screen = closestUp(el, '[data-screen]');
+      if (screen && Number(screen.getAttribute('data-screen')) !== target.screen) return null;
+    }
+    return el;
   }
 
   function visible(r){
@@ -573,6 +628,12 @@ const REVIEW_SCRIPT = `
       location.hash = target.hash;
       return setTimeout(function(){ focus(target, 1); }, 900);
     }
+    if (target.slide && target.slide !== currentSlide()) {
+      // No hay forma general de saltar de pantalla en un reproductor ajeno:
+      // se le dice al revisor dónde está, y el pin aparece al llegar.
+      send({ type: 'elsewhere', slide: target.slide });
+      return;
+    }
     var el = locate(target);
     if (el && !topRect(el).width && typeof target.screen === 'number' && tries < 2) {
       var nav = document.querySelectorAll('.lb-nav__item')[target.screen];
@@ -597,11 +658,20 @@ const REVIEW_SCRIPT = `
     if (data.type === 'focus' && data.target) focus(data.target, 0);
   });
 
-  window.addEventListener('hashchange', function(){ send({ type: 'route', hash: routeHash() }); later(); });
+  var lastRoute = '';
+  function reportRoute(){
+    var hash = routeHash(), slide = currentSlide(), key = hash + '|' + slide;
+    if (key === lastRoute) return;
+    lastRoute = key;
+    send({ type: 'route', hash: hash, slide: slide });
+  }
+  window.addEventListener('hashchange', function(){ reportRoute(); later(); });
+  setInterval(reportRoute, 700);
 
   function start(){
     mount(); hookAll();
-    send({ type: 'ready', page: PAGE, hash: routeHash(), title: document.title });
+    send({ type: 'ready', page: PAGE, hash: routeHash(), slide: currentSlide(), title: document.title });
+    lastRoute = routeHash() + '|' + currentSlide();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
