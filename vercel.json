@@ -81,7 +81,7 @@
   },
   "headers": [
     {
-      "source": "/(.*)\\.(webp|png|jpg|jpeg|gif|svg|ico|woff|woff2|mp4)",
+      "source": "/((?!ova/).*)\\.(webp|png|jpg|jpeg|gif|svg|ico|woff|woff2|mp4)",
       "headers": [
         {
           "key": "Cache-Control",
