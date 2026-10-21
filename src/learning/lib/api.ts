@@ -46,6 +46,13 @@ export type DataSourceRow = {
   active: boolean
 }
 
+/** Carpeta de la biblioteca de un workspace; parentId null = la raíz. */
+export type FolderRow = {
+  id: string
+  parentId: string | null
+  name: string
+}
+
 export type ResourceRow = {
   id: string
   /** Identificador legible derivado del workspace: UNICAFAM-OVA-001. */
@@ -58,6 +65,8 @@ export type ResourceRow = {
   clientCode?: string | null
   publicId: string
   workspaceId: string
+  /** Carpeta de la biblioteca; null = la raíz del workspace. */
+  folderId?: string | null
   workspaceCode: string
   workspaceName: string
   kind: LbResourceKind
@@ -200,8 +209,20 @@ export const learningApi = {
     integrationsTest: (workspaceId: string, provider: LbProvider): Promise<ProbeRow> =>
       post('/api/learning/workspaces', { op: 'integrations-test', workspaceId, provider }),
   },
+  folders: {
+    create: (workspaceId: string, name: string, parentId: string | null): Promise<{ folder: FolderRow }> =>
+      post('/api/learning/folders', { op: 'create', workspaceId, name, parentId }),
+    rename: (workspaceId: string, folderId: string, name: string) =>
+      post('/api/learning/folders', { op: 'rename', workspaceId, folderId, name }),
+    move: (workspaceId: string, folderId: string, parentId: string | null) =>
+      post('/api/learning/folders', { op: 'move', workspaceId, folderId, parentId }),
+    remove: (workspaceId: string, folderId: string) =>
+      post('/api/learning/folders', { op: 'delete', workspaceId, folderId }),
+    moveResources: (workspaceId: string, resourceIds: string[], folderId: string | null) =>
+      post('/api/learning/folders', { op: 'move-resources', workspaceId, resourceIds, folderId }),
+  },
   resources: {
-    library: (workspaceCode?: string): Promise<{ resources: ResourceRow[] }> =>
+    library: (workspaceCode?: string): Promise<{ resources: ResourceRow[]; folders?: FolderRow[] }> =>
       post('/api/learning/resources', { op: 'library', workspaceCode }),
     /** Acepta el id interno o el código legible (el de la URL). */
     get: (resourceIdOrCode: string): Promise<{
@@ -216,7 +237,7 @@ export const learningApi = {
       post('/api/learning/resources', /^[A-Z0-9]+-[A-Z]{3}-\d{3}$/i.test(resourceIdOrCode)
         ? { op: 'get', code: resourceIdOrCode }
         : { op: 'get', resourceId: resourceIdOrCode }),
-    create: (data: { workspaceId: string; kind: LbResourceKind; title: string; subtitle?: string; course?: string; unit?: string; tags?: string[] }) =>
+    create: (data: { workspaceId: string; kind: LbResourceKind; title: string; subtitle?: string; course?: string; unit?: string; tags?: string[]; folderId?: string | null }) =>
       post('/api/learning/resources', { op: 'create', ...data }),
     update: (resourceId: string, data: Record<string, unknown>): Promise<{ resource: ResourceRow; issues: LbIssue[] }> =>
       post('/api/learning/resources', { op: 'update', resourceId, ...data }),

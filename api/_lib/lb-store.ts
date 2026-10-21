@@ -19,6 +19,7 @@ export const lbSources = () => (prisma as any).lbResourceSource
 export const lbFiles = () => (prisma as any).lbResourceFile
 export const lbDataSources = () => (prisma as any).lbDataSource
 export const lbComments = () => (prisma as any).lbComment
+export const lbFolders = () => (prisma as any).lbFolder
 
 /** Id público de la URL /ova/:publicId — no adivinable y corto de leer. */
 export function newPublicId(): string {
@@ -132,6 +133,7 @@ export function summarize(resource: any) {
     clientCode: resource.clientCode || null,
     publicId: resource.publicId,
     workspaceId: resource.workspaceId,
+    folderId: resource.folderId || null,
     workspaceCode: resource.workspace?.code || '',
     workspaceName: resource.workspace?.name || '',
     kind: resource.kind,

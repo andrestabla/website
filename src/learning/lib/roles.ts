@@ -72,6 +72,8 @@ export const LB_CAPABILITIES = [
   'workspace.team',
   /** Renombrar, desactivar o eliminar el workspace. */
   'workspace.manage',
+  /** Crear, renombrar, anidar y borrar carpetas, y mover recursos entre ellas. */
+  'folder.manage',
 ] as const
 
 export type LbCapability = (typeof LB_CAPABILITIES)[number]
@@ -106,6 +108,7 @@ const MANAGER_CAPS: LbCapability[] = [
   'workspace.integrations',
   'workspace.team',
   'workspace.manage',
+  'folder.manage',
 ]
 
 const BY_ROLE: Record<LbRole, LbCapability[]> = {
