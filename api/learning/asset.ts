@@ -26,7 +26,7 @@ import { reviewOpen } from '../_lib/lb-review.js'
 import { injectEditsOnly } from '../_lib/lb-mirror-html.js'
 import { RISE_DATA_PATH, encodeRise, parseRise, riseWithEdits } from '../_lib/lb-rise.js'
 import { lbFiles, loadResourceByPublicId } from '../_lib/lb-store.js'
-import { fetchStored } from '../_lib/lb-storage.js'
+import { readStored } from '../_lib/lb-storage.js'
 import { packageAt, splitVersionPath } from '../_lib/lb-delivery.js'
 import { safePath } from '../../src/learning/lib/final.js'
 
@@ -116,7 +116,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.redirect(302, file.url)
     }
 
-    const upstream = await fetchStored(file.url)
+    const upstream = await readStored(loaded.workspace, file.url)
     if (!upstream.ok) {
       // Ni el borde ni el navegador deben guardar el error: el archivo existe y
       // la siguiente petición puede traerlo.

@@ -81,6 +81,7 @@ async function frame(req: VercelRequest, res: VercelResponse) {
   if (at) {
     return servePackage({
       res,
+      workspace: loaded.workspace,
       resourceId: resource.id,
       publicId: resource.publicId,
       pkg: at.pkg,
