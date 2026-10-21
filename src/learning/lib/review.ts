@@ -43,6 +43,11 @@ export type LbReviewTarget = {
   selector: string
   /** Ruta interna de la pieza (Rise: «#/lessons/…»): la lección en que estaba. */
   hash?: string
+  /**
+   * Pantalla del reproductor en que se comentó, leída de su rótulo de avance
+   * («Pantalla 9»). El pin solo se pinta en esa pantalla.
+   */
+  slide?: string
   kind: LbTargetKind
   /** Lo que decía, o el texto alternativo si es una imagen. */
   text: string
@@ -81,6 +86,8 @@ export function sanitizeTarget(raw: unknown): LbReviewTarget | null {
   }
   const hash = clip(value.hash, 300)
   if (/^#[!/]/.test(hash)) target.hash = hash
+  const slide = clip(value.slide, 40)
+  if (slide) target.slide = slide
   const src = clip(value.src, 500)
   if (src) target.src = src
   const section = clip(value.section, 160)
@@ -98,5 +105,6 @@ export function describeTarget(target: LbReviewTarget | null | undefined): strin
   if (!target) return ''
   const label = LB_TARGET_LABEL[target.kind] || 'Elemento'
   const text = target.text || (target.src ? target.src.split('/').pop() || '' : '')
-  return text ? `${label} · «${text.length > 70 ? `${text.slice(0, 70)}…` : text}»` : label
+  const what = text ? `${label} · «${text.length > 70 ? `${text.slice(0, 70)}…` : text}»` : label
+  return target.slide ? `${target.slide} · ${what}` : what
 }

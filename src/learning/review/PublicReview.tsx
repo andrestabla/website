@@ -177,6 +177,10 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
   const [page, setPage] = useState<string | null>(null)
   /** Lección dentro de la página, en piezas que navegan por ruta interna (Rise). */
   const [route, setRoute] = useState('')
+  /** Pantalla del reproductor que se está viendo («Pantalla 9»), si lo dice. */
+  const [slide, setSlide] = useState('')
+  /** Aviso cuando el hilo pedido está en otra pantalla. */
+  const [notice, setNotice] = useState('')
   const [pointing, setPointing] = useState(false)
   const [pick, setPick] = useState<Pick | null>(null)
   const [draft, setDraft] = useState('')
@@ -233,10 +237,18 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
       if (event.origin !== window.location.origin || event.source !== frameRef.current?.contentWindow) return
       const data = event.data
       if (!data || data.source !== 'lb-review-frame') return
-      if (data.type === 'route') setRoute(String(data.hash || ''))
+      if (data.type === 'route') {
+        setRoute(String(data.hash || ''))
+        setSlide(String(data.slide || ''))
+        setNotice('')
+      }
+      if (data.type === 'elsewhere') {
+        setNotice(`Este comentario está en la ${String(data.slide || 'otra pantalla').toLowerCase()}. Navega hasta ella en la pieza y verás su pin.`)
+      }
       if (data.type === 'ready') {
         setPage(String(data.page || ''))
         setRoute(String(data.hash || ''))
+        setSlide(String(data.slide || ''))
         const wanted = pendingFocus.current
         if (wanted && (wanted.page || '') === String(data.page || '')) {
           pendingFocus.current = null
@@ -314,7 +326,11 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
 
   const visibleRoots = scope === 'all'
     ? roots
-    : roots.filter((row) => !row.target || ((row.target.page || '') === (page ?? '') && (!row.target.hash || row.target.hash === route)))
+    : roots.filter((row) => !row.target || (
+        (row.target.page || '') === (page ?? '') &&
+        (!row.target.hash || row.target.hash === route) &&
+        (!row.target.slide || row.target.slide === slide)
+      ))
   const openCount = roots.filter((row) => row.status === 'OPEN').length
 
   const Body = ({ row }: { row: ReviewComment }) => (
@@ -449,7 +465,7 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
                     onClick={() => setScope(value)}
                     className={`rounded-md px-2.5 py-1 text-[12px] font-semibold ${scope === value ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-100'}`}
                   >
-                    {value === 'all' ? 'Todos' : 'Esta página'}
+                    {value === 'all' ? 'Todos' : slide ? `Esta pantalla (${slide.split(' ').pop()})` : 'Esta página'}
                   </button>
                 ))}
               </div>
@@ -457,6 +473,12 @@ function Workspace({ token, info, reviewer, onLeave }: { token: string; info: In
               <span className="text-[11.5px] text-slate-500">{openCount} abierto(s) · {roots.length} en total</span>
             </div>
 
+            {notice && (
+              <div className="mx-3 mt-2 flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-[12.5px] text-amber-800">
+                <span>{notice}</span>
+                <button onClick={() => setNotice('')} aria-label="Cerrar aviso"><X size={13} /></button>
+              </div>
+            )}
             {error && (
               <div className="mx-3 mt-2 flex items-center justify-between gap-2 rounded-lg bg-rose-50 px-3 py-2 text-[12.5px] text-rose-700">
                 <span>{error}</span>
