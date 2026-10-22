@@ -372,7 +372,10 @@ function Workspace({ token, info, versions, reviewer, onLeave }: { token: string
       ))
   const openCount = roots.filter((row) => row.status === 'OPEN').length
 
-  const Body = ({ row }: { row: ReviewComment }) => (
+  // Se llama como función y no como componente: uno definido aquí dentro
+  // sería distinto en cada render, React volvería a montar el campo al
+  // teclear y el cursor saltaría.
+  const renderBody = (row: ReviewComment) => (
     <div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
         <span className="text-[12.5px] font-bold text-slate-800">{row.authorName}</span>
@@ -589,11 +592,11 @@ function Workspace({ token, info, versions, reviewer, onLeave }: { token: string
                       <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-emerald-700"><CheckCircle2 size={12} /> Atendido</span>
                     )}
                   </button>
-                  <Body row={root} />
+                  {renderBody(root)}
                   {(repliesOf.get(root.id) || []).map((child) => (
                     <div key={child.id} className="mt-2 flex gap-2 border-l-2 border-slate-100 pl-2.5">
                       <CornerDownRight size={12} className="mt-1 shrink-0 text-slate-300" />
-                      <div className="min-w-0 flex-1"><Body row={child} /></div>
+                      <div className="min-w-0 flex-1">{renderBody(child)}</div>
                     </div>
                   ))}
                   <div className="mt-2 flex gap-1.5">

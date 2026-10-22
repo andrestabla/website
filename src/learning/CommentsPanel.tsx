@@ -9,7 +9,7 @@
  * Un hilo cuyo bloque desaparezca no se pierde: queda agrupado aparte, con la
  * etiqueta que la pieza tenía cuando se comentó.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   MessageSquare, MessageSquarePlus, Check, CornerDownRight, Loader2, Trash2, Pencil, X,
   CheckCircle2, RotateCcw, Filter, Crosshair, UserRound,
@@ -161,13 +161,16 @@ export function CommentsPanel({
     } catch (e: any) { setError(e.message) } finally { setBusy('') }
   }
 
-  const Thread = ({ root, replies }: { root: CommentRow; replies: CommentRow[] }) => (
+  // Estas piezas se llaman como funciones y no como componentes: definidas
+  // aquí dentro serían distintas en cada render, React volvería a montar los
+  // campos al teclear y el cursor saltaría.
+  const renderThread = (root: CommentRow, replies: CommentRow[]) => (
     <div className={`rounded-xl border p-3 ${root.status === 'RESOLVED' ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-white'}`}>
-      <CommentBody comment={root} />
+      {renderBody(root)}
       {replies.map((reply) => (
         <div key={reply.id} className="mt-2 flex gap-2 border-l-2 border-slate-100 pl-3">
           <CornerDownRight size={13} className="mt-1 shrink-0 text-slate-300" />
-          <div className="min-w-0 flex-1"><CommentBody comment={reply} /></div>
+          <div className="min-w-0 flex-1">{renderBody(reply)}</div>
         </div>
       ))}
 
@@ -211,7 +214,7 @@ export function CommentsPanel({
     </div>
   )
 
-  const CommentBody = ({ comment }: { comment: CommentRow }) => (
+  const renderBody = (comment: CommentRow) => (
     <div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-[12.5px] font-bold text-slate-700">{comment.authorName}</span>
@@ -280,7 +283,7 @@ export function CommentsPanel({
     </div>
   )
 
-  const Row = ({ target }: { target: LbAnchorTarget }) => {
+  const renderRow = (target: LbAnchorTarget) => {
     const entry = byAnchor.get(target.anchor)
     const roots = entry?.roots || []
     const openCount = roots.filter((root) => root.status === 'OPEN').length
@@ -317,7 +320,7 @@ export function CommentsPanel({
         {expanded && (
           <div className="space-y-2 border-t border-slate-100 p-3">
             {roots.map((root) => (
-              <Thread key={root.id} root={root} replies={entry?.repliesOf.get(root.id) || []} />
+              <Fragment key={root.id}>{renderThread(root, entry?.repliesOf.get(root.id) || [])}</Fragment>
             ))}
             {mayComment ? (
               <div className="flex gap-2">
@@ -394,7 +397,7 @@ export function CommentsPanel({
       )}
 
       <div className="space-y-1.5">
-        {visible.map((target) => <Row key={target.anchor} target={target} />)}
+        {visible.map((target) => <Fragment key={target.anchor}>{renderRow(target)}</Fragment>)}
         {visible.length === 0 && (
           <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-[13px] text-slate-400">
             {filter === 'open' ? 'No queda ningún hilo sin atender.' : 'Todavía no hay comentarios.'}
@@ -418,7 +421,7 @@ export function CommentsPanel({
                 </div>
                 <div className="space-y-2">
                   {roots.map((root) => (
-                    <Thread key={root.id} root={root} replies={byAnchor.get(anchor)?.repliesOf.get(root.id) || []} />
+                    <Fragment key={root.id}>{renderThread(root, byAnchor.get(anchor)?.repliesOf.get(root.id) || [])}</Fragment>
                   ))}
                 </div>
               </div>
