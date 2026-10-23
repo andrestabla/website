@@ -73,6 +73,8 @@ export default function PublicReview() {
   const { token = '' } = useParams()
   const [info, setInfo] = useState<Info | null>(null)
   const [versions, setVersions] = useState<Versions>({ live: 1, list: [] })
+  /** Entró con su sesión de Learning Builder: no hay formulario ni «Salir». */
+  const [viaSession, setViaSession] = useState(false)
   const [reviewer, setReviewer] = useState<Reviewer | null>(null)
   const [fatal, setFatal] = useState('')
   const [loading, setLoading] = useState(true)
@@ -84,6 +86,7 @@ export default function PublicReview() {
         if (!alive) return
         setInfo(payload.resource)
         setReviewer(payload.reviewer)
+        setViaSession(!!payload.viaSession)
         setVersions({ live: payload.live || 1, list: payload.versions || [] })
       })
       .catch((e) => { if (alive) setFatal(e.message) })
@@ -109,7 +112,7 @@ export default function PublicReview() {
     )
   }
   if (!reviewer) return <Identify token={token} info={info} onDone={setReviewer} />
-  return <Workspace token={token} info={info} versions={versions} reviewer={reviewer} onLeave={() => setReviewer(null)} />
+  return <Workspace token={token} info={info} versions={versions} reviewer={reviewer} viaSession={viaSession} onLeave={() => setReviewer(null)} />
 }
 
 // ── Identificación ───────────────────────────────────────────────────────────
@@ -182,7 +185,9 @@ function Identify({ token, info, onDone }: { token: string; info: Info; onDone: 
 
 // ── Revisión ─────────────────────────────────────────────────────────────────
 
-function Workspace({ token, info, versions, reviewer, onLeave }: { token: string; info: Info; versions: Versions; reviewer: Reviewer; onLeave: () => void }) {
+function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
+  token: string; info: Info; versions: Versions; reviewer: Reviewer; viaSession: boolean; onLeave: () => void
+}) {
   const frameRef = useRef<HTMLIFrameElement>(null)
   /*
    * La versión que se mira. La vigente es la que se comenta; las anteriores se
@@ -456,9 +461,15 @@ function Workspace({ token, info, versions, reviewer, onLeave }: { token: string
           <span className="hidden md:inline">
             {reviewer.name}{reviewer.org ? ` · ${reviewer.org}` : ''}
           </span>
-          <button onClick={leave} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-semibold hover:bg-slate-100" title="Salir de la revisión">
+{viaSession ? (
+            <span className="rounded-lg bg-indigo-50 px-2 py-1 font-semibold text-indigo-700" title="Entraste con tu sesión de Learning Builder">
+              Con tu sesión
+            </span>
+          ) : (
+                      <button onClick={leave} className="inline-flex items-center gap-1 rounded-lg px-2 py-1 font-semibold hover:bg-slate-100" title="Salir de la revisión">
             <LogOut size={13} /> Salir
           </button>
+          )}
           <button onClick={() => setPanelOpen((v) => !v)} className="rounded-lg p-1.5 hover:bg-slate-100" aria-label="Mostrar u ocultar comentarios">
             {panelOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
           </button>

@@ -16,6 +16,8 @@
  * equipo y de los auditores no salen de aquí.
  */
 import { appendToBody, servePackage, shell } from '../_lib/lb-serve-package.js'
+import { lbSessionState, roleInWorkspace } from '../_lib/lb-auth.js'
+import { LB_ROLE_LABEL } from '../../src/learning/lib/roles.js'
 import { clearReviewerCookie, readReviewer, reviewLayer, reviewerCookie, type LbReviewer } from '../_lib/lb-review.js'
 import { renderResourceHtml } from '../_lib/lb-render-any.js'
 import { lbDeliveries, liveVersion, packageAt } from '../_lib/lb-delivery.js'
@@ -33,6 +35,38 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 function text(value: unknown, max: number): string {
   return typeof value === 'string' ? value.trim().slice(0, max) : ''
+}
+
+/**
+ * Quien ya tiene sesión en Learning Builder y pertenece al workspace del
+ * recurso no tiene que identificarse otra vez: es la misma persona, con su
+ * nombre y su correo de la cuenta. null si no hay sesión o no es del equipo.
+ */
+async function sessionReviewer(req: VercelRequest, workspaceId: string): Promise<LbReviewer | null> {
+  const { session, allowed } = await lbSessionState(req)
+  if (!session || !allowed) return null
+  const role = await roleInWorkspace(session, workspaceId)
+  if (!role) return null
+  const user = (await usersByIds([session.userId])).get(session.userId)
+  const email = String(user?.email || '').trim().toLowerCase() || `${session.username}@learning-builder`
+  return {
+    name: session.displayName || session.username,
+    email,
+    org: `Learning Builder · ${LB_ROLE_LABEL[role]}`,
+  }
+}
+
+/**
+ * La identidad de quien revisa: la del formulario (cookie) o, si no la hay,
+ * la de su sesión de Learning Builder, que se deja también en la cookie para
+ * que la pieza y sus archivos la reconozcan.
+ */
+async function whoReviews(req: VercelRequest, res: VercelResponse, resource: any): Promise<{ reviewer: LbReviewer | null; viaSession: boolean }> {
+  const fromCookie = readReviewer(req, resource.publicId, resource.reviewToken)
+  if (fromCookie) return { reviewer: fromCookie, viaSession: false }
+  const fromSession = await sessionReviewer(req, resource.workspaceId)
+  if (fromSession) res.setHeader('Set-Cookie', reviewerCookie(resource.publicId, resource.reviewToken, fromSession))
+  return { reviewer: fromSession, viaSession: !!fromSession }
 }
 
 /** El recurso detrás de un token, solo si su revisión está abierta. */
@@ -67,7 +101,7 @@ async function frame(req: VercelRequest, res: VercelResponse) {
   if (!loaded) return shell('Revisión cerrada', 'Este enlace de revisión ya no está activo.', 404, res)
   const { resource, workspace, directives, content } = loaded
 
-  if (!readReviewer(req, resource.publicId, resource.reviewToken)) {
+  if (!(await whoReviews(req, res, resource)).reviewer) {
     return shell('Identifícate primero', 'Abre el enlace de revisión e indica tu nombre y correo.', 401, res)
   }
 
@@ -117,7 +151,10 @@ async function api(req: VercelRequest, res: VercelResponse) {
   const loaded = await byToken(text(body.token, 80))
   if (!loaded) return res.status(404).json({ ok: false, error: 'Este enlace de revisión ya no está activo' })
   const { resource, workspace, content, directives } = loaded
-  const reviewer = readReviewer(req, resource.publicId, resource.reviewToken)
+  // Identificarse o salir no miran la sesión: son justo para cambiar de identidad.
+  const { reviewer, viaSession } = op === 'identify' || op === 'leave'
+    ? { reviewer: readReviewer(req, resource.publicId, resource.reviewToken), viaSession: false }
+    : await whoReviews(req, res, resource)
 
   if (op === 'open') {
     // Las versiones entregadas, para que quien revisa pueda volver a las anteriores.
@@ -139,6 +176,8 @@ async function api(req: VercelRequest, res: VercelResponse) {
         workspaceName: workspace?.name || '',
       },
       reviewer,
+      /** true si entró con su sesión de Learning Builder, sin formulario. */
+      viaSession,
     })
   }
 
