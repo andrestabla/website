@@ -108,3 +108,23 @@ export function describeTarget(target: LbReviewTarget | null | undefined): strin
   const what = text ? `${label} · «${text.length > 70 ? `${text.slice(0, 70)}…` : text}»` : label
   return target.slide ? `${target.slide} · ${what}` : what
 }
+
+/**
+ * En qué punto está un hilo, para filtrar la revisión:
+ *  - sin responder: abierto y nadie ha contestado todavía;
+ *  - respondido: alguien contestó, pero el hilo sigue abierto;
+ *  - atendido: se dio por resuelto.
+ */
+export const LB_THREAD_STATES = ['unanswered', 'answered', 'resolved'] as const
+export type LbThreadState = (typeof LB_THREAD_STATES)[number]
+
+export const LB_THREAD_STATE_LABEL: Record<LbThreadState, string> = {
+  unanswered: 'Sin responder',
+  answered: 'Respondidos',
+  resolved: 'Atendidos',
+}
+
+export function threadState(status: string, replies: number): LbThreadState {
+  if (status === 'RESOLVED') return 'resolved'
+  return replies > 0 ? 'answered' : 'unanswered'
+}

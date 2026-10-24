@@ -20,14 +20,19 @@ import type { LbAnchorTarget } from './lib/comments'
 import { anchorTargetsFor, type LbResourceContent } from './lib/content'
 import { can, type LbRole } from './lib/roles'
 import { learningApi, timeAgo, type CommentRow } from './lib/api'
-import { describeTarget } from './lib/review'
+import { LB_THREAD_STATES, LB_THREAD_STATE_LABEL, describeTarget, threadState, type LbThreadState } from './lib/review'
 
-type Filter = 'all' | 'commented' | 'open'
+/**
+ * Cómo se mira la revisión: por pieza del recurso (para comentar cada una) o
+ * como lista de hilos, toda o por estado. Filtrar por versión pasa siempre a
+ * lista: las piezas son las de la versión vigente y los hilos de una anterior
+ * apuntan a otras.
+ */
+type View = 'pieces' | 'all' | LbThreadState
 
-const FILTER_LABEL: Record<Filter, string> = {
-  all: 'Todas las piezas',
-  commented: 'Con comentarios',
-  open: 'Sin atender',
+const VIEW_LABEL: Record<'pieces' | 'all', string> = {
+  pieces: 'Por pieza',
+  all: 'Todos los hilos',
 }
 
 export function CommentsPanel({
@@ -53,7 +58,7 @@ export function CommentsPanel({
 }) {
   const { confirm, dialogs } = useDialogs()
   const [error, setError] = useState('')
-  const [filter, setFilter] = useState<Filter>('all')
+  const [view, setView] = useState<View>('pieces')
   /** Versión entregada que se mira (0 = todas): la trazabilidad de V1, V2… */
   const [versionFilter, setVersionFilter] = useState(0)
   const [openAnchor, setOpenAnchor] = useState<string>(focusAnchor || '')
@@ -109,15 +114,21 @@ export function CommentsPanel({
     return groups
   }, [shown, targets])
 
-  const visible = useMemo(() => {
-    if (filter === 'all') return targets
-    return targets.filter((target) => {
-      const entry = byAnchor.get(target.anchor)
-      if (!entry?.roots.length) return false
-      if (filter === 'open') return entry.roots.some((root) => root.status === 'OPEN')
-      return true
-    })
-  }, [targets, byAnchor, filter])
+  const visible = targets
+  const listMode = view !== 'pieces' || versionFilter !== 0
+
+  // La lista: todos los hilos de lo filtrado, con sus respuestas, en orden de llegada.
+  const repliesOf = useMemo(() => {
+    const map = new Map<string, CommentRow[]>()
+    for (const comment of shown) {
+      if (comment.parentId) map.set(comment.parentId, [...(map.get(comment.parentId) || []), comment])
+    }
+    return map
+  }, [shown])
+  const roots = useMemo(() => shown.filter((comment) => !comment.parentId), [shown])
+  const stateOf = (root: CommentRow) => threadState(root.status, (repliesOf.get(root.id) || []).length)
+  const stateCount = (state: LbThreadState) => roots.filter((root) => stateOf(root) === state).length
+  const listed = view === 'pieces' || view === 'all' ? roots : roots.filter((root) => stateOf(root) === view)
 
   const submit = async (anchor: string, parentId?: string) => {
     const key = parentId || anchor
@@ -359,16 +370,18 @@ export function CommentsPanel({
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-0.5">
-          {(Object.keys(FILTER_LABEL) as Filter[]).map((value) => (
+        <div className="flex flex-wrap items-center gap-1 rounded-lg border border-slate-200 p-0.5">
+          {(['pieces', 'all', ...LB_THREAD_STATES] as View[]).map((value) => (
             <button
               key={value}
-              onClick={() => setFilter(value)}
+              onClick={() => setView(value)}
               className={`rounded-md px-2.5 py-1 text-[12.5px] font-semibold ${
-                filter === value ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'
+                view === value ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'
               }`}
             >
-              {FILTER_LABEL[value]}
+              {value === 'pieces' || value === 'all'
+                ? `${VIEW_LABEL[value]}${value === 'all' ? ` · ${roots.length}` : ''}`
+                : `${LB_THREAD_STATE_LABEL[value]} · ${stateCount(value)}`}
             </button>
           ))}
         </div>
@@ -396,16 +409,39 @@ export function CommentsPanel({
         </p>
       )}
 
-      <div className="space-y-1.5">
-        {visible.map((target) => <Fragment key={target.anchor}>{renderRow(target)}</Fragment>)}
-        {visible.length === 0 && (
-          <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-[13px] text-slate-400">
-            {filter === 'open' ? 'No queda ningún hilo sin atender.' : 'Todavía no hay comentarios.'}
-          </div>
-        )}
-      </div>
+      {listMode ? (
+        <div className="space-y-2">
+          {versionFilter !== 0 && view === 'pieces' && (
+            <p className="text-[12px] text-slate-400">
+              Los hilos de la V{versionFilter} se listan aquí: sus piezas son las de esa versión, no las de la vigente.
+            </p>
+          )}
+          {listed.map((root) => (
+            <div key={root.id}>
+              <div className="mb-1 truncate px-1 text-[11.5px] font-semibold text-slate-400" title={root.anchorLabel || root.anchor}>
+                {root.anchorLabel || root.anchor}
+              </div>
+              {renderThread(root, repliesOf.get(root.id) || [])}
+            </div>
+          ))}
+          {listed.length === 0 && (
+            <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-[13px] text-slate-400">
+              {roots.length ? 'Ningún hilo coincide con el filtro.' : 'Todavía no hay comentarios.'}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          {visible.map((target) => <Fragment key={target.anchor}>{renderRow(target)}</Fragment>)}
+          {visible.length === 0 && (
+            <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-[13px] text-slate-400">
+              Todavía no hay comentarios.
+            </div>
+          )}
+        </div>
+      )}
 
-      {orphans.size > 0 && (
+      {!listMode && orphans.size > 0 && (
         <section className="pt-3">
           <h4 className="mb-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">
             Piezas que ya no existen

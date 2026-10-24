@@ -16,7 +16,7 @@ import {
   Crosshair, Loader2, MessageSquare, MessageSquarePlus, CheckCircle2, CornerDownRight, Pencil, Trash2,
   X, LogOut, ShieldCheck, PanelRightClose, PanelRightOpen,
 } from 'lucide-react'
-import { describeTarget, type LbReviewTarget } from '../lib/review'
+import { LB_THREAD_STATES, LB_THREAD_STATE_LABEL, describeTarget, threadState, type LbReviewTarget, type LbThreadState } from '../lib/review'
 import { timeAgo } from '../lib/api'
 
 type Reviewer = { name: string; email: string; org: string }
@@ -210,6 +210,10 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
   const [draft, setDraft] = useState('')
   const [comments, setComments] = useState<ReviewComment[]>([])
   const [scope, setScope] = useState<'page' | 'all'>('all')
+  /** Estado del hilo que se quiere ver; vacío = todos. */
+  const [stateFilter, setStateFilter] = useState<LbThreadState | ''>('')
+  /** Versión cuyos hilos se listan; 0 = todas. */
+  const [listVersion, setListVersion] = useState(0)
   const [activeId, setActiveId] = useState('')
   const [replies, setReplies] = useState<Record<string, string>>({})
   const [editing, setEditing] = useState<{ id: string; body: string } | null>(null)
@@ -367,7 +371,7 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
     onLeave()
   }
 
-  const visibleRoots = scope === 'all'
+  const scoped = scope === 'all'
     ? roots
     : roots.filter((row) => !row.target || (
         (row.target.page || '') === (page ?? '') &&
@@ -375,6 +379,10 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
         (!row.target.slide || row.target.slide === slide) &&
       onViewing(row)
       ))
+  const stateOf = (row: ReviewComment) => threadState(row.status, (repliesOf.get(row.id) || []).length)
+  const byVersion = listVersion ? scoped.filter((row) => (row.version ?? 1) === listVersion) : scoped
+  const stateCount = (state: LbThreadState) => byVersion.filter((row) => stateOf(row) === state).length
+  const visibleRoots = stateFilter ? byVersion.filter((row) => stateOf(row) === stateFilter) : byVersion
   const openCount = roots.filter((row) => row.status === 'OPEN').length
 
   // Se llama como función y no como componente: uno definido aquí dentro
@@ -555,6 +563,37 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
               <span className="text-[11.5px] text-slate-500">{openCount} abierto(s) · {roots.length} en total</span>
             </div>
 
+            {/* En qué punto está cada hilo, y sobre qué versión se dijo. */}
+            <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 px-3 py-2">
+              {([''] as Array<LbThreadState | ''>).concat(LB_THREAD_STATES).map((value) => (
+                <button
+                  key={value || 'todos'}
+                  onClick={() => setStateFilter(value)}
+                  className={`rounded-full border px-2.5 py-0.5 text-[11.5px] font-semibold ${
+                    stateFilter === value
+                      ? value === 'resolved' ? 'border-emerald-500 bg-emerald-500 text-white'
+                        : value === 'answered' ? 'border-sky-500 bg-sky-500 text-white'
+                        : value === 'unanswered' ? 'border-amber-500 bg-amber-500 text-white'
+                        : 'border-slate-800 bg-slate-800 text-white'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  {value ? `${LB_THREAD_STATE_LABEL[value]} · ${stateCount(value)}` : `Todos · ${byVersion.length}`}
+                </button>
+              ))}
+              {versions.list.length > 1 && (
+                <select
+                  value={listVersion}
+                  onChange={(e) => setListVersion(Number(e.target.value))}
+                  aria-label="Filtrar los hilos por versión"
+                  className="ml-auto rounded-lg border border-slate-200 px-2 py-0.5 text-[11.5px] font-semibold text-slate-600"
+                >
+                  <option value={0}>Todas las versiones</option>
+                  {versions.list.map((row) => <option key={row.version} value={row.version}>Sobre la V{row.version}</option>)}
+                </select>
+              )}
+            </div>
+
             {notice && (
               <div className="mx-3 mt-2 flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-[12.5px] text-amber-800">
                 <span>{notice}</span>
@@ -569,7 +608,12 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
             )}
 
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-              {visibleRoots.length === 0 && !pick && (
+              {visibleRoots.length === 0 && !pick && (stateFilter || listVersion) && (
+                <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-[13px] text-slate-400">
+                  Ningún hilo coincide con el filtro.
+                </div>
+              )}
+              {visibleRoots.length === 0 && !pick && !stateFilter && !listVersion && (
                 <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-[13px] leading-relaxed text-slate-400">
                   Aún no hay comentarios. Pulsa <b className="text-slate-600">Señalar para comentar</b> y haz clic sobre lo que quieras revisar.
                 </div>
@@ -599,8 +643,12 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
                       <span className="font-semibold text-slate-700">{root.target ? describeTarget(root.target) : 'Comentario general'}</span>
                       {root.target?.section && <span> · {root.target.section}</span>}
                     </span>
-                    {root.status === 'RESOLVED' && (
+                    {stateOf(root) === 'resolved' ? (
                       <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-emerald-700"><CheckCircle2 size={12} /> Atendido</span>
+                    ) : stateOf(root) === 'answered' ? (
+                      <span className="shrink-0 text-[11px] font-bold text-sky-700">Respondido</span>
+                    ) : (
+                      <span className="shrink-0 text-[11px] font-bold text-amber-700">Sin responder</span>
                     )}
                   </button>
                   {renderBody(root)}
