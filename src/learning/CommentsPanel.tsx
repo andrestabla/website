@@ -360,7 +360,9 @@ export function CommentsPanel({
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-3 p-5">
+    // Una URL o una palabra larga se parten donde haga falta: si no, empujan
+    // el panel hacia los lados.
+    <div className="mx-auto max-w-3xl space-y-3 p-5 [overflow-wrap:anywhere]">
       {dialogs}
       {error && (
         <div className="flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700">

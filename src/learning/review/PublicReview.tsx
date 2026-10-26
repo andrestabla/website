@@ -514,7 +514,7 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
         </div>
 
         {panelOpen && (
-          <aside className="flex max-h-[60vh] w-full shrink-0 flex-col border-t border-slate-200 bg-white lg:max-h-none lg:w-[400px] lg:border-l lg:border-t-0">
+          <aside className="flex max-h-[60vh] w-full min-w-0 shrink-0 flex-col border-t border-slate-200 bg-white [overflow-wrap:anywhere] lg:max-h-none lg:w-[400px] lg:border-l lg:border-t-0">
             {pick && (
               <div className="border-b border-indigo-100 bg-indigo-50/60 p-3">
                 <div className="flex items-start gap-2">
@@ -607,7 +607,7 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
               </div>
             )}
 
-            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-3">
               {visibleRoots.length === 0 && !pick && (stateFilter || listVersion) && (
                 <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-[13px] text-slate-400">
                   Ningún hilo coincide con el filtro.
