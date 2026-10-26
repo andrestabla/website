@@ -338,6 +338,16 @@ export function LearningHome() {
     } catch (e: any) { setError(e.message) }
   }
 
+  /** A dónde sube la flecha de arriba: un solo nivel. */
+  const up = (() => {
+    if (!current) return { to: '/ecosistema/learning', label: 'Workspaces' }
+    if (!currentFolder) return { to: '/ecosistema/learning', label: 'Workspaces' }
+    const parent = currentFolder.parentId ? folderById.get(currentFolder.parentId) : null
+    return parent
+      ? { to: `/ecosistema/learning/${current.code}?carpeta=${encodeURIComponent(parent.id)}`, label: parent.name }
+      : { to: `/ecosistema/learning/${current.code}`, label: current.name }
+  })()
+
   /** Tarjeta de un recurso; con showPath dice en qué carpeta está (al buscar). */
   const renderCard = (resource: ResourceRow, showPath = false) => {
     const spec = kindSpec(resource.kind)
@@ -496,17 +506,18 @@ export function LearningHome() {
 
       <header className="flex h-14 items-center gap-2 border-b border-slate-200 bg-white px-4 sm:gap-3 sm:px-6">
         {/*
-          La flecha sube un escalón, no se va del módulo. Dentro de un
-          workspace lo de arriba son los workspaces, igual que dentro de un
-          recurso lo de arriba es su biblioteca; solo desde la portada del
-          módulo tiene sentido salir al Ecosistema.
+          La flecha sube un escalón, nunca más: dentro de una subcarpeta, a su
+          carpeta madre; dentro de una carpeta, a la raíz del workspace; y
+          solo desde la raíz, a los workspaces. Saltar varios niveles de una
+          vez obligaba a volver a bajar para seguir donde se estaba.
         */}
         <Link
-          to="/ecosistema/learning"
-          aria-label="Volver a tus workspaces"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600"
+          to={up.to}
+          aria-label={`Volver a ${up.label}`}
+          title={`Volver a ${up.label}`}
+          className="inline-flex min-w-0 max-w-[14rem] items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600"
         >
-          <ArrowLeft size={16} /> <span className="hidden sm:inline">Workspaces</span>
+          <ArrowLeft size={16} className="shrink-0" /> <span className="hidden truncate sm:inline">{up.label}</span>
         </Link>
         <div className="h-5 w-px bg-slate-200" />
         <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 text-white">

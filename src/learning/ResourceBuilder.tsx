@@ -455,7 +455,12 @@ export function ResourceBuilder() {
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       {dialogs}
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 sm:gap-3 sm:px-6">
-        <Link to={`/ecosistema/learning/${workspaceCode}`} className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600" aria-label="Volver a la metabiblioteca">
+        {/* Vuelve a la carpeta donde está el recurso, no a la raíz de la biblioteca. */}
+        <Link
+          to={`/ecosistema/learning/${workspaceCode}${resource?.folderId ? `?carpeta=${encodeURIComponent(resource.folderId)}` : ''}`}
+          className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600"
+          aria-label="Volver a la carpeta del recurso"
+        >
           <ArrowLeft size={16} /> <span className="hidden sm:inline">Biblioteca</span>
         </Link>
         <div className="h-5 w-px shrink-0 bg-slate-200" />
