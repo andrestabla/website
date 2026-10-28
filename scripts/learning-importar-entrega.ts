@@ -38,11 +38,27 @@ config({ path: path.join(RAIZ, '.env.local'), override: true })
 const { prisma } = await import('../api/_lib/prisma.js')
 const { ingestPackage } = await import('../api/_lib/lb-import.js')
 const { workspaceBucket } = await import('../api/_lib/lb-storage.js')
-const ONEDRIVE = path.join(
-  process.env.HOME || '',
-  'Library/CloudStorage/OneDrive-ALGORITMOT/Automatizaciones/Unisalle'
-)
-const ENTREGA = path.join(ONEDRIVE, '5. Entrega')
+/**
+ * Dónde vive el proyecto de Unisalle. Nació en OneDrive y se mudó al disco
+ * externo cuando los paquetes de video dejaron de caber en el disco interno,
+ * así que la ruta no se puede fijar: se prueba la que diga el entorno, luego
+ * el disco externo y por último OneDrive, y se usa la primera que exista.
+ */
+const CANDIDATAS = [
+  process.env.UNISALLE_RAIZ,
+  '/Volumes/EAlgoritmoT/Unisalle',
+  path.join(
+    process.env.HOME || '',
+    'Library/CloudStorage/OneDrive-ALGORITMOT/Automatizaciones/Unisalle'
+  ),
+].filter(Boolean) as string[]
+const RAIZ_UNISALLE = CANDIDATAS.find((p) => fs.existsSync(path.join(p, '5. Entrega')))
+if (!RAIZ_UNISALLE) {
+  console.error('\n‼ no encuentro «5. Entrega». Probé:\n   ' + CANDIDATAS.join('\n   '))
+  console.error('   Si el proyecto está en otro sitio: UNISALLE_RAIZ=/ruta npx tsx …\n')
+  process.exit(1)
+}
+const ENTREGA = path.join(RAIZ_UNISALLE, '5. Entrega')
 const FICHAS = path.join(ENTREGA, '_generador', 'cursos')
 
 /** Un MP4 de producción pesa lo que pesa: el tope de la función no aplica aquí. */

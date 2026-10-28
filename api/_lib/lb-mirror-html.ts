@@ -126,6 +126,54 @@ function lbReveal(){ document.documentElement.classList.remove('lb-pending'); }
 `
 
 /**
+ * El <base> que esta capa añade tiene un efecto que no se ve hasta que se
+ * pulsa: un enlace «#algo» deja de resolverse contra la página y pasa a
+ * resolverse contra la carpeta del paquete, así que el clic se va del
+ * documento. En una lectura con tabla de contenido eso significa que ninguna
+ * de sus entradas funciona dentro del builder, aunque funcionen en el paquete
+ * entregado, que no lleva <base>.
+ *
+ * Aquí se les devuelve su sentido original —saltar dentro del documento— sin
+ * tocar el HTML de la pieza: se atiende el clic, se busca el destino y se
+ * desplaza. Si el destino no está, no se hace nada y el enlace sigue su curso,
+ * porque puede apuntar a otra parte del paquete.
+ */
+const FRAGMENTOS = `
+(function(){
+  function lbDestino(hash){
+    if (!hash || hash.length < 2) return null;
+    var id = hash.slice(1);
+    try { id = decodeURIComponent(id); } catch (e) {}
+    return document.getElementById(id) ||
+      document.getElementsByName(id)[0] || null;
+  }
+  // Al abrir con un «#algo» en la dirección, el navegador tampoco acierta:
+  // se coloca a mano una vez que el documento está entero.
+  function lbAlAbrir(){
+    var nodo = lbDestino(location.hash);
+    if (nodo) nodo.scrollIntoView();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', lbAlAbrir);
+  else lbAlAbrir();
+  document.addEventListener('click', function(event){
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    var link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+    if (!link || link.target === '_blank') return;
+    var href = link.getAttribute('href') || '';
+    if (href.charAt(0) !== '#') return;
+    var nodo = lbDestino(href);
+    if (!nodo) return;
+    event.preventDefault();
+    // Sin «behavior»: manda el scroll-behavior que la pieza tenga en su CSS,
+    // que es lo que haría un salto de ancla de verdad.
+    nodo.scrollIntoView({ block: 'start' });
+    try { history.replaceState(null, '', location.pathname + location.search + href); } catch (e) {}
+  }, true);
+})();
+`
+
+/**
  * Los enlaces a otras páginas del paquete tienen que volver al visor, no al
  * almacenamiento: de otro modo la segunda página se serviría cruda, sin sus
  * retoques. Los enlaces a fuera se dejan como están.
@@ -399,6 +447,7 @@ export function injectMirrorLayer(html: string, layer: MirrorLayer): string {
     patches.length ? '<style>html.lb-pending{visibility:hidden}</style>' : '',
     layer.editable ? `<style>${EDITOR_CSS}</style>` : '',
     layerScript(patches, !!layer.editable),
+    `<script>${FRAGMENTOS}</script>`,
     layer.viewBase ? `<script>${linkRewriter(layer.viewBase, layer.packageRoot, layer.baseHref)}</script>` : '',
   ]
     .filter(Boolean)
