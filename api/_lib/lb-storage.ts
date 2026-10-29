@@ -30,8 +30,12 @@ export type LbBucket = {
   remove: (keys: string[]) => Promise<number>
 }
 
-/** 25 MB por archivo: un SCORM de un curso cabe de sobra. */
-export const LB_MAX_FILE_BYTES = 25 * 1024 * 1024
+/**
+ * 50 MB por archivo. Un OVA de producción trae videos MP4 incrustados que
+ * pasan de 25 MB; el paquete entero sigue topado en 60 MB (import.ts), así que
+ * la memoria de la función no se acerca a su límite.
+ */
+export const LB_MAX_FILE_BYTES = 50 * 1024 * 1024
 
 export async function workspaceBucket(workspace: { integrations?: unknown }): Promise<LbBucket> {
   const credential = await resolveCredential(workspace, 'r2')
