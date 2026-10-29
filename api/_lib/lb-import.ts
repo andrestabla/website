@@ -154,9 +154,9 @@ export async function ingestPackage(options: {
   bucket: LbBucket
   userId?: string
   /**
-   * Tope por archivo dentro del paquete. Un Rise real trae videos de más de
-   * 25 MB incrustados, así que quien sube desde un script lo levanta; dentro
-   * de la función se deja el de siempre, que protege su memoria.
+   * Tope por archivo dentro del paquete. Dentro de la función vale el de
+   * siempre, 50 MB (LB_MAX_FILE_BYTES); quien sube desde un script puede
+   * levantarlo para un video que pese todavía más.
    */
   maxFileBytes?: number
   /**
