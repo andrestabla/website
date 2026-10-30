@@ -14,7 +14,7 @@
  */
 import { prisma } from './prisma.js'
 import { deliverablePackage, familyOf, sanitizeResourceContent } from '../../src/learning/lib/content.js'
-import { sanitizeFinal, type LbPackage } from '../../src/learning/lib/final.js'
+import { sanitizeFinal, type LbFinal, type LbPackage } from '../../src/learning/lib/final.js'
 import type { LbDirectives } from '../../src/learning/lib/directives.js'
 
 export const lbDeliveries = () => (prisma as any).lbDelivery
@@ -68,6 +68,38 @@ export async function packageAt(
           return final ? { ...final, deliver: true } : null
         })())
   return pkg ? { version, live: false, pkg } : null
+}
+
+/**
+ * El archivo de una versión cuando la pieza es un medio —un MP4, un MP3— y no
+ * un sitio. La viva sale del recurso; una anterior, de la ficha que se guardó
+ * al cerrarla, que es donde quedó su URL.
+ *
+ * Un medio no se empaqueta para entregarlo: se descarga. Por eso esto devuelve
+ * de dónde bajarlo y no un paquete que habría que armar en memoria, que con un
+ * video de veintiséis megas es justo lo que no conviene hacer en una función.
+ */
+export async function mediaAt(
+  loaded: { resource: any; final: LbFinal | null },
+  asked?: number | null
+): Promise<{ version: number; live: boolean; media: NonNullable<LbFinal['media']>; fileName: string } | null> {
+  const live = liveVersion(loaded.resource)
+  const version = asked && asked > 0 ? asked : live
+  let final = loaded.final
+  if (version !== live) {
+    const delivery = await lbDeliveries().findUnique({
+      where: { resourceId_version: { resourceId: loaded.resource.id, version } },
+    })
+    if (!delivery) return null
+    final = sanitizeFinal((delivery.snapshot as { final?: unknown } | null)?.final)
+  }
+  if (!final || final.kind !== 'MEDIA' || !final.media?.url) return null
+  return {
+    version,
+    live: version === live,
+    media: final.media,
+    fileName: final.origin?.fileName || final.entry || 'medio',
+  }
 }
 
 /**

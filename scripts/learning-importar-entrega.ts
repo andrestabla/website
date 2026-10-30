@@ -9,6 +9,13 @@
  *
  *   npx tsx scripts/learning-importar-entrega.ts financial-english            # ensayo
  *   npx tsx scripts/learning-importar-entrega.ts financial-english --aplicar  # de verdad
+ *   npx tsx scripts/learning-importar-entrega.ts niveles-de-analisis-de-la-lengua \
+ *       --solo NAL_RED5_ACT,NAL_RED6_ACT --aplicar
+ *
+ * `--solo` sube unos recursos y deja el resto intacto. Hace falta cuando un
+ * curso se completa por partes: subir de nuevo un recurso que ya tiene su
+ * versión viva le pisa el contenido, y una versión con su nota de qué cambió
+ * no se recupera volviendo a subir el mismo paquete.
  *
  * El ensayo es el modo por defecto a propósito: enseña a qué borrador va a caer
  * cada paquete antes de tocar nada, porque emparejar por título es justo donde
@@ -78,9 +85,21 @@ type Ficha = { curso: string; sigla: string; recursos: Recurso[] }
 const lb = prisma as any
 
 const argumentos = process.argv.slice(2)
-const nombreFicha = argumentos.find((a) => !a.startsWith('--'))
+const nombreFicha = argumentos.find(
+  (a, i) => !a.startsWith('--') && argumentos[i - 1] !== '--solo'
+)
 const APLICAR = argumentos.includes('--aplicar')
 const CREAR = argumentos.includes('--crear')
+const SOLO = (() => {
+  const i = argumentos.indexOf('--solo')
+  if (i < 0) return null
+  const lista = (argumentos[i + 1] || '').split(',').map((c) => c.trim()).filter(Boolean)
+  if (!lista.length) {
+    console.error('‼ --solo necesita al menos un código. Ej.: --solo NAL_RED5_ACT')
+    process.exit(1)
+  }
+  return new Set(lista)
+})()
 
 /**
  * El borrador al que corresponde un paquete.
@@ -150,6 +169,14 @@ async function main() {
   const ficha: Ficha = JSON.parse(
     fs.readFileSync(path.join(FICHAS, `${nombreFicha}.json`), 'utf8')
   )
+  if (SOLO) {
+    const faltan = [...SOLO].filter((c) => !ficha.recursos.some((r) => r.codigo === c))
+    if (faltan.length) {
+      console.error(`‼ la ficha no tiene: ${faltan.join(', ')}`)
+      process.exit(1)
+    }
+    ficha.recursos = ficha.recursos.filter((r) => SOLO.has(r.codigo))
+  }
   console.log(`\n${ficha.curso} · ${ficha.recursos.length} recursos`)
   console.log(APLICAR ? '  modo: APLICAR — se escribe en la plataforma\n' : '  modo: ensayo — no se escribe nada\n')
 

@@ -327,15 +327,21 @@ export const learningApi = {
      * mode «version» abre una versión nueva (V2, V3…) y conserva la anterior;
      * «replace» corrige la vigente.
      */
+    /**
+     * `as: 'media'` no abre el archivo: lo guarda y lo sirve tal cual —un MP4,
+     * un MP3, o la pista `.vtt` que acompaña al que ya está—.
+     */
     ingest: (
       resourceId: string, uploadId: string, parts: number, fileName: string,
-      options: { mode?: 'version' | 'replace'; notes?: string } = {}
+      options: { mode?: 'version' | 'replace'; notes?: string; as?: 'media' } = {}
     ): Promise<{
       content: LbMirrorContent | null
       final: LbFinal | null
       version: number
-      files: number
+      files?: number
       bytes: number
+      /** Solo en los medios: si lo subido fue la pista y no el archivo. */
+      track?: boolean
     }> => post('/api/learning/import', { op: 'ingest', resourceId, uploadId, parts, fileName, ...options }),
     clear: (resourceId: string): Promise<{ content: LbMirrorContent | null; final: LbFinal | null }> =>
       post('/api/learning/import', { op: 'clear', resourceId }),
@@ -344,8 +350,18 @@ export const learningApi = {
   previewUrl: (resourceId: string, version?: number) =>
     `/api/learning/view?preview=${encodeURIComponent(resourceId)}${version ? `&v=${version}` : ''}`,
   publicUrl: (publicId: string) => `/ova/${encodeURIComponent(publicId)}`,
-  exportUrl: (resourceId: string, format: 'scorm' | 'html' | 'json') =>
-    `/api/learning/export?id=${encodeURIComponent(resourceId)}&format=${format}`,
+  /**
+   * Con version, descarga esa versión entregada en vez de la vigente.
+   * `media` y `captions` son para los recursos cuya pieza es un archivo
+   * reproducible: se bajan tal cual, no empaquetados.
+   */
+  exportUrl: (
+    resourceId: string,
+    format: 'scorm' | 'html' | 'json' | 'media' | 'captions',
+    version?: number
+  ) =>
+    `/api/learning/export?id=${encodeURIComponent(resourceId)}&format=${format}`
+    + (version ? `&version=${version}` : ''),
   embedSnippet: (publicId: string, title: string) =>
     `<iframe src="${window.location.origin}/ova/${encodeURIComponent(publicId)}" title="${title.replace(/"/g, '&quot;')}" width="100%" height="720" style="border:0" allowfullscreen></iframe>`,
 }
@@ -359,6 +375,19 @@ export function timeAgo(iso: string | null | undefined) {
   if (hours < 24) return `hace ${hours} h`
   const days = Math.floor(hours / 24)
   return `hace ${days} día${days === 1 ? '' : 's'}`
+}
+
+/**
+ * Los bytes de un trozo de subida, en base64. Se trocea porque
+ * `String.fromCharCode` con un array de megas desborda la pila del navegador.
+ */
+export function toBase64(bytes: Uint8Array): string {
+  let binary = ''
+  const step = 0x8000
+  for (let at = 0; at < bytes.length; at += step) {
+    binary += String.fromCharCode(...bytes.subarray(at, at + step))
+  }
+  return btoa(binary)
 }
 
 export function readAsDataUrl(file: File) {

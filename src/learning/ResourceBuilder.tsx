@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Sparkles, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, FileText, Eye,
-  Trash2, MoreVertical, CopyPlus, Archive, Paperclip, X, Package, Download, ShieldCheck, AlertTriangle,
+  Trash2, MoreVertical, CopyPlus, Archive, Paperclip, X, Package, Download, ShieldCheck, AlertTriangle, FileVideo,
   PanelLeft, PanelRight, MessageSquare, RotateCcw, History, Check, Lock, Code2, RefreshCw,
   MessageSquarePlus,
 } from 'lucide-react'
@@ -928,6 +928,34 @@ export function ResourceBuilder() {
                 <div className="mx-auto max-w-3xl space-y-4 p-5">
                   {can(role, 'resource.export') && (
                     <div className="grid gap-3 sm:grid-cols-3">
+                      {/* Cuando la pieza es un archivo reproducible no hay sitio
+                          que empaquetar: lo que se baja es el archivo y su pista.
+                          Las versiones anteriores se bajan desde su fila, en la
+                          pieza final. */}
+                      {final?.kind === 'MEDIA' ? (
+                        <>
+                          <ExportCard
+                            enabled
+                            blocked={errors.length > 0}
+                            href={learningApi.exportUrl(resource.id, 'media')}
+                            icon={<FileVideo size={18} />}
+                            title={final.media?.contentType.startsWith('audio/') ? 'Audio entregado' : 'Video entregado'}
+                            hint="El archivo tal cual se entregó, en su versión vigente."
+                            onBeforeDownload={flush}
+                          />
+                          <ExportCard
+                            enabled={!!final.media?.captionsUrl}
+                            disabledReason="Esta versión no tiene pista de subtítulos"
+                            blocked={errors.length > 0}
+                            href={learningApi.exportUrl(resource.id, 'captions')}
+                            icon={<Download size={18} />}
+                            title="Subtítulos WebVTT"
+                            hint="La pista que acompaña al archivo."
+                            onBeforeDownload={flush}
+                          />
+                        </>
+                      ) : (
+                        <>
                       <ExportCard
                         enabled={directives.exports.scorm}
                         disabledReason="Las directivas no habilitan SCORM"
@@ -952,6 +980,8 @@ export function ResourceBuilder() {
                         }
                         onBeforeDownload={flush}
                       />
+                        </>
+                      )}
                       <ExportCard
                         enabled
                         blocked={errors.length > 0}

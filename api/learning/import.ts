@@ -5,7 +5,9 @@
  *   op=part    → recibe un trozo
  *   op=ingest  → recompone el archivo, lo abre y publica sus páginas; con
  *                mode=version abre una versión nueva (V2, V3…) y conserva la
- *                anterior, con mode=replace corrige la viva
+ *                anterior, con mode=replace corrige la viva; con as=media el
+ *                archivo no se abre, se sirve tal cual —un MP4, un MP3 o la
+ *                pista `.vtt` que lo acompaña— y versiona igual
  *   op=clear   → borra el paquete y deja el recurso vacío
  *
  * La subida va por trozos porque un paquete real pesa decenas de megas y el
@@ -25,7 +27,7 @@
  */
 import crypto from 'node:crypto'
 import { denied, guard, requireModule } from '../_lib/lb-auth.js'
-import { LbZipError, ingestPackage } from '../_lib/lb-import.js'
+import { LbZipError, ingestMedia, ingestPackage } from '../_lib/lb-import.js'
 import { lbFiles, lbResources, loadResource, snapshot } from '../_lib/lb-store.js'
 import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
 import { lbDeliveries, pkgPrefix } from '../_lib/lb-delivery.js'
@@ -150,6 +152,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .remove(Array.from({ length: parts }, (_, i) => `${staging(folder, uploadId)}/${String(i).padStart(3, '0')}`))
       .catch(() => undefined)
 
+    const mode = body.mode === 'version' ? 'version' : 'replace'
+    const notes = typeof body.notes === 'string' ? body.notes : undefined
+
+    // Un medio no se abre: se guarda y se sirve como está. Sube por el mismo
+    // camino —por trozos— y se versiona igual, porque un video de presentación
+    // también se corrige después de una revisión.
+    if (String(body.as || '') === 'media') {
+      try {
+        const result = await ingestMedia({
+          data: archive,
+          fileName,
+          resource,
+          workspace,
+          bucket,
+          userId: check.session.userId,
+          mode,
+          notes,
+        })
+        return res.status(200).json({ ok: true, ...result, storage: bucket.source })
+      } catch (error) {
+        if (error instanceof LbZipError) return res.status(400).json({ ok: false, error: error.message })
+        throw error
+      }
+    }
+
     try {
       const result = await ingestPackage({
         archive,
@@ -158,8 +185,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         workspace,
         bucket,
         userId: check.session.userId,
-        mode: body.mode === 'version' ? 'version' : 'replace',
-        notes: typeof body.notes === 'string' ? body.notes : undefined,
+        mode,
+        notes,
       })
       return res.status(200).json({ ok: true, ...result, storage: bucket.source })
     } catch (error) {
