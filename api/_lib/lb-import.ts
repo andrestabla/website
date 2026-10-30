@@ -308,6 +308,154 @@ export async function ingestPackage(options: {
   return { content: null, final, version, files: stored.length, bytes: archive.length, kind }
 }
 
+/** Lo que queda al subir un medio: la versión viva y si lleva pista. */
+export type IngestMediaResult = {
+  final: LbFinal | null
+  version: number
+  bytes: number
+  kind: 'MEDIA'
+  track: boolean
+}
+
+/** Los medios que se sirven tal cual, con el tipo que el navegador espera. */
+const MEDIA_TYPES = new Set([
+  'video/mp4', 'video/webm', 'video/quicktime',
+  'audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/wav',
+])
+
+/** Una pista de subtítulos acompaña al medio; no es el medio. */
+function isCaptions(fileName: string): boolean {
+  return /\.vtt$/i.test(fileName)
+}
+
+/**
+ * Sube un medio —un MP4, un MP3— y lo deja como la pieza que se entrega.
+ *
+ * Un medio no se abre ni se empaqueta: se sirve tal cual. Pero se versiona por
+ * la misma razón que un paquete: el video de presentación se corrige después de
+ * una revisión y hay que poder volver al que se entregó, con sus comentarios
+ * apuntando a lo que se vio. Cada versión guarda su archivo en su carpeta y su
+ * ficha, igual que un SCORM.
+ *
+ * **Una pista de subtítulos no abre versión**: acompaña a la viva. Subir el
+ * video y después su `.vtt` es lo normal, y abrir una versión por cada archivo
+ * partiría en dos lo que es una sola entrega.
+ */
+export async function ingestMedia(options: {
+  data: Buffer
+  fileName: string
+  resource: {
+    id: string; title: string; code: string; kind: string
+    content: unknown; assets?: unknown; packageVersion?: number | null
+  }
+  workspace: { code: string }
+  bucket: LbBucket
+  userId?: string
+  maxFileBytes?: number
+  /** «version» abre una versión nueva y conserva la anterior; «replace» corrige la viva. */
+  mode?: 'version' | 'replace'
+  notes?: string
+}): Promise<IngestMediaResult> {
+  const { data, fileName, resource, workspace, bucket, userId, maxFileBytes } = options
+  // Una pieza importada **es** su paquete: su guion son las páginas del sitio.
+  // Colgarle un medio dejaría el recurso con un archivo adjunto y un guion
+  // vacío, y entonces no serviría ni una cosa ni la otra.
+  if (familyOf(resource.kind) === 'mirror') {
+    throw new LbZipError('Este recurso se entrega como paquete, no como archivo de medios: su guion es el propio paquete.')
+  }
+  const folder = resourceFolder(workspace.code, resource.code)
+  const base = fileName.split('/').pop() || fileName
+  const contentType = contentTypeFor(base)
+  const previo = sanitizeFinal(resource.assets)
+
+  // ── una pista: se cuelga de la versión viva ──────────────────────────────
+  if (isCaptions(base)) {
+    if (!previo || previo.kind !== 'MEDIA' || !previo.media?.url) {
+      throw new LbZipError('Primero el medio y después su pista: todavía no hay archivo al que acompañar.')
+    }
+    const version = liveVersion(resource)
+    const subida = await bucket.put(`${pkgPrefix(folder, version)}/${base}`, data, 'text/vtt', maxFileBytes)
+    await lbFiles().deleteMany({ where: { resourceId: resource.id, version, path: base } })
+    await lbFiles().create({
+      data: { resourceId: resource.id, version, path: base, url: subida.url, contentType: 'text/vtt', bytes: subida.bytes },
+    })
+    const final = sanitizeFinal({ ...previo, media: { ...previo.media, captionsUrl: subida.url } })
+    await lbResources().update({ where: { id: resource.id }, data: { assets: final as any } })
+    // La ficha de la versión guarda cómo quedó, y ahora lleva su pista. El
+    // número de archivos sube a dos: es lo que mira el panel para ofrecer la
+    // descarga de la pista además de la del medio.
+    await lbDeliveries().updateMany({
+      where: { resourceId: resource.id, version },
+      data: { snapshot: { final } as any, files: 2 },
+    })
+    return { final, version, bytes: subida.bytes, kind: 'MEDIA', track: true }
+  }
+
+  if (!MEDIA_TYPES.has(contentType)) {
+    throw new LbZipError(`«${base}» no es un medio que se pueda servir: se admiten MP4, WebM, MOV, MP3, M4A, OGG y WAV.`)
+  }
+
+  // ── el medio: puede abrir versión ────────────────────────────────────────
+  const current = liveVersion(resource)
+  const ultima = await lbDeliveries().findFirst({
+    where: { resourceId: resource.id }, orderBy: { version: 'desc' }, select: { version: true },
+  })
+  // Hay entrega anterior si quedó su ficha, aunque sus archivos no estén en
+  // filas: los medios que se adjuntaron antes de las versiones viven en la
+  // carpeta del recurso y su URL está en la ficha. Mirar solo las filas haría
+  // que la primera versión nueva pisara justo lo que se quiere conservar.
+  const entregada = !!ultima || (await lbFiles().count({ where: { resourceId: resource.id } })) > 0
+  const abreVersion = options.mode === 'version' && entregada
+  const version = abreVersion ? Math.max(current, ultima?.version || 0) + 1 : current
+
+  if (abreVersion) {
+    await lbDeliveries().upsert({
+      where: { resourceId_version: { resourceId: resource.id, version: current } },
+      update: { snapshot: snapshotOf({ kind: resource.kind, content: resource.content, assets: resource.assets }) as any },
+      create: {
+        resourceId: resource.id,
+        version: current,
+        fileName: String(previo?.origin?.fileName || (resource as any)?.importMeta?.fileName || 'medio'),
+        snapshot: snapshotOf({ kind: resource.kind, content: resource.content, assets: resource.assets }) as any,
+      },
+    })
+  } else {
+    const anteriores = await lbFiles().findMany({ where: { resourceId: resource.id, version }, select: { path: true } })
+    if (anteriores.length) {
+      await bucket.remove(anteriores.map((file: any) => `${pkgPrefix(folder, version)}/${file.path}`))
+      await lbFiles().deleteMany({ where: { resourceId: resource.id, version } })
+    }
+  }
+
+  const subida = await bucket.put(`${pkgPrefix(folder, version)}/${base}`, data, contentType, maxFileBytes)
+  await lbFiles().create({
+    data: { resourceId: resource.id, version, path: base, url: subida.url, contentType, bytes: subida.bytes },
+  })
+
+  const origin = { fileName: base, importedAt: new Date().toISOString(), bytes: subida.bytes, files: 1 }
+  // Un medio nuevo no hereda la pista del anterior: diría los tiempos de otro
+  // montaje. Se sube después, y hasta entonces la versión va sin subtítulos.
+  const final = sanitizeFinal({
+    kind: 'MEDIA', deliver: true, entry: base, pages: [], patches: {},
+    origin, media: { url: subida.url, contentType },
+  })
+
+  await snapshot(resource.id, resource.content, 'import', userId, `Antes de subir «${base}»`)
+  await lbResources().update({
+    where: { id: resource.id },
+    data: {
+      assets: final as any,
+      packageVersion: version,
+      importMeta: { fileName: base, bytes: subida.bytes, files: 1, entry: base } as any,
+    },
+  })
+  await recordDelivery({
+    resourceId: resource.id, version, fileName: base, archive: data, files: 1,
+    userId, notes: options.notes, snapshot: { final },
+  })
+  return { final, version, bytes: subida.bytes, kind: 'MEDIA', track: false }
+}
+
 /** La ficha de la versión que acaba de quedar viva. */
 async function recordDelivery(options: {
   resourceId: string

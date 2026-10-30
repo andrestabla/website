@@ -22,10 +22,12 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import {
   Check, ExternalLink, Image as ImageIcon, Loader2, Plus, RotateCcw, Trash2, Upload, X,
-  History, MessageSquare, CheckCircle2,
+  History,
 } from 'lucide-react'
 import { packageEditCount, type LbPackage, type LbPatch } from '../lib/final'
-import { learningApi, readAsDataUrl, timeAgo, type DeliveryRow } from '../lib/api'
+import { learningApi, readAsDataUrl, toBase64 } from '../lib/api'
+import { DeliveriesList } from './Deliveries'
+import { useDeliveries } from '../lib/deliveries'
 import { eyebrowCls, fieldCls, sideItemCls } from './ui'
 
 /**
@@ -81,6 +83,14 @@ function porSeccion(patches: LbPatch[], secciones: Seccion[]): number[] {
 /** Lo que cabe subir de una vez; el endpoint aplica el mismo tope. */
 export const MAX_PACKAGE_MB = 60
 
+/** Lo que no es un sitio sino un archivo que se reproduce, y su pista. */
+const MEDIA_EXT = /\.(mp4|webm|mov|mp3|m4a|ogg|wav|vtt)$/i
+
+/** Lo que admite el selector de archivos, según lo que el recurso admita. */
+const ACCEPT_PAQUETE = '.zip,.html,.htm,application/zip,text/html'
+const ACCEPT_MEDIOS =
+  ',video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp4,audio/ogg,audio/wav,.vtt,text/vtt'
+
 /**
  * Lo que se puede añadir. Se inserta HTML semántico a secas, sin estilos
  * propios: así lo nuevo hereda la hoja de la pieza y se ve como lo que ya
@@ -112,6 +122,7 @@ export function PackagePanel({
   emptyTitle,
   emptyHint,
   saving = 'idle',
+  allowMedia,
 }: {
   resourceId: string
   /** null mientras no haya paquete. */
@@ -123,6 +134,11 @@ export function PackagePanel({
   emptyHint: string
   /** Estado de guardado del builder, para decirlo aquí y no solo arriba. */
   saving?: 'idle' | 'saving' | 'saved'
+  /**
+   * Si la pieza de este recurso puede ser un archivo reproducible —un MP4, un
+   * MP3— además de un sitio. Una pieza importada no: su guion es el paquete.
+   */
+  allowMedia?: boolean
 }) {
   // La entrada abre la pieza publicada, pero no siempre es editable: en un
   // Rise es su reproductor. Lo que se edita es siempre una página.
@@ -140,17 +156,8 @@ export function PackagePanel({
     | null
   >(null)
   /** Versiones entregadas del paquete (V1, V2…), la más reciente primero. */
-  const [deliveries, setDeliveries] = useState<DeliveryRow[]>([])
-  const [live, setLive] = useState(1)
   const [newVersion, setNewVersion] = useState(false)
-  const loadDeliveries = useCallback(async () => {
-    try {
-      const payload = await learningApi.resources.deliveries(resourceId)
-      setDeliveries(payload.deliveries || [])
-      setLive(payload.live || 1)
-    } catch { /* el historial es informativo: si falla, el panel sigue */ }
-  }, [resourceId])
-  useEffect(() => { void loadDeliveries() }, [loadDeliveries, pkg === null])
+  const { deliveries, live, reload: loadDeliveries } = useDeliveries(resourceId)
 
   const frame = useRef<HTMLIFrameElement>(null)
   const [frameKey, setFrameKey] = useState(0)
@@ -230,6 +237,8 @@ export function PackagePanel({
     frame.current?.contentWindow?.postMessage({ source: 'lb-panel', type: 'goto', at }, window.location.origin)
   }
 
+  const aceptados = allowMedia ? ACCEPT_PAQUETE + ACCEPT_MEDIOS : ACCEPT_PAQUETE
+
   const upload = async (file: File, mode: 'version' | 'replace' = 'replace', notes?: string) => {
     setError('')
     setUploading('Preparando…')
@@ -247,8 +256,15 @@ export function PackagePanel({
           toBase64(buffer.subarray(index * size, (index + 1) * size))
         )
       }
-      setUploading('Abriendo el paquete…')
-      onUploaded(await learningApi.importPkg.ingest(resourceId, begin.uploadId, parts, file.name, { mode, notes }))
+      // Un medio no se abre: se guarda y se sirve. Se reconoce por lo que es y
+      // no por un botón aparte, porque desde fuera es el mismo gesto: esta es
+      // la pieza que se entrega.
+      const esMedio = !!allowMedia && MEDIA_EXT.test(file.name)
+      setUploading(esMedio ? 'Guardando el archivo…' : 'Abriendo el paquete…')
+      onUploaded(await learningApi.importPkg.ingest(
+        resourceId, begin.uploadId, parts, file.name,
+        { mode, notes, ...(esMedio ? { as: 'media' as const } : {}) }
+      ))
       setNewVersion(false)
       reload()
       void loadDeliveries()
@@ -280,10 +296,12 @@ export function PackagePanel({
           </div>
           <h3 className="text-[17px] font-black tracking-tight">{emptyTitle}</h3>
           <p className="mt-2 text-[13.5px] leading-relaxed text-slate-500">{emptyHint}</p>
-          <PackageButton uploading={uploading} onPick={upload} />
+          <PackageButton uploading={uploading} onPick={upload} accept={aceptados} />
           {error && <p className="mt-3 text-[12.5px] font-semibold text-rose-600">{error}</p>}
           <p className="mt-4 text-[11.5px] text-slate-400">
-            Un SCORM, un sitio comprimido o una página HTML. Hasta {MAX_PACKAGE_MB} MB.
+            Un SCORM, un sitio comprimido o una página HTML
+            {allowMedia ? ', o el archivo si la pieza es un video o un audio' : ''}. Hasta{' '}
+            {MAX_PACKAGE_MB} MB.
           </p>
         </div>
       </div>
@@ -363,54 +381,7 @@ export function PackagePanel({
               })}
         </div>
 
-        {deliveries.length > 0 && (
-          <div className="mt-3 border-t border-slate-200 pt-3">
-            <div className={`mb-1.5 flex items-center gap-1.5 px-1 ${eyebrowCls}`}>
-              <History size={12} /> Versiones · {deliveries.length}
-            </div>
-            <div className="max-h-56 space-y-1.5 overflow-y-auto">
-              {deliveries.map((row) => (
-                <div
-                  key={row.id}
-                  className={`rounded-lg border px-2.5 py-2 text-[11.5px] ${row.live ? 'border-indigo-300 bg-white' : 'border-slate-200 bg-slate-50'}`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <b className="text-[12.5px] text-slate-800">V{row.version}</b>
-                    {row.live && <span className="rounded-full bg-indigo-600 px-1.5 py-px text-[10px] font-bold text-white">vigente</span>}
-                    <span className="ml-auto text-slate-400" title={new Date(row.createdAt).toLocaleString('es-CO')}>{timeAgo(row.createdAt)}</span>
-                  </div>
-                  <div className="truncate text-slate-500" title={row.fileName}>
-                    {row.fileName}{row.createdByName ? ` · ${row.createdByName}` : ''}
-                  </div>
-                  {row.notes && <p className="mt-1 whitespace-pre-wrap text-slate-600">{row.notes}</p>}
-                  <div className="mt-1 flex items-center gap-2">
-                    {row.comments.open + row.comments.resolved > 0 ? (
-                      <span className="inline-flex items-center gap-1 text-slate-500" title="Comentarios de revisión hechos sobre esta versión">
-                        <MessageSquare size={11} /> {row.comments.open + row.comments.resolved}
-                        {row.comments.resolved > 0 && (
-                          <span className="inline-flex items-center gap-0.5 text-emerald-600"><CheckCircle2 size={11} /> {row.comments.resolved}</span>
-                        )}
-                        {row.comments.open > 0 && <span className="text-amber-600">· {row.comments.open} sin atender</span>}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">Sin comentarios</span>
-                    )}
-                    {!row.live && (
-                      <a
-                        href={learningApi.previewUrl(resourceId, row.version)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="ml-auto inline-flex items-center gap-1 font-semibold text-indigo-600 hover:underline"
-                      >
-                        <ExternalLink size={11} /> Ver
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <DeliveriesList resourceId={resourceId} deliveries={deliveries} piece="package" />
 
         <div className="mt-3 space-y-2 border-t border-slate-200 pt-3">
           <div className="flex items-center justify-between text-[12px]">
@@ -446,7 +417,13 @@ export function PackagePanel({
           >
             <Upload size={12} /> Subir nueva versión (V{live + 1})
           </button>
-          <PackageButton uploading={uploading} onPick={(file) => upload(file, 'replace')} compact label={`Reemplazar la V${live}`} />
+          <PackageButton
+            uploading={uploading}
+            onPick={(file) => upload(file, 'replace')}
+            compact
+            label={`Reemplazar la V${live}`}
+            accept={aceptados}
+          />
           <button
             onClick={clearPackage}
             disabled={!!uploading}
@@ -513,6 +490,8 @@ export function PackagePanel({
           <NewVersionDialog
             next={live + 1}
             uploading={uploading}
+            accept={aceptados}
+            pickLabel={allowMedia ? 'Elegir el paquete o el archivo' : 'Elegir el paquete (SCORM, ZIP o HTML)'}
             onClose={() => setNewVersion(false)}
             onSubmit={(file, notes) => upload(file, 'version', notes)}
           />
@@ -729,11 +708,13 @@ function PackageButton({
   onPick,
   compact,
   label = 'Elegir archivo',
+  accept = ACCEPT_PAQUETE,
 }: {
   uploading: string
   onPick: (file: File) => void
   compact?: boolean
   label?: string
+  accept?: string
 }) {
   const input = useRef<HTMLInputElement>(null)
   return (
@@ -741,7 +722,7 @@ function PackageButton({
       <input
         ref={input}
         type="file"
-        accept=".zip,.html,.htm,application/zip,text/html"
+        accept={accept}
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0]
@@ -766,27 +747,22 @@ function PackageButton({
 }
 
 /** Base64 sin desbordar la pila: los trozos llegan a dos megas. */
-function toBase64(bytes: Uint8Array): string {
-  let binary = ''
-  const step = 0x8000
-  for (let at = 0; at < bytes.length; at += step) {
-    binary += String.fromCharCode(...bytes.subarray(at, at + step))
-  }
-  return btoa(binary)
-}
-
 /**
  * Subir una versión nueva: el archivo y qué se ajustó. La nota es la que
  * cuenta la historia en el historial y en la revisión; no es obligatoria,
  * pero sin ella la trazabilidad se queda en «algo cambió».
  */
 function NewVersionDialog({
-  next, uploading, onClose, onSubmit,
+  next, uploading, onClose, onSubmit, accept = ACCEPT_PAQUETE,
+  pickLabel = 'Elegir el paquete (SCORM, ZIP o HTML)',
 }: {
   next: number
   uploading: string
   onClose: () => void
   onSubmit: (file: File, notes: string) => void
+  accept?: string
+  /** Cómo se llama aquí lo que se elige: un paquete, o también un archivo. */
+  pickLabel?: string
 }) {
   const [file, setFile] = useState<File | null>(null)
   const [notes, setNotes] = useState('')
@@ -806,7 +782,7 @@ function NewVersionDialog({
         <input
           ref={input}
           type="file"
-          accept=".zip,.html,.htm,application/zip,text/html"
+          accept={accept}
           className="hidden"
           onChange={(event) => { setFile(event.target.files?.[0] || null); event.target.value = '' }}
         />
@@ -817,7 +793,7 @@ function NewVersionDialog({
         >
           <Upload size={15} className="text-slate-400" />
           <span className={`min-w-0 flex-1 truncate ${file ? 'font-semibold text-slate-700' : 'text-slate-400'}`}>
-            {file ? file.name : 'Elegir el paquete (SCORM, ZIP o HTML)'}
+            {file ? file.name : pickLabel}
           </span>
         </button>
         <label className="mt-3 block text-[12.5px] font-semibold text-slate-600">
