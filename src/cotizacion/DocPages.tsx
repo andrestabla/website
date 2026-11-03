@@ -7,7 +7,7 @@
  * lugar del esquema fijo de secciones. Convive con las cotizaciones que usan
  * el esquema clásico.
  */
-import React, { useEffect } from 'react'
+import React, { createContext, useContext, useEffect } from 'react'
 import { DynamicIcon } from 'lucide-react/dynamic'
 import type { QuoteItem, QuoteTotals } from './pricing'
 
@@ -167,6 +167,7 @@ export type DocBlock =
       totalLabel?: string
       total?: string
     }
+  | { type: 'options'; group?: string; title?: string; note?: string }
   | { type: 'payments'; items: Array<{ pct: string; label: string }> }
   | { type: 'toc'; note?: string }
   | { type: 'team'; items: Array<{ role: string; dedication?: string; functions: string[] }> }
@@ -342,6 +343,44 @@ function Prose({ text, align }: { text: string; align?: Align }) {
   return <>{out}</>
 }
 
+/** Elegir una opción desde el documento; null = solo lectura. */
+export const ItemPicker = createContext<((code: string) => void) | null>(null)
+
+/** Opciones excluyentes de un grupo de líneas: el cliente elige una y el total se recalcula. */
+function OptionsBlock({ block, items, totals, money, refBase }: {
+  block: Extract<DocBlock, { type: 'options' }>
+  items: QuoteItem[]
+  totals: QuoteTotals
+  money: (n: number) => string
+  refBase?: string
+}) {
+  const pick = useContext(ItemPicker)
+  const r = (field: string) => (refBase ? { 'data-ref': `${refBase}.${field}` } : {})
+  const group = block.group || items.find((i) => i.group)?.group
+  const options = items.filter((i) => i.group && i.group === group && i.kind !== 'CORE')
+  if (!options.length) return refBase ? <p className="qv-note">Sin opciones: asigna el mismo grupo a las líneas de la cotización.</p> : null
+  return (
+    <div className="qv-opts">
+      {(block.title || refBase) && <h3 {...r('title')}>{block.title || ''}</h3>}
+      <div role="radiogroup" aria-label={block.title || group || 'Opciones'}>
+        {options.map((item) => (
+          <label className={`qv-opt${item.on ? ' is-on' : ''}`} key={item.code}>
+            <input
+              type="radio" name={`opt-${group}`} checked={item.on}
+              disabled={!pick || item.selectable === false}
+              onChange={() => pick?.(item.code)}
+            />
+            <span className="o-n">{item.name}{item.summary && <span className="sub">{item.summary}</span>}</span>
+            <span className="o-v">{money(item.price * (item.qty ?? 1))}</span>
+          </label>
+        ))}
+      </div>
+      <div className="qv-opts-tot"><span>Inversión total</span><b>{money(totals.total)}</b></div>
+      {block.note && <p className="qv-note" {...r('note')}>{rich(block.note)}</p>}
+    </div>
+  )
+}
+
 export function DocBlockView({
   block,
   items,
@@ -496,7 +535,7 @@ export function DocBlockView({
                 ))}
                 <tr className="tot">
                   <td className="lab" {...r('totalLabel')}>{block.totalLabel || 'Valor total de la propuesta'}</td>
-                  <td className="r"><span className="big" {...r('total')}>{block.total || money(totals.total)}</span></td>
+                  <td className="r"><span className="big" {...r('total')}>{(!items.some((i) => i.group) && block.total) || money(totals.total)}</span></td>
                 </tr>
               </tbody>
             </table>
@@ -505,6 +544,9 @@ export function DocBlockView({
         </>
       )
     }
+
+    case 'options':
+      return <OptionsBlock block={block} items={items} totals={totals} money={money} refBase={refBase} />
 
     case 'payments':
       return (

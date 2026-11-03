@@ -499,6 +499,25 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
 .qv-crono-legend i.hito { background: var(--gold-fill); border-color: var(--gold); }
 .qv-crono-legend .txt { color: var(--faint); }
 
+/* ---------- opciones excluyentes ---------- */
+.qv-opts { margin-top: 8px; }
+.qv-opt {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center;
+  padding: 10px 12px; margin-bottom: 6px; border: 1px solid var(--line); cursor: pointer;
+}
+.qv-opt.is-on { border-color: var(--cyan); background: rgba(79, 208, 236, 0.1); }
+.qv-opt input { accent-color: var(--cyan); margin: 0; }
+.qv-opt input:disabled { cursor: default; }
+.qv-opt input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.qv-opt .o-n { font-weight: 600; font-size: 13px; color: var(--navy); }
+.qv-opt .o-n .sub { display: block; font-weight: 400; font-size: 11.5px; color: var(--muted); }
+.qv-opt .o-v { font-family: var(--mono); font-size: 12.5px; color: var(--navy); white-space: nowrap; }
+.qv-opts-tot {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 10px 12px; background: var(--navy); color: #fff; font-size: 12.5px;
+}
+.qv-opts-tot b { font-family: var(--mono); font-size: 16px; }
+
 /* ---------- tabla de inversión ---------- */
 .qv-inv { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12.5px; }
 .qv-inv th {

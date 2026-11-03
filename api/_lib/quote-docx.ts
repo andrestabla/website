@@ -72,7 +72,7 @@ const noBorders = {
 const hairline = { style: BorderStyle.SINGLE, size: 2, color: LINE }
 
 /* ── Bloques → párrafos de Word ─────────────────────────────────────────── */
-function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[] {
+function blockToDocx(b: any, assets: Map<string, Buffer>, items: any[] = []): (Paragraph | Table)[] {
   const out: (Paragraph | Table)[] = []
   switch (b.type) {
     case 'lede':
@@ -315,6 +315,14 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
       out.push(new Paragraph({ text: '', spacing: { after: 120 } }))
       break
 
+    case 'options': {
+      // Word no es interactivo: las opciones van como tabla, con la elegida marcada
+      const group = b.group || items.find((i) => i.group)?.group
+      const rows = items.filter((i) => i.group && i.group === group).map((i) => [`${i.name}${i.on ? ' · opción sugerida' : ''}`, money(i.price)])
+      if (!rows.length) break
+      return blockToDocx({ type: 'table', headers: [b.title || 'Opciones', 'Valor COP'], rows, firstCol: 'plain' }, assets)
+    }
+
     case 'payments':
       out.push(new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
@@ -363,7 +371,7 @@ function blockToDocx(b: any, assets: Map<string, Buffer>): (Paragraph | Table)[]
     case 'grid': {
       // en Word no hay cuadrícula libre: las celdas se vuelcan una tras otra
       const cells: any[][] = Array.isArray(b.cells) ? b.cells : []
-      return cells.flatMap((cell) => (Array.isArray(cell) ? cell.flatMap((x: any) => blockToDocx(x, assets)) : []))
+      return cells.flatMap((cell) => (Array.isArray(cell) ? cell.flatMap((x: any) => blockToDocx(x, assets, items)) : []))
     }
     case 'icon':
       return b.label ? [new Paragraph({ children: runs(String(b.label), { bold: true }), spacing: { after: 120 } })] : []
@@ -551,7 +559,7 @@ export async function buildQuoteDocx(quote: DocxQuote, baseUrl: string): Promise
         if (b.note) body.push(P(plain(b.note), { size: 17, color: MUTED, after: 160 }))
         return
       }
-      blockToDocx(b, assets).forEach((el) => body.push(el))
+      blockToDocx(b, assets, items).forEach((el) => body.push(el))
     })
   })
 
