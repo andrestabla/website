@@ -1254,22 +1254,21 @@ REGLAS DEL PATCH
 
     // cada turno que cambia el documento deja la versión anterior restaurable
     if (Object.keys(updates).length) await snapshotQuote(quote, 'AI', 'ai', message.slice(0, 100))
-    const [updated] = await Promise.all([
-      Object.keys(updates).length
-        ? quoteDb().update({ where: { id: quoteId }, data: updates })
-        : Promise.resolve(quote),
-      msgDb().createMany({
-        data: [
-          {
-            quoteId,
-            role: 'user',
-            content: message,
-            meta: attachedNow.length ? { attachments: attachedNow.map((a: any) => ({ id: a.id, name: a.name })) } : undefined,
-          },
-          { quoteId, role: 'assistant', content: reply, meta: { providerUsed, changes, patchKeys, patchContentKeys, intent, model, promptChars: prompt.length } },
-        ],
-      }),
-    ])
+    // primero el documento: si no se guarda, el chat no puede quedar diciendo que sí
+    const updated = Object.keys(updates).length
+      ? await quoteDb().update({ where: { id: quoteId }, data: updates })
+      : quote
+    await msgDb().createMany({
+      data: [
+        {
+          quoteId,
+          role: 'user',
+          content: message,
+          meta: attachedNow.length ? { attachments: attachedNow.map((a: any) => ({ id: a.id, name: a.name })) } : undefined,
+        },
+        { quoteId, role: 'assistant', content: reply, meta: { providerUsed, changes, patchKeys, patchContentKeys, intent, model, promptChars: prompt.length } },
+      ],
+    })
 
     return res.status(200).json({
       ok: true,

@@ -678,8 +678,8 @@ model Quote {
   pricing       Json // { items: [{code,name,price,weeks,deliverables,on}], scale: [...] }
   discountScale Json?
 
-  totalBase   Int       @default(0)
-  totalFinal  Int       @default(0)
+  totalBase   Float     @default(0) // pesos enteros; Int se queda corto desde 2.147 millones
+  totalFinal  Float     @default(0)
   weeks       Int       @default(0)
   moduleCount Int       @default(0)
   validDays   Int       @default(45)
