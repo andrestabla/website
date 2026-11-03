@@ -319,6 +319,7 @@ function blockToDocx(b: any, assets: Map<string, Buffer>, items: any[] = []): (P
       // Word no es interactivo: las opciones van como tabla, con la elegida marcada
       const group = b.group || items.find((i) => i.group)?.group
       const rows = items.filter((i) => i.group && i.group === group).map((i) => [`${i.name}${i.on ? ' · opción sugerida' : ''}`, money(i.price)])
+      for (const i of items) if (!i.group && i.kind !== 'CORE' && i.selectable !== false) rows.push([`${i.name} · adicional`, money(i.price * (i.qty ?? 1))])
       if (!rows.length) break
       return blockToDocx({ type: 'table', headers: [b.title || 'Opciones', 'Valor COP'], rows, firstCol: 'plain' }, assets)
     }
