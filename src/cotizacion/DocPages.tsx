@@ -346,7 +346,7 @@ function Prose({ text, align }: { text: string; align?: Align }) {
 /** Elegir una opción desde el documento; null = solo lectura. */
 export const ItemPicker = createContext<((code: string) => void) | null>(null)
 
-/** Opciones excluyentes de un grupo de líneas: el cliente elige una y el total se recalcula. */
+/** Opciones excluyentes de un grupo y adicionales opcionales: el total se recalcula con lo elegido. */
 function OptionsBlock({ block, items, totals, money, refBase }: {
   block: Extract<DocBlock, { type: 'options' }>
   items: QuoteItem[]
@@ -358,6 +358,7 @@ function OptionsBlock({ block, items, totals, money, refBase }: {
   const r = (field: string) => (refBase ? { 'data-ref': `${refBase}.${field}` } : {})
   const group = block.group || items.find((i) => i.group)?.group
   const options = items.filter((i) => i.group && i.group === group && i.kind !== 'CORE')
+  const extras = items.filter((i) => !i.group && i.kind !== 'CORE' && i.selectable !== false)
   if (!options.length) return refBase ? <p className="qv-note">Sin opciones: asigna el mismo grupo a las líneas de la cotización.</p> : null
   return (
     <div className="qv-opts">
@@ -375,6 +376,14 @@ function OptionsBlock({ block, items, totals, money, refBase }: {
           </label>
         ))}
       </div>
+      {extras.length > 0 && <div className="qv-opts-x">Servicios adicionales</div>}
+      {extras.map((item) => (
+        <label className={`qv-opt${item.on ? ' is-on' : ''}`} key={item.code}>
+          <input type="checkbox" checked={item.on} disabled={!pick} onChange={() => pick?.(item.code)} />
+          <span className="o-n">{item.name}{item.summary && <span className="sub">{item.summary}</span>}</span>
+          <span className="o-v">{money(item.price * (item.qty ?? 1))}</span>
+        </label>
+      ))}
       <div className="qv-opts-tot"><span>Inversión total</span><b>{money(totals.total)}</b></div>
       {block.note && <p className="qv-note" {...r('note')}>{rich(block.note)}</p>}
     </div>
@@ -516,7 +525,7 @@ export function DocBlockView({
       const rows = block.rows?.length
         ? block.rows
         : items.filter((i) => i.on !== false).map((i) => ({
-            concept: i.name, detail: i.summary, amount: money(i.price),
+            concept: i.name, detail: i.summary, amount: money(i.price * (i.qty ?? 1)),
           }))
       return (
         <>

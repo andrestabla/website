@@ -1007,7 +1007,8 @@ REGLAS DEL PATCH
   por alternativa con el mismo "group" (p. ej. "group": "Usuarios") y "on": true solo en la sugerida; el
   servidor deja una sola encendida y el total es el de esa. En un documento por páginas agrega el bloque
   "options" con ese grupo: es donde el cliente elige y el total se recalcula. No escribas la inversión fija
-  en "cover.investment" ni en "total": con opciones se calcula sola.
+  en "cover.investment" ni en "total": con opciones se calcula sola. Un servicio adicional va como línea
+  sin "group" y con "on": false: el bloque "options" lo muestra aparte para que el cliente lo active.
 - Plantillas por UNIDADES: las líneas tienen precio POR UNIDAD; fija cantidades con "modules.qty"
   (p. ej. 5 cursos → {"code":"SV01","qty":5}) y apaga las líneas que no apliquen. No hay núcleo.
 - "template" cambia la línea de negocio de la cotización (catálogo, escala de descuento y forma del
