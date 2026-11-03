@@ -62,6 +62,13 @@ export type DeliveryRow = {
   comments: { open: number; resolved: number }
 }
 
+/** Un recurso en la papelera, con cuándo se eliminó y cuándo se borrará del todo. */
+export type TrashRow = ResourceRow & {
+  deletedAt: string
+  deletedByName: string | null
+  purgeAt: string
+}
+
 /** Carpeta de la biblioteca de un workspace; parentId null = la raíz. */
 export type FolderRow = {
   id: string
@@ -269,7 +276,18 @@ export const learningApi = {
     review: (resourceId: string, data: { enabled: boolean; rotate?: boolean }): Promise<{ resource: ResourceRow; reviewToken: string }> =>
       post('/api/learning/resources', { op: 'review', resourceId, ...data }),
     duplicate: (resourceId: string) => post('/api/learning/resources', { op: 'duplicate', resourceId }),
-    remove: (resourceId: string) => post('/api/learning/resources', { op: 'delete', resourceId }),
+    /** Lo manda a la papelera: se puede restaurar durante `days` días. */
+    remove: (resourceId: string): Promise<{ days: number }> => post('/api/learning/resources', { op: 'delete', resourceId }),
+    trash: (workspaceId: string): Promise<{ days: number; resources: TrashRow[] }> =>
+      post('/api/learning/resources', { op: 'trash', workspaceId }),
+    /** Sacarlo de la papelera, con su carpeta y su estado de antes. */
+    untrash: (resourceId: string): Promise<{ resource: ResourceRow }> =>
+      post('/api/learning/resources', { op: 'untrash', resourceId }),
+    /** Borrado definitivo, desde la papelera. */
+    purge: (resourceId: string): Promise<{ warning: string | null }> =>
+      post('/api/learning/resources', { op: 'purge', resourceId }),
+    emptyTrash: (workspaceId: string): Promise<{ purged: number; warning: string | null }> =>
+      post('/api/learning/resources', { op: 'empty-trash', workspaceId }),
     /** Versiones entregadas del paquete, con los comentarios que recibió cada una. */
     deliveries: (resourceId: string): Promise<{ live: number; deliveries: DeliveryRow[] }> =>
       post('/api/learning/resources', { op: 'deliveries', resourceId }),

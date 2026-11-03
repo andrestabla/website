@@ -319,11 +319,14 @@ export function ResourceBuilder() {
   const remove = async () => {
     if (!resource) return
     setMenuOpen(false)
-    const ok = await confirm(`¿Eliminar «${resource.title}»?\n\nSe borran su guion, sus versiones, sus insumos y su enlace. No se puede deshacer.`)
+    const ok = await confirm(
+      `¿Mover «${resource.title}» a la papelera?\n\nDeja de verse en la biblioteca, en su enlace público y en la revisión. Podrás restaurarlo desde la Papelera durante 30 días; después se borra del todo.`,
+      { title: 'Mover a la papelera', okLabel: 'Mover a la papelera', danger: true }
+    )
     if (!ok) return
     try {
       await learningApi.resources.remove(resource.id)
-      navigate(`/ecosistema/learning/${workspaceCode}`)
+      navigate(`/ecosistema/learning/${workspaceCode}${resource.folderId ? `?carpeta=${encodeURIComponent(resource.folderId)}` : ''}`)
     } catch (e: any) { setError(e.message) }
   }
 
@@ -583,7 +586,7 @@ export function ResourceBuilder() {
                     <>
                       <div className="my-1 border-t border-slate-100" />
                       <button onClick={remove} className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-[13px] text-rose-600 hover:bg-rose-50">
-                        <Trash2 size={14} /> Eliminar…
+                        <Trash2 size={14} /> Mover a la papelera…
                       </button>
                     </>
                   )}

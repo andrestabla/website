@@ -16,7 +16,7 @@ import {
   ArrowLeft, Plus, Eye, Copy, Trash2, CopyPlus, Search, Loader2, CheckCircle2, X, Settings2,
   ChevronDown, Layers, Lock, GraduationCap, BookOpen, MousePointerClick, Mic, Clapperboard, Route, PackageOpen,
   Library, Users, AlertTriangle, MessageSquare, Folder, FolderOpen, ChevronRight,
-  FolderPlus, FolderInput, Pencil, Home,
+  FolderPlus, FolderInput, Pencil, Home, RotateCcw,
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import {
@@ -27,7 +27,7 @@ import { LB_STAT_LABELS, familyOf } from './lib/content'
 import { LB_ROLE_LABEL, LB_ROLE_STYLE, can } from './lib/roles'
 import {
   learningApi, timeAgo,
-  type FolderRow, type ResourceRow, type WorkspaceRow,
+  type FolderRow, type ResourceRow, type TrashRow, type WorkspaceRow,
 } from './lib/api'
 import { WorkspacePanel } from './WorkspacePanel'
 
@@ -139,9 +139,14 @@ export function LearningHome() {
 
   const openFolder = (folderId: string | null) => {
     const next = new URLSearchParams(searchParams)
+    next.delete('papelera')
     if (folderId) next.set('carpeta', folderId); else next.delete('carpeta')
     setSearchParams(next)
   }
+
+  /** La papelera va en la URL (?papelera=1), como las carpetas. */
+  const inTrash = searchParams.get('papelera') === '1'
+  const openTrash = () => setSearchParams(new URLSearchParams({ papelera: '1' }))
 
   const byName = (a: { name?: string; title?: string }, b: { name?: string; title?: string }) =>
     String(a.name ?? a.title).localeCompare(String(b.name ?? b.title), 'es', { numeric: true, sensitivity: 'base' })
@@ -329,7 +334,8 @@ export function LearningHome() {
 
   const remove = async (resource: ResourceRow) => {
     const ok = await confirm(
-      `¿Eliminar «${resource.title}»?\n\nSe borran su guion, sus versiones, sus insumos y su enlace público. No se puede deshacer.`
+      `¿Mover «${resource.title}» a la papelera?\n\nDeja de verse en la biblioteca, en su enlace público y en la revisión. Podrás restaurarlo desde la Papelera durante 30 días; después se borra del todo.`,
+      { title: 'Mover a la papelera', okLabel: 'Mover a la papelera', danger: true }
     )
     if (!ok) return
     try {
@@ -341,6 +347,7 @@ export function LearningHome() {
   /** A dónde sube la flecha de arriba: un solo nivel. */
   const up = (() => {
     if (!current) return { to: '/ecosistema/learning', label: 'Workspaces' }
+    if (inTrash) return { to: `/ecosistema/learning/${current.code}`, label: current.name }
     if (!currentFolder) return { to: '/ecosistema/learning', label: 'Workspaces' }
     const parent = currentFolder.parentId ? folderById.get(currentFolder.parentId) : null
     return parent
@@ -477,7 +484,7 @@ export function LearningHome() {
             {can(role, 'resource.delete') && (
               <button
                 onClick={() => remove(resource)}
-                title="Eliminar" aria-label="Eliminar"
+                title="Mover a la papelera" aria-label="Mover a la papelera"
                 className="grid h-8 w-8 place-items-center rounded-full text-slate-400 hover:bg-rose-50 hover:text-rose-600"
               >
                 <Trash2 size={15} />
@@ -771,6 +778,15 @@ export function LearningHome() {
               )}
             </div>
 
+            {inTrash ? (
+              <TrashView
+                workspace={current}
+                pathOf={(folderId) => pathTo(folderId).map((folder) => folder.name).join(' / ')}
+                onBack={() => openFolder(null)}
+                onChanged={() => void loadLibrary(current.code)}
+              />
+            ) : (
+            <>
             {/* Migas de pan: dónde se está, y cada nivel es un sitio donde soltar. */}
             <div className="mb-4 flex flex-wrap items-center gap-2">
               <nav aria-label="Carpetas" className="flex min-w-0 flex-1 flex-wrap items-center gap-1 text-[13.5px]">
@@ -821,6 +837,11 @@ export function LearningHome() {
               {manageFolders && (
                 <button onClick={createFolder} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-[12.5px] font-bold text-white hover:bg-slate-700">
                   <FolderPlus size={14} /> Nueva carpeta
+                </button>
+              )}
+              {can(role, 'resource.delete') && (
+                <button onClick={openTrash} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-[12.5px] font-semibold text-slate-600 hover:bg-slate-100">
+                  <Trash2 size={13} /> Papelera
                 </button>
               )}
             </div>
@@ -918,6 +939,9 @@ export function LearningHome() {
                   <p className="text-[12.5px] text-slate-400">Arrastra un recurso sobre una carpeta para moverlo, o usa el botón de mover de su tarjeta.</p>
                 )}
               </>
+            )}
+
+            </>
             )}
 
             {/* Lo que este workspace todavía no puede producir, dicho sin rodeos. */}
@@ -1028,5 +1052,144 @@ function MoveDialog({
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * La papelera del workspace: lo eliminado espera aquí TRASH_DAYS días, sin
+ * verse en la biblioteca, en su enlace ni en la revisión. Se restaura tal como
+ * estaba —su carpeta, su estado, su enlace— o se elimina del todo.
+ */
+function TrashView({
+  workspace, pathOf, onBack, onChanged,
+}: {
+  workspace: WorkspaceRow
+  pathOf: (folderId: string | null | undefined) => string
+  onBack: () => void
+  onChanged: () => void
+}) {
+  const { confirm, dialogs } = useDialogs()
+  const [rows, setRows] = useState<TrashRow[] | null>(null)
+  const [days, setDays] = useState(30)
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+
+  const load = useCallback(async () => {
+    try {
+      const payload = await learningApi.resources.trash(workspace.id)
+      setRows(payload.resources || [])
+      setDays(payload.days || 30)
+    } catch (e: any) { setError(e.message); setRows([]) }
+  }, [workspace.id])
+  useEffect(() => { void load() }, [load])
+
+  const act = async (key: string, task: () => Promise<{ warning?: string | null } | unknown>, done: string) => {
+    setBusy(key); setError(''); setNotice('')
+    try {
+      const result = (await task()) as { warning?: string | null } | undefined
+      setNotice(result?.warning || done)
+      await load()
+      onChanged()
+    } catch (e: any) { setError(e.message) } finally { setBusy('') }
+  }
+
+  const restore = (row: TrashRow) =>
+    act(row.id, () => learningApi.resources.untrash(row.id), `«${row.title}» volvió a la biblioteca.`)
+
+  const purge = async (row: TrashRow) => {
+    const ok = await confirm(
+      `¿Eliminar «${row.title}» definitivamente?\n\nSe borran su guion, sus versiones, sus comentarios, sus insumos y sus archivos. No se puede deshacer.`,
+      { title: 'Eliminar definitivamente', okLabel: 'Eliminar', danger: true }
+    )
+    if (ok) await act(row.id, () => learningApi.resources.purge(row.id), `«${row.title}» se eliminó definitivamente.`)
+  }
+
+  const empty = async () => {
+    if (!rows?.length) return
+    const ok = await confirm(
+      `¿Vaciar la papelera de ${workspace.name}?\n\nSe eliminan definitivamente ${rows.length} recurso(s). No se puede deshacer.`,
+      { title: 'Vaciar papelera', okLabel: 'Vaciar', danger: true }
+    )
+    if (ok) await act('empty', () => learningApi.resources.emptyTrash(workspace.id), 'La papelera quedó vacía.')
+  }
+
+  const day = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
+
+  return (
+    <section>
+      {dialogs}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button onClick={onBack} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[13.5px] font-semibold text-slate-500 hover:bg-slate-100">
+          <Home size={14} /> {workspace.name}
+        </button>
+        <ChevronRight size={14} className="text-slate-300" />
+        <span className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-slate-800">
+          <Trash2 size={14} /> Papelera{rows ? ` · ${rows.length}` : ''}
+        </span>
+        <div className="flex-1" />
+        {!!rows?.length && (
+          <button
+            onClick={empty}
+            disabled={!!busy}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-[12.5px] font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+          >
+            {busy === 'empty' ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />} Vaciar papelera
+          </button>
+        )}
+      </div>
+
+      <p className="mb-3 text-[12.5px] text-slate-500">
+        Lo eliminado espera aquí {days} días antes de borrarse del todo. Mientras tanto no aparece en la biblioteca, en su
+        enlace público ni en la revisión, y se puede restaurar tal como estaba.
+      </p>
+      {error && <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700">{error}</div>}
+      {notice && <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">{notice}</div>}
+
+      {rows === null ? (
+        <div className="grid min-h-[20vh] place-items-center"><Loader2 className="animate-spin text-slate-400" /></div>
+      ) : rows.length === 0 ? (
+        <div className="grid min-h-[30vh] place-items-center rounded-2xl border border-dashed border-slate-300 text-center">
+          <div className="text-sm font-semibold text-slate-500">La papelera está vacía</div>
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          {rows.map((row) => (
+            <div key={row.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+              <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-slate-100 text-slate-500">
+                <KindIcon kind={row.kind} size={16} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[14px] font-bold text-slate-800">
+                  {row.clientCode && <span className="mr-1.5 font-mono text-[12px] text-indigo-600">{row.clientCode}</span>}
+                  {row.title}
+                </div>
+                <div className="truncate text-[12px] text-slate-500">
+                  {kindSpec(row.kind).short} · {pathOf(row.folderId) || 'Raíz'} · eliminado el {day(row.deletedAt)}
+                  {row.deletedByName ? ` por ${row.deletedByName}` : ''}
+                </div>
+                <div className="text-[11.5px] text-amber-700">Se borra del todo el {day(row.purgeAt)}</div>
+              </div>
+              <button
+                onClick={() => restore(row)}
+                disabled={!!busy}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                {busy === row.id ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />} Restaurar
+              </button>
+              <button
+                onClick={() => purge(row)}
+                disabled={!!busy}
+                title="Eliminar definitivamente"
+                aria-label={`Eliminar definitivamente ${row.title}`}
+                className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   )
 }

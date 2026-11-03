@@ -41,6 +41,32 @@ function tags(value: unknown): string[] {
   return [...new Set(clean)].slice(0, 12)
 }
 
+/** Días que un recurso eliminado espera en la papelera antes de borrarse del todo. */
+const TRASH_DAYS = 30
+
+/**
+ * Borrado definitivo: sus archivos del almacenamiento y luego el registro.
+ * Los archivos —paquete importado en todas sus versiones, locuciones,
+ * fotogramas— no los borra la base: si falla el almacenamiento se avisa, pero
+ * no se deja el registro a medias, que es lo que dejaría huérfano lo demás.
+ */
+async function purgeResource(resource: any, workspace: any): Promise<{ orphans: number }> {
+  const files = await lbFiles().findMany({ where: { resourceId: resource.id }, select: { path: true, version: true } })
+  let orphans = 0
+  if (files.length) {
+    try {
+      const bucket = await workspaceBucket(workspace)
+      const folder = resourceFolder(workspace.code, resource.code)
+      const removed = await bucket.remove(files.map((file: any) => `${pkgPrefix(folder, file.version || 1)}/${file.path}`))
+      orphans = files.length - removed
+    } catch {
+      orphans = files.length
+    }
+  }
+  await lbResources().delete({ where: { id: resource.id } })
+  return { orphans }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
@@ -70,7 +96,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const roleByWorkspace = new Map(scope.map((entry) => [entry.workspace.id, entry.role]))
       const rows = await lbResources().findMany({
-        where: { workspaceId: { in: scope.map((entry) => entry.workspace.id) } },
+        // Lo que está en la papelera no se lista: vive en su propia vista.
+        where: { workspaceId: { in: scope.map((entry) => entry.workspace.id) }, deletedAt: null },
         orderBy: { updatedAt: 'desc' },
         include: { workspace: true },
         take: 400,
@@ -147,6 +174,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, resource: summarize(created) })
     }
 
+    // ── Papelera del workspace: verla y vaciarla ──
+    if (op === 'trash' || op === 'empty-trash') {
+      const workspaceId = text(body.workspaceId, 40)
+      const check = await guard(req, workspaceId, 'resource.delete')
+      if (!check.ok) return denied(res, check)
+      const workspace = await lbWorkspaces().findUnique({ where: { id: workspaceId } })
+      if (!workspace) return res.status(404).json({ ok: false, error: 'Workspace no encontrado' })
+
+      // Lo que lleva más de TRASH_DAYS en la papelera se borra de verdad, poco
+      // a poco, cada vez que alguien la abre: así no hace falta una tarea aparte.
+      const expired = await lbResources().findMany({
+        where: { workspaceId, deletedAt: { lt: new Date(Date.now() - TRASH_DAYS * 86_400_000) } },
+        take: op === 'empty-trash' ? 0 : 5,
+      })
+      for (const row of expired) await purgeResource(row, workspace)
+
+      if (op === 'empty-trash') {
+        const rows = await lbResources().findMany({ where: { workspaceId, deletedAt: { not: null } } })
+        let warnings = 0
+        for (const row of rows) warnings += (await purgeResource(row, workspace)).orphans
+        return res.status(200).json({
+          ok: true,
+          purged: rows.length,
+          warning: warnings ? `Quedaron ${warnings} archivo(s) en el almacenamiento: bórralos a mano si hace falta.` : null,
+        })
+      }
+
+      const rows = await lbResources().findMany({
+        where: { workspaceId, deletedAt: { not: null } },
+        orderBy: { deletedAt: 'desc' },
+        include: { workspace: true },
+      })
+      const who = await usersByIds(rows.map((row: any) => row.deletedById).filter(Boolean))
+      return res.status(200).json({
+        ok: true,
+        days: TRASH_DAYS,
+        resources: rows.map((row: any) => ({
+          ...summarize(row),
+          deletedAt: row.deletedAt,
+          deletedByName: row.deletedById ? who.get(row.deletedById)?.displayName || null : null,
+          purgeAt: new Date(new Date(row.deletedAt).getTime() + TRASH_DAYS * 86_400_000).toISOString(),
+        })),
+      })
+    }
+
     // ── A partir de aquí todo cuelga de un recurso concreto ──
     const gate = await requireModule(req)
     if (!gate.ok) return denied(res, gate)
@@ -161,14 +233,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!resourceId) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
     }
     if (!resourceId) return res.status(400).json({ ok: false, error: 'Falta el recurso' })
-    const loaded = await loadResource(resourceId)
+    // Restaurar y eliminar definitivamente son las únicas que ven la papelera.
+    const fromTrash = op === 'untrash' || op === 'purge'
+    const loaded = await loadResource(resourceId, { includeTrashed: fromTrash })
     if (!loaded) return res.status(404).json({ ok: false, error: 'Recurso no encontrado' })
     const { resource, workspace, directives, content, final } = loaded
+    if (fromTrash && !resource.deletedAt) {
+      return res.status(400).json({ ok: false, error: 'Ese recurso no está en la papelera' })
+    }
 
     const capability =
       op === 'get' ? 'resource.view'
       : op === 'versions' || op === 'deliveries' ? 'resource.view'
-      : op === 'delete' ? 'resource.delete'
+      : op === 'delete' || op === 'untrash' || op === 'purge' ? 'resource.delete'
       : op === 'publish' || op === 'unpublish' || op === 'archive' ? 'resource.publish'
       : op === 'share' || op === 'review' ? 'resource.share'
       : op === 'duplicate' ? 'resource.create'
@@ -326,23 +403,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true, resource: summarize(created) })
     }
 
+    // Eliminar manda a la papelera: se puede restaurar durante TRASH_DAYS días.
     if (op === 'delete') {
-      // Los archivos del recurso —paquete importado, locuciones, fotogramas—
-      // no los borra la base: si falla el almacenamiento se avisa, pero no se
-      // deja el registro a medias, que es lo que dejaría huérfano lo demás.
-      const files = await lbFiles().findMany({ where: { resourceId }, select: { path: true, version: true } })
-      let orphans = 0
-      if (files.length) {
-        try {
-          const bucket = await workspaceBucket(workspace)
-          const folder = resourceFolder(workspace.code, resource.code)
-          const removed = await bucket.remove(files.map((file: any) => `${pkgPrefix(folder, file.version || 1)}/${file.path}`))
-          orphans = files.length - removed
-        } catch {
-          orphans = files.length
-        }
-      }
-      await lbResources().delete({ where: { id: resourceId } })
+      await lbResources().update({
+        where: { id: resourceId },
+        data: { deletedAt: new Date(), deletedById: check.session.userId },
+      })
+      return res.status(200).json({ ok: true, days: TRASH_DAYS })
+    }
+
+    // Sacar de la papelera. («restore» es otra cosa: volver a una versión del guion.)
+    if (op === 'untrash') {
+      const restored = await lbResources().update({
+        where: { id: resourceId },
+        data: { deletedAt: null, deletedById: null },
+        include: { workspace: true },
+      })
+      return res.status(200).json({ ok: true, resource: summarize(restored) })
+    }
+
+    if (op === 'purge') {
+      const { orphans } = await purgeResource(resource, workspace)
       return res.status(200).json({
         ok: true,
         warning: orphans
