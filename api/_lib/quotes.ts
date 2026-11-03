@@ -68,6 +68,8 @@ export type QuoteItem = {
   on: boolean
   /** Con selección del cliente activa: false = fijo, el cliente no lo mueve. */
   selectable?: boolean
+  /** Opciones excluyentes: de las líneas con el mismo grupo solo cuenta una. */
+  group?: string | null
   detail?: unknown
 }
 
@@ -245,13 +247,36 @@ export function manualInvestment(content: unknown): number {
   return Number.isFinite(v) && v > 0 ? Math.round(v) : 0
 }
 
+/**
+ * Las líneas con el mismo `group` son opciones excluyentes: siempre queda una
+ * encendida. `prefer` son los códigos que se acaban de elegir; sin ellos manda
+ * la primera encendida del grupo, y si ninguna lo está, la primera del grupo.
+ */
+export function oneOnPerGroup<T extends QuoteItem>(items: T[], prefer: Set<string> = new Set()): T[] {
+  const rank = (i: T) => (prefer.has(i.code.toUpperCase()) ? 2 : i.on ? 1 : 0)
+  const chosen = new Map<string, T>()
+  for (const i of items) {
+    if (!i.group || i.kind === 'CORE') continue
+    const current = chosen.get(i.group)
+    if (!current || rank(i) > rank(current)) chosen.set(i.group, i)
+  }
+  if (!chosen.size) return items
+  const next = items.map((i) => {
+    if (!i.group || i.kind === 'CORE') return i
+    const on = chosen.get(i.group) === i
+    return on === i.on ? i : { ...i, on }
+  })
+  return next.some((i, n) => i !== items[n]) ? next : items
+}
+
 export function computeTotals(
-  items: QuoteItem[],
+  rawItems: QuoteItem[],
   opts: { scale?: DiscountTier[]; paymentSplit?: number[]; minWeeks?: number } = {}
 ): QuoteTotals {
   const scale = opts.scale?.length ? opts.scale : DEFAULT_DISCOUNT_SCALE
   const split = opts.paymentSplit?.length ? opts.paymentSplit : DEFAULT_PAYMENT_SPLIT
   const minWeeks = opts.minWeeks ?? 4
+  const items = oneOnPerGroup(rawItems)
 
   const core = items.filter((i) => i.kind === 'CORE')
   const active = items.filter((i) => i.kind !== 'CORE' && i.on)
@@ -348,10 +373,11 @@ export function normalizeItems(raw: unknown, catalogByCode: Map<string, any>): Q
       deliverables: Math.max(0, pick(e.deliverables, asInt(source?.deliverables), asInt)),
       on: kind === 'CORE' ? true : e.on !== false,
       selectable: kind === 'CORE' ? false : e.selectable !== false,
+      group: kind === 'CORE' ? null : asString(e.group, 60) || null,
       detail: e.detail !== undefined ? (e.detail as unknown) : (source?.detail ?? null),
     })
   }
-  return items
+  return oneOnPerGroup(items)
 }
 
 export async function loadCatalog(template?: QuoteTemplateKey) {

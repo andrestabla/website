@@ -31,6 +31,7 @@ import {
   loadCatalog,
   catalogMap,
   computeTotals,
+  oneOnPerGroup,
   manualInvestment,
   formatMoney,
   QUOTE_TEMPLATES,
@@ -308,7 +309,7 @@ function applyModulePatch(
     applied.push(`+${source.code}${qtyBy.has(code) ? `×${qtyBy.get(code)}` : ''}`)
   }
 
-  return { items: next, applied }
+  return { items: oneOnPerGroup(next, on), applied }
 }
 
 type LinePatch = {
@@ -323,6 +324,7 @@ type LinePatch = {
   weeks?: number
   deliverables?: number
   on?: boolean
+  group?: string | null
 }
 
 const asMoney = (v: unknown) => {
@@ -340,6 +342,7 @@ export function applyLinesPatch(
   patch: { add?: LinePatch[] | null; update?: LinePatch[] | null; remove?: string[] | null }
 ) {
   const applied: string[] = []
+  const chosen = new Set<string>()
   let next = items.map((i) => ({ ...i }))
 
   // ── quitar ──
@@ -369,7 +372,9 @@ export function applyLinesPatch(
     const deliverables = Math.round(Number(entry.deliverables)); if (Number.isFinite(deliverables) && entry.deliverables !== undefined) target.deliverables = Math.max(0, deliverables)
     if (entry.kind === 'CORE' || entry.kind === 'MODULE') target.kind = entry.kind
     if (typeof entry.on === 'boolean' && target.kind !== 'CORE') target.on = entry.on
-    if (target.kind === 'CORE') { target.on = true; target.selectable = false }
+    if (entry.on === true) chosen.add(code)
+    if (entry.group !== undefined) target.group = str(entry.group, 60) || null
+    if (target.kind === 'CORE') { target.on = true; target.selectable = false; target.group = null }
     const diff = (Object.keys(target) as Array<keyof QuoteItem>).filter((k) => JSON.stringify(target[k]) !== JSON.stringify(before[k]))
     if (diff.length) applied.push(`${target.code}: ${diff.join('/')}`)
   }
@@ -398,14 +403,16 @@ export function applyLinesPatch(
       unit: str(entry.unit, 40) || null,
       weeks: Math.max(0, Number(entry.weeks) || 0),
       deliverables: Math.max(0, Math.round(Number(entry.deliverables)) || 0),
-      on: true,
+      on: entry.on !== false,
       selectable: kind !== 'CORE',
+      group: kind === 'CORE' ? null : str(entry.group, 60) || null,
       detail: null,
     })
+    if (entry.on === true) chosen.add(code)
     applied.push(`+${code}${qty > 1 ? `×${qty}` : ''}`)
   }
 
-  return { items: next, applied }
+  return { items: oneOnPerGroup(next, chosen), applied }
 }
 
 /**
@@ -928,7 +935,7 @@ quote.subtitle, usa "title"/"subtitle".` : ''}
     "modules": { "on": ["M03"], "off": ["M12"], "qty": [{ "code": "SV01", "qty": 5 }] },
     "lines": {
       "add": [{ "code": "UTB-01", "name": "Curso virtual de especialización (3 créditos)", "summary": "qué incluye", "category": "Producción", "unit": "curso", "price": 13500000, "qty": 4, "weeks": 6, "deliverables": 5 }],
-      "update": [{ "code": "SV01", "price": 12000000, "qty": 3, "name": "opcional", "unit": "opcional", "on": true }],
+      "update": [{ "code": "SV01", "price": 12000000, "qty": 3, "name": "opcional", "unit": "opcional", "on": true, "group": "opcional: opciones excluyentes" }],
       "remove": ["L03"]
     },
     "content": {
@@ -972,7 +979,7 @@ quote.subtitle, usa "title"/"subtitle".` : ''}
                            { "type": "table", "headers": [""], "rows": [["celda; admite varias líneas y viñetas con «- » al inicio de línea"]] }, { "type": "cards", "cols": 2, "items": [{ "tag": "", "title": "", "body": "", "foot": "" }] },
                            { "type": "phase", "id": "FASE 1", "name": "", "when": "", "defs": [{ "term": "", "desc": "" }] },
                            { "type": "img", "url": "solo URLs que ya existan en el documento o que el usuario haya pegado en el chat", "caption": "", "aspect": "square|landscape|wide|portrait" },
-                           { "type": "invoice", "note": "" }, { "type": "payments", "items": [{ "pct": "30 %", "label": "" }] }, { "type": "toc" },
+                           { "type": "invoice", "note": "" }, { "type": "options", "group": "Usuarios", "title": "Elige tu plan", "note": "" }, { "type": "payments", "items": [{ "pct": "30 %", "label": "" }] }, { "type": "toc" },
                            { "type": "team", "items": [{ "role": "", "dedication": "", "functions": [""] }] },
                            { "type": "letterhead", "date": "", "addressee": "", "subject": "", "salutation": "" },
                            { "type": "gantt", "cols": ["Mes 1"], "rows": [{ "label": "", "from": 1, "to": 1, "tone": "cyan" }] },
@@ -996,6 +1003,11 @@ REGLAS DEL PATCH
   está en el catálogo (precio unitario + qty), "update" para cambiar precio, cantidad, nombre o unidad de
   una línea existente (incluidas las del catálogo), "remove" para retirarla del todo. Los precios van en
   unidades enteras de la moneda, sin separadores (13.500.000 → 13500000).
+- Alternativas (tramos de usuarios, planes, escenarios): el cliente compra UNA, no la suma. Crea una línea
+  por alternativa con el mismo "group" (p. ej. "group": "Usuarios") y "on": true solo en la sugerida; el
+  servidor deja una sola encendida y el total es el de esa. En un documento por páginas agrega el bloque
+  "options" con ese grupo: es donde el cliente elige y el total se recalcula. No escribas la inversión fija
+  en "cover.investment" ni en "total": con opciones se calcula sola.
 - Plantillas por UNIDADES: las líneas tienen precio POR UNIDAD; fija cantidades con "modules.qty"
   (p. ej. 5 cursos → {"code":"SV01","qty":5}) y apaga las líneas que no apliquen. No hay núcleo.
 - "template" cambia la línea de negocio de la cotización (catálogo, escala de descuento y forma del

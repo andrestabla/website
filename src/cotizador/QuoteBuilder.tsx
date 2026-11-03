@@ -10,7 +10,7 @@ import {
   Users, BarChart2, FileText, Plus, Trash2, Mail, RefreshCw, PenSquare, MoreVertical, CopyPlus, Archive,
   Mic, Square, Paperclip, X, FileInput, Code2, Save, ChevronDown, ChevronRight, PanelLeft, PanelRight, MessageSquare,
 } from 'lucide-react'
-import { computeTotals, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
+import { computeTotals, oneOnPerGroup, type QuoteItem, type DiscountTier } from '../cotizacion/pricing'
 import { quotesApi, money, timeAgo, fmtDuration, expiresAt, type QuoteMessageRow, type QuoteRecipient, type QuoteAttachmentRow, type EmailTemplate } from './api'
 import { TEMPLATE_LABEL, StagePicker } from './CotizadorList'
 import { LINES, LINE_LABEL, LINE_STYLE, STAGES, STAGE_EMPTY_LABEL } from './meta'
@@ -398,7 +398,7 @@ export function QuoteBuilder() {
   }
 
   const toggleItem = (code: string) =>
-    saveItems(items.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i)))
+    saveItems(oneOnPerGroup(items.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i)), new Set([code.toUpperCase()])))
 
   const setItemQty = (code: string, qty: number) => {
     const clamped = Math.min(999, Math.max(1, Math.round(qty) || 1))
@@ -1290,6 +1290,15 @@ export function QuoteBuilder() {
                         <span className="ml-auto w-28 shrink-0 text-right font-mono text-[11.5px] text-slate-400 md:ml-0" title="Valor de la línea">
                           {(item.qty ?? 1) > 1 ? `${item.qty} × ` : ''}{money(item.price * (item.qty ?? 1), currency)}
                         </span>
+                        {item.kind !== 'CORE' && (
+                          <input
+                            defaultValue={item.group ?? ''}
+                            onBlur={(e) => patchItem(item.code, { group: e.target.value.trim() || null })}
+                            placeholder="Grupo"
+                            className="w-20 shrink-0 rounded-md border border-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600 focus:border-indigo-400"
+                            title="Las líneas con el mismo grupo son alternativas: el cliente elige una y solo esa suma al total"
+                          />
+                        )}
                         {selectable && item.kind !== 'CORE' && (
                           <button
                             onClick={() => toggleSelectable(item.code)}

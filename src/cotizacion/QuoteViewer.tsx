@@ -11,12 +11,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   computeTotals,
+  oneOnPerGroup,
   formatMoney,
   DEFAULT_DISCOUNT_SCALE,
   type DiscountTier,
   type QuoteItem,
 } from './pricing'
-import { DocPageView, useFitPages, rich, type DocPage } from './DocPages'
+import { DocPageView, ItemPicker, useFitPages, rich, type DocPage } from './DocPages'
 import { EditorPanel } from './EditorPanel'
 import { applyRef } from './refs'
 import './quote-viewer.css'
@@ -391,8 +392,9 @@ export default function QuoteViewer() {
     if ((quote?.content?.modulesSelectable ?? true) === false) return
     const current = items.find((i) => i.code === code)
     if (!current || current.kind === 'CORE' || current.selectable === false) return
+    if (current.group && current.on) return // opción excluyente: se cambia eligiendo otra
     track({ type: 'toggle', moduleCode: code, value: current.on ? 'off' : 'on' })
-    setItems((prev) => prev.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i)))
+    setItems((prev) => oneOnPerGroup(prev.map((i) => (i.code === code && i.kind !== 'CORE' ? { ...i, on: !i.on } : i)), new Set([code.toUpperCase()])))
   }
 
   const setQty = (code: string, qty: number) => {
@@ -408,6 +410,7 @@ export default function QuoteViewer() {
     setItems((prev) =>
       prev.map((i) => {
         if (i.kind === 'CORE' || i.selectable === false) return i
+        if (i.group && name !== 'sugerida') return i
         if (name === 'completa') return { ...i, on: true }
         if (name === 'nucleo') return { ...i, on: false }
         return { ...i, on: initialOn.current.get(i.code) ?? i.on }
@@ -596,7 +599,7 @@ export default function QuoteViewer() {
             <div className="m"><div className="ml" {...lab('coverDuration')}>{L('coverDuration', 'Duración')}</div><div className="mv" {...R('content.cover.duration')}>{cover.duration || `${totals.weeks} semanas desde el kickoff`}</div></div>
             <div className="m"><div className="ml" {...lab('coverScope')}>{L('coverScope', 'Alcance')}</div><div className="mv" {...R('content.cover.scope')}>{cover.scope || (isService ? `${totals.moduleCount} ${totals.moduleCount === 1 ? 'línea' : 'líneas'} de servicio · ${totals.deliverables} entregables` : totals.moduleCount > 0 ? `Núcleo + ${totals.moduleCount} ${itemsNoun.toLowerCase()} · ${totals.deliverables} entregables` : `${items.filter((i) => i.kind === 'CORE').length} componentes · ${totals.deliverables} entregables`)}</div></div>
             {/* formatMoney ya antepone "USD" en dólares; solo COP necesita el sufijo */}
-            <div className="m"><div className="ml" {...lab('coverInvestment')}>{L('coverInvestment', 'Inversión')}</div><div className="mv" {...R('content.cover.investment')}>{cover.investment || <>{money(totals.total)}{currency === 'USD' ? '' : ` ${currency}`}</>}</div></div>
+            <div className="m"><div className="ml" {...lab('coverInvestment')}>{L('coverInvestment', 'Inversión')}</div><div className="mv" {...R('content.cover.investment')}>{(!items.some((i) => i.group) && cover.investment) || <>{money(totals.total)}{currency === 'USD' ? '' : ` ${currency}`}</>}</div></div>
           </div>
           {(() => {
             const exp = expiryOf(quote)
@@ -614,13 +617,15 @@ export default function QuoteViewer() {
 
       <main className="qv-page" key={`m${epoch.all}`}>
         {docPages.length > 0 ? (
-          docPages.map((page, pi) => (
+          <ItemPicker.Provider value={selectable ? toggle : null}>
+          {docPages.map((page, pi) => (
             <DocPageView key={`${page.id}:${epoch.pages[pi] || 0}`} page={page} client={quote.clientName}
               items={items} totals={totals} money={money} pages={docPages}
               pageIndex={editor ? pi : undefined}
               headLeft={labels.rheadLeft} headRight={labels.rheadRight} pageFooter={pageFooter}
               head={headLine} cobrand={hasCobrand ? { name: cobrand.name, logoDark: cobrand.logoDark } : undefined} />
-          ))
+          ))}
+          </ItemPicker.Provider>
         ) : (
         <>
         {/* Presentación */}
@@ -775,7 +780,7 @@ export default function QuoteViewer() {
                         <span className="md-c">{item.code}</span>
                         {canMove(item) ? (
                           <label className="qv-sw">
-                            <input type="checkbox" checked={item.on} onChange={() => toggle(item.code)} />
+                            <input type={item.group ? 'radio' : 'checkbox'} name={item.group ? `opt-${item.group}` : undefined} checked={item.on} onChange={() => toggle(item.code)} />
                             <span className="tr" />
                             <span className="lb">{item.on ? L('includedLabel', 'Incluido') : L('excludedLabel', 'Excluido')}</span>
                           </label>

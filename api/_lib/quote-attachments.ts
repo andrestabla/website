@@ -829,7 +829,7 @@ const tone = (v: unknown) => (['cyan', 'deep', 'gold'].includes(v as string) ? v
 const num = (v: unknown, def = 1) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? n : def }
 
 export const PAGE_BLOCK_TYPES = new Set([
-  'lede', 'p', 'h3', 'list', 'box', 'note', 'table', 'cards', 'phase', 'img', 'invoice', 'payments', 'toc', 'team', 'letterhead', 'timeline', 'gantt',
+  'lede', 'p', 'h3', 'list', 'box', 'note', 'table', 'cards', 'phase', 'img', 'invoice', 'options', 'payments', 'toc', 'team', 'letterhead', 'timeline', 'gantt',
   'grid', 'icon', 'button', 'htimeline', 'vtimeline', 'signature', 'sechead', 'diagram', 'spacer',
 ])
 const DIAGRAM_WIDTHS = new Set(['full', 'wide', 'medium', 'narrow'])
@@ -1031,6 +1031,8 @@ function sanitizeBlockInner(raw: any): PageBlock | null {
       if (raw.total) out.total = s(raw.total, 60)
       return out
     }
+    case 'options':
+      return { type, group: s(raw.group, 60), title: s(raw.title, 160), note: s(raw.note, 1000) }
     case 'payments': {
       const items = Array.isArray(raw.items) ? raw.items.slice(0, 10).map((p: any) => ({ pct: s(p?.pct, 20), label: s(p?.label, 400) })).filter((p: any) => p.pct || p.label) : []
       return items.length ? { type, items } : null

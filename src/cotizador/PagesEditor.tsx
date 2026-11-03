@@ -31,6 +31,7 @@ export const BLOCK_TYPES: Array<[string, string]> = [
   ['phase', 'Fase del plan'],
   ['img', 'Imagen'],
   ['invoice', 'Tabla de inversión'],
+  ['options', 'Selector de opciones'],
   ['payments', 'Plan de pagos'],
   ['toc', 'Tabla de contenido'],
   ['team', 'Equipo'],
@@ -61,6 +62,7 @@ export const EMPTY: Record<string, Block> = {
   phase: { type: 'phase', id: 'FASE 0', name: '', when: '', defs: [{ term: 'Objetivo', desc: '' }] },
   img: { type: 'img', url: '', caption: '', wide: false },
   invoice: { type: 'invoice', note: '' },
+  options: { type: 'options', group: '', title: '', note: '' },
   payments: { type: 'payments', items: [{ pct: '30 %', label: '' }] },
   toc: { type: 'toc', note: '' },
   team: { type: 'team', items: [{ role: '', dedication: '', functions: [''] }] },
@@ -675,6 +677,15 @@ function BlockFields({ block, onChange }: { block: Block; onChange: (patch: Bloc
         </>
       )
     }
+
+    case 'options':
+      return (
+        <>
+          <input value={block.group || ''} onChange={(e) => set('group', e.target.value)} placeholder="Grupo de líneas (vacío = el primero)" className={`${inputCls} mb-1`} />
+          <input value={block.title || ''} onChange={(e) => set('title', e.target.value)} placeholder="Título" className={`${inputCls} mb-1`} />
+          <RichArea rows={2} value={block.note || ''} onChange={(v) => set('note', v)} />
+        </>
+      )
 
     case 'payments': {
       const pays: any[] = Array.isArray(block.items) ? block.items : []
