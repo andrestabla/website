@@ -75,9 +75,15 @@ export type LoadedResource = {
   final: LbFinal | null
 }
 
-export async function loadResource(id: string): Promise<LoadedResource | null> {
+/**
+ * Un recurso en la papelera no existe para nadie: ni el builder, ni el enlace
+ * público, ni la revisión, ni sus archivos lo encuentran. Solo la papelera lo
+ * pide con includeTrashed, para restaurarlo o borrarlo del todo.
+ */
+export async function loadResource(id: string, options: { includeTrashed?: boolean } = {}): Promise<LoadedResource | null> {
   const resource = await lbResources().findUnique({ where: { id }, include: { workspace: true } })
   if (!resource) return null
+  if (resource.deletedAt && !options.includeTrashed) return null
   const directives = sanitizeDirectives(resource.workspace?.directives)
   return {
     resource,
@@ -90,7 +96,7 @@ export async function loadResource(id: string): Promise<LoadedResource | null> {
 
 export async function loadResourceByPublicId(publicId: string): Promise<LoadedResource | null> {
   const resource = await lbResources().findUnique({ where: { publicId }, include: { workspace: true } })
-  if (!resource) return null
+  if (!resource || resource.deletedAt) return null
   const directives = sanitizeDirectives(resource.workspace?.directives)
   return {
     resource,

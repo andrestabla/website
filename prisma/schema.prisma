@@ -1016,6 +1016,10 @@ model LbResource {
   folderId    String?
   /// Versión entregada que está viva (V1, V2…): la que se publica y se revisa.
   packageVersion Int @default(1)
+  /// Papelera: cuándo y quién lo eliminó. Mientras tenga fecha no existe para
+  /// nadie más que para la papelera; a los 30 días se borra de verdad.
+  deletedAt   DateTime?
+  deletedById String?
   ownerId     String // AdminUser.id
 
   /// OVA | INTERACTIVE | PODCAST | VIDEO | ROUTE | IMPORT
@@ -1071,6 +1075,7 @@ model LbResource {
   @@index([ownerId, updatedAt(sort: Desc)])
   @@index([status, updatedAt(sort: Desc)])
   @@index([folderId])
+  @@index([workspaceId, deletedAt])
 }
 
 /// Carpeta de la biblioteca de un workspace. Se anidan sin límite de niveles.

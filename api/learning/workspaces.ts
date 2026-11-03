@@ -170,7 +170,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (inUse > 0) {
         return res.status(400).json({
           ok: false,
-          error: `Este workspace tiene ${inUse} recurso(s). Desactívalo en vez de borrarlo para no perder su historia.`,
+          error: `Este workspace tiene ${inUse} recurso(s), contando los de la papelera. Desactívalo en vez de borrarlo para no perder su historia.`,
         })
       }
       await lbWorkspaces().delete({ where: { id: workspaceId } })
