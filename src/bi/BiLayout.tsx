@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { BRAND_MARK } from '../lib/seo'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { biLogout, type BiUser } from './lib/session'
 import { BI_HOME, biPath } from './lib/base'
@@ -61,7 +62,7 @@ function BiShell({
     >
       <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-slate-200 bg-white px-5 print:hidden">
         <NavLink to={BI_HOME} className="flex items-center gap-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-900 text-sm font-black text-white">◧</div>
+          <img src={BRAND_MARK} alt="Algoritmo T" className="h-8 w-8 shrink-0" />
           <div className="leading-tight">
             <div className="text-sm font-black tracking-tight">
               ALGORITMO<span className="text-indigo-600">BI</span>

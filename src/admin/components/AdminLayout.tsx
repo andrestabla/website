@@ -9,7 +9,6 @@ import {
     LogOut,
     Menu,
     X,
-    Shield,
     ExternalLink,
     SearchCheck,
     Megaphone,
@@ -33,6 +32,7 @@ import {
     Gauge,
     LayoutGrid
 } from 'lucide-react'
+import { BRAND_LOGO_ON_DARK, BRAND_MARK } from '../../lib/seo'
 import { useCMS } from '../context/CMSContext'
 import { canAccessModule, type AdminModuleKey } from '../lib/permissions'
 
@@ -272,12 +272,9 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                                 exit={{ opacity: 0, x: -10 }}
                                 className="flex items-center gap-3"
                             >
-                                <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/20">
-                                    <Shield className="w-5 h-5 text-white" />
-                                </div>
-                                <div>
-                                    <span className="block font-black tracking-tighter text-xl leading-none">ALGORITMO</span>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-primary/60">Admin Panel</span>
+                                <div className="flex flex-col gap-1.5">
+                                    <img src={BRAND_LOGO_ON_DARK} alt="Algoritmo T" className="h-7 w-auto max-w-none" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50">Admin Panel</span>
                                 </div>
                             </motion.div>
                         ) : (
@@ -288,9 +285,7 @@ export function AdminLayout({ children, sessionUser }: AdminLayoutProps) {
                                 exit={{ opacity: 0, scale: 0.8 }}
                                 className="w-full flex justify-center"
                             >
-                                <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shadow-lg shadow-brand-primary/20">
-                                    <Shield className="w-6 h-6 text-white" />
-                                </div>
+                                <img src={BRAND_MARK} alt="Algoritmo T" className="w-12 h-12" />
                             </motion.div>
                         )}
                     </AnimatePresence>

@@ -3,6 +3,9 @@ type JsonLdSchema = Record<string, unknown>
 export const DEFAULT_FAVICON_URL = '/favicon.svg'
 export const DEFAULT_OG_IMAGE_URL = '/assets/og-default.png'
 
+// Símbolo de la marca: círculo con la T en forma de persona.
+export const BRAND_MARK = '/assets/algoritmot-mark.svg'
+
 // Logotipo de la marca (kit en public/assets/brand): nombre + símbolo, sin eslogan.
 export const BRAND_LOGO_ON_LIGHT = '/assets/brand/02-Logotipo-sin-eslogan/algoritmot-logo-sin-eslogan-color-fondo-claro.svg'
 export const BRAND_LOGO_ON_DARK = '/assets/brand/02-Logotipo-sin-eslogan/algoritmot-logo-sin-eslogan-color-fondo-oscuro.svg'

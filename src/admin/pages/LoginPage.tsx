@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, Lock, Terminal, ArrowRight } from 'lucide-react'
+import { Lock, Terminal, ArrowRight } from 'lucide-react'
+import { BRAND_MARK } from '../../lib/seo'
 import { Button } from '../../components/ui/Button'
 
 export function LoginPage() {
@@ -111,9 +112,7 @@ export function LoginPage() {
             <div className="w-full max-w-md relative z-10">
                 <div className="bg-slate-900 p-12 shadow-2xl border-t-8 border-brand-primary">
                     <div className="flex items-center gap-4 mb-12">
-                        <div className="w-12 h-12 bg-brand-primary flex items-center justify-center text-white">
-                            <Shield className="w-6 h-6" />
-                        </div>
+                        <img src={BRAND_MARK} alt="Algoritmo T" className="w-12 h-12 shrink-0" />
                         <div>
                             <h1 className="text-white text-2xl font-black tracking-tighter leading-none mb-1">ACCESO ADMIN</h1>
                             <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Protocolo v6.0.4</p>
