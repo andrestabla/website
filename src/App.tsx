@@ -12,6 +12,7 @@ import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { canAccessModule, getAdminModuleForPath, hasAdminBridge, ADMIN_ONLY_MODULES, type AdminModuleKey } from './admin/lib/permissions'
 import { BI_HOST_MODE } from './bi/lib/base'
+import { BRAND_LOADER_ANIMATION, BRAND_LOADER_BACKGROUND, BRAND_LOADER_MS } from './lib/seo'
 
 const Home = lazyWithRetry(() => import('./pages/Home').then((module) => ({ default: module.Home })))
 const ServicePage = lazyWithRetry(() => import('./pages/ServicePage').then((module) => ({ default: module.ServicePage })))
@@ -215,15 +216,25 @@ function GlobalBrandLoader() {
   useEffect(() => {
     if (!visible) return
     const seenKey = 'algoritmot_loader_seen_v1'
-    const duration = Math.max(300, Number(state.design.loaderDurationMs || '900'))
+    // Sin logo propio el loader muestra el logo animado de la marca, que necesita su duración completa.
+    const configured = Number(state.design.loaderDurationMs || '900')
+    const duration = state.design.loaderLogoUrl ? Math.max(300, configured) : Math.max(BRAND_LOADER_MS, configured)
     const t = window.setTimeout(() => {
       setDismissed(true)
       sessionStorage.setItem(seenKey, '1')
     }, duration)
     return () => window.clearTimeout(t)
-  }, [visible, state.design.loaderDurationMs])
+  }, [visible, state.design.loaderDurationMs, state.design.loaderLogoUrl])
 
   if (!visible) return null
+
+  if (!state.design.loaderLogoUrl) {
+    return (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center px-6" style={{ backgroundColor: BRAND_LOADER_BACKGROUND }}>
+        <img src={BRAND_LOADER_ANIMATION} alt={state.design.logoAlt || state.site.name} className="h-auto w-full max-w-[640px]" />
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ backgroundColor: 'var(--cms-loader-bg)' }}>

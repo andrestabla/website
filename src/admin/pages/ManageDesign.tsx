@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { Palette, Type, Layout, Save, RotateCcw, CheckCircle2, Eye, ImageIcon, LoaderCircle, UploadCloud } from 'lucide-react'
 import { useCMS, type DesignTokens, defaultDesign } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
-import { BRAND_LOGO_ON_DARK, BRAND_LOGO_ON_LIGHT } from '../../lib/seo'
+import { BRAND_LOADER_ANIMATION, BRAND_LOADER_BACKGROUND, BRAND_LOGO_ON_DARK, BRAND_LOGO_ON_LIGHT } from '../../lib/seo'
 
 type Tab = 'colors' | 'typography' | 'layout' | 'branding'
 
@@ -649,13 +649,14 @@ export function ManageDesign() {
                         <div className="bg-white border border-slate-200 p-8 space-y-4">
                             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Vista previa loader</div>
                             <div className="border border-slate-200 overflow-hidden">
-                                <div className="p-8 flex flex-col items-center gap-5" style={{ backgroundColor: draft.loaderBackgroundColor }}>
-                                    {draft.loaderLogoUrl ? (
+                                {!draft.loaderLogoUrl && (
+                                    <div className="p-6 flex items-center justify-center" style={{ backgroundColor: BRAND_LOADER_BACKGROUND }}>
+                                        <img src={BRAND_LOADER_ANIMATION} alt="Logo animado de Algoritmo T" className="h-auto w-full max-w-[420px]" />
+                                    </div>
+                                )}
+                                <div className={draft.loaderLogoUrl ? 'p-8 flex flex-col items-center gap-5' : 'hidden'} style={{ backgroundColor: draft.loaderBackgroundColor }}>
+                                    {draft.loaderLogoUrl && (
                                         <img src={draft.loaderLogoUrl} alt={draft.logoAlt || 'Loader'} className="h-12 w-auto object-contain" />
-                                    ) : (
-                                        <div className="text-2xl font-black tracking-tighter" style={{ color: draft.loaderTextColor }}>
-                                            ALGORITMO<span style={{ color: draft.loaderAccentColor }}>T</span>
-                                        </div>
                                     )}
                                     <div className="w-56 h-1.5 bg-white/10 overflow-hidden">
                                         <div className="h-full w-24" style={{ backgroundColor: draft.loaderAccentColor }} />
@@ -666,7 +667,7 @@ export function ManageDesign() {
                                 </div>
                             </div>
                             <p className="text-xs text-slate-500">
-                                El loader se muestra una vez por sesión en el sitio público cuando está activado.
+                                El loader se muestra una vez por sesión en el sitio público cuando está activado. Sin logo propio usa el logo animado de la marca, sobre su azul, y dura al menos 4,9 segundos; los colores, la etiqueta y la duración de este panel aplican solo cuando hay un logo propio.
                             </p>
                         </div>
                     </div>
