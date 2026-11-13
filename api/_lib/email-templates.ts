@@ -123,7 +123,7 @@ export function generateStyledEmail({
         <table class="main" width="100%">
             <tr>
                 <td class="header">
-                    <h1>ALGORITMOT</h1>
+                    <img src="https://www.algoritmot.com/assets/brand/02-Logotipo-sin-eslogan/algoritmot-logo-sin-eslogan-color-fondo-oscuro-1200px.png" alt="Algoritmo T" width="200" style="display:inline-block;width:200px;max-width:100%;height:auto;border:0;" />
                 </td>
             </tr>
             <tr>

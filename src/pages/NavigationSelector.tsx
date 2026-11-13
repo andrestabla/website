@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Building2, GraduationCap } from 'lucide-react'
+import { BRAND_LOGO_ON_DARK } from '../lib/seo'
 
 export function NavigationSelector() {
     return (
@@ -73,9 +74,7 @@ export function NavigationSelector() {
 
             {/* Logo Overlay */}
             <div className="absolute top-6 lg:top-8 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-                <div className="text-xl lg:text-2xl font-black tracking-tighter text-white drop-shadow-lg">
-                    ALGORITMOT
-                </div>
+                <img src={BRAND_LOGO_ON_DARK} alt="Algoritmo T" className="h-8 lg:h-10 w-auto drop-shadow-lg" />
             </div>
         </div>
     )

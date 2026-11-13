@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useCMS } from '../../admin/context/CMSContext'
 import { useLanguage } from '../../context/LanguageContext'
-import { DEFAULT_FAVICON_URL, applySeoPayload, limitText, normalizeBaseUrl, normalizePath, toAbsoluteUrl } from '../../lib/seo'
+import { applySeoPayload, resolveFaviconUrl, resolveShareImage, limitText, normalizeBaseUrl, normalizePath, toAbsoluteUrl } from '../../lib/seo'
 
 type BreadcrumbItem = {
   name: string
@@ -207,10 +207,10 @@ export function SiteSEO() {
       ? 'noindex,nofollow,noarchive,nosnippet,max-image-preview:none'
       : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'
 
-    const imageCandidate = state.design.logoUrl || state.design.logoFooterUrl || '/assets/og-default.svg'
+    const imageCandidate = resolveShareImage(state.design.logoUrl, state.design.logoFooterUrl)
     const imageUrl = toAbsoluteUrl(baseUrl, imageCandidate)
     const canonicalUrl = toAbsoluteUrl(baseUrl, canonicalPath)
-    const faviconUrl = toAbsoluteUrl(baseUrl, state.design.faviconUrl || DEFAULT_FAVICON_URL)
+    const faviconUrl = toAbsoluteUrl(baseUrl, resolveFaviconUrl(state.design.faviconUrl))
 
     const schemas: Array<Record<string, unknown>> = [
       {

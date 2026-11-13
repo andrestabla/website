@@ -1,6 +1,28 @@
 type JsonLdSchema = Record<string, unknown>
 
-export const DEFAULT_FAVICON_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/sitioweb/T.svg'
+export const DEFAULT_FAVICON_URL = '/favicon.svg'
+export const DEFAULT_OG_IMAGE_URL = '/assets/og-default.png'
+
+// Logotipo de la marca (kit en public/assets/brand): nombre + símbolo, sin eslogan.
+export const BRAND_LOGO_ON_LIGHT = '/assets/brand/02-Logotipo-sin-eslogan/algoritmot-logo-sin-eslogan-color-fondo-claro.svg'
+export const BRAND_LOGO_ON_DARK = '/assets/brand/02-Logotipo-sin-eslogan/algoritmot-logo-sin-eslogan-color-fondo-oscuro.svg'
+
+// Icono anterior de la marca. La configuración guardada del sitio todavía puede
+// apuntar a él (favicon y logo de pie); donde aparezca se usa el actual.
+export const LEGACY_BRAND_ICON_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/sitioweb/T.svg'
+
+export function resolveFaviconUrl(url?: string | null): string {
+  const value = (url || '').trim()
+  return !value || value === LEGACY_BRAND_ICON_URL ? DEFAULT_FAVICON_URL : value
+}
+
+export function resolveShareImage(...candidates: Array<string | null | undefined>): string {
+  for (const candidate of candidates) {
+    const value = (candidate || '').trim()
+    if (value && value !== LEGACY_BRAND_ICON_URL) return value
+  }
+  return DEFAULT_OG_IMAGE_URL
+}
 
 export type SeoPayload = {
   title: string
