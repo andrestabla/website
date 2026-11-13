@@ -28,6 +28,7 @@ const NotFound = lazyWithRetry(() => import('./pages/NotFound').then((module) =>
 const GeneradorCasosAI = lazyWithRetry(() => import('./pages/GeneradorCasosAI').then((module) => ({ default: module.GeneradorCasosAI })))
 const PlanificoMiProyecto = lazyWithRetry(() => import('./pages/PlanificoMiProyecto'))
 const HazloTuMismo = lazyWithRetry(() => import('./pages/HazloTuMismo'))
+const AgendarGestionEstrategica = lazyWithRetry(() => import('./pages/AgendarGestionEstrategica').then((module) => ({ default: module.AgendarGestionEstrategica })))
 const EscalarNegocioLanding = lazyWithRetry(() => import('./pages/EscalarNegocioLanding').then((module) => ({ default: module.EscalarNegocioLanding })))
 const LearningAnalyticsLanding = lazyWithRetry(() => import('./pages/LearningAnalyticsLanding').then((module) => ({ default: module.LearningAnalyticsLanding })))
 const LearningAnalyticsDownload = lazyWithRetry(() => import('./pages/LearningAnalyticsDownload').then((module) => ({ default: module.LearningAnalyticsDownload })))
@@ -352,6 +353,7 @@ function App() {
               <Route path="/landing-servicios" element={<ManagedPublishedRoute routePath="/landing-servicios" fallback={<ServiciosLandingSimple />} />} />
               <Route path="/generador-casos" element={<GeneradorCasosAI />} />
               <Route path="/escalar-negocio" element={<EscalarNegocioLanding />} />
+              <Route path="/agendar/gestion-estrategica" element={<AgendarGestionEstrategica />} />
               <Route path="/planifico-mi-proyecto" element={<PlanificoMiProyecto />} />
               <Route path="/hazlo-tu-mismo" element={<HazloTuMismo />} />
               <Route path="/learning_analytics" element={<LearningAnalyticsLanding />} />

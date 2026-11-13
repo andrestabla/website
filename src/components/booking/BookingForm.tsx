@@ -24,11 +24,15 @@ type ConversionWindow = Window & {
 export function BookingForm({ 
   onSubmit, 
   onBack,
-  isSubmitting 
+  isSubmitting,
+  messageLabel = 'Cuéntenos qué está buscando *',
+  messagePlaceholder = 'Describa brevemente el cuello de botella o desafío de escalabilidad que desea conversar...',
 }: { 
   onSubmit: (data: BookingFormValues) => void 
   onBack: () => void
   isSubmitting: boolean 
+  messageLabel?: string
+  messagePlaceholder?: string
 }) {
   const { register, handleSubmit, formState: { errors } } = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema)
@@ -129,12 +133,12 @@ export function BookingForm({
       </div>
 
       <div className="space-y-2">
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cuéntenos qué está buscando *</label>
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">{messageLabel}</label>
         <textarea 
           {...register('message')}
           rows={4}
           className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm focus:border-brand-primary focus:ring-0 transition-colors resize-none"
-          placeholder="Describa brevemente el cuello de botella o desafío de escalabilidad que desea conversar..."
+          placeholder={messagePlaceholder}
         />
         {errors.message && <p className="text-[10px] text-red-500 font-bold uppercase">{errors.message.message}</p>}
       </div>

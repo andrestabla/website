@@ -18,6 +18,13 @@ type Appointment = {
   message: string
 }
 
+/** Las citas pedidas desde otro sitio llegan con su origen marcado al inicio del mensaje (api/booking/reserve.ts). */
+const ORIGENES_CITA = [{ marca: '[Gestión Estratégica · demostración]', etiqueta: 'Gestión Estratégica · demostración' }]
+const origenDeCita = (message: string) => {
+  const o = ORIGENES_CITA.find((x) => message.startsWith(x.marca))
+  return o ? { etiqueta: o.etiqueta, mensaje: message.slice(o.marca.length).trim() } : { etiqueta: '', mensaje: message }
+}
+
 type Slot = {
   id: string
   startTime: string
@@ -366,9 +373,14 @@ export function ManageBookings() {
 
                   <div className="md:w-64 border-t md:border-t-0 md:border-l border-slate-100 pt-6 md:pt-0 md:pl-8 flex flex-col justify-between">
                     <div>
+                      {origenDeCita(app.message).etiqueta && (
+                        <div className="mb-3 inline-flex rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-amber-800">
+                          {origenDeCita(app.message).etiqueta}
+                        </div>
+                      )}
                       <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Mensaje</div>
                       <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed italic mb-4">
-                        "{app.message}"
+                        "{origenDeCita(app.message).mensaje}"
                       </p>
                     </div>
                     <div className="flex items-center gap-2 mt-auto">

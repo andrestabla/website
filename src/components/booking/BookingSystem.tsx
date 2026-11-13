@@ -12,7 +12,36 @@ type Slot = {
   endTime: string
 }
 
-export function BookingSystem({ onSuccess }: { onSuccess?: () => void }) {
+/** Textos que cambian según desde dónde se agenda (por defecto, la conversación de escalabilidad). */
+export type BookingTexts = {
+  calendarTitle: string
+  calendarHint: string
+  formHint: string
+  messageLabel: string
+  messagePlaceholder: string
+  successTitle: string
+  successBody: string
+  againLabel: string
+}
+
+const DEFAULT_TEXTS: BookingTexts = {
+  calendarTitle: 'Selecciona una fecha y hora',
+  calendarHint: 'Todas las citas se realizan de forma virtual vía Google Meet.',
+  formHint: 'Complete los siguientes datos para finalizar la reserva.',
+  messageLabel: 'Cuéntenos qué está buscando *',
+  messagePlaceholder: 'Describa brevemente el cuello de botella o desafío de escalabilidad que desea conversar...',
+  successTitle: '¡Cita Agendada!',
+  successBody: 'Hemos enviado una invitación a tu correo electrónico con los detalles y el enlace de la reunión. ¡Nos vemos pronto!',
+  againLabel: 'Agendar otra cita',
+}
+
+export function BookingSystem({ onSuccess, origin, texts }: {
+  onSuccess?: () => void
+  /** Origen de la cita; el servidor solo acepta los que conoce (p. ej. «gestion-estrategica»). */
+  origin?: string
+  texts?: Partial<BookingTexts>
+}) {
+  const t = { ...DEFAULT_TEXTS, ...texts }
   const [step, setStep] = useState<'calendar' | 'form' | 'success'>('calendar')
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -34,13 +63,16 @@ export function BookingSystem({ onSuccess }: { onSuccess?: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...data,
-          slotId: selectedSlot.id
+          slotId: selectedSlot.id,
+          ...(origin ? { origen: origin } : {}),
         })
       })
 
       if (response.ok) {
         setStep('success')
         onSuccess?.()
+        // El formulario es más alto que la confirmación: se vuelve al inicio para que se vea.
+        document.getElementById('booking-system')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       } else {
         const err = await response.json()
         alert(err.error || 'Ocurrió un error al agendar la cita. Por favor intente de nuevo.')
@@ -65,8 +97,8 @@ export function BookingSystem({ onSuccess }: { onSuccess?: () => void }) {
             transition={{ duration: 0.4 }}
           >
             <div className="mb-8">
-              <h3 className="text-2xl font-black tracking-tight text-slate-900 mb-2">Selecciona una fecha y hora</h3>
-              <p className="text-slate-500 text-sm">Todas las citas se realizan de forma virtual vía Google Meet.</p>
+              <h3 className="text-2xl font-black tracking-tight text-slate-900 mb-2">{t.calendarTitle}</h3>
+              <p className="text-slate-500 text-sm">{t.calendarHint}</p>
             </div>
             <CalendarPicker onSelect={handleSlotSelect} />
           </motion.div>
@@ -116,13 +148,15 @@ export function BookingSystem({ onSuccess }: { onSuccess?: () => void }) {
 
             <div className="mb-8">
               <h3 className="text-2xl font-black tracking-tight text-slate-900 mb-2">Información del contacto</h3>
-              <p className="text-slate-500 text-sm">Complete los siguientes datos para finalizar la reserva.</p>
+              <p className="text-slate-500 text-sm">{t.formHint}</p>
             </div>
 
             <BookingForm 
               onSubmit={handleFormSubmit} 
               onBack={() => setStep('calendar')}
               isSubmitting={isSubmitting} 
+              messageLabel={t.messageLabel}
+              messagePlaceholder={t.messagePlaceholder}
             />
           </motion.div>
         )}
@@ -137,16 +171,15 @@ export function BookingSystem({ onSuccess }: { onSuccess?: () => void }) {
             <div className="w-20 h-20 bg-brand-secondary/10 flex items-center justify-center mx-auto mb-8 rounded-full">
               <CheckCircle2 className="w-10 h-10 text-brand-secondary" />
             </div>
-            <h3 className="text-4xl font-black tracking-tighter text-slate-900 mb-4">¡Cita Agendada!</h3>
+            <h3 className="text-4xl font-black tracking-tighter text-slate-900 mb-4">{t.successTitle}</h3>
             <p className="text-xl text-slate-600 font-light max-w-2xl mx-auto leading-relaxed">
-              Hemos enviado una invitación a tu correo electrónico con los detalles y el enlace de la reunión. 
-              ¡Nos vemos pronto!
+              {t.successBody}
             </p>
             <button 
               onClick={() => setStep('calendar')}
               className="mt-12 text-sm font-black uppercase tracking-widest text-brand-primary hover:underline"
             >
-              Agendar otra cita
+              {t.againLabel}
             </button>
           </motion.div>
         )}
