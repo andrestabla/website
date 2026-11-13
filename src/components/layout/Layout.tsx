@@ -92,8 +92,8 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
     }, [location.pathname, location.hash, isHeaderSticky, announcementHeight, headerHeight])
 
     const navLinkClass = headerVariant === 'minimal'
-        ? 'text-[11px] font-black uppercase tracking-[0.25em] text-slate-400 hover:text-brand-primary transition-colors'
-        : 'text-xs font-black uppercase tracking-[0.3em] text-slate-400 hover:text-brand-primary transition-colors'
+        ? 'text-[11px] font-black uppercase tracking-[0.25em] text-slate-400 hover:text-brand-primary transition-colors whitespace-nowrap'
+        : 'text-xs font-black uppercase tracking-[0.3em] text-slate-400 hover:text-brand-primary transition-colors whitespace-nowrap'
     const headerShellClass = isHeaderSticky
         ? 'fixed left-0 w-full z-50 bg-white/85 backdrop-blur-md border-b border-slate-100'
         : 'relative bg-white border-b border-slate-100'
@@ -219,16 +219,17 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                 </header>
             ) : !hideGlobalChrome && (
                 <header className={headerShellClass} style={isHeaderSticky ? { top: announcementHeight } : undefined}>
-                <div className={`px-6 ${headerHeightClass} ${headerVariant === 'split' ? 'max-w-7xl mx-auto w-full grid grid-cols-[auto_1fr_auto] items-center gap-6' : 'flex items-center justify-between'}`}>
-                    <a href="https://www.algoritmot.com/" className="text-2xl font-black tracking-tighter text-slate-900 inline-flex items-center">
+                {/* Dos estados y ninguno intermedio: desde 1400 px, menú completo; por debajo, menú colapsado. El logo nunca se encoge. */}
+                <div className={`px-6 ${headerHeightClass} ${headerVariant === 'split' ? 'max-w-7xl mx-auto w-full grid grid-cols-[auto_1fr_auto] items-center gap-6' : 'flex items-center justify-between gap-10'}`}>
+                    <a href="https://www.algoritmot.com/" className="text-2xl font-black tracking-tighter text-slate-900 inline-flex items-center shrink-0">
                         {useImageLogo ? (
                             <img src={design.logoUrl} alt={design.logoAlt || site.name} className="h-10 w-auto object-contain" />
                         ) : (
-                            <img src={BRAND_LOGO_ON_LIGHT} alt={design.logoAlt || site.name} className="h-7 w-auto shrink-0 mr-10" />
+                            <img src={BRAND_LOGO_ON_LIGHT} alt={design.logoAlt || site.name} className="h-7 sm:h-9 w-auto max-w-none" />
                         )}
                     </a>
 
-                    <nav className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-7' : 'gap-12'} ${headerVariant === 'split' ? 'justify-center' : ''}`}>
+                    <nav className={`hidden min-[1400px]:flex items-center ${headerVariant === 'minimal' ? 'gap-7' : 'gap-10'} ${headerVariant === 'split' ? 'justify-center' : ''}`}>
                         <Link to={servicesHref} target={isFocusedFlow ? "_blank" : undefined} className={navLinkClass}>{uiText.nav.services}</Link>
                         <Link to={workflowHref} target={isFocusedFlow ? "_blank" : undefined} className={navLinkClass}>{uiText.nav.workflow}</Link>
                         <Link to={faqHref} target={isFocusedFlow ? "_blank" : undefined} className={navLinkClass}>{uiText.nav.faq}</Link>
@@ -236,7 +237,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                     </nav>
 
 
-                    <div className={`hidden md:flex items-center ${headerVariant === 'minimal' ? 'gap-3' : 'gap-4'} ${headerVariant === 'split' ? 'justify-end' : ''}`}>
+                    <div className={`hidden min-[1400px]:flex items-center shrink-0 ${headerVariant === 'minimal' ? 'gap-3' : 'gap-4'} ${headerVariant === 'split' ? 'justify-end' : ''}`}>
                         <Link
                             to="/ecosistema"
                             className="h-10 px-4 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-[0.22em] inline-flex items-center gap-2 hover:border-brand-primary hover:text-brand-primary transition-colors"
@@ -267,7 +268,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                         </div>
                     </div>
 
-                    <div className="flex md:hidden items-center gap-3 justify-self-end">
+                    <div className="flex min-[1400px]:hidden items-center gap-3 justify-self-end shrink-0">
                         <LanguageSelector />
                         <button
                             type="button"
@@ -284,7 +285,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
 
             {!hideGlobalChrome && mobileMenuOpen && (
                 <div
-                    className={`${isHeaderSticky ? 'fixed inset-x-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur-md shadow-lg md:hidden' : 'relative border-b border-slate-100 bg-white md:hidden'}`}
+                    className={`${isHeaderSticky ? 'fixed inset-x-0 z-40 border-b border-slate-100 bg-white/95 backdrop-blur-md shadow-lg min-[1400px]:hidden' : 'relative border-b border-slate-100 bg-white min-[1400px]:hidden'}`}
                     style={isHeaderSticky ? { top: announcementHeight + headerHeight } : undefined}
                 >
                     <nav className="px-6 py-4 flex flex-col gap-2">
