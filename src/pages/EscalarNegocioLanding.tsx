@@ -5,7 +5,7 @@ import { Layout } from '../components/layout/Layout'
 import { BookingSystem } from '../components/booking/BookingSystem'
 import { useCMS } from '../admin/context/CMSContext'
 import { useLanguage } from '../context/LanguageContext'
-import { DEFAULT_FAVICON_URL, applySeoPayload, limitText, normalizeBaseUrl, toAbsoluteUrl } from '../lib/seo'
+import { applySeoPayload, limitText, normalizeBaseUrl, resolveFaviconUrl, resolveShareImage, toAbsoluteUrl } from '../lib/seo'
 
 const HERO_VIDEO_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/videos/5070667_International_Team_1920x1080.mp4'
 const SUCCESS_VIDEO_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/videos/0_People_Animation_1920x1080.mp4'
@@ -118,9 +118,9 @@ export function EscalarNegocioLanding() {
       'Landing de AlgoritmoT para empresas que quieren crecer con más orden, una metodología clara y una conversación inicial enfocada en resultados.',
       180,
     )
-    const imageCandidate = state.design?.logoUrl || state.design?.logoFooterUrl || '/assets/og-default.svg'
+    const imageCandidate = resolveShareImage(state.design?.logoUrl, state.design?.logoFooterUrl)
     const imageUrl = toAbsoluteUrl(baseUrl, imageCandidate)
-    const faviconUrl = toAbsoluteUrl(baseUrl, state.design?.faviconUrl || DEFAULT_FAVICON_URL)
+    const faviconUrl = toAbsoluteUrl(baseUrl, resolveFaviconUrl(state.design?.faviconUrl))
 
     applySeoPayload({
       title: limitText(title, 70),

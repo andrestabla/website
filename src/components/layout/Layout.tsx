@@ -4,6 +4,7 @@ import { Menu, X, LayoutGrid } from 'lucide-react'
 import { LanguageSelector } from './LanguageSelector'
 import { useLanguage } from '../../context/LanguageContext'
 import { useCMS } from '../../admin/context/CMSContext'
+import { BRAND_LOGO_ON_DARK, BRAND_LOGO_ON_LIGHT } from '../../lib/seo'
 
 interface LayoutProps {
     children: ReactNode
@@ -105,7 +106,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                         {useImageFooterLogo ? (
                             <img src={design.logoFooterUrl || design.logoUrl} alt={design.logoAlt || site.name} className="h-12 w-auto object-contain" />
                         ) : (
-                            <>ALGORITMO<span className="text-white/30">T</span></>
+                            <img src={BRAND_LOGO_ON_DARK} alt={design.logoAlt || site.name} className="h-12 w-auto" />
                         )}
                     </a>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-16">
@@ -145,7 +146,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                     {useImageFooterLogo ? (
                         <img src={design.logoFooterUrl || design.logoUrl} alt={design.logoAlt || site.name} className="h-10 w-auto object-contain" />
                     ) : (
-                        <>ALGORITMO<span className="text-white/30">T</span></>
+                        <img src={BRAND_LOGO_ON_DARK} alt={design.logoAlt || site.name} className="h-9 w-auto" />
                     )}
                 </a>
                 <div className="flex flex-wrap items-center gap-6 text-xs font-black uppercase tracking-[0.22em] text-white/60">
@@ -212,7 +213,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                         {useImageLogo ? (
                             <img src={design.logoUrl} alt={design.logoAlt || site.name} className="h-10 w-auto object-contain brightness-0 invert" />
                         ) : (
-                            <>ALGORITMO<span className="text-white/30">T</span></>
+                            <img src={BRAND_LOGO_ON_DARK} alt={design.logoAlt || site.name} className="h-9 w-auto" />
                         )}
                     </Link>
                 </header>
@@ -223,7 +224,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                         {useImageLogo ? (
                             <img src={design.logoUrl} alt={design.logoAlt || site.name} className="h-10 w-auto object-contain" />
                         ) : (
-                            <>ALGORITMO<span className="text-brand-primary">T</span></>
+                            <img src={BRAND_LOGO_ON_LIGHT} alt={design.logoAlt || site.name} className="h-7 w-auto shrink-0 mr-10" />
                         )}
                     </a>
 
@@ -345,7 +346,7 @@ export function Layout({ children, isFocusedFlow }: LayoutProps) {
                         {useImageFooterLogo ? (
                             <img src={design.logoFooterUrl || design.logoUrl} alt={design.logoAlt || site.name} className="h-12 w-auto object-contain" />
                         ) : (
-                            <>ALGORITMO<span className="text-white/30">T</span></>
+                            <img src={BRAND_LOGO_ON_DARK} alt={design.logoAlt || site.name} className="h-11 w-auto" />
                         )}
                     </Link>
                 </footer>

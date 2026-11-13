@@ -11,7 +11,7 @@ import { servicesDetail, productsDetail } from '../../data/details'
 import { content as defaultContent } from '../../data/content'
 import { siteConfig as defaultSiteConfig } from '../../data/config'
 import { createHazloTuMismoLandingBlocks, hazloTuMismoLandingPageConfig } from '../../data/hazloTuMismoLanding'
-import { DEFAULT_FAVICON_URL } from '../../lib/seo'
+import { DEFAULT_FAVICON_URL, resolveFaviconUrl } from '../../lib/seo'
 import { useLocation } from 'react-router-dom'
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -576,7 +576,7 @@ export function injectDesignTokens(tokens: DesignTokens) {
             favicon.rel = 'icon'
             document.head.appendChild(favicon)
         }
-        favicon.href = tokens.faviconUrl
+        favicon.href = resolveFaviconUrl(tokens.faviconUrl)
     }
 }
 

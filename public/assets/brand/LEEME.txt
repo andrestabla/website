@@ -1,0 +1,48 @@
+KIT DE LOGO · ALGORITMO T
+Soluciones digitales con sentido humano
+
+CARPETAS
+01-Logotipo-con-eslogan   Nombre + símbolo + eslogan (el eslogan mide lo mismo que el nombre).
+02-Logotipo-sin-eslogan   Nombre + símbolo.
+03-Simbolo                Solo el círculo con la T-persona.
+04-Favicon                Iconos para la pestaña del navegador y accesos directos.
+05-Animado                Logo animado: con eslogan, sin eslogan y solo símbolo (ver ANIMADOS).
+06-Redes                  Foto de perfil cuadrada y portada 1200 x 630.
+
+VERSIONES DE COLOR
+color-fondo-oscuro   Letras blancas, símbolo a color. Para fondos oscuros (azul de marca).
+color-fondo-claro    Letras azules, símbolo a color. Para fondos claros.
+una-tinta-azul       Todo en azul de marca; la T va calada (deja ver el fondo).
+una-tinta-blanco     Todo en blanco, para fondos oscuros o fotos.
+una-tinta-negro      Todo en negro, para impresión a una tinta, sellos y fax.
+
+FORMATOS
+SVG   Vectorial; el preferido para web y para cualquier tamaño.
+PDF   Vectorial; para imprenta y documentos.
+PNG   Fondo transparente, a 2400 y 1200 px de ancho (símbolo: 1024, 512 y 256 px).
+JPG   Con fondo y margen (solo las versiones a color): azul para fondo-oscuro, blanco para fondo-claro.
+
+ANIMADOS (05-Animado)
+Tres piezas: con-eslogan (960 x 340), sin-eslogan (960 x 240) y simbolo (480 x 480).
+Cada una viene para fondo oscuro (letras blancas) y para fondo claro (letras azules), en:
+GIF    Con el fondo incluido (azul de marca o blanco). Sirve en correo, presentaciones y chats.
+MP4    Igual que el GIF, más liviano y nítido. Para web y redes.
+WEBM   Fondo transparente. Para web sobre cualquier color (Chrome, Edge, Firefox).
+APNG   Fondo transparente. Para Safari y apps que no leen WebM con transparencia.
+Los archivos "transparente-para-fondo-oscuro" llevan letras blancas; los "para-fondo-claro", letras azules.
+
+COLORES
+Azul de marca    #1A2D5A
+Dorado           #F1BA5B   (sombra del símbolo: #E9A52F)
+Blanco de la T   #F8FFFB   (mitad gris: #D8D8D8)
+Papel            #F7F4EE
+Eslogan sobre azul #C9D3EA · sobre claro #3B424B
+
+TIPOGRAFÍA
+Nombre: JetBrains Mono Bold, en mayúsculas. Eslogan: Inter Medium.
+En todos los archivos el texto está convertido a trazos: no hace falta instalar las fuentes.
+
+USO
+- Deja alrededor del logo un margen libre de al menos la altura de una letra del nombre.
+- Por debajo de 24 px usa solo el símbolo; la cabeza de la T deja de distinguirse en tamaños menores.
+- No cambies los colores, no deformes el logo ni separes el eslogan a otro ancho.

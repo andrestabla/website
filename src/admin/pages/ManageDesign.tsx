@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Palette, Type, Layout, Save, RotateCcw, CheckCircle2, Eye, ImageIcon, LoaderCircle, UploadCloud } from 'lucide-react'
 import { useCMS, type DesignTokens, defaultDesign } from '../context/CMSContext'
 import { Field, Input, Textarea } from '../components/ContentModal'
+import { BRAND_LOGO_ON_DARK, BRAND_LOGO_ON_LIGHT } from '../../lib/seo'
 
 type Tab = 'colors' | 'typography' | 'layout' | 'branding'
 
@@ -531,7 +532,7 @@ export function ManageDesign() {
                                     onChange={(e) => set('logoMode', e.target.value)}
                                     className="w-full bg-slate-50 border border-slate-200 px-4 py-4 text-sm font-medium text-slate-900 focus:border-brand-primary outline-none"
                                 >
-                                    <option value="text">Texto (ALGORITMOT)</option>
+                                    <option value="text">Logotipo de marca (Algoritmo T)</option>
                                     <option value="image">Imagen</option>
                                 </select>
                             </Field>
@@ -613,7 +614,7 @@ export function ManageDesign() {
                                     {draft.logoMode === 'image' && draft.logoUrl ? (
                                         <img src={draft.logoUrl} alt={draft.logoAlt || 'Logo'} className="h-10 w-auto object-contain" />
                                     ) : (
-                                        <div className="text-2xl font-black tracking-tighter text-slate-900">ALGORITMO<span style={{ color: draft.colorPrimary }}>T</span></div>
+                                        <img src={BRAND_LOGO_ON_LIGHT} alt="Algoritmo T" className="h-9 w-auto" />
                                     )}
                                 </div>
                                 <div className="text-xs text-slate-400 font-bold uppercase tracking-widest">Header</div>
@@ -624,7 +625,7 @@ export function ManageDesign() {
                                     {draft.logoMode === 'image' && (draft.logoFooterUrl || draft.logoUrl) ? (
                                         <img src={draft.logoFooterUrl || draft.logoUrl} alt={draft.logoAlt || 'Logo'} className="h-12 w-auto object-contain" />
                                     ) : (
-                                        <div className="text-3xl font-black tracking-tighter text-white">ALGORITMO<span className="text-white/30">T</span></div>
+                                        <img src={BRAND_LOGO_ON_DARK} alt="Algoritmo T" className="h-11 w-auto" />
                                     )}
                                 </div>
                                 <div className="text-xs text-white/30 font-bold uppercase tracking-widest">Footer</div>
