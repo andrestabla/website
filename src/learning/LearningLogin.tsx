@@ -7,7 +7,7 @@
  * por una pantalla genérica.
  */
 import { useState, type FormEvent } from 'react'
-import { Library } from 'lucide-react'
+import { BRAND_MARK } from '../lib/seo'
 import { ecoStartLogin, ecoVerifyLoginCode, ecoRequestPasswordReset } from '../ecosistema/lib/session'
 
 export function LearningLogin({ onSuccess }: { onSuccess: () => void }) {
@@ -87,7 +87,7 @@ export function LearningLogin({ onSuccess }: { onSuccess: () => void }) {
           className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl"
           aria-hidden
         />
-        <div className="relative grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur"><Library size={24} /></div>
+        <img src={BRAND_MARK} alt="Algoritmo T" className="relative h-12 w-12" />
         <div className="relative">
           <h1 className="max-w-[16ch] text-4xl font-black leading-tight tracking-tight">
             Learning <span className="text-amber-100">Builder</span>
@@ -104,9 +104,7 @@ export function LearningLogin({ onSuccess }: { onSuccess: () => void }) {
       <section className="flex items-center justify-center p-8">
         <div className="w-full max-w-sm">
           <div className="mb-6 flex items-center gap-2.5">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 text-white">
-              <Library size={18} />
-            </div>
+            <img src={BRAND_MARK} alt="Algoritmo T" className="h-9 w-9 shrink-0" />
             <div className="text-sm font-black tracking-tight">LEARNING<span className="text-rose-600">BUILDER</span></div>
           </div>
           <h2 className="text-[22px] font-black tracking-tight text-slate-900">

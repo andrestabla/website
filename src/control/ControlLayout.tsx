@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutGrid } from 'lucide-react'
+import { BRAND_MARK } from '../lib/seo'
 import { pcLogout, type PcUser } from './lib/session'
 import { CONTROL_HOME } from './lib/base'
 
@@ -23,9 +23,7 @@ export function ControlLayout({ children, user }: { children: ReactNode; user: P
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-slate-200 bg-white px-4 sm:px-5 print:hidden">
         <NavLink to={CONTROL_HOME} className="flex items-center gap-2.5">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white">
-            <LayoutGrid size={16} />
-          </div>
+          <img src={BRAND_MARK} alt="Algoritmo T" className="h-8 w-8 shrink-0" />
           <div className="leading-tight">
             <div className="text-sm font-black tracking-tight">
               PROJECT<span className="text-indigo-600">CONTROL</span>

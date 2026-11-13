@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Library, Loader2, Plus, X, Users } from 'lucide-react'
+import { BRAND_MARK } from '../lib/seo'
 import { LB_ROLE_HINT, LB_ROLE_LABEL, LB_ROLE_STYLE } from './lib/roles'
 import { learningApi, timeAgo, type WorkspaceRow } from './lib/api'
 
@@ -64,9 +65,7 @@ export function WorkspacesGrid() {
           <ArrowLeft size={16} /> <span className="hidden sm:inline">Ecosistema</span>
         </Link>
         <div className="h-5 w-px bg-slate-200" />
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 text-white">
-          <Library size={16} />
-        </div>
+        <img src={BRAND_MARK} alt="Algoritmo T" className="h-8 w-8 shrink-0" />
         <div className="leading-tight">
           <div className="text-sm font-black tracking-tight">Learning Builder</div>
           <div className="text-[11px] text-slate-400">Tus workspaces</div>

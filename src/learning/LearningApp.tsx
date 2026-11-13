@@ -8,7 +8,7 @@
  */
 import { type ReactNode } from 'react'
 import { Link, Navigate, Route, Routes } from 'react-router-dom'
-import { Library } from 'lucide-react'
+import { BRAND_MARK } from '../lib/seo'
 import { useLearningSession } from './lib/session'
 import { LearningLogin } from './LearningLogin'
 import { WorkspacesGrid } from './WorkspacesGrid'
@@ -42,9 +42,7 @@ export default function LearningApp() {
     return (
       <Centered>
         <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8">
-          <div className="mx-auto mb-4 grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white">
-            <Library size={20} />
-          </div>
+          <img src={BRAND_MARK} alt="Algoritmo T" className="mx-auto mb-4 h-11 w-11" />
           <h2 className="text-2xl font-black tracking-tight text-slate-900">Acceso restringido</h2>
           <p className="mt-2 text-slate-600">
             Tu usuario <b>{user?.displayName || user?.username}</b> no tiene el permiso <b>Learning Builder</b>.
