@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { LayoutGrid } from 'lucide-react'
+import { BRAND_MARK } from '../lib/seo'
 import { pcStartLogin, pcVerifyLoginCode, pcRequestPasswordReset } from './lib/session'
 
 export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
@@ -53,7 +53,7 @@ export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
         style={{ backgroundImage: 'url(/back-project-control.webp)', backgroundSize: 'cover', backgroundPosition: 'center' }}
       >
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-900/85 via-indigo-800/70 to-sky-700/70" aria-hidden />
-        <div className="relative grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur"><LayoutGrid size={24} /></div>
+        <img src={BRAND_MARK} alt="Algoritmo T" className="relative h-12 w-12" />
         <div className="relative">
           <h1 className="max-w-[16ch] text-4xl font-black leading-tight tracking-tight">
             Project <span className="text-indigo-200">Control</span>
@@ -69,7 +69,7 @@ export function ControlLogin({ onSuccess }: { onSuccess: () => void }) {
       <section className="flex items-center justify-center p-8">
         <div className="w-full max-w-sm">
           <div className="mb-6 flex items-center gap-2.5">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white"><LayoutGrid size={18} /></div>
+            <img src={BRAND_MARK} alt="Algoritmo T" className="h-9 w-9 shrink-0" />
             <div className="text-sm font-black tracking-tight">PROJECT<span className="text-indigo-600">CONTROL</span></div>
           </div>
           <h2 className="text-[22px] font-black tracking-tight text-slate-900">

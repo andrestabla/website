@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { LayoutGrid, Loader2, Table2, BarChart3 } from 'lucide-react'
+import { Loader2, Table2, BarChart3 } from 'lucide-react'
+import { BRAND_MARK } from '../lib/seo'
 import { getPublicBoard, type PublicBoardData } from './lib/control-api'
 import { DataGrid } from './grid/DataGrid'
 import { CardsView } from './grid/CardsView'
@@ -40,7 +41,7 @@ export default function PublicBoard() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="flex h-14 items-center gap-2.5 border-b border-slate-200 bg-white px-4 sm:px-5">
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white"><LayoutGrid size={16} /></div>
+        <img src={BRAND_MARK} alt="Algoritmo T" className="h-8 w-8 shrink-0" />
         <div className="text-sm font-black tracking-tight">PROJECT<span className="text-indigo-600">CONTROL</span></div>
         <span className="ml-1 truncate rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500 sm:ml-2">Solo lectura</span>
       </header>

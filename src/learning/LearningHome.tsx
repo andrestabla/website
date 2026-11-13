@@ -18,6 +18,7 @@ import {
   Library, Users, AlertTriangle, MessageSquare, Folder, FolderOpen, ChevronRight,
   FolderPlus, FolderInput, Pencil, Home, RotateCcw,
 } from 'lucide-react'
+import { BRAND_MARK } from '../lib/seo'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import {
   LB_RESOURCE_KINDS, kindSpec, LB_STATUSES, LB_STATUS_LABEL, LB_STATUS_STYLE,
@@ -527,9 +528,7 @@ export function LearningHome() {
           <ArrowLeft size={16} className="shrink-0" /> <span className="hidden truncate sm:inline">{up.label}</span>
         </Link>
         <div className="h-5 w-px bg-slate-200" />
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 text-white">
-          <Library size={16} />
-        </div>
+        <img src={BRAND_MARK} alt="Algoritmo T" className="h-8 w-8 shrink-0" />
 
         {/* Selector de workspace */}
         <div className="relative min-w-0">
