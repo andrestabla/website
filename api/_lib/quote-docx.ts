@@ -19,6 +19,9 @@ const LINE = 'E3DDCE'
 const PAPER = 'F7F4EE'
 const FONT = 'Inter'
 const MARK_URL = '/assets/algoritmot-mark.png'
+// Logotipo de Algoritmo T para fondo claro (1200 x 200 px): nombre + símbolo.
+const LOGOTYPE_URL = '/assets/brand/02-Logotipo-sin-eslogan/algoritmot-logo-sin-eslogan-color-fondo-claro-1200px.png'
+const LOGOTYPE_RATIO = 1200 / 200
 
 
 /** Quita las marcas de formato del texto plano (**, *, `, [x](y)). */
@@ -443,8 +446,9 @@ export async function buildQuoteDocx(quote: DocxQuote, baseUrl: string): Promise
   const cobrandName: string = cobrand.name || ''
 
   const imgUrls = pages.flatMap((p: any) => (p.blocks || []).filter((b: any) => b.type === 'img').map((b: any) => String(b.url)))
-  const assets = await loadAssets([...new Set([...imgUrls, MARK_URL, ...(cobrandLogo ? [cobrandLogo] : [])])], baseUrl)
+  const assets = await loadAssets([...new Set([...imgUrls, MARK_URL, LOGOTYPE_URL, ...(cobrandLogo ? [cobrandLogo] : [])])], baseUrl)
   const markPng = assets.get(MARK_URL) || null
+  const logotypePng = assets.get(LOGOTYPE_URL) || null
   const cobrandPng = cobrandLogo ? assets.get(cobrandLogo) || null : null
 
   /** Marca del aliado a la derecha del lockup, con su filete separador. */
@@ -459,13 +463,18 @@ export async function buildQuoteDocx(quote: DocxQuote, baseUrl: string): Promise
     return [sep, new TextRun({ text: cobrandName.toUpperCase(), bold: true, size, color: NAVY, font: 'JetBrains Mono' })]
   }
 
-  const brandRun = (size: number) => ([
-    new TextRun({ text: 'ALGORITMO', bold: true, size, color: NAVY, font: 'JetBrains Mono' }),
-    ...(markPng
-      ? [new ImageRun({ data: markPng, transformation: { width: size / 1.6, height: size / 1.6 } } as any)]
-      : [new TextRun({ text: '  T', bold: true, size, color: GOLD, font: 'JetBrains Mono' })]),
-    ...cobrandRun(size),
-  ])
+  const brandRun = (size: number) => (logotypePng
+    ? [
+        new ImageRun({ data: logotypePng, transformation: { width: (size / 1.3) * LOGOTYPE_RATIO, height: size / 1.3 } } as any),
+        ...cobrandRun(size),
+      ]
+    : [
+        new TextRun({ text: 'ALGORITMO', bold: true, size, color: NAVY, font: 'JetBrains Mono' }),
+        ...(markPng
+          ? [new ImageRun({ data: markPng, transformation: { width: size / 1.6, height: size / 1.6 } } as any)]
+          : [new TextRun({ text: '  T', bold: true, size, color: GOLD, font: 'JetBrains Mono' })]),
+        ...cobrandRun(size),
+      ])
 
   const body: (Paragraph | Table)[] = []
 

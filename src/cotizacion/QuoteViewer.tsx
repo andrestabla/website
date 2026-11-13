@@ -8,6 +8,7 @@
  * cotización trae su contenido. Toda interacción se reporta a /api/quotes/track.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { BRAND_LOGO_ON_DARK, BRAND_LOGO_ON_LIGHT, BRAND_MARK } from '../lib/seo'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   computeTotals,
@@ -474,7 +475,9 @@ export default function QuoteViewer() {
   )
   // imagen reemplazable en el modo edición (clic → subir a R2 → guardar la URL)
   const IMG = (ref: string) => (editor ? { 'data-img-ref': ref } : {})
-  const brandLogo: string = content.brand?.logo || '/assets/algoritmot-mark.svg'
+  const brandLogo: string = content.brand?.logo || BRAND_MARK
+  // Sin logo ni nombre de marca propios, la propuesta lleva el logotipo de Algoritmo T.
+  const useLogotype = !content.brand?.logo && !labels.brandName && !labels.barBrand
   const pageFooter = L('pageFooter', 'Algoritmo T — pág.')
   // pie de hoja editable (con el editor sustituye al pseudoelemento de CSS)
   const sfoot = editor ? <div className="qv-sfoot"><span {...lab('pageFooter')}>{pageFooter}</span> <b /></div> : null
@@ -548,7 +551,14 @@ export default function QuoteViewer() {
         </div>
       )}
       <div className="qv-bar">
-        <span className="b-brand"><img src={brandLogo} alt="" {...IMG('content.brand.logo')} /><span {...lab('barBrand')}>{L('barBrand', 'Algoritmo\u00a0T')}</span></span>
+        {useLogotype ? (
+          <span className="b-brand">
+            <img className="qv-logotype" src={BRAND_LOGO_ON_LIGHT} alt="Algoritmo T" {...IMG('content.brand.logo')} />
+            <img className="qv-mark-sm" src={BRAND_MARK} alt="" />
+          </span>
+        ) : (
+          <span className="b-brand"><img src={brandLogo} alt="" {...IMG('content.brand.logo')} /><span {...lab('barBrand')}>{L('barBrand', 'Algoritmo\u00a0T')}</span></span>
+        )}
         <div className="b-total">
           <div className="t-l"><span {...lab('barInvestment')}>{L('barInvestment', 'Inversión')}</span>{!isService && totals.moduleCount > 0 ? ` · ${totals.moduleCount} ${itemsNoun.toLowerCase()}` : ''}</div>
           <div className="t-v" {...lab('barTotal')}>{L('barTotal', money(totals.total))}</div>
@@ -573,7 +583,9 @@ export default function QuoteViewer() {
         <div className="qv-page">
           <div className="cv-top">
             <span className="brandmark">
-              <b {...lab('brandName')}>{L('brandName', 'Algoritmo')}</b><img src={brandLogo} alt="Algoritmo T" {...IMG('content.brand.logo')} />
+              {useLogotype
+                ? <img className="qv-logotype" src={BRAND_LOGO_ON_DARK} alt="Algoritmo T" {...IMG('content.brand.logo')} />
+                : <><b {...lab('brandName')}>{L('brandName', 'Algoritmo')}</b><img src={brandLogo} alt="Algoritmo T" {...IMG('content.brand.logo')} /></>}
               {hasCobrand && (
                 <>
                   <i className="cb-sep" aria-hidden="true" />
@@ -1177,7 +1189,9 @@ export default function QuoteViewer() {
       <footer className="qv-back" data-qsec="cierre" key={`f${epoch.all}`}>
         <div className="qv-page">
           <div className="bk-top">
-            <b {...lab('brandName')}>{L('brandName', 'Algoritmo')}</b><img src={brandLogo} alt="Algoritmo T" {...IMG('content.brand.logo')} />
+            {useLogotype
+              ? <img className="qv-logotype" src={BRAND_LOGO_ON_DARK} alt="Algoritmo T" {...IMG('content.brand.logo')} />
+              : <><b {...lab('brandName')}>{L('brandName', 'Algoritmo')}</b><img src={brandLogo} alt="Algoritmo T" {...IMG('content.brand.logo')} /></>}
             {hasCobrand && (
               <>
                 <i className="cb-sep" aria-hidden="true" />

@@ -662,3 +662,8 @@ p{margin:0 0 .92em}
 .galeria .shot{margin:0}
 .galeria .shot figcaption{margin-bottom:5px; line-height:1.35; min-height:22px}
 .galeria .shot img{height:206px; object-fit:cover; object-position:top}
+
+/* logotipo de Algoritmo T (nombre + símbolo en una sola imagen) */
+.bar .b-l img.logotype{height:20px; width:auto}
+.cover .brandmark img.logotype{height:32px; width:auto}
+.back .bk-top img.logotype{height:28px; width:auto}

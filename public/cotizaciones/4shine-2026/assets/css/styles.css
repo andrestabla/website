@@ -463,3 +463,8 @@ p{margin:0 0 .92em}
   .toc .ti{font-size:18px}
   .toc a{gap:12px; padding:18px 2px}
 }
+
+/* logotipo de Algoritmo T (nombre + símbolo en una sola imagen) */
+.bar .b-l img.logotype{height:20px; width:auto}
+.cover .brandmark img.logotype{height:32px; width:auto}
+.back .bk-top img.logotype{height:28px; width:auto}

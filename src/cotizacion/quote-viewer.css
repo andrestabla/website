@@ -630,6 +630,11 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
    aplasta el logo del aliado a caja cuadrada */
 .qv-cover .brandmark img.cb-logo,
 .qv-back .bk-top img.cb-logo { height: 17px; width: auto; }
+/* logotipo de Algoritmo T (nombre + símbolo en una sola imagen) */
+.qv-bar .b-brand img.qv-logotype { height: 20px; width: auto; }
+.qv-bar .b-brand img.qv-mark-sm { display: none; }
+.qv-cover .brandmark img.qv-logotype { height: 30px; width: auto; }
+.qv-back .bk-top img.qv-logotype { height: 26px; width: auto; }
 .qv-cover .cv-cobrand-role {
   font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--gold-fill); margin: -14px 0 20px;
@@ -984,6 +989,8 @@ main.qv-page { max-width: none; padding: clamp(20px, 3vw, 34px) clamp(10px, 2.5v
   /* solo el ícono de marca y la cifra: los rótulos sobran en este ancho */
   .qv .qv-bar .b-brand { font-size: 0; gap: 0; }
   .qv .qv-bar .b-brand img { width: 20px; height: 20px; }
+  .qv .qv-bar .b-brand img.qv-logotype { display: none; }
+  .qv .qv-bar .b-brand img.qv-mark-sm { display: block; }
   .qv .qv-bar .b-total .t-l { display: none; }
   .qv .qv-bar .b-total .t-v { font-size: 12px; }
   .qv .qv-bar .qv-pdfbtn, .qv .qv-bar .qv-docxbtn { padding: 7px 8px; font-size: 9.5px; }
