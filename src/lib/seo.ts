@@ -7,6 +7,12 @@ export const DEFAULT_OG_IMAGE_URL = '/assets/og-default.png'
 export const BRAND_LOGO_ON_LIGHT = '/assets/brand/02-Logotipo-sin-eslogan/algoritmot-logo-sin-eslogan-color-fondo-claro.svg'
 export const BRAND_LOGO_ON_DARK = '/assets/brand/02-Logotipo-sin-eslogan/algoritmot-logo-sin-eslogan-color-fondo-oscuro.svg'
 
+// Loader del sitio: el logo animado del kit (fondo azul de marca incluido).
+// Dura 4,56 s; el loader se mantiene ese tiempo para que alcance a descifrarse.
+export const BRAND_LOADER_ANIMATION = '/assets/brand/05-Animado/algoritmot-animado-con-eslogan-fondo-oscuro.gif'
+export const BRAND_LOADER_BACKGROUND = '#1a2d5a'
+export const BRAND_LOADER_MS = 4900
+
 // Icono anterior de la marca. La configuración guardada del sitio todavía puede
 // apuntar a él (favicon y logo de pie); donde aparezca se usa el actual.
 export const LEGACY_BRAND_ICON_URL = 'https://imageneseiconos.s3.us-east-1.amazonaws.com/sitioweb/T.svg'
