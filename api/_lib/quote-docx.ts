@@ -251,7 +251,7 @@ function blockToDocx(b: any, assets: Map<string, Buffer>, items: any[] = []): (P
       const data = assets.get(String(b.url || ''))
       if (data) {
         out.push(new Paragraph({
-          children: [new ImageRun({ data, transformation: { width: 600, height: Math.round(600 * ratioOf(data)) } } as any)],
+          children: [new ImageRun({ data, type: imageType(data), transformation: { width: 600, height: Math.round(600 * ratioOf(data)) } } as any)],
           alignment: AlignmentType.CENTER, spacing: { before: 120, after: 60 }, keepNext: true,
         }))
         if (b.caption) out.push(P(plain(b.caption), { size: 16, color: MUTED, align: AlignmentType.CENTER, after: 170 }))
@@ -422,6 +422,14 @@ export type DocxQuote = {
 const money = (n: number) => `$ ${Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`
 
 /** Descarga las imágenes del documento (capturas y marca) desde el propio sitio. */
+/** Tipo de imagen por su firma: sin él, docx guarda el archivo como «.undefined» y Word pide reparar el documento. */
+function imageType(data: Buffer): 'png' | 'jpg' | 'gif' | 'bmp' {
+  if (data[0] === 0xff && data[1] === 0xd8) return 'jpg'
+  if (data[0] === 0x47 && data[1] === 0x49) return 'gif'
+  if (data[0] === 0x42 && data[1] === 0x4d) return 'bmp'
+  return 'png'
+}
+
 async function loadAssets(urls: string[], baseUrl: string): Promise<Map<string, Buffer>> {
   const map = new Map<string, Buffer>()
   await Promise.all(urls.map(async (u) => {
@@ -458,20 +466,20 @@ export async function buildQuoteDocx(quote: DocxQuote, baseUrl: string): Promise
     if (cobrandPng) {
       // el PNG es 608×128: se conserva esa proporción (4,75:1)
       const h = size / 1.9
-      return [sep, new ImageRun({ data: cobrandPng, transformation: { width: h * 4.75, height: h } } as any)]
+      return [sep, new ImageRun({ data: cobrandPng, type: imageType(cobrandPng), transformation: { width: h * 4.75, height: h } } as any)]
     }
     return [sep, new TextRun({ text: cobrandName.toUpperCase(), bold: true, size, color: NAVY, font: 'JetBrains Mono' })]
   }
 
   const brandRun = (size: number) => (logotypePng
     ? [
-        new ImageRun({ data: logotypePng, transformation: { width: (size / 1.3) * LOGOTYPE_RATIO, height: size / 1.3 } } as any),
+        new ImageRun({ data: logotypePng, type: 'png', transformation: { width: (size / 1.3) * LOGOTYPE_RATIO, height: size / 1.3 } } as any),
         ...cobrandRun(size),
       ]
     : [
         new TextRun({ text: 'ALGORITMO', bold: true, size, color: NAVY, font: 'JetBrains Mono' }),
         ...(markPng
-          ? [new ImageRun({ data: markPng, transformation: { width: size / 1.6, height: size / 1.6 } } as any)]
+          ? [new ImageRun({ data: markPng, type: 'png', transformation: { width: size / 1.6, height: size / 1.6 } } as any)]
           : [new TextRun({ text: '  T', bold: true, size, color: GOLD, font: 'JetBrains Mono' })]),
         ...cobrandRun(size),
       ])
