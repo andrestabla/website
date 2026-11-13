@@ -239,13 +239,7 @@ function GlobalBrandLoader() {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center" style={{ backgroundColor: 'var(--cms-loader-bg)' }}>
       <div className="flex flex-col items-center gap-6 px-6 text-center">
-        {state.design.loaderLogoUrl ? (
-          <img src={state.design.loaderLogoUrl} alt={state.design.logoAlt || state.site.name} className="h-16 w-auto object-contain" />
-        ) : (
-          <div className="text-3xl font-black tracking-tighter" style={{ color: 'var(--cms-loader-text)' }}>
-            ALGORITMO<span style={{ color: 'var(--cms-loader-accent)' }}>T</span>
-          </div>
-        )}
+        <img src={state.design.loaderLogoUrl} alt={state.design.logoAlt || state.site.name} className="h-16 w-auto object-contain" />
         <div className="w-64 h-1.5 bg-white/10 overflow-hidden">
           <div className="h-full w-1/2 animate-[loaderPulse_900ms_ease-in-out_infinite]" style={{ backgroundColor: 'var(--cms-loader-accent)' }} />
         </div>

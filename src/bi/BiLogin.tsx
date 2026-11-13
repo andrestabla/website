@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { BRAND_MARK } from '../lib/seo'
 import { biStartLogin, biVerifyLoginCode, biRequestPasswordReset } from './lib/session'
 
 export function BiLogin({ onSuccess }: { onSuccess: () => void }) {
@@ -75,7 +76,7 @@ export function BiLogin({ onSuccess }: { onSuccess: () => void }) {
         <div className="absolute inset-0 bg-indigo-950/20" />
 
         <div className="relative z-10 flex flex-1 flex-col justify-between">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-white/15 text-2xl font-black backdrop-blur">◧</div>
+          <img src={BRAND_MARK} alt="Algoritmo T" className="h-12 w-12" />
           <div>
             <h1 className="max-w-[15ch] text-4xl font-black leading-tight tracking-tight">
               Algoritmo <span className="text-indigo-200">BI</span>
@@ -111,7 +112,7 @@ export function BiLogin({ onSuccess }: { onSuccess: () => void }) {
       <section className="flex items-center justify-center p-8">
         <div className="w-full max-w-sm">
           <div className="mb-6 flex items-center gap-2.5">
-            <div className="grid h-9 w-9 place-items-center rounded-lg bg-slate-900 text-white">◧</div>
+            <img src={BRAND_MARK} alt="Algoritmo T" className="h-9 w-9 shrink-0" />
             <div className="text-sm font-black tracking-tight">
               ALGORITMO<span className="text-indigo-600">BI</span>
             </div>

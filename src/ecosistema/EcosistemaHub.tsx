@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { LayoutGrid, Gauge, Mail, Calendar, FolderOpen, BarChart2, ShieldCheck, ArrowRight, GraduationCap, ClipboardList, ExternalLink, FileSignature, Bot, KeyRound, Lock } from 'lucide-react'
+import { BRAND_MARK } from '../lib/seo'
 import { canAccessModule, hasAdminBridge, type AdminModuleKey } from '../admin/lib/permissions'
 import { ecoLogout, type EcoUser } from './lib/session'
 
@@ -98,7 +99,7 @@ export function EcosistemaHub({ user, onLogout }: { user: EcoUser; onLogout: () 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
-        <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-indigo-600 to-sky-500 text-white"><LayoutGrid size={16} /></div>
+        <img src={BRAND_MARK} alt="Algoritmo T" className="h-8 w-8 shrink-0" />
         <div className="leading-tight">
           <div className="text-sm font-black tracking-tight">Ecosistema digital <span className="text-indigo-600">Algoritmo T</span></div>
         </div>

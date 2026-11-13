@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
+import { BRAND_LOGO_ON_DARK } from '../../lib/seo'
 import {
     Activity,
     ArrowRight,
@@ -576,9 +577,7 @@ function NavigationSelectorBlock({ block }: { block: SitePageBlock }) {
                 href="https://www.algoritmot.com/"
                 className="absolute top-6 lg:top-8 left-1/2 -translate-x-1/2 z-20 cursor-pointer"
             >
-                <div className="text-xl lg:text-2xl font-black tracking-tighter text-white drop-shadow-lg uppercase hover:scale-105 transition-transform">
-                    {logoText || 'ALGORITMOT'}
-                </div>
+                <img src={BRAND_LOGO_ON_DARK} alt={logoText || 'Algoritmo T'} className="h-8 lg:h-10 w-auto max-w-none drop-shadow-lg hover:scale-105 transition-transform" />
             </a>
         </div>
     )

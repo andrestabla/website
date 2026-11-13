@@ -3,6 +3,7 @@
  * Vive en /ecosistema/cotizador, con la estética del Ecosistema (slate/indigo).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { BRAND_MARK } from '../lib/seo'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, Plus, FileText, Eye, Copy, BookOpen, Trash2, UploadCloud, X, Loader2, CheckCircle2, CopyPlus,
@@ -425,6 +426,7 @@ export function CotizadorList() {
           <ArrowLeft size={16} /> <span className="hidden sm:inline">Ecosistema</span>
         </Link>
         <div className="h-5 w-px bg-slate-200" />
+        <img src={BRAND_MARK} alt="Algoritmo T" className="h-7 w-7 shrink-0" />
         <div className="truncate text-sm font-black tracking-tight">Cotizador <span className="text-indigo-600">Algoritmo T</span></div>
         <div className="flex-1" />
         <button
