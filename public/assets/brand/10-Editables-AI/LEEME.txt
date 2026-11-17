@@ -1,0 +1,24 @@
+Logotipos editables de Algoritmo T en .ai · 17/11/2026
+
+Qué hay
+  algoritmot-logos-maestro.ai        Todas las variantes rotuladas en una mesa A3, con los colores de marca.
+  algoritmot-logo-con-eslogan-*.ai   Logotipo con eslogan: color (fondo claro y oscuro) y una tinta (azul, blanco, negro).
+  algoritmot-logo-sin-eslogan-*.ai   Lo mismo, sin eslogan.
+  algoritmot-simbolo-*.ai            El símbolo solo: color y una tinta.
+
+Cómo están hechos
+  Son .ai compatibles con PDF: Illustrator los abre de forma nativa y todo es vectorial y editable
+  (trazados, rellenos y colores). No llevan imágenes incrustadas.
+  El nombre y el eslogan están convertidos a trazados, así que no hace falta tener las fuentes
+  (JetBrains Mono Bold e Inter Medium); por lo mismo, el texto no se puede reescribir.
+  La mesa de trabajo es el logo más un margen del 12 % de su ancho.
+  Las variantes en blanco y las de fondo oscuro tienen fondo transparente: sobre la mesa blanca
+  no se ven hasta ponerles un fondo.
+
+Límites
+  No se generaron desde Illustrator, así que no traen capas con nombre, muestras de color guardadas
+  ni perfil CMYK: los colores están en RGB. Para imprenta, convertir a CMYK o a tintas planas
+  desde Illustrator y guardar de nuevo.
+
+Colores
+  Azul #1A2D5A · Dorado #F1BA5B · Dorado sombra #E9A52F · Cian #4FD0EC · Gris texto #3B424B

@@ -1,0 +1,6 @@
+PLANTILLA DE PRESENTACIÓN · ALGORITMO T
+
+Cinco láminas base en 16:9: portada, sección, contenido, cifra y cierre. Duplica la que necesites.
+Se abre en PowerPoint, Keynote y Google Slides (Archivo > Importar diapositivas).
+Tipografías: Space Grotesk (títulos), Inter (texto) y JetBrains Mono (rótulos). Son gratuitas en Google Fonts;
+instálalas para que la plantilla se vea como se diseñó. En Google Slides ya están disponibles.

@@ -1,0 +1,13 @@
+Videos de presentación de Algoritmo T · 17/11/2026
+1920 x 1080, 25 fps, H.264 + AAC, -16 LUFS. Subtítulos incrustados y también en .vtt.
+
+algoritmot-presentacion-empresas.mp4    1:03 · voz: Nilton (ElevenLabs)
+algoritmot-presentacion-educacion.mp4   1:14 · voz: Lina (ElevenLabs)
+
+cortinilla-cierre-empresas.mp4 / -educacion.mp4   cierre animado suelto (6 s, sin audio), para otros videos.
+Se genera con cierre.py: la T entra primero y la palabra se arma a su alrededor; cambia solo la frase.
+
+Música: cama instrumental generada (ElevenLabs Music vía Magnific).
+Metraje: banco Magnific/Freepik, ver LICENCIAS-metraje.txt.
+Fuentes de trabajo (clips, audio por escena, montar.py): disco externo,
+/Volumes/EAlgoritmoT/Temporales/algoritmot-videos/

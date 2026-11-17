@@ -8,6 +8,9 @@ CARPETAS
 04-Favicon                Iconos para la pestaña del navegador y accesos directos.
 05-Animado                Logo animado: con eslogan, sin eslogan y solo símbolo (ver ANIMADOS).
 06-Redes                  Foto de perfil cuadrada y portada 1200 x 630.
+07-Merchandising-digital  Fondos de videollamada, LinkedIn, publicaciones, fondo móvil, firma, emojis y plantilla.
+08-Merchandising-fisico   Nueve fotografías de producto con el logo aplicado, como referencia para proveedores.
+00-Manual-de-marca        Manual de marca (abrir index.html en el navegador).
 
 VERSIONES DE COLOR
 color-fondo-oscuro   Letras blancas, símbolo a color. Para fondos oscuros (azul de marca).
@@ -46,3 +49,7 @@ USO
 - Deja alrededor del logo un margen libre de al menos la altura de una letra del nombre.
 - Por debajo de 24 px usa solo el símbolo; la cabeza de la T deja de distinguirse en tamaños menores.
 - No cambies los colores, no deformes el logo ni separes el eslogan a otro ancho.
+
+09-Videos-de-presentacion    Videos de presentación de Empresas y Educación, y las cortinillas de cierre.
+10-Editables-AI              Logotipos en .ai editables: cada variante por separado y un archivo maestro.
+11-Pendones-avisos-POP       Pendones, backing, avisos, señalética, afiche, volante, hablador y mostrador en PDF a tamaño real.

@@ -1,0 +1,10 @@
+FIRMA DE CORREO · ALGORITMO T
+
+1. Abre firma-de-correo.html en un editor de texto y cambia «Nombre Apellido», «Cargo» y el teléfono.
+2. Abre el archivo en el navegador, selecciona toda la firma (Cmd/Ctrl + A) y cópiala.
+3. Pégala en la configuración de firma de tu correo:
+   - Gmail: Configuración > Ver toda la configuración > General > Firma.
+   - Outlook: Configuración > Correo > Redactar y responder > Firma de correo.
+   - Apple Mail: Ajustes > Firmas (desmarca «Usar siempre mi tipo de letra predeterminado»).
+
+El símbolo se carga desde algoritmot.com, así que no hay que adjuntar imágenes.

@@ -1,0 +1,949 @@
+<title>Manual de marca Algoritmo T</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Libro de marca: portada y contraportada en azul; en medio, índice lateral fijo y capítulos sobre papel. */
+:root {
+  --paper: #f7f4ee; --card: #fffdf8; --ink: #1a2d5a; --text: #26324c; --muted: #5a6479; --line: #e3dccc;
+  --gold-ink: #94620c; --cyan-ink: #0b7a96; --desk: #ece6d9; --side: #fbf9f4; --ok: #1f7a4d; --no: #b4380b;
+  --f-display: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --navy: #1a2d5a; --gold: #F1BA5B; --cyan: #4fd0ec;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #0f1a33; --card: #152446; --ink: #f2efe7; --text: #d7deeb; --muted: #9aa8c3; --line: #263864;
+  --gold-ink: #F1BA5B; --cyan-ink: #4fd0ec; --desk: #13213f; --side: #0c152b; --ok: #5fd39a; --no: #ff9a6b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #0f1a33; --card: #152446; --ink: #f2efe7; --text: #d7deeb; --muted: #9aa8c3; --line: #263864;
+  --gold-ink: #F1BA5B; --cyan-ink: #4fd0ec; --desk: #13213f; --side: #0c152b; --ok: #5fd39a; --no: #ff9a6b; color-scheme: dark }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--paper); color: var(--text); font: 400 16px/1.6 var(--f-body); margin: 0; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4 { font-family: var(--f-display); color: var(--ink); text-wrap: balance; margin: 0; line-height: 1.12; }
+h2 { font-size: clamp(30px, 4vw, 44px); letter-spacing: -0.02em; }
+h3 { font-size: 21px; letter-spacing: -0.01em; }
+h4 { font-size: 16.5px; }
+p { margin: 0; max-width: 66ch; }
+.mono { font-family: var(--f-mono); }
+svg { max-width: 100%; height: auto; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.label { font: 700 11px/1.3 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold-ink); }
+
+/* ---------- portada y contraportada: páginas completas, no cabeceras ---------- */
+.cover, .back { background: var(--navy); color: #fff; position: relative; overflow: hidden; height: 100vh; height: 100svh; min-height: 640px; display: flex; }
+.cover::after, .back::after { content: ""; position: absolute; inset: 22px; border: 1px solid rgba(255,255,255,.22); pointer-events: none; }
+.bin-bg { position: absolute; inset: 0; font: 500 13px/2.1 var(--f-mono); color: var(--cyan); opacity: .09; word-break: break-all; letter-spacing: .14em; padding: 10px; pointer-events: none; user-select: none; overflow: hidden; }
+.cover-in, .back-in { position: relative; z-index: 1; flex: 1; display: grid; grid-template-rows: auto 1fr auto; gap: 24px; padding-block: 56px; max-width: 1100px; margin: 0 auto; width: 100%; padding-left: max(48px, env(safe-area-inset-left, 0px)); padding-right: max(48px, env(safe-area-inset-right, 0px)); }
+.cover-top, .cover-bot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; font: 500 12px/1.4 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: #9eb0ce; }
+.cover-top b, .cover-bot b { color: var(--gold); font-weight: 700; }
+.cover-mid { display: grid; align-content: center; justify-items: center; text-align: center; gap: 30px; }
+.cover-mark { width: clamp(96px, 16vh, 168px); }
+.cover-logo { width: min(100%, 640px); }
+.cover-rule { width: 64px; height: 3px; background: var(--gold); }
+.cover-title { font: 700 clamp(34px, 6.2vh, 64px)/1 var(--f-display); letter-spacing: -0.02em; color: #fff; }
+.cover-sub { font: 500 clamp(15px, 2.2vh, 19px)/1.4 var(--f-body); color: #c9d3ea; max-width: 44ch; }
+.cover-cta { display: inline-flex; align-items: center; gap: 10px; color: var(--gold); font: 700 12px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; text-decoration: none; padding: 6px 0; border-bottom: 1px solid currentColor; }
+.cover-cta:hover { color: #fff; }
+.back-mid { display: grid; align-content: center; justify-items: center; text-align: center; gap: 30px; }
+.back-mid p { font: 500 clamp(22px, 4vh, 36px)/1.25 var(--f-display); color: #fff; max-width: 22ch; }
+.back-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 18px 24px; border-top: 1px solid rgba(255,255,255,.18); padding-top: 22px; font-size: 13.5px; color: #c9d3ea; }
+.back-grid b { display: block; font: 700 11px/1.4 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.back-grid span { display: block; }
+@media (max-width: 640px) { .cover::after, .back::after { inset: 12px; } .cover-in, .back-in { padding-block: 40px; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); } .back { height: auto; min-height: 100svh; } }
+
+/* ---------- estructura con menú lateral ---------- */
+.shell { display: grid; grid-template-columns: 272px minmax(0, 1fr); align-items: start; }
+.side { position: sticky; top: env(safe-area-inset-top, 0px); height: 100vh; overflow-y: auto; background: var(--side); border-right: 1px solid var(--line); padding: 22px 14px 28px 18px; display: flex; flex-direction: column; gap: 18px; }
+.side-brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 14px; border-bottom: 1px solid var(--line); }
+.side-brand span { font: 700 11px/1.3 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.side-group { display: grid; gap: 2px; }
+.side-group > span { font: 700 10.5px/1 var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); padding: 8px 8px 6px; }
+.side a { display: grid; grid-template-columns: 26px minmax(0,1fr); align-items: baseline; text-decoration: none; color: var(--text); font-size: 14.5px; padding: 7px 8px; border-radius: 6px; border-left: 2px solid transparent; }
+.side a i { font: 500 11px/1 var(--f-mono); font-style: normal; color: var(--muted); }
+.side a:hover { background: var(--desk); }
+.side a.on { background: var(--desk); border-left-color: var(--gold); color: var(--ink); font-weight: 600; }
+.side a.on i { color: var(--gold-ink); }
+.side-prog { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid var(--line); font: 500 11px/1.4 var(--f-mono); color: var(--muted); display: grid; gap: 8px; }
+.side-prog div { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.side-prog div i { display: block; height: 100%; width: 0; background: var(--gold); }
+.topbar { display: none; }
+.content { min-width: 0; }
+.wrap { max-width: 980px; margin: 0 auto; }
+@media (max-width: 900px) {
+  .shell { grid-template-columns: 1fr; }
+  .topbar { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--side); border-bottom: 1px solid var(--line); align-items: center; gap: 12px; padding-block: 10px; }
+  .topbar button { border: 1px solid var(--line); background: var(--card); border-radius: 8px; padding: 8px 12px; font: 700 12px/1 var(--f-mono); letter-spacing: .08em; }
+  .topbar span { font: 500 12px/1.2 var(--f-mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .side { position: fixed; z-index: 40; top: 0; left: 0; bottom: 0; width: min(300px, 86vw); height: auto; transform: translateX(-102%); transition: transform .22s ease; padding-top: calc(22px + env(safe-area-inset-top, 0px)); padding-left: max(18px, env(safe-area-inset-left, 0px)); }
+  .side.open { transform: none; box-shadow: 0 0 0 100vmax rgba(8,14,30,.5); }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .side { transition: none; } }
+
+/* ---------- capítulos ---------- */
+section.ch { padding-block: 84px 28px; scroll-margin-top: 60px; border-top: 1px solid var(--line); }
+section.ch:first-child { border-top: 0; }
+.ch-head { display: grid; gap: 14px; margin-bottom: 40px; }
+.ch-num { font: 700 13px/1 var(--f-mono); letter-spacing: .14em; color: var(--gold-ink); }
+.ch-head p { color: var(--muted); font-size: 17px; }
+.sub { margin-top: 54px; display: grid; gap: 18px; }
+.sub + .frames { margin-top: 18px; }
+.sub > p { color: var(--muted); }
+.grid { display: grid; gap: 16px; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.g4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
+.note { font-size: 13px; color: var(--muted); }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+
+/* controles */
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; background: var(--desk); padding: 4px; border-radius: 10px; }
+.seg button { border: 0; background: transparent; padding: 8px 13px; border-radius: 7px; font: 600 13px/1 var(--f-body); color: var(--muted); }
+.seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(10,20,45,.14); }
+.ctl { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: center; }
+.ctl > span { font: 700 11px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+input[type="range"] { accent-color: #c98a1e; width: min(260px, 100%); }
+input[type="text"] { font: 500 15px/1.3 var(--f-body); padding: 11px 13px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); width: min(420px, 100%); }
+
+/* esencia */
+.thesis { font: 500 clamp(24px, 3vw, 33px)/1.25 var(--f-display); color: var(--ink); max-width: 30ch; letter-spacing: -0.01em; }
+.thesis em { font-style: normal; color: var(--gold-ink); }
+.trait { border-top: 2px solid var(--ink); padding-top: 14px; display: grid; gap: 8px; align-content: start; }
+.trait p { font-size: 15px; color: var(--muted); }
+.voice { overflow: hidden; }
+.voice-row { display: grid; grid-template-columns: 140px minmax(0,1fr) minmax(0,1fr); border-top: 1px solid var(--line); }
+.voice-row:first-child { border-top: 0; }
+.voice-row > div { padding: 14px 16px; font-size: 15px; }
+.voice-row .k { font: 700 12px/1.4 var(--f-mono); color: var(--ink); }
+.voice-row .no { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--no); }
+.voice-hd > div { font: 700 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); background: var(--desk); padding-block: 12px; }
+@media (max-width: 640px) { .voice-row { grid-template-columns: 1fr; } .voice-row > div { padding-block: 8px; } .voice-hd { display: none; } }
+
+/* explorador de logo */
+.xp { display: grid; gap: 0; overflow: hidden; }
+.xp-ctl { padding: 16px; display: grid; gap: 12px; border-bottom: 1px solid var(--line); }
+.xp-stage { min-height: 300px; display: flex; align-items: center; justify-content: center; padding: 44px 28px; transition: background .2s; position: relative; }
+.xp-stage svg { max-width: 100%; height: auto; }
+.xp-stage.guides svg { outline: 1px dashed #c98a1e; outline-offset: var(--clear, 30px); }
+.xp-info { padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; border-top: 1px solid var(--line); font-size: 14px; }
+.xp-info code { font: 500 12.5px/1.4 var(--f-mono); color: var(--cyan-ink); overflow-wrap: anywhere; }
+.pill { font: 700 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 6px 9px; border-radius: 999px; }
+.pill.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.pill.no { background: color-mix(in srgb, var(--no) 16%, transparent); color: var(--no); }
+.build { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 24px; overflow-x: auto; }
+.build svg { display: block; min-width: 560px; max-width: none; width: 100%; height: auto; }
+.build text { font: 500 12px var(--f-mono); fill: #94620c; }
+.rules { display: grid; gap: 12px; }
+.rule { display: grid; grid-template-columns: 30px minmax(0,1fr); gap: 12px; }
+.rule b { font: 700 13px/1.6 var(--f-mono); color: var(--gold-ink); }
+.rule p { font-size: 15px; }
+.sizer { padding: 18px; display: grid; gap: 16px; }
+.sizer-stage { background: #fff; border: 1px solid #e3dccc; border-radius: 6px; height: 150px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.mis { margin: 0; }
+.mis-box { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 8px; height: 140px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.mis-x { position: absolute; top: 8px; right: 10px; font: 700 22px/1 var(--f-mono); color: #c2410c; }
+.mis figcaption { margin-top: 8px; font-size: 14px; color: var(--muted); }
+.mis-split { display: flex; align-items: center; gap: 24px; color: #1a2d5a; font-weight: 700; letter-spacing: .18em; }
+.mis-low { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: repeating-linear-gradient(45deg, #1f3466 0 14px, #243b72 14px 28px); }
+
+/* símbolo */
+.anat { background: var(--navy); border-radius: 8px; padding: 28px; display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr); gap: 28px; align-items: center; color: #d4dcec; }
+.anat ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.anat li button { width: 100%; text-align: left; display: grid; grid-template-columns: 30px minmax(0,1fr); gap: 10px; font-size: 15px; background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 9px 10px; color: #d4dcec; }
+.anat li button:hover, .anat li button[aria-pressed="true"] { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.16); }
+.anat li button i { font: 700 12px/26px var(--f-mono); font-style: normal; text-align: center; width: 26px; height: 26px; border-radius: 50%; background: var(--gold); color: var(--navy); }
+.anat li b { color: #fff; }
+.anat-fig { position: relative; justify-self: center; }
+.anat-fig svg { display: block; }
+.anat-dot { position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; border: 2px solid #fff; background: rgba(79,208,236,.85); opacity: 0; transition: opacity .15s; }
+.anat-dot.on { opacity: 1; }
+@media (max-width: 640px) { .anat { grid-template-columns: 1fr; } }
+
+/* color */
+.sw { margin: 0; overflow: hidden; }
+.sw-chip { height: 112px; width: 100%; border: 0; display: flex; align-items: flex-end; justify-content: space-between; padding: 12px 14px; font: 700 14px/1 var(--f-mono); letter-spacing: .04em; }
+.sw-chip small { font: 700 10px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+.sw figcaption { padding: 14px; display: grid; gap: 8px; }
+.sw b { font-family: var(--f-display); color: var(--ink); font-size: 16px; }
+.sw dl { display: grid; grid-template-columns: 64px minmax(0,1fr); gap: 3px 8px; margin: 0; font: 500 12px/1.4 var(--f-mono); font-variant-numeric: tabular-nums; }
+.sw dt { color: var(--muted); } .sw dd { margin: 0; }
+.sw p { font-size: 13px; color: var(--muted); }
+.prop { display: flex; height: 52px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+.prop i { display: flex; align-items: center; padding-left: 12px; font: 700 12px/1 var(--f-mono); font-style: normal; }
+.pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 10px; }
+.pair { border-radius: 8px; padding: 14px; display: grid; gap: 6px; border: 1px solid var(--line); }
+.pair b { font: 700 18px/1.1 var(--f-display); }
+.pair span { font: 700 11px/1.3 var(--f-mono); letter-spacing: .06em; }
+
+/* tipografía y recursos */
+.type { padding: 22px; display: grid; gap: 12px; align-content: start; }
+.type .spec { font-size: var(--ts, 44px); line-height: 1.05; color: var(--ink); overflow-wrap: anywhere; min-height: 1.05em; }
+.type .row { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 500 12px/1.4 var(--f-mono); color: var(--muted); }
+.type p { font-size: 14.5px; }
+.scale { overflow: hidden; }
+.scale > div { display: grid; grid-template-columns: 150px minmax(0,1fr); gap: 16px; padding: 12px 16px; border-top: 1px solid var(--line); align-items: baseline; }
+.scale > div:first-child { border-top: 0; }
+.scale span { font: 500 12px/1.4 var(--f-mono); color: var(--muted); }
+.scale b { color: var(--ink); overflow-wrap: anywhere; }
+@media (max-width: 640px) { .scale > div { grid-template-columns: 1fr; gap: 2px; } }
+.bin-tool { padding: 18px; display: grid; gap: 14px; }
+.bin-out { background: var(--navy); border-radius: 8px; padding: 20px; font: 500 14px/2 var(--f-mono); color: var(--cyan); letter-spacing: .12em; word-break: break-all; min-height: 96px; }
+.bin-out b { color: var(--gold); font-weight: 700; }
+.gifplate { background: var(--navy); border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.gifplate img { width: 100%; max-width: 640px; height: auto; display: block; }
+.steps { counter-reset: s; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
+.steps div { border-top: 2px solid var(--ink); padding-top: 10px; font-size: 14px; color: var(--muted); }
+.steps div::before { counter-increment: s; content: counter(s, decimal-leading-zero); display: block; font: 700 12px/1.6 var(--f-mono); color: var(--gold-ink); }
+.steps b { display: block; color: var(--ink); font-family: var(--f-display); font-size: 15.5px; }
+
+/* pestañas */
+.tabs { display: grid; gap: 18px; }
+.tabpanel[hidden] { display: none; }
+.split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 760px) { .split { grid-template-columns: 1fr; } }
+.desk { background: var(--desk); border-radius: 8px; padding: 30px 20px; display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; align-items: center; min-height: 300px; }
+.specs { margin: 0; display: grid; gap: 0; }
+.specs div { display: grid; grid-template-columns: 124px minmax(0,1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+.specs div:first-child { border-top: 0; padding-top: 0; }
+.specs dt { font: 700 11px/1.7 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gold-ink); }
+.specs dd { margin: 0; }
+
+/* hojas y documentos */
+.pg { width: 200px; aspect-ratio: 210 / 297; background: #fff; color: #26324c; box-shadow: 0 16px 30px -18px rgba(10,20,45,.6); padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 9px; font-size: 6px; line-height: 1.5; position: relative; overflow: hidden; flex: none; }
+.pg.navy { background: #1a2d5a; color: #fff; }
+.pg.paper { background: #f7f4ee; }
+.pg .rh { display: flex; justify-content: space-between; align-items: center; font: 500 5.5px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: #5a6479; border-bottom: 1px solid #e3dccc; padding-bottom: 7px; }
+.pg.navy .rh { color: #9eb0ce; border-color: rgba(255,255,255,.25); }
+.pg .ft { margin-top: auto; display: flex; justify-content: space-between; align-items: center; font: 500 5.5px/1 var(--f-mono); color: #5a6479; border-top: 1px solid #e3dccc; padding-top: 6px; }
+.pg.navy .ft { color: #9eb0ce; border-color: rgba(255,255,255,.25); }
+.pg .k { font: 700 5.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: #94620c; }
+.pg.navy .k { color: #4fd0ec; }
+.pg .t { font: 700 15px/1.08 var(--f-display); letter-spacing: -.01em; color: #1a2d5a; }
+.pg.navy .t { color: #fff; }
+.pg .h { font: 700 10px/1.15 var(--f-display); color: #1a2d5a; }
+.pg .ln { display: grid; gap: 4px; }
+.pg .ln i { height: 3px; background: #e3ddd0; border-radius: 2px; }
+.pg .ln i:nth-child(3n) { width: 68%; }
+.pg.navy .ln i { background: rgba(255,255,255,.2); }
+.pg .tb { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 3px; }
+.pg .tb i { height: 7px; background: #f0ebdf; }
+.pg .tb i.hd { background: #1a2d5a; }
+.pg .gr { width: 22px; height: 2px; background: #F1BA5B; }
+.pg .sn { font: 700 9px/1 var(--f-mono); color: #94620c; }
+.pg .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font: 500 5px/1.4 var(--f-mono); color: #9eb0ce; border-top: 1px solid rgba(255,255,255,.25); padding-top: 7px; margin-top: auto; }
+.pg .meta b { display: block; color: #fff; font: 500 6px/1.3 var(--f-body); }
+.sld { width: 232px; aspect-ratio: 16 / 9; border-radius: 4px; box-shadow: 0 14px 26px -18px rgba(10,20,45,.6); padding: 14px; display: flex; flex-direction: column; gap: 5px; position: relative; overflow: hidden; flex: none; background: #1a2d5a; color: #fff; }
+.sld .k { font: 700 5.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: #4fd0ec; }
+.sld b { font: 700 13px/1.1 var(--f-display); }
+.sld .f { margin-top: auto; display: flex; justify-content: space-between; align-items: center; font: 500 5.5px/1 var(--f-mono); color: #9eb0ce; }
+.sld.gold { background: #F1BA5B; color: #1a2d5a; } .sld.gold .k { color: #1a2d5a; } .sld.gold .f { color: #1a2d5a; }
+.sld.paper { background: #f7f4ee; color: #1a2d5a; } .sld.paper .k { color: #94620c; } .sld.paper .f { color: #5a6479; }
+.sld .big { font: 700 34px/1 var(--f-display); color: #F1BA5B; }
+.bc { width: 270px; max-width: 100%; aspect-ratio: 85 / 55; border-radius: 6px; box-shadow: 0 14px 30px -18px rgba(10,20,45,.55); display: flex; flex: none; }
+.bc-front { background: #1a2d5a; align-items: center; justify-content: center; }
+.bc-back { background: #fffdf8; padding: 16px 18px; gap: 12px; position: relative; overflow: hidden; }
+.bc-txt { display: grid; gap: 2px; align-content: start; font-size: 10.5px; color: #3b424b; }
+.bc-txt b { font-family: var(--f-display); font-size: 14px; color: #1a2d5a; }
+.bc-txt .mono { font-size: 9.5px; color: #0b7a96; }
+.bc-bin { position: absolute; left: 18px; right: 18px; bottom: 11px; font: 500 6.5px/1 var(--f-mono); color: #c7bfae; white-space: nowrap; overflow: hidden; }
+.env { width: 270px; max-width: 100%; aspect-ratio: 220 / 110; background: #fffdf8; box-shadow: 0 14px 30px -18px rgba(10,20,45,.55); position: relative; flex: none; padding: 14px; }
+.env::after { content: ""; position: absolute; right: 14px; top: 14px; width: 26px; height: 32px; border: 1px dashed #c7bfae; }
+.env span { position: absolute; left: 14px; bottom: 12px; font: 500 6.5px/1.5 var(--f-mono); color: #5a6479; }
+
+/* video */
+.frames { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; }
+.fr { margin: 0; display: grid; gap: 8px; }
+.fr-scr { aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; position: relative; background: #1a2d5a; color: #fff; display: flex; flex-direction: column; justify-content: center; padding: 8%; gap: 6px; }
+.fr-scr img, .fr-scr video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.fr-scr > :not(img):not(video) { position: relative; z-index: 1; }
+.fr-scr.shade::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(26,45,90,.45), rgba(26,45,90,.86)); }
+.fr-scr.real { padding: 0; justify-content: flex-end; }
+.fr-scr.real .tx { padding: 0 8% 8%; display: grid; gap: 6px; }
+.fr-scr .k { font: 700 8px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: #4fd0ec; }
+.fr-scr b { font: 700 19px/1.08 var(--f-display); }
+.fr-scr.talk { background: linear-gradient(160deg, #6f7f93, #3d4a5e 70%); padding: 0; justify-content: flex-end; }
+.fr-scr.talk::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 34%; aspect-ratio: 1 / 1.1; transform: translateX(-50%); background: radial-gradient(circle at 50% 26%, #d9c3ae 0 22%, transparent 23%), radial-gradient(ellipse at 50% 100%, #26324c 0 62%, transparent 63%); }
+.l3 { position: relative; margin: 0 0 7% 6%; display: inline-flex; align-items: center; gap: 8px; background: rgba(26,45,90,.92); padding: 7px 12px 7px 8px; border-radius: 4px; align-self: flex-start; border-left: 3px solid #F1BA5B; }
+.l3 b { font: 700 11px/1.1 var(--f-display); display: block; }
+.l3 span { font: 500 7.5px/1.2 var(--f-mono); color: #c9d3ea; }
+.fr-scr.gold { background: #F1BA5B; color: #1a2d5a; } .fr-scr.gold .k { color: #1a2d5a; }
+.fr-scr .big { font: 700 44px/1 var(--f-display); }
+.fr-scr .cc { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); background: rgba(26,45,90,.85); color: #fff; font: 500 9px/1.3 var(--f-body); padding: 4px 8px; border-radius: 3px; width: max-content; max-width: 86%; text-align: center; }
+.fr figcaption { font-size: 13.5px; color: var(--muted); }
+.fr figcaption b { color: var(--ink); font-family: var(--f-display); font-size: 15px; display: block; }
+.safe { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-end; justify-content: center; }
+.safe figure { margin: 0; display: grid; gap: 8px; justify-items: center; font: 500 12px/1.3 var(--f-mono); color: var(--muted); }
+.safe-box { background: #1a2d5a; position: relative; border-radius: 4px; }
+.safe-box i { position: absolute; border: 1px dashed #F1BA5B; }
+.safe-box em { position: absolute; background: rgba(79,208,236,.22); }
+
+/* redes */
+.soc { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; justify-content: center; }
+.li-desk { flex-direction: column; align-items: center; gap: 26px; }
+.li-page { position: relative; margin: 0; width: min(100%, 760px); background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 14px 28px -18px rgba(10,20,45,.6); }
+.soc .li-page img { border-radius: 0; box-shadow: none; }
+.soc .li-page .li-cover { width: 100%; }
+.soc .li-page .li-logo { position: absolute; left: 3.2%; top: 0; width: 15%; margin-top: 7.5%; border: 3px solid #fff; border-radius: 6px; background: #fff; }
+.soc .li-page .li-logo.round { border-radius: 50%; margin-top: 14%; }
+.li-page figcaption { padding: 9.5% 3.2% 14px; display: grid; gap: 2px; font-size: 13px; color: #5a6479; text-align: left; }
+.li-page figcaption b { font-size: 16px; color: #14213d; }
+.soc img { display: block; border-radius: 6px; box-shadow: 0 14px 28px -18px rgba(10,20,45,.6); max-width: 100%; height: auto; }
+.anatomy { position: relative; width: min(100%, 360px); }
+.anatomy img { width: 100%; height: auto; display: block; border-radius: 6px; }
+.anatomy span { position: absolute; font: 700 10px/1 var(--f-mono); background: #F1BA5B; color: #1a2d5a; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 2px #1a2d5a; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 700 11px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; padding: 8px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.dd { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; }
+.dd ul { margin: 0; padding: 16px 18px 16px 34px; display: grid; gap: 7px; font-size: 14.5px; }
+.dd .panel > b { display: block; padding: 12px 18px; border-bottom: 1px solid var(--line); font: 700 11px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; }
+.dd .si > b { color: var(--ok); } .dd .nn > b { color: var(--no); }
+
+/* merchandising */
+.merch-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); }
+.merch { overflow: hidden; display: flex; flex-direction: column; text-align: left; padding: 0; color: inherit; }
+button.merch { cursor: zoom-in; }
+.merch-img { background: var(--desk); aspect-ratio: 4 / 3; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.merch-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .3s; }
+button.merch:hover .merch-img img { transform: scale(1.04); }
+.merch-img.fit img { object-fit: contain; padding: 14px; }
+.merch-img.tall img { object-fit: contain; }
+.merch-txt { padding: 16px; display: grid; gap: 8px; }
+.merch-txt p { font-size: 14.5px; color: var(--muted); }
+.merch-txt .tag { font: 700 10.5px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--gold-ink); }
+dialog { border: 0; padding: 0; border-radius: 12px; background: var(--card); color: var(--text); width: min(940px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; }
+dialog::backdrop { background: rgba(8,14,30,.72); }
+.dlg { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.dlg img { width: 100%; height: 100%; object-fit: cover; display: block; min-height: 260px; background: var(--desk); }
+.dlg-txt { padding: 26px; display: grid; gap: 14px; align-content: start; }
+.dlg-close { justify-self: end; border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 8px 12px; font: 700 11px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
+@media (max-width: 720px) { .dlg { grid-template-columns: 1fr; } }
+.emo-row { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+.emo-row figure { margin: 0; display: grid; gap: 6px; justify-items: center; font: 500 10.5px/1.2 var(--f-mono); color: var(--muted); }
+.emo-row img { width: 56px; height: 56px; }
+
+/* gran formato y editables */
+.hero-fig { margin: 0; display: grid; gap: 10px; }
+.hero-fig img { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--line); }
+.hero-fig figcaption { font-size: 13.5px; color: var(--muted); }
+.sheet { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.sheet img { width: 100%; height: auto; display: block; }
+.fr-scr.play { padding: 0; background: #0f1a33; }
+
+/* archivos */
+.files { overflow: hidden; }
+.files > div { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 16px; padding: 13px 18px; border-top: 1px solid var(--line); font-size: 15px; }
+.files > div:first-child { border-top: 0; }
+.files .mono { color: var(--ink); font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 640px) { .files > div { grid-template-columns: 1fr; gap: 3px; } }
+.toast { position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--navy); color: #fff; font: 700 12px/1 var(--f-mono); letter-spacing: .06em; padding: 12px 16px; border-radius: 999px; z-index: 60; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">{{SYMBOLS}}</svg>
+
+<!-- ============ PORTADA (página completa) ============ -->
+<section class="cover" id="portada" aria-label="Portada">
+  <div class="bin-bg" aria-hidden="true">{{BIN8}}{{BIN8}}</div>
+  <div class="cover-in">
+    <div class="cover-top"><span><b>Manual de marca</b></span><span>Versión 2.1</span></div>
+    <div class="cover-mid">
+      <div class="cover-mark">{{u:mk:168}}</div>
+      <div class="cover-logo">{{u:lts:640:--l:#ffffff;--s:#c9d3ea}}</div>
+      <div class="cover-rule"></div>
+      <h1 class="cover-title">Manual de marca</h1>
+      <p class="cover-sub">Identidad, aplicaciones, merchandising y gran formato de una marca que pone a las personas en el centro del código.</p>
+    </div>
+    <div class="cover-bot"><span>Bogotá · Colombia · Noviembre 2026</span><a class="cover-cta" href="#esencia">Abrir el manual <span aria-hidden="true">↓</span></a></div>
+  </div>
+</section>
+
+<!-- ============ CUERPO CON MENÚ LATERAL ============ -->
+<div class="shell">
+  <nav class="side" id="side" aria-label="Contenido del manual">
+    <div class="side-brand">{{u:mk:30}}<span>Manual<br>de marca</span></div>
+    <div class="side-group"><span>Fundamentos</span>
+      <a href="#esencia"><i>01</i>Esencia y voz</a></div>
+    <div class="side-group"><span>Identidad</span>
+      <a href="#logotipo"><i>02</i>Logotipo</a><a href="#simbolo"><i>03</i>Símbolo</a><a href="#color"><i>04</i>Color</a><a href="#tipografia"><i>05</i>Tipografía</a><a href="#recursos"><i>06</i>Código y movimiento</a></div>
+    <div class="side-group"><span>Aplicaciones</span>
+      <a href="#papeleria"><i>07</i>Papelería y membretes</a><a href="#documentos"><i>08</i>Documentos</a><a href="#redes"><i>09</i>Redes sociales</a><a href="#video"><i>10</i>Video</a></div>
+    <div class="side-group"><span>Merchandising</span>
+      <a href="#merch-fisico"><i>11</i>Físico</a><a href="#merch-digital"><i>12</i>Digital</a></div>
+    <div class="side-group"><span>Espacios y eventos</span>
+      <a href="#pop"><i>13</i>Pendones, avisos y POP</a></div>
+    <div class="side-group"><span>Entrega</span>
+      <a href="#archivos"><i>14</i>Archivos</a></div>
+    <div class="side-prog"><span id="prog-txt">Capítulo 01 de 14</span><div><i id="prog-bar"></i></div></div>
+  </nav>
+
+  <div class="content">
+    <div class="topbar gut"><button type="button" id="menu-btn" aria-controls="side" aria-expanded="false">Menú</button><span id="top-txt">01 · Esencia y voz</span></div>
+    <main class="gut"><div class="wrap">
+
+<section class="ch" id="esencia" data-t="Esencia y voz">
+  <div class="ch-head"><div class="ch-num">01 · FUNDAMENTOS</div><h2>Esencia y voz</h2><p>Qué es Algoritmo T, cómo suena y por qué su símbolo es una persona dentro de la palabra.</p></div>
+  <p class="thesis">La tecnología solo transforma cuando las personas la adoptan. Por eso la T de Algoritmo es <em>una persona con los brazos abiertos</em>, en medio del código.</p>
+  <div class="sub"><span class="label">Promesa</span><h3>Soluciones digitales con sentido humano</h3><p>El eslogan acompaña al logotipo en piezas institucionales y siempre mide lo mismo que el nombre. Resume el método: diagnóstico, procesos, decisión humano‑tecnología, desarrollo, implementación y mejora continua, con la adopción de las personas como medida del éxito.</p></div>
+  <div class="sub"><span class="label">Personalidad</span>
+    <div class="grid g4">
+      <div class="trait"><h4>Humana</h4><p>Habla de personas antes que de herramientas. Explica sin jerga y reconoce el esfuerzo del cambio.</p></div>
+      <div class="trait"><h4>Rigurosa</h4><p>Se apoya en método y estándares (BPMN, NIST AI RMF, Quality Matters). Mide antes de proponer.</p></div>
+      <div class="trait"><h4>Clara</h4><p>Frases cortas, cifras concretas y una sola idea por mensaje.</p></div>
+      <div class="trait"><h4>Cercana</h4><p>Trata de tú en redes y de usted en propuestas formales, con calidez en ambos casos.</p></div>
+    </div>
+  </div>
+  <div class="sub"><span class="label">Voz</span>
+    <div class="panel voice">
+      <div class="voice-row voice-hd"><div></div><div>Así sí</div><div>Así no</div></div>
+      <div class="voice-row"><div class="k">Beneficio</div><div>Tu equipo aprueba compras en 3 horas, no en 14 días.</div><div class="no">Optimizamos procesos con soluciones disruptivas de clase mundial.</div></div>
+      <div class="voice-row"><div class="k">Tecnología</div><div>Usamos IA donde ahorra tiempo y dejamos a las personas donde aportan criterio.</div><div class="no">La IA reemplazará los procesos manuales de tu empresa.</div></div>
+      <div class="voice-row"><div class="k">Invitación</div><div>Empecemos con un diagnóstico de madurez digital.</div><div class="no">¡No te quedes atrás! Agenda YA tu transformación.</div></div>
+      <div class="voice-row"><div class="k">Nombre</div><div>Algoritmo T (dos palabras, la T en mayúscula).</div><div class="no">AlgoritmoT, ALGORITMOT, Algoritmo-T.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ch" id="logotipo" data-t="Logotipo">
+  <div class="ch-head"><div class="ch-num">02 · IDENTIDAD</div><h2>Logotipo</h2><p>El nombre en JetBrains Mono Bold con el símbolo en el lugar de la T. Es una sola pieza: no se reconstruye con texto.</p></div>
+  <div class="panel xp" id="xp">
+    <div class="xp-ctl">
+      <div class="ctl"><span>Versión</span><div class="seg" data-k="v"><button type="button" data-v="lts" aria-pressed="true">Con eslogan</button><button type="button" data-v="lt" aria-pressed="false">Sin eslogan</button><button type="button" data-v="mk" aria-pressed="false">Símbolo</button></div></div>
+      <div class="ctl"><span>Fondo</span><div class="seg" data-k="bg"><button type="button" data-v="papel" aria-pressed="true">Papel</button><button type="button" data-v="blanco" aria-pressed="false">Blanco</button><button type="button" data-v="azul" aria-pressed="false">Azul</button><button type="button" data-v="negro" aria-pressed="false">Negro</button><button type="button" data-v="dorado" aria-pressed="false">Dorado</button><button type="button" data-v="cian" aria-pressed="false">Cian</button></div></div>
+      <div class="ctl"><span>Guías</span><div class="seg" data-k="g"><button type="button" data-v="0" aria-pressed="true">Ocultas</button><button type="button" data-v="1" aria-pressed="false">Área de protección</button></div></div>
+    </div>
+    <div class="xp-stage" id="xp-stage"></div>
+    <div class="xp-info"><span class="pill ok" id="xp-pill">Uso correcto</span><span id="xp-why"></span><code id="xp-file"></code></div>
+  </div>
+  <p class="note" style="margin-top:12px">Elige versión y fondo: el manual muestra la variante correcta, explica por qué y te dice qué archivo del kit usar.</p>
+
+  <div class="sub"><span class="label">Construcción</span>
+    <div class="build"><svg viewBox="0 0 900 330" role="img" aria-label="Construcción del logotipo: altura x de las letras, círculo de 1,64 x y eslogan con el mismo ancho que el nombre">
+      <use href="#lts" x="60" y="40" width="780" height="191.6"/>
+      <line x1="60" y1="20" x2="60" y2="300" stroke="#94620c" stroke-dasharray="4 4"/><line x1="840" y1="20" x2="840" y2="300" stroke="#94620c" stroke-dasharray="4 4"/>
+      <line x1="60" y1="292" x2="840" y2="292" stroke="#94620c"/><text x="450" y="315" text-anchor="middle">ancho del nombre = ancho del eslogan</text>
+      <line x1="40" y1="66" x2="40" y2="144" stroke="#94620c"/><text x="34" y="110" text-anchor="end">x</text>
+      <circle cx="614" cy="105" r="65" fill="none" stroke="#94620c" stroke-dasharray="3 4"/><text x="690" y="34">círculo = 1,64 x</text>
+    </svg></div>
+    <div class="rules">
+      <div class="rule"><b>x</b><p>La altura de las mayúsculas del nombre es la unidad de medida de todo el logotipo.</p></div>
+      <div class="rule"><b>T</b><p>El símbolo ocupa el lugar de la séptima letra y su círculo sobresale arriba y abajo de las letras.</p></div>
+      <div class="rule"><b>=</b><p>El eslogan va en Inter Medium, espaciado hasta empezar y terminar donde lo hace el nombre.</p></div>
+      <div class="rule"><b>□</b><p>Área de protección: una x libre por cada lado. Nada entra en ese margen.</p></div>
+    </div>
+  </div>
+
+  <div class="sub"><span class="label">Tamaño mínimo</span><p>Mueve el control: por debajo de 120 px de ancho el logotipo deja de leerse y se usa solo el símbolo.</p>
+    <div class="panel sizer">
+      <div class="ctl"><span>Ancho</span><input type="range" id="sz" min="16" max="420" value="240" aria-label="Ancho del logotipo en píxeles"><b class="mono" id="sz-v">240 px</b><span class="pill ok" id="sz-pill">Logotipo</span></div>
+      <div class="sizer-stage" id="sz-stage"></div>
+      <p class="note">Mínimos: logotipo 120 px en pantalla o 30 mm impreso; símbolo 24 px o 6 mm; favicon 16 px.</p>
+    </div>
+  </div>
+
+  <div class="sub"><span class="label">Usos incorrectos</span><div class="grid g3">{{MISUSE}}</div></div>
+</section>
+
+<section class="ch" id="simbolo" data-t="Símbolo">
+  <div class="ch-head"><div class="ch-num">03 · IDENTIDAD</div><h2>Símbolo</h2><p>La T con forma de persona dentro del círculo dorado. Funciona solo cuando el espacio no alcanza para el nombre: favicon, avatar, aplicaciones del ecosistema, bordados.</p></div>
+  <div class="anat">
+    <div class="anat-fig">{{u:mk:240}}<i class="anat-dot" id="anat-dot"></i></div>
+    <ol id="anat">
+      <li><button type="button" data-x="50" data-y="21" aria-pressed="false"><i>1</i><span><b>Cabeza.</b> Un círculo sobre la T convierte la letra en una persona.</span></button></li>
+      <li><button type="button" data-x="33" data-y="35" aria-pressed="false"><i>2</i><span><b>Brazos abiertos.</b> La barra de la T: alguien que recibe, acompaña y abraza el cambio.</span></button></li>
+      <li><button type="button" data-x="76" data-y="68" aria-pressed="false"><i>3</i><span><b>Sombra larga.</b> La diagonal en dorado oscuro da profundidad y viene del símbolo original.</span></button></li>
+      <li><button type="button" data-x="14" data-y="60" aria-pressed="false"><i>4</i><span><b>Círculo dorado.</b> El lugar de la persona dentro del código. Siempre completo, nunca recortado.</span></button></li>
+    </ol>
+  </div>
+</section>
+
+<section class="ch" id="color" data-t="Color">
+  <div class="ch-head"><div class="ch-num">04 · IDENTIDAD</div><h2>Color</h2><p>Azul para la base, dorado para la persona, cian para el código. Toca un color para copiar su código.</p></div>
+  <div class="ctl" style="margin-bottom:16px"><span>Copiar como</span><div class="seg" id="fmt"><button type="button" data-v="hex" aria-pressed="true">HEX</button><button type="button" data-v="rgb" aria-pressed="false">RGB</button><button type="button" data-v="cmyk" aria-pressed="false">CMYK</button></div></div>
+  <div class="grid g3">{{SWATCHES}}</div>
+  <div class="sub"><span class="label">Proporción de uso</span>
+    <div class="prop" role="img" aria-label="Proporción: azul 60 por ciento, papel 25, dorado 10, cian 5">
+      <i style="flex:60;background:#1a2d5a;color:#fff">60 % azul</i><i style="flex:25;background:#f7f4ee;color:#1a2d5a">25 % papel</i><i style="flex:10;background:#F1BA5B;color:#1a2d5a">10 %</i><i style="flex:5;background:#4fd0ec;color:#1a2d5a;padding-left:6px">5</i>
+    </div>
+  </div>
+  <div class="sub"><span class="label">Combinaciones de texto</span><p>Contraste medido según WCAG 2.1. Para texto normal se exige 4,5:1; para títulos grandes, 3:1.</p>
+    <div class="pairs">
+      <div class="pair" style="background:#1a2d5a;color:#fff"><b>Blanco sobre azul</b><span>12,9 : 1 · texto y títulos</span></div>
+      <div class="pair" style="background:#f7f4ee;color:#1a2d5a"><b>Azul sobre papel</b><span>11,7 : 1 · texto y títulos</span></div>
+      <div class="pair" style="background:#1a2d5a;color:#F1BA5B"><b>Dorado sobre azul</b><span>7,3 : 1 · rótulos y cifras</span></div>
+      <div class="pair" style="background:#F1BA5B;color:#1a2d5a"><b>Azul sobre dorado</b><span>7,3 : 1 · botones</span></div>
+      <div class="pair" style="background:#1a2d5a;color:#4fd0ec"><b>Cian sobre azul</b><span>7,4 : 1 · código y rótulos</span></div>
+      <div class="pair" style="background:#f7f4ee;color:#F1BA5B"><b>Dorado sobre papel</b><span>1,6 : 1 · no usar en texto</span></div>
+    </div>
+    <p class="note">Los valores CMYK y Pantone son equivalencias aproximadas calculadas desde el color digital. Antes de imprimir en volumen, pide una prueba de color al proveedor.</p>
+  </div>
+</section>
+
+<section class="ch" id="tipografia" data-t="Tipografía">
+  <div class="ch-head"><div class="ch-num">05 · IDENTIDAD</div><h2>Tipografía</h2><p>Tres familias gratuitas de Google Fonts, cada una con un trabajo. Escribe para probarlas.</p></div>
+  <div class="ctl" style="margin-bottom:16px"><input type="text" id="tt" value="Soluciones digitales con sentido humano" aria-label="Texto de prueba"><span>Tamaño</span><input type="range" id="ts" min="18" max="72" value="38" aria-label="Tamaño del texto de prueba"></div>
+  <div class="grid g3" id="types">
+    <div class="panel type"><span class="label">Marca y datos</span><div class="spec mono" style="font-weight:700;text-transform:uppercase;letter-spacing:.06em"></div><div class="row"><span>JetBrains Mono</span><span>Bold 700 · Medium 500</span></div><p>Logotipo, rótulos en mayúsculas espaciadas, cifras, código y etiquetas.</p></div>
+    <div class="panel type"><span class="label">Titulares</span><div class="spec" style="font-family:var(--f-display);font-weight:700;letter-spacing:-.02em"></div><div class="row"><span>Space Grotesk</span><span>Bold 700 · Medium 500</span></div><p>Títulos de sitio, presentaciones y publicaciones. Interlineado ajustado.</p></div>
+    <div class="panel type"><span class="label">Texto</span><div class="spec" style="font-weight:500"></div><div class="row"><span>Inter</span><span>Regular 400 · Medium 500</span></div><p>Párrafos, interfaz, propuestas y el eslogan.</p></div>
+  </div>
+  <div class="sub"><span class="label">Jerarquía</span>
+    <div class="panel scale">
+      <div><span>Título · 44 / 48</span><b style="font:700 34px/1.1 var(--f-display);letter-spacing:-.02em">Transformación con las personas</b></div>
+      <div><span>Subtítulo · 21 / 26</span><b style="font:700 21px/1.2 var(--f-display)">Diagnóstico de madurez digital</b></div>
+      <div><span>Rótulo · 11 mono</span><b style="font:700 11px/1.4 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--gold-ink)">Caso de éxito</b></div>
+      <div><span>Texto · 16 / 26</span><b style="font:400 16px/1.6 var(--f-body)">Mapeamos el proceso con el equipo y automatizamos solo lo que no necesitaba criterio humano.</b></div>
+      <div><span>Dato · 15 mono</span><b style="font:700 15px/1.4 var(--f-mono)">$ 16.660.000 · 12 semanas</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="ch" id="recursos" data-t="Código y movimiento">
+  <div class="ch-head"><div class="ch-num">06 · IDENTIDAD</div><h2>Código y movimiento</h2><p>El código binario no es decoración: dice algo. Cada patrón es la traducción real de una palabra a ASCII de 8 bits.</p></div>
+  <div class="panel bin-tool">
+    <div class="ctl"><span>Traductor</span><input type="text" id="bt" value="ALGORITMO T" maxlength="28" aria-label="Palabra a convertir en binario"></div>
+    <div class="bin-out" id="bo" aria-live="polite"></div>
+    <p class="note">Úsalo para generar el patrón de una pieza: el nombre de un cliente en su propuesta, el de un evento en su escarapela. Va en cian sobre azul, a baja opacidad cuando es textura.</p>
+  </div>
+  <div class="sub"><span class="label">Movimiento: descifrado</span><p>El nombre aparece en ceros y unos y se descifra letra por letra hasta quedar en su tipografía; la T llega en su turno como letra y luego se rellena con el círculo.</p>
+    <div class="gifplate"><img src="img/algoritmot-animado-con-eslogan-fondo-oscuro.gif" alt="Animación del logotipo: el código binario se descifra en ALGORITMO, la T se rellena y aparece el eslogan" width="960" height="340"></div>
+    <div class="steps">
+      <div><b>Binario</b>Cada posición muestra ceros y unos en cian, del tamaño de la letra.</div>
+      <div><b>Descifrado</b>Las letras se fijan de izquierda a derecha; los últimos ocho dígitos son su código ASCII.</div>
+      <div><b>La T</b>Aparece como letra y se rellena con el círculo dorado y la cabeza.</div>
+      <div><b>Eslogan</b>Se descifra igual, conservando el ancho del nombre.</div>
+    </div>
+  </div>
+</section>
+
+<section class="ch" id="papeleria" data-t="Papelería y membretes">
+  <div class="ch-head"><div class="ch-num">07 · APLICACIONES</div><h2>Papelería y membretes</h2><p>Hoja membreteada, tarjeta y sobre. El membrete es sobrio: el contenido es del cliente, la marca solo firma.</p></div>
+  <div class="tabs" data-tabs>
+    <div class="seg" role="tablist"><button type="button" role="tab" aria-selected="true" data-tab="p-hoja">Hoja membreteada</button><button type="button" role="tab" aria-selected="false" data-tab="p-tarjeta">Tarjeta</button><button type="button" role="tab" aria-selected="false" data-tab="p-sobre">Sobre</button></div>
+    <div class="tabpanel split" id="p-hoja">
+      <div class="desk">
+        <div class="pg"><div class="rh">{{u:lt:64}}<span>Bogotá · 17 nov 2026</span></div><div style="height:6px"></div><div class="h">Señores<br>Unidad Médica Orluz</div><div class="ln"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="ln"><i></i><i></i><i></i></div><div class="ft"><span>hola@algoritmot.com · algoritmot.com · +57 300 659 0161</span>{{u:mk:9}}</div></div>
+        <div class="pg"><div class="rh">{{u:mk:10}}<span>Página 2</span></div><div class="ln"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="h" style="margin-top:8px">Nombre Apellido</div><div class="k">Directora de relacionamiento</div><div class="ft"><span>Soluciones digitales con sentido humano</span><span>2</span></div></div>
+      </div>
+      <dl class="specs">
+        <div><dt>Formato</dt><dd>Carta (216 × 279 mm) o A4. Márgenes: 25 mm arriba y a los lados, 20 mm abajo.</dd></div>
+        <div><dt>Cabecera</dt><dd>Logotipo sin eslogan a 42 mm de ancho, arriba a la izquierda; ciudad y fecha a la derecha en mono de 8 pt. Filete de 0,5 pt debajo.</dd></div>
+        <div><dt>Texto</dt><dd>Inter Regular 10,5 pt, interlineado 16 pt, azul tinta #26324C. Sin justificar.</dd></div>
+        <div><dt>Pie</dt><dd>Contacto en mono de 7,5 pt y el símbolo a 6 mm a la derecha.</dd></div>
+        <div><dt>Segunda hoja</dt><dd>Solo el símbolo a 7 mm en la cabecera y el eslogan en el pie.</dd></div>
+        <div><dt>Papel</dt><dd>Bond blanco natural de 90 g; evita el blanco azulado.</dd></div>
+      </dl>
+    </div>
+    <div class="tabpanel split" id="p-tarjeta" hidden>
+      <div class="desk">
+        <div class="bc bc-front">{{u:lts:176:--l:#ffffff;--s:#c9d3ea}}</div>
+        <div class="bc bc-back"><div>{{u:mk:26}}</div><div class="bc-txt"><b>Nombre Apellido</b><span>Director de proyectos</span><span class="mono">hola@algoritmot.com</span><span class="mono">algoritmot.com</span></div><div class="bc-bin">{{BIN}}</div></div>
+      </div>
+      <dl class="specs">
+        <div><dt>Formato</dt><dd>85 × 55 mm, esquinas rectas. Sangrado de 3 mm.</dd></div>
+        <div><dt>Frente</dt><dd>Azul de marca a sangre con el logotipo con eslogan centrado a 55 mm de ancho.</dd></div>
+        <div><dt>Reverso</dt><dd>Papel crema: símbolo a 9 mm, nombre en Space Grotesk Bold 11 pt, cargo en Inter 8 pt y contacto en mono cian 7,5 pt.</dd></div>
+        <div><dt>Detalle</dt><dd>Al pie, el nombre de la persona en binario a 5 pt, en gris cálido.</dd></div>
+        <div><dt>Acabado</dt><dd>Propalcote de 300 g con laminado mate; reserva UV solo sobre el símbolo.</dd></div>
+      </dl>
+    </div>
+    <div class="tabpanel split" id="p-sobre" hidden>
+      <div class="desk"><div class="env">{{u:lt:96}}<span>Calle 00 # 00-00 · Bogotá, Colombia<br>algoritmot.com</span></div></div>
+      <dl class="specs">
+        <div><dt>Formato</dt><dd>Sobre americano DL (220 × 110 mm) y sobre de manila carta.</dd></div>
+        <div><dt>Logotipo</dt><dd>Sin eslogan, a 45 mm de ancho, arriba a la izquierda a 12 mm de cada borde.</dd></div>
+        <div><dt>Remitente</dt><dd>Abajo a la izquierda en mono de 7 pt. La zona derecha queda libre para estampilla y destinatario.</dd></div>
+        <div><dt>Solapa</dt><dd>Símbolo a una tinta azul, centrado, a 12 mm.</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="ch" id="documentos" data-t="Documentos">
+  <div class="ch-head"><div class="ch-num">08 · APLICACIONES</div><h2>Documentos</h2><p>Propuestas, informes y presentaciones comparten una misma gramática: portada azul, interiores sobre papel, rótulos en mono y una idea por página.</p></div>
+  <div class="tabs" data-tabs>
+    <div class="seg" role="tablist"><button type="button" role="tab" aria-selected="true" data-tab="d-prop">Propuesta</button><button type="button" role="tab" aria-selected="false" data-tab="d-inf">Informe</button><button type="button" role="tab" aria-selected="false" data-tab="d-pres">Presentación</button></div>
+    <div class="tabpanel split" id="d-prop">
+      <div class="desk">
+        <div class="pg navy"><div class="rh">{{u:lt:62:--l:#ffffff}}<span>Propuesta · 2026</span></div><div style="flex:1"></div><div class="k">Algoritmo T Empresas · Gestión documental</div><div class="t">Actualización de las Tablas de Retención Documental</div><div class="gr"></div><div class="ln"><i></i><i></i><i></i></div><div class="meta"><span>Cliente<b>Unidad Médica Orluz</b></span><span>Duración<b>12 semanas</b></span></div></div>
+        <div class="pg paper"><div class="rh"><span>Propuesta técnica y económica</span><span>Algoritmo T</span></div><div class="sn">03</div><div class="k">Inversión</div><div class="h">Qué incluye y cuánto cuesta</div><div class="ln"><i></i><i></i><i></i></div><div class="tb"><i class="hd"></i><i class="hd"></i><i class="hd"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="ft"><span>Algoritmo T — pág.</span><span>7</span></div></div>
+      </div>
+      <dl class="specs">
+        <div><dt>Portada</dt><dd>Azul de marca. Logotipo arriba, rótulo en mono cian, título en Space Grotesk Bold, filete dorado y datos del cliente al pie.</dd></div>
+        <div><dt>Interiores</dt><dd>Fondo papel. Cabecera con el nombre del documento y «Algoritmo T»; número de sección en mono dorado.</dd></div>
+        <div><dt>Tablas</dt><dd>Encabezado azul con texto blanco, filas sobre papel más oscuro, cifras en mono alineadas a la derecha.</dd></div>
+        <div><dt>Cierre</dt><dd>Contraportada azul con el logotipo, una frase del proyecto, el eslogan y la firma.</dd></div>
+        <div><dt>Entrega</dt><dd>Enlace web del cotizador, PDF y Word. Los tres salen del mismo contenido.</dd></div>
+      </dl>
+    </div>
+    <div class="tabpanel split" id="d-inf" hidden>
+      <div class="desk">
+        <div class="pg paper"><div class="rh">{{u:lt:62}}<span>Informe · Nov 2026</span></div><div style="flex:1"></div><div class="k">Diagnóstico MD-IA</div><div class="t">Madurez digital y de inteligencia artificial</div><div class="gr"></div><div class="ln"><i></i><i></i></div><div class="ft"><span>Cliente · Confidencial</span>{{u:mk:9}}</div></div>
+        <div class="pg"><div class="rh"><span>Diagnóstico MD-IA</span><span>Algoritmo T</span></div><div class="k">Hallazgo 2</div><div class="h">El 60 % del tiempo se va en reprocesos</div><div class="ln"><i></i><i></i><i></i><i></i><i></i></div><div style="display:flex;align-items:flex-end;gap:5px;height:44px"><i style="width:14px;height:40%;background:#c9d3ea"></i><i style="width:14px;height:62%;background:#c9d3ea"></i><i style="width:14px;height:100%;background:#1a2d5a"></i><i style="width:14px;height:48%;background:#c9d3ea"></i><i style="width:14px;height:30%;background:#F1BA5B"></i></div><div class="ln"><i></i><i></i></div><div class="ft"><span>Algoritmo T — pág.</span><span>12</span></div></div>
+      </div>
+      <dl class="specs">
+        <div><dt>Portada</dt><dd>Clara, sobre papel: es un documento de trabajo, no de venta. Logotipo para fondo claro.</dd></div>
+        <div><dt>Titulares</dt><dd>Cada página abre con el hallazgo dicho como frase, no con el nombre del tema.</dd></div>
+        <div><dt>Gráficas</dt><dd>Azul para el dato principal, azul claro para el contexto y dorado para lo que se quiere destacar. Nunca más de tres colores.</dd></div>
+        <div><dt>Cifras</dt><dd>En mono, con unidad y fuente. Separador de miles con punto.</dd></div>
+        <div><dt>Confidencialidad</dt><dd>«Cliente · Confidencial» en el pie de todas las páginas.</dd></div>
+      </dl>
+    </div>
+    <div class="tabpanel split" id="d-pres" hidden>
+      <div class="desk">
+        <div class="sld"><span class="k">Propuesta · 2026</span><b>Transformación digital con enfoque humano</b><div class="f">{{u:lt:54:--l:#ffffff}}<span>01</span></div></div>
+        <div class="sld gold"><span class="k">01</span><b>Título de sección</b><div class="f">{{u:lt:54}}<span>02</span></div></div>
+        <div class="sld paper"><span class="k">Rótulo del tema</span><b>Una idea por lámina, dicha en una frase</b><div class="f">{{u:lt:54}}<span>03</span></div></div>
+        <div class="sld"><span class="big">3 horas</span><span style="font-size:8px">Lo que hoy tarda la aprobación de compras.</span><div class="f">{{u:lt:54:--l:#ffffff}}<span>04</span></div></div>
+      </div>
+      <dl class="specs">
+        <div><dt>Formato</dt><dd>16:9. Plantilla en PowerPoint, compatible con Keynote y Google Slides.</dd></div>
+        <div><dt>Láminas base</dt><dd>Portada, sección (dorada), contenido (papel), cifra y cierre.</dd></div>
+        <div><dt>Regla</dt><dd>Una idea por lámina; el título es la conclusión. Máximo 30 palabras.</dd></div>
+        <div><dt>Pie</dt><dd>Logotipo sin eslogan a la izquierda y número de lámina en mono a la derecha.</dd></div>
+        <div><dt>Archivo</dt><dd><span class="mono">07-Merchandising-digital / 07-Plantilla-de-presentacion</span></dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="ch" id="redes" data-t="Redes sociales">
+  <div class="ch-head"><div class="ch-num">09 · APLICACIONES</div><h2>Redes sociales</h2><p>Toda publicación se arma con las mismas cuatro piezas. Cambia el contenido, no la estructura.</p></div>
+  <div class="split">
+    <div class="desk"><div class="anatomy"><img src="img/d-post.jpg" alt="Publicación de ejemplo con rótulo dorado, titular, texto de apoyo, logotipo y dirección web" width="700" height="700"><span style="left:1.5%;top:7%">1</span><span style="left:1.5%;top:15%">2</span><span style="left:1.5%;top:83%">3</span><span style="right:1.5%;top:83%">4</span></div></div>
+    <dl class="specs">
+      <div><dt>1 · Rótulo</dt><dd>JetBrains Mono Bold en mayúsculas espaciadas, dorado. Dice el tipo de contenido.</dd></div>
+      <div><dt>2 · Titular</dt><dd>Space Grotesk Bold, blanco, hasta 12 palabras. Lleva la cifra o la idea completa.</dd></div>
+      <div><dt>3 · Logotipo</dt><dd>Sin eslogan, abajo a la izquierda, a un tercio del ancho.</dd></div>
+      <div><dt>4 · Dirección</dt><dd>algoritmot.com en mono, abajo a la derecha.</dd></div>
+      <div><dt>Margen</dt><dd>84 px por lado en 1080 px. Nada toca el borde.</dd></div>
+      <div><dt>Textura</dt><dd>El código binario de fondo, apenas visible.</dd></div>
+    </dl>
+  </div>
+  <div class="sub"><span class="label">Formatos</span>
+    <div class="tabs" data-tabs>
+      <div class="seg" role="tablist"><button type="button" role="tab" aria-selected="true" data-tab="r-post">Post 1:1</button><button type="button" role="tab" aria-selected="false" data-tab="r-hist">Historia 9:16</button><button type="button" role="tab" aria-selected="false" data-tab="r-li">LinkedIn</button></div>
+      <div class="tabpanel" id="r-post"><div class="desk soc"><img src="img/d-post.jpg" alt="Post cuadrado sobre azul" width="300" height="300" style="width:300px"><img src="img/d-post-claro.jpg" alt="Base de post sobre papel" width="300" height="300" style="width:300px"></div><p class="note" style="margin-top:10px">1080 × 1080 px. Versión oscura para casos y datos; versión clara para consejos y equipo.</p></div>
+      <div class="tabpanel" id="r-hist" hidden><div class="desk soc"><img src="img/d-historia.jpg" alt="Historia vertical con el símbolo, una pregunta y un botón dorado" width="220" height="391" style="width:220px"></div><p class="note" style="margin-top:10px">1080 × 1920 px. El símbolo arriba, la pregunta al centro y una sola llamada a la acción. Deja libres 250 px arriba y 340 px abajo para la interfaz de la app.</p></div>
+      <div class="tabpanel" id="r-li" hidden><div class="desk soc li-desk"><figure class="li-page"><img class="li-cover" src="img/d-linkedin.jpg" alt="Portada de la página de empresa en LinkedIn: código binario a la izquierda y el logotipo con eslogan a la derecha" width="1128" height="191"><img class="li-logo" src="img/d-linkedin-logo.jpg" alt="Logo de la página: el símbolo a color sobre blanco" width="300" height="300"><figcaption><b>AlgoritmoT</b><span>Página de empresa · portada 1128 × 191 y logo 400 × 400</span></figcaption></figure><figure class="li-page"><img class="li-cover" src="img/d-linkedin-perfil.jpg" alt="Portada de perfil personal en LinkedIn con el logotipo a la derecha" width="1000" height="250"><img class="li-logo round" src="img/algoritmot-animado-simbolo-fondo-oscuro.gif" alt="Avatar animado con el símbolo" width="96" height="96"><figcaption><b>Nombre Apellido</b><span>Perfil personal · portada 1584 × 396</span></figcaption></figure></div><p class="note" style="margin-top:10px">El logotipo va a la derecha porque el logo de la página o la foto de perfil tapan la esquina inferior izquierda, y el código binario se despeja detrás del nombre. LinkedIn recomprime todo lo que recibe: se suben en PNG los archivos de alta resolución del kit —página de empresa 4512 × 764, perfil 3168 × 792 y logo 1200 × 1200—, nunca una captura ni un JPG reducido. La portada de perfil no sirve para la página de empresa: tiene otra proporción y se recorta.</p></div>
+    </div>
+  </div>
+  <div class="sub"><span class="label">Tipos de contenido</span><div class="chips"><span class="chip">Caso de éxito</span><span class="chip">Dato</span><span class="chip">Consejo</span><span class="chip">Equipo</span><span class="chip">Evento</span><span class="chip">Detrás del método</span></div>
+    <div class="dd">
+      <div class="panel si"><b>Así sí</b><ul><li>Una idea y una cifra por pieza.</li><li>Personas reales del equipo y de los clientes, con permiso.</li><li>Texto alternativo en cada imagen.</li><li>El mismo rótulo para el mismo tipo de contenido.</li></ul></div>
+      <div class="panel nn"><b>Así no</b><ul><li>Fotos de banco con robots, cerebros azules o apretones de manos.</li><li>Más de dos tipografías o colores fuera de la paleta.</li><li>Logotipo sobre fotos sin una franja de color que lo sostenga.</li><li>Mayúsculas sostenidas en el titular.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="ch" id="video" data-t="Video">
+  <div class="ch-head"><div class="ch-num">10 · APLICACIONES</div><h2>Video</h2><p>Todo video abre y cierra igual. En medio manda la persona: gente real de Latinoamérica, en su lugar de trabajo, contando con sus palabras qué cambió.</p></div>
+  <div class="sub" style="margin-top:0"><span class="label">Sentido humano en pantalla</span>
+    <div class="frames">
+      <figure class="fr"><div class="fr-scr real"><video src="img/v-testimonio.mp4" poster="img/v-testimonio.jpg" autoplay muted loop playsinline aria-label="Testimonio a cámara"></video></div><figcaption><b>Testimonio</b>Quien vivió el cambio lo cuenta. Plano medio, luz de ventana, micrófono de solapa y su oficina de fondo.</figcaption></figure>
+      <figure class="fr"><div class="fr-scr real"><video src="img/v-equipo.mp4" poster="img/v-equipo.jpg" autoplay muted loop playsinline aria-label="Equipo trabajando"></video></div><figcaption><b>Trabajo real</b>Personas resolviendo algo juntas. La pantalla acompaña; la conversación es el tema.</figcaption></figure>
+      <figure class="fr"><div class="fr-scr real"><video src="img/v-docentes.mp4" poster="img/v-docentes.jpg" autoplay muted loop playsinline aria-label="Docentes en la biblioteca"></video></div><figcaption><b>Aula y docencia</b>Docentes y estudiantes en su institución: biblioteca, salón, sala de profesores.</figcaption></figure>
+      <figure class="fr"><div class="fr-scr real"><video src="img/v-retrato.mp4" poster="img/v-retrato.jpg" autoplay muted loop playsinline aria-label="Retrato sonriente a cámara"></video></div><figcaption><b>Retrato</b>Una mirada a cámara y una sonrisa de verdad para abrir o cerrar la historia.</figcaption></figure>
+    </div>
+    <div class="dd">
+      <div class="panel si"><b>Así sí</b><ul><li>Personas latinoamericanas reales: clientes, docentes y equipo, con su autorización firmada.</li><li>Diversidad de edades, tonos de piel, regiones y acentos.</li><li>Lugares reales de la región: la oficina, el aula, la clínica.</li><li>Español de quien habla, sin doblaje, con subtítulos.</li><li>La persona en primer plano; la herramienta, en segundo.</li></ul></div>
+      <div class="panel nn"><b>Así no</b><ul><li>Bancos de imágenes con rostros y escenarios ajenos a la región.</li><li>Modelos posando frente a una pantalla vacía.</li><li>Robots, hologramas, cerebros azules o código flotando.</li><li>Locución impersonal sobre imágenes genéricas.</li><li>Pantallas de software sin nadie usándolas.</li></ul></div>
+    </div>
+    <p class="note">Los clips son referencias del banco Magnific (licencia Premium) elegidas con la búsqueda «latin» e «hispanic». Sirven para mostrar el tono; las piezas finales se graban con clientes y equipos reales.</p>
+  </div>
+  <div class="sub"><span class="label">Estructura de un video</span></div>
+  <div class="frames">
+    <figure class="fr"><div class="fr-scr"><img src="img/algoritmot-animado-con-eslogan-fondo-oscuro.gif" alt="Apertura: el logotipo se descifra desde binarios" width="960" height="340" style="object-fit:contain"></div><figcaption><b>1 · Apertura</b>El descifrado del logotipo: 4,6 s completo o 2,1 s en la versión de solo símbolo.</figcaption></figure>
+    <figure class="fr"><div class="fr-scr real shade"><video src="img/v-docentes.mp4" poster="img/v-docentes.jpg" autoplay muted loop playsinline aria-label="Dos docentes revisan juntos un plan en la biblioteca"></video><div class="tx" style="z-index:2"><span class="k">Caso de éxito · Educación</span><b>Cómo 40 docentes llevaron sus cursos a lo virtual</b></div></div><figcaption><b>2 · Título</b>Rótulo en mono cian y título en Space Grotesk sobre azul. 3 segundos.</figcaption></figure>
+    <figure class="fr"><div class="fr-scr real"><video src="img/v-testimonio.mp4" poster="img/v-testimonio.jpg" autoplay muted loop playsinline aria-label="Una directiva da su testimonio frente a la cámara, con micrófono de solapa"></video><div class="l3">{{u:mk:20}}<div><b>Nombre Apellido</b><span>Cargo · Organización</span></div></div></div><figcaption><b>3 · Tercio inferior</b>Franja azul al 92 % con filete dorado, símbolo, nombre y cargo. Entra a los 2 s y dura 5.</figcaption></figure>
+    <figure class="fr"><div class="fr-scr gold"><span class="k">Resultado</span><span class="big">3 horas</span><span style="font-size:10px">antes eran 14 días</span></div><figcaption><b>4 · Cifra</b>Fondo dorado, cifra en azul. Una por video, la que importa.</figcaption></figure>
+    <figure class="fr"><div class="fr-scr real"><video src="img/v-equipo.mp4" poster="img/v-equipo.jpg" autoplay muted loop playsinline aria-label="Dos compañeros trabajan juntos frente a un portátil"></video><span class="cc" style="position:absolute;z-index:2">«Lo difícil no fue la tecnología: fue volver a confiar.»</span></div><figcaption><b>5 · Subtítulos</b>Inter Medium blanco sobre caja azul al 85 %, máximo dos líneas de 38 caracteres.</figcaption></figure>
+    <figure class="fr"><div class="fr-scr real"><video src="img/v-cierre-empresas.mp4" poster="img/v-cierre-empresas.jpg" autoplay muted loop playsinline aria-label="Cortinilla de cierre: el símbolo entra, la palabra se arma a su alrededor y aparecen el eslogan y el contacto"></video></div><figcaption><b>6 · Cierre</b>La cortinilla animada: entra la persona y la palabra se arma a su alrededor. 6 segundos, sin música que tape la voz.</figcaption></figure>
+  </div>
+  <div class="sub"><span class="label">Cortinilla de cierre</span>
+    <p>El cierre cuenta la idea de la marca en seis segundos: primero la persona, después el código. Es una sola animación; entre Empresas y Educación cambia solo la frase de llamada.</p>
+    <div class="grid g2">
+      <figure class="fr"><div class="fr-scr real"><video src="img/v-cierre-empresas.mp4" poster="img/v-cierre-empresas.jpg" autoplay muted loop playsinline aria-label="Cortinilla de cierre de la línea Empresas"></video></div><figcaption><b>Empresas</b><span class="mono" style="font-size:12px">cortinilla-cierre-empresas.mp4</span> · 6,3 s</figcaption></figure>
+      <figure class="fr"><div class="fr-scr real"><video src="img/v-cierre-educacion.mp4" poster="img/v-cierre-educacion.jpg" autoplay muted loop playsinline aria-label="Cortinilla de cierre de la línea Educación"></video></div><figcaption><b>Educación</b><span class="mono" style="font-size:12px">cortinilla-cierre-educacion.mp4</span> · 6,9 s</figcaption></figure>
+    </div>
+    <div class="steps">
+      <div><b>La persona</b>La T entra grande al centro y ocupa su lugar en la palabra.</div>
+      <div><b>La palabra</b>Las letras se resuelven desde ceros y unos, de la T hacia afuera.</div>
+      <div><b>El eslogan</b>Se abre desde el centro, seguido del filete dorado.</div>
+      <div><b>La llamada</b>Una frase por línea y el contacto, que se escribe con cursor.</div>
+      <div><b>El latido</b>Un anillo dorado se abre una sola vez desde el símbolo.</div>
+    </div>
+    <p class="note">1920 × 1080, 25 cuadros por segundo, sin audio, para pegar al final de cualquier video. No se recorta ni se acelera: si el video necesita un cierre más corto, se usa el descifrado del símbolo de <span class="mono">05-Animado</span>.</p>
+  </div>
+  <div class="sub"><span class="label">Videos de presentación</span>
+    <p>Dos piezas de un minuto, una por línea, armadas con la estructura de este capítulo: apertura, personas trabajando, rótulos, una cifra, subtítulos y la cortinilla de cierre.</p>
+    <div class="grid g2">
+      <figure class="fr"><div class="fr-scr play"><video src="img/v-presentacion-empresas.mp4" poster="img/v-presentacion-empresas.jpg" controls controlslist="nodownload noremoteplayback" disablepictureinpicture oncontextmenu="return false" preload="none" playsinline aria-label="Video de presentación de Algoritmo T para empresas"></video></div><figcaption><b>Empresas · 1:03</b>Locución de Nilton. Está en el encabezado de algoritmot.com/empresas.</figcaption></figure>
+      <figure class="fr"><div class="fr-scr play"><video src="img/v-presentacion-educacion.mp4" poster="img/v-presentacion-educacion.jpg" controls controlslist="nodownload noremoteplayback" disablepictureinpicture oncontextmenu="return false" preload="none" playsinline aria-label="Video de presentación de Algoritmo T para educación"></video></div><figcaption><b>Educación · 1:14</b>Locución de Lina. Está en el encabezado de algoritmot.com/educacion.</figcaption></figure>
+    </div>
+    <dl class="specs">
+      <div><dt>Voz</dt><dd>Una voz por línea, siempre la misma: Nilton en Empresas y Lina en Educación. Español de Colombia, ritmo de conversación.</dd></div>
+      <div><dt>Sonido</dt><dd>Voz al frente y cama instrumental por debajo, con la mezcla normalizada a −16 LUFS.</dd></div>
+      <div><dt>Subtítulos</dt><dd>Incrustados en la imagen y, además, en un archivo <span class="mono">.vtt</span> por video.</dd></div>
+      <div><dt>Publicación</dt><dd>En el sitio y en Learning Builder se reproducen sin opción de descarga. El archivo se comparte solo desde el kit.</dd></div>
+      <div><dt>Archivos</dt><dd><span class="mono">09-Videos-de-presentacion</span> trae los dos videos en 1080p, sus subtítulos, las dos cortinillas y las licencias del metraje. Aquí se ven en una versión liviana.</dd></div>
+    </dl>
+  </div>
+  <div class="sub"><span class="label">Formatos y zonas seguras</span>
+    <div class="split">
+      <div class="desk safe">
+        <figure><div class="safe-box" style="width:192px;height:108px"><i style="inset:5%"></i></div>16:9 · 1920 × 1080</figure>
+        <figure><div class="safe-box" style="width:108px;height:108px"><i style="inset:8%"></i></div>1:1 · 1080 × 1080</figure>
+        <figure><div class="safe-box" style="width:72px;height:128px"><em style="left:0;right:0;top:0;height:13%"></em><em style="left:0;right:0;bottom:0;height:18%"></em><i style="left:8%;right:8%;top:14%;bottom:19%"></i></div>9:16 · 1080 × 1920</figure>
+      </div>
+      <dl class="specs">
+        <div><dt>Zona segura</dt><dd>Texto y logotipo dentro de la línea punteada. En vertical, las franjas cian son de la interfaz de la app.</dd></div>
+        <div><dt>Entrega</dt><dd>MP4 H.264, 25 o 30 cuadros por segundo, audio AAC a 48 kHz.</dd></div>
+        <div><dt>Color</dt><dd>Corrección neutra y cálida. Sin filtros azules ni viñetas.</dd></div>
+        <div><dt>Música</dt><dd>Instrumental sobria, 18 dB por debajo de la voz.</dd></div>
+        <div><dt>Duración</dt><dd>Redes: 30 a 60 s. Casos: hasta 2 min. Cursos: bloques de 6 min.</dd></div>
+        <div><dt>Archivos</dt><dd><span class="mono">05-Animado</span> trae la apertura en MP4, WebM y APNG con transparencia; <span class="mono">09-Videos-de-presentacion</span>, las cortinillas de cierre.</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="ch" id="merch-fisico" data-t="Merchandising físico">
+  <div class="ch-head"><div class="ch-num">11 · MERCHANDISING</div><h2>Físico</h2><p>Nueve piezas para el kit de bienvenida, eventos y regalos a clientes, sobre fotografías reales de producto. Toca una para ver cómo se produce.</p></div>
+  <div class="merch-grid">{{PHYS}}</div>
+  <p class="note" style="margin-top:14px">Fotografías de producto del banco Magnific (licencia Premium) con el logo aplicado digitalmente. Sirven como referencia para el proveedor; el acabado real depende de la técnica de marcación.</p>
+</section>
+
+<section class="ch" id="merch-digital" data-t="Merchandising digital">
+  <div class="ch-head"><div class="ch-num">12 · MERCHANDISING</div><h2>Digital</h2><p>Piezas que el equipo y los clientes usan a diario en pantalla. Todas existen ya como archivo en el kit.</p></div>
+  <div class="merch-grid">{{DIGI}}</div>
+</section>
+
+<section class="ch" id="pop" data-t="Pendones, avisos y POP">
+  <div class="ch-head"><div class="ch-num">13 · ESPACIOS Y EVENTOS</div><h2>Pendones, avisos y POP</h2><p>La marca a tamaño real: en un stand, en la fachada y sobre la mesa. Doce artes listos para imprenta. Toca una pieza para ver cómo se produce.</p></div>
+  <figure class="hero-fig"><img src="img/p-stand.jpg" alt="Stand de feria con backing de logotipos, mostrador con el símbolo y dos pendones enrollables, uno de Educación y otro de Empresas" width="1200" height="675"><figcaption>Un stand completo: backing de 3 m, mostrador y un pendón por línea. La silueta mide 1,70 m y da la escala.</figcaption></figure>
+  <div class="sub"><span class="label">Pendones</span><div class="merch-grid">{{POP_PEND}}</div></div>
+  <div class="sub"><span class="label">Avisos y señalética</span><div class="merch-grid">{{POP_AVI}}</div></div>
+  <div class="sub"><span class="label">Material POP</span><div class="merch-grid">{{POP_MAT}}</div></div>
+  <div class="sub"><span class="label">Reglas de gran formato</span>
+    <dl class="specs">
+      <div><dt>Lectura</dt><dd>Como regla práctica, un centímetro de altura de letra por cada metro de distancia. Un titular de 10 cm se lee a 10 m.</dd></div>
+      <div><dt>Mensaje</dt><dd>Una pieza, una idea: logotipo, una frase y un contacto. El detalle va en el volante o detrás del código QR.</dd></div>
+      <div><dt>Altura</dt><dd>El logotipo queda entre 140 y 180 cm del piso. En el pendón enrollable, nada importante en los 15 cm inferiores: los tapa el casete.</dd></div>
+      <div><dt>Color</dt><dd>CMYK con los valores del capítulo 04. Cuando el proveedor trabaja tintas directas, el azul se pide como Pantone 2767 C y el dorado como 142 C.</dd></div>
+      <div><dt>Acabado</dt><dd>Siempre mate. El brillo refleja las luces del recinto y quema las fotos con flash.</dd></div>
+      <div><dt>Código QR</dt><dd>Mínimo 2,5 cm de lado en piezas de mano y 15 cm en pendones, con la dirección escrita al lado por si no se puede escanear.</dd></div>
+      <div><dt>Archivos</dt><dd>PDF vectorial a tamaño real, con las fuentes incrustadas y el logotipo en trazados. No llevan sangrado ni marcas de corte: los fondos son planos y el proveedor los extiende según su máquina.</dd></div>
+    </dl>
+    <div class="dd">
+      <div class="panel si"><b>Así sí</b><ul><li>Fondo azul de marca o papel, sin fotografías de banco.</li><li>El símbolo a color completo, nunca recortado por un pliegue o un ojal.</li><li>La versión sin eslogan en avisos que se leen de lejos.</li><li>Una prueba de color impresa antes del tiraje.</li></ul></div>
+      <div class="panel nn"><b>Así no</b><ul><li>Listas de servicios de más de cuatro líneas en un pendón.</li><li>El logotipo estirado para llenar el ancho de la fachada.</li><li>Letras corpóreas en dorado brillante o con luz azul fría.</li><li>Capturas o PNG ampliados: en gran formato se pixelan.</li></ul></div>
+    </div>
+    <p class="note">Las imágenes de este capítulo son maquetas dibujadas con los artes reales, no fotografías. Los textos de los pendones, el afiche y el volante son ejemplos: cada evento ajusta el titular y los datos sobre la misma estructura.</p>
+  </div>
+</section>
+
+<section class="ch" id="archivos" data-t="Archivos">
+  <div class="ch-head"><div class="ch-num">14 · ENTREGA</div><h2>Archivos</h2><p>El kit completo vive en el sitio y en el repositorio, en <span class="mono">public/assets/brand</span>.</p></div>
+  <div class="panel files">
+    <div><span class="mono">00-Manual-de-marca</span><span>Este manual.</span></div>
+    <div><span class="mono">01-Logotipo-con-eslogan</span><span>SVG, PDF, PNG y JPG en cinco versiones de color.</span></div>
+    <div><span class="mono">02-Logotipo-sin-eslogan</span><span>Las mismas versiones, sin eslogan.</span></div>
+    <div><span class="mono">03-Simbolo</span><span>Símbolo a color y a una tinta, de 256 a 1024 px.</span></div>
+    <div><span class="mono">04-Favicon</span><span>favicon.svg e .ico, iconos de Apple y Android, y el código para instalarlos.</span></div>
+    <div><span class="mono">05-Animado</span><span>Descifrado con eslogan, sin eslogan y solo símbolo: GIF, MP4, WebM y APNG.</span></div>
+    <div><span class="mono">06-Redes</span><span>Foto de perfil 1080 × 1080 y portada 1200 × 630.</span></div>
+    <div><span class="mono">07-Merchandising-digital</span><span>Fondos de videollamada, LinkedIn, publicaciones, fondo móvil, firma, emojis y plantilla.</span></div>
+    <div><span class="mono">08-Merchandising-fisico</span><span>Las nueve fotografías de referencia con el logo aplicado.</span></div>
+    <div><span class="mono">09-Videos-de-presentacion</span><span>Videos de Empresas y Educación en 1080p, subtítulos, cortinillas de cierre y licencias del metraje.</span></div>
+    <div><span class="mono">10-Editables-AI</span><span>Las catorce variantes del logotipo y del símbolo en .ai, más un archivo maestro.</span></div>
+    <div><span class="mono">11-Pendones-avisos-POP</span><span>Doce artes en PDF a tamaño real: pendones, backing, avisos, señalética, afiche, volante, hablador y mostrador.</span></div>
+  </div>
+  <div class="sub"><span class="label">Editables para Illustrator</span>
+    <p>Cuando un proveedor necesita abrir el logotipo y trabajarlo —un bordado, un troquel, un corte de vinilo—, se le entregan los archivos de <span class="mono">10-Editables-AI</span>, no una imagen.</p>
+    <div class="split">
+      <figure class="hero-fig"><div class="sheet"><img src="img/ai-maestro.jpg" alt="Archivo maestro: las cinco versiones del logotipo con eslogan, las cinco sin eslogan y las cuatro del símbolo, cada una rotulada con su nombre de archivo" width="1500" height="720" loading="lazy"></div><figcaption><span class="mono">algoritmot-logos-maestro.ai</span> · todas las variantes en una mesa A3, rotuladas con su nombre de archivo.</figcaption></figure>
+      <dl class="specs">
+        <div><dt>Contenido</dt><dd>Catorce archivos sueltos, uno por variante, y el maestro que las reúne.</dd></div>
+        <div><dt>Formato</dt><dd>.ai compatible con PDF: abre en Illustrator y en los programas que leen PDF vectorial.</dd></div>
+        <div><dt>Trazados</dt><dd>Todo es vector. El nombre y el eslogan van convertidos a curvas: no hace falta instalar fuentes y el texto no se reescribe.</dd></div>
+        <div><dt>Color</dt><dd>RGB. Para imprenta se convierte a CMYK o a Pantone con la tabla del capítulo 04.</dd></div>
+        <div><dt>Fondo</dt><dd>Las versiones en blanco y las de fondo oscuro son transparentes: se ven al ponerlas sobre azul.</dd></div>
+        <div><dt>Límites</dt><dd>No traen capas con nombre ni muestras de color guardadas.</dd></div>
+      </dl>
+    </div>
+  </div>
+  <div class="sub"><span class="label">Qué formato pedir</span>
+    <div class="panel scale">
+      <div><span>SVG</span><b style="font-weight:500">Sitios web, aplicaciones y pantallas. Escala sin perder nitidez.</b></div>
+      <div><span>PNG</span><b style="font-weight:500">Documentos de oficina, presentaciones y redes. Fondo transparente.</b></div>
+      <div><span>PDF</span><b style="font-weight:500">Imprenta, cuando el arte va tal cual.</b></div>
+      <div><span>AI</span><b style="font-weight:500">Proveedores que deben editar el trazado: bordado, grabado, troquel, vinilo de corte, letras corpóreas.</b></div>
+      <div><span>MP4 · WebM · GIF</span><b style="font-weight:500">Logotipo animado y cortinillas, para video, web y presentaciones.</b></div>
+    </div>
+  </div>
+</section>
+
+    </div></main>
+  </div>
+</div>
+
+<!-- ============ CONTRAPORTADA (página completa) ============ -->
+<section class="back" id="contraportada" aria-label="Contraportada">
+  <div class="bin-bg" aria-hidden="true">{{BIN8}}{{BIN8}}</div>
+  <div class="back-in">
+    <div class="cover-top"><span><b>Algoritmo T</b></span><span>Manual de marca · v2.1</span></div>
+    <div class="back-mid">
+      <div class="cover-mark">{{u:mk:168}}</div>
+      <p>La tecnología solo transforma cuando las personas la adoptan.</p>
+      <div class="cover-rule"></div>
+      <div class="cover-logo" style="width:min(100%,420px)">{{u:lts:420:--l:#ffffff;--s:#c9d3ea}}</div>
+    </div>
+    <div class="back-grid">
+      <div><b>Contacto</b><span>hola@algoritmot.com</span><span>+57 300 659 0161</span></div>
+      <div><b>Sitio</b><span>algoritmot.com</span><span>linkedin.com/company/algoritmot</span></div>
+      <div><b>Sede</b><span>Bogotá, Colombia</span><span>Cobertura en Latinoamérica</span></div>
+      <div><b>Manual</b><span>Versión 2.1 · Noviembre 2026</span><span>Uso interno y de proveedores</span></div>
+    </div>
+  </div>
+</section>
+
+<dialog id="dlg" aria-labelledby="dlg-t"><div class="dlg"><img id="dlg-img" alt="" width="900" height="675"><div class="dlg-txt"><button type="button" class="dlg-close" id="dlg-x">Cerrar</button><span class="label" id="dlg-k"></span><h3 id="dlg-t"></h3><p id="dlg-p"></p><dl class="specs" id="dlg-s"></dl></div></div></dialog>
+
+<script>
+(function () {
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var RATIO = { lt: 1200 / 7227, lts: 1776 / 7227, ltm: 1200 / 7227, ltsm: 1776 / 7227, mk: 1, mkm: 1 };
+  function use(id, w, style) {
+    var h = (w * RATIO[id]).toFixed(1);
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" style="' + (style || '') + '" role="img" aria-label="Algoritmo T"><use href="#' + id + '" width="' + w + '" height="' + h + '"/></svg>';
+  }
+  function toast(msg) {
+    var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t); setTimeout(function () { t.remove(); }, 1600);
+  }
+  function seg(root, fn) {
+    $$('button', root).forEach(function (b) {
+      b.addEventListener('click', function () {
+        $$('button', root).forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+        fn(b.dataset.v);
+      });
+    });
+  }
+
+  /* ---- menú lateral: capítulo activo, progreso y cajón en móvil ---- */
+  var links = $$('.side a'), secs = $$('section.ch'), side = $('#side'), btn = $('#menu-btn');
+  function setActive(i) {
+    links.forEach(function (a, n) { a.classList.toggle('on', n === i); if (n === i) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+    var n = ('0' + (i + 1)).slice(-2);
+    $('#prog-txt').textContent = 'Capítulo ' + n + ' de ' + secs.length;
+    $('#prog-bar').style.width = ((i + 1) / secs.length * 100) + '%';
+    $('#top-txt').textContent = n + ' · ' + secs[i].dataset.t;
+  }
+  function spy() {
+    var y = window.scrollY + window.innerHeight * 0.3, cur = 0;
+    secs.forEach(function (s, i) { if (s.getBoundingClientRect().top + window.scrollY <= y) cur = i; });
+    setActive(cur);
+  }
+  window.addEventListener('scroll', spy, { passive: true }); window.addEventListener('resize', spy); spy();
+  function drawer(open) { side.classList.toggle('open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+  btn.addEventListener('click', function () { drawer(!side.classList.contains('open')); });
+  links.forEach(function (a) { a.addEventListener('click', function () { drawer(false); }); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') drawer(false); });
+  document.addEventListener('click', function (e) { if (side.classList.contains('open') && !side.contains(e.target) && e.target !== btn) drawer(false); });
+
+  /* ---- explorador de logotipo ---- */
+  var BG = { papel: ['#f7f4ee', 'claro'], blanco: ['#ffffff', 'claro'], azul: ['#1a2d5a', 'oscuro'], negro: ['#111111', 'oscuro'], dorado: ['#F1BA5B', 'dorado'], cian: ['#4fd0ec', 'cian'] };
+  var st = { v: 'lts', bg: 'papel', g: '0' };
+  function xp() {
+    var kind = BG[st.bg][1], stage = $('#xp-stage'), id = st.v, style = '', file, why, ok = true, w = st.v === 'mk' ? 190 : 430;
+    var folder = st.v === 'lts' ? '01-Logotipo-con-eslogan' : st.v === 'lt' ? '02-Logotipo-sin-eslogan' : '03-Simbolo';
+    var base = st.v === 'mk' ? 'algoritmot-simbolo-' : 'algoritmot-logo-' + (st.v === 'lts' ? 'con' : 'sin') + '-eslogan-';
+    if (kind === 'claro') { file = base + (st.v === 'mk' ? 'color' : 'color-fondo-claro'); why = 'Versión a color para fondos claros.'; }
+    else if (kind === 'oscuro') { style = '--l:#ffffff;--s:#c9d3ea'; file = base + (st.v === 'mk' ? 'color' : 'color-fondo-oscuro'); why = st.bg === 'negro' ? 'Versión para fondo oscuro. El negro se admite solo en piezas de terceros.' : 'Versión a color para el azul de marca.'; }
+    else if (kind === 'dorado') { id = st.v === 'mk' ? 'mkm' : (st.v === 'lts' ? 'ltsm' : 'ltm'); style = 'color:#1a2d5a'; file = base + 'una-tinta-azul'; why = 'Sobre dorado el círculo se perdería: se usa la versión a una tinta azul.'; }
+    else { id = st.v === 'mk' ? 'mkm' : (st.v === 'lts' ? 'ltsm' : 'ltm'); style = 'color:#1a2d5a'; file = base + 'una-tinta-azul'; why = 'El cian es un color de detalle, no de fondo. Si es inevitable, una tinta azul.'; ok = false; }
+    stage.style.background = BG[st.bg][0];
+    stage.innerHTML = use(id, w, style);
+    stage.classList.toggle('guides', st.g === '1');
+    stage.style.setProperty('--clear', (st.v === 'mk' ? 28 : Math.round(w * 730 / 7227)) + 'px');
+    var pill = $('#xp-pill'); pill.textContent = ok ? 'Uso correcto' : 'Evitar'; pill.className = 'pill ' + (ok ? 'ok' : 'no');
+    $('#xp-why').textContent = why; $('#xp-file').textContent = folder + ' / ' + file + '.svg';
+  }
+  $$('#xp .seg').forEach(function (s) { seg(s, function (v) { st[s.dataset.k] = v; xp(); }); }); xp();
+
+  /* ---- tamaño mínimo ---- */
+  var sz = $('#sz');
+  function size() {
+    var w = +sz.value, logo = w >= 120;
+    $('#sz-v').textContent = w + ' px';
+    $('#sz-stage').innerHTML = logo ? use('lt', w, '') : use('mk', Math.max(16, Math.min(w, 96)), '');
+    var p = $('#sz-pill'); p.textContent = logo ? 'Logotipo' : (w >= 24 ? 'Solo símbolo' : 'Favicon'); p.className = 'pill ' + (logo ? 'ok' : 'no');
+  }
+  sz.addEventListener('input', size); size();
+
+  /* ---- anatomía del símbolo ---- */
+  var dot = $('#anat-dot');
+  $$('#anat button').forEach(function (b) {
+    function on() { $$('#anat button').forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); }); dot.style.left = b.dataset.x + '%'; dot.style.top = b.dataset.y + '%'; dot.classList.add('on'); }
+    b.addEventListener('click', on); b.addEventListener('mouseenter', on); b.addEventListener('focus', on);
+  });
+
+  /* ---- color: copiar ---- */
+  var fmt = 'hex'; seg($('#fmt'), function (v) { fmt = v; $$('.sw-chip span').forEach(function (s) { s.textContent = s.parentNode.dataset[fmt]; }); });
+  $$('.sw-chip').forEach(function (c) {
+    c.addEventListener('click', function () {
+      var val = c.dataset[fmt];
+      var done = function () { toast('Copiado: ' + val); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(val).then(done, function () { toast(val); }); else toast(val);
+    });
+  });
+
+  /* ---- probador de tipografía ---- */
+  var tt = $('#tt'), ts = $('#ts');
+  function type() { $$('#types .spec').forEach(function (s) { s.textContent = tt.value || 'Algoritmo T'; }); $('#types').style.setProperty('--ts', ts.value + 'px'); }
+  tt.addEventListener('input', type); ts.addEventListener('input', type); type();
+
+  /* ---- traductor a binario ---- */
+  var bt = $('#bt');
+  function bin() {
+    var out = $('#bo'); out.textContent = '';
+    (bt.value || ' ').split('').forEach(function (ch) {
+      var code = ch.charCodeAt(0); if (code > 255) return;
+      var b = document.createElement('b'); b.textContent = ch === ' ' ? '␣' : ch;
+      out.appendChild(b); out.appendChild(document.createTextNode(' ' + ('00000000' + code.toString(2)).slice(-8) + '   '));
+    });
+  }
+  bt.addEventListener('input', bin); bin();
+
+  /* ---- pestañas ---- */
+  $$('[data-tabs]').forEach(function (root) {
+    var tabs = $$('[role="tab"]', root).filter(function (t) { return t.closest('[data-tabs]') === root; });
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tabs.forEach(function (o) { var sel = o === t; o.setAttribute('aria-selected', sel ? 'true' : 'false'); document.getElementById(o.dataset.tab).hidden = !sel; });
+      });
+    });
+  });
+
+  /* ---- ficha de producto ---- */
+  var dlg = $('#dlg');
+  $$('button.merch').forEach(function (m) {
+    m.addEventListener('click', function () {
+      $('#dlg-img').src = m.dataset.img; $('#dlg-img').alt = m.dataset.name;
+      $('#dlg-k').textContent = m.dataset.tag; $('#dlg-t').textContent = m.dataset.name; $('#dlg-p').textContent = m.dataset.what;
+      var s = $('#dlg-s'); s.textContent = '';
+      [[m.dataset.howk || 'Marcación', m.dataset.how], ['Medidas', m.dataset.size], ['Archivo', m.dataset.file], ['Uso', m.dataset.use]].forEach(function (r) {
+        var d = document.createElement('div'), dt = document.createElement('dt'), dd = document.createElement('dd');
+        dt.textContent = r[0]; dd.textContent = r[1]; d.appendChild(dt); d.appendChild(dd); s.appendChild(d);
+      });
+      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    });
+  });
+  $('#dlg-x').addEventListener('click', function () { dlg.close(); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+})();
+</script>

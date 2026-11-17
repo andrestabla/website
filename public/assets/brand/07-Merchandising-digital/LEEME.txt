@@ -1,0 +1,15 @@
+MERCHANDISING DIGITAL · ALGORITMO T
+
+01-Fondos-de-videollamada    PNG 1920 x 1080, oscuro y claro. El centro queda libre para la persona.
+02-LinkedIn                  Portada 1584 x 396 y avatar 400 x 400.
+                             Alta resolución (subir estas; LinkedIn recomprime): página de empresa
+                             4512 x 764 (proporción 1128 x 191), perfil 3168 x 792 y logo 1200 x 1200.
+03-Publicaciones             Bases sin texto para post (1080 x 1080, oscuro y claro) e historia (1080 x 1920),
+                             más un ejemplo de cada una. Titular en Space Grotesk Bold; rótulo en JetBrains Mono.
+04-Fondo-de-pantalla-movil   PNG 1290 x 2796. El tercio superior queda libre para el reloj.
+05-Firma-de-correo           HTML para copiar y pegar, con instrucciones.
+06-Emojis                    Cuatro PNG de 128 x 128 con fondo transparente para Slack y Teams.
+07-Plantilla-de-presentacion PPTX 16:9 con cinco láminas base.
+08-Avatar-animado            El símbolo que se descifra desde binarios, en GIF, MP4, WebM y APNG.
+
+Los textos de los ejemplos son ilustrativos: cámbialos por casos y cifras reales antes de publicar.
