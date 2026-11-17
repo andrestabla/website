@@ -50,6 +50,6 @@ USO
 - Por debajo de 24 px usa solo el símbolo; la cabeza de la T deja de distinguirse en tamaños menores.
 - No cambies los colores, no deformes el logo ni separes el eslogan a otro ancho.
 
-09-Videos-de-presentacion    Videos de presentación de Empresas y Educación, y las cortinillas de cierre.
+09-Videos-de-presentacion    Cortinillas de cierre, subtítulos y licencias de los videos de presentación (los videos no se publican aquí).
 10-Editables-AI              Logotipos en .ai editables: cada variante por separado y un archivo maestro.
 11-Pendones-avisos-POP       Pendones, backing, avisos, señalética, afiche, volante, hablador y mostrador en PDF a tamaño real.
