@@ -433,6 +433,9 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: Theme
                             src={heroVideo.src}
                             poster={heroVideo.poster || undefined}
                             controls
+                            controlsList="nodownload noremoteplayback"
+                            disablePictureInPicture
+                            onContextMenu={(event) => event.preventDefault()}
                             playsInline
                             preload="none"
                             aria-label={heroVideo.label}
