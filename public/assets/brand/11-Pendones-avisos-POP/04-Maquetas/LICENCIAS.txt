@@ -12,7 +12,7 @@ maqueta-afiche     Empty poster mockup on white brick wall with blue frame      
 maqueta-volante    A person's hand holding blank white paper against grey background         id 2543987
 maqueta-hablador   Menu frame standing on wood table in coffee shop                          id 5016908
 maqueta-mostrador  Blank Modern Exhibition Booth Counter Mockup, Bright Corporate Event Hall id 434555767
-maqueta-stand      La misma fotografía del mostrador, en encuadre ancho.
+maqueta-stand      Empty trade show exhibition booth with blank white wall and oak slat panels  id 434228443
 
 Son referencias para el proveedor y para presentar la marca: el acabado real depende del material y de la impresión.
 Se generan con scripts/brand/componer.py y montaje.py (perspectiva y luz tomadas de cada foto).
