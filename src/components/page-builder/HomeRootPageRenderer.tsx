@@ -348,8 +348,34 @@ function resolveBlockAnchors(block: SitePageBlock) {
     return Array.from(anchors).filter(Boolean)
 }
 
+/** Video de presentación que ocupa la mitad derecha del hero. El CMS puede cambiarlo con `videoUrl` y `videoPosterUrl`. */
+const HERO_VIDEOS: Record<string, { src: string; poster: string; label: string }> = {
+    '/empresas': {
+        src: '/assets/video/presentacion-empresas.mp4',
+        poster: '/assets/video/presentacion-empresas-poster.jpg',
+        label: 'Video de presentación de Algoritmo T para empresas',
+    },
+    '/educacion': {
+        src: '/assets/video/presentacion-educacion.mp4',
+        poster: '/assets/video/presentacion-educacion-poster.jpg',
+        label: 'Video de presentación de Algoritmo T para educación',
+    },
+}
+
+function resolveHeroVideo(block: SitePageBlock, currentPath: string) {
+    const base = HERO_VIDEOS[currentPath.replace(/\/+$/, '') || '/']
+    const src = toText(block.content.videoUrl) || base?.src || ''
+    if (!src) return null
+    return {
+        src,
+        poster: toText(block.content.videoPosterUrl) || base?.poster || '',
+        label: base?.label || 'Video de presentación de Algoritmo T',
+    }
+}
+
 function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: ThemeColors) {
     const primaryHref = normalizeCmsHref(block.content.primaryHref, '', currentPath)
+    const heroVideo = resolveHeroVideo(block, currentPath)
     const bgImage = block.style?.backgroundImageUrl
     const isDark = toText(block.style.textColor) === '#ffffff' || toText(block.style.backgroundColor) === '#0b1323'
 
@@ -366,12 +392,13 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: Theme
             <div className={`pointer-events-none absolute left-[8%] top-20 h-28 w-28 rounded-full blur-2xl services-float-slow ${theme.gradientStart}`} />
             <div className={`pointer-events-none absolute right-[10%] top-32 h-36 w-36 rounded-full blur-2xl services-float-slow-delay ${theme.gradientEnd}`} />
 
-            <div className={`relative ${bgImage ? 'pt-8' : ''}`}>
+            <div className={`relative ${bgImage ? 'pt-8' : ''} ${heroVideo ? 'grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12' : ''}`}>
+              <div className="min-w-0">
                 <p className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-bold uppercase tracking-[0.25em] ${isDark ? 'bg-slate-800/80 text-emerald-300 border-slate-700' : `bg-white/80 ${theme.border} ${theme.textAccent}`}`}>
                     {toText(block.content.eyebrow, 'Servicios explicados sin tecnicismos')}
                 </p>
 
-                <h1 className={`mt-6 max-w-5xl text-5xl font-black leading-[0.95] tracking-tight md:text-7xl ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <h1 className={`mt-6 max-w-5xl font-black tracking-tight ${heroVideo ? 'text-4xl leading-[1] md:text-5xl xl:text-[3.5rem]' : 'text-5xl leading-[0.95] md:text-7xl'} ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {toText(block.content.title, 'Te ayudamos a modernizar tu empresa paso a paso, con decisiones simples y enfocadas en resultados.')}
                 </h1>
 
@@ -396,6 +423,23 @@ function renderHeroBlock(block: SitePageBlock, currentPath: string, theme: Theme
                         Ver casos en mi industria
                     </Link>
                 </div>
+              </div>
+              {heroVideo && (
+                <div className="relative min-w-0">
+                    <div className={`pointer-events-none absolute -inset-3 -z-10 rounded-[1.75rem] blur-2xl opacity-60 ${theme.gradientEnd}`} />
+                    <div className={`overflow-hidden rounded-2xl border shadow-[0_30px_60px_-34px_rgba(15,23,42,0.6)] ${isDark ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-[#1a2d5a]'}`}>
+                        <video
+                            className="block aspect-video w-full"
+                            src={heroVideo.src}
+                            poster={heroVideo.poster || undefined}
+                            controls
+                            playsInline
+                            preload="none"
+                            aria-label={heroVideo.label}
+                        />
+                    </div>
+                </div>
+              )}
             </div>
         </div>
     )
