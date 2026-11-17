@@ -1,0 +1,35 @@
+PENDONES, AVISOS Y MATERIAL POP · ALGORITMO T · 17/11/2026
+
+Doce artes en PDF vectorial, a tamaño real (escala 1:1), listos para enviar al proveedor.
+
+01-Pendones
+  pendon-roll-up-institucional-85x200cm.pdf   Pendón enrollable con el símbolo, el logotipo y la idea de marca.
+  pendon-roll-up-empresas-85x200cm.pdf        Pendón de la línea Empresas, con código QR a algoritmot.com/empresas.
+  pendon-roll-up-educacion-85x200cm.pdf       Pendón de la línea Educación, con código QR a algoritmot.com/educacion.
+  backing-300x225cm.pdf                       Fondo para fotos y entrevistas, con el logotipo y el símbolo en patrón.
+
+02-Avisos
+  aviso-fachada-300x70cm.pdf                  Panel de fachada con el logotipo sin eslogan.
+  aviso-recepcion-plano-180cm.pdf             Plano con medidas del logotipo en letras corpóreas para la recepción.
+  aviso-bandera-60cm.pdf                      Aviso redondo de doble cara con el símbolo.
+  senaletica-placas-30x12cm.pdf               Tres placas de ejemplo (una por página): Sala de reuniones, Dirección, Aula 1.
+
+03-Material-POP
+  afiche-50x70cm.pdf                          Plantilla de afiche para charlas y talleres.
+  volante-media-carta-14x21-6cm.pdf           Volante a dos caras (dos páginas: frente y respaldo).
+  hablador-de-mesa-10x15cm.pdf                Hablador de mesa con código QR a algoritmot.com.
+  mostrador-frente-90x100cm.pdf               Frente del mostrador de feria.
+
+ANTES DE IMPRIMIR
+- Los textos de los pendones, el afiche y el volante son ejemplos: ajusta titular, fecha y datos para cada evento.
+  Para cambiarlos se edita pop.py (scripts/brand/pop.py) y se vuelve a generar; los PDF no están pensados para editarse a mano.
+- Color: los PDF están en RGB. El proveedor los convierte a CMYK; referencias: azul Pantone 2767 C, dorado 142 C.
+  Pide una prueba de color impresa antes del tiraje.
+- No llevan sangrado ni marcas de corte. Los fondos son planos y el proveedor los extiende según su máquina.
+- Pendón enrollable: los 15 cm inferiores quedan dentro del casete; allí no hay texto.
+- El logotipo y el símbolo van en trazados; el resto del texto, con las fuentes incrustadas
+  (Space Grotesk, Inter y JetBrains Mono).
+- Acabado mate en todas las piezas.
+- Los códigos QR se generaron con las direcciones del sitio; pruébalos con el teléfono sobre la prueba impresa.
+
+Las reglas de uso y las maquetas están en el capítulo 13 del manual de marca (00-Manual-de-marca).
