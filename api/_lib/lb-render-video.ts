@@ -110,7 +110,7 @@ export function renderVideoHtml(options: {
 
   const stage = film?.url
     ? `<div class="vd-stage">
-        <video id="vd-film" controls preload="metadata"${film.poster ? ` poster="${escapeHtml(film.poster)}"` : ''}>
+        <video id="vd-film" controls controlslist="nodownload noremoteplayback" disablepictureinpicture oncontextmenu="return false" preload="metadata"${film.poster ? ` poster="${escapeHtml(film.poster)}"` : ''}>
           <source src="${escapeHtml(film.url)}">
           ${film.captionsUrl
             ? `<track kind="captions" srclang="es" label="Español" src="${escapeHtml(film.captionsUrl)}" default>`
