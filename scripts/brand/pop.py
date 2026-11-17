@@ -153,18 +153,19 @@ def volante_b():
         <div class="m" style="font-size:15px;line-height:1.7;color:#26324c"><b style="font-size:19px;color:{NAVY}">algoritmot.com</b><br>hola@algoritmot.com<br>+57 300 659 0161</div></div></div>''', PAPER, NAVY)
 
 
-def hablador():       # 100 x 150 mm a 4 px/mm
-    return art(400, 600, f'''<div style="position:absolute;inset:0 0 104px;padding:38px 34px 0;display:flex;flex-direction:column;align-items:center;text-align:center">
-      {MK(74)}
-      <div class="k" style="font-size:12.5px;color:#94620c;margin-top:24px">Conversemos</div>
-      <div class="h" style="font-size:36px;color:{NAVY};margin-top:12px">Cuéntanos qué quieres transformar</div>
-      <div style="margin-top:26px;border:2px solid {NAVY}">{qr('https://www.algoritmot.com', 150)}</div>
-      <div class="m" style="font-size:14px;font-weight:700;color:{NAVY};margin-top:16px">algoritmot.com</div></div>
-      <div style="position:absolute;left:0;right:0;bottom:0;height:104px;background:{NAVY};display:flex;align-items:center;justify-content:center">{LO(236)}</div>''', PAPER, NAVY)
+def hablador():       # 10 x 21 cm a 4 px/mm: el formato del exhibidor de acrílico vertical
+    return art(400, 840, f'''<div style="position:absolute;inset:0 0 132px;padding:54px 34px 0;display:flex;flex-direction:column;align-items:center;text-align:center">
+      {MK(96)}
+      <div class="k" style="font-size:13px;color:#94620c;margin-top:40px">Conversemos</div>
+      <div class="h" style="font-size:44px;color:{NAVY};margin-top:16px">Cuéntanos qué quieres transformar</div>
+      <div style="width:44px;height:4px;background:{GOLD};margin:34px 0"></div>
+      <div style="border:2px solid {NAVY}">{qr('https://www.algoritmot.com', 190)}</div>
+      <div class="m" style="font-size:16px;font-weight:700;color:{NAVY};margin-top:22px">algoritmot.com</div></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:132px;background:{NAVY};display:flex;align-items:center;justify-content:center">{LO(270)}</div>''', PAPER, NAVY)
 
 
-def mostrador():
-    return art(900, 1000, tex(15) + f'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:76px">{MK(300)}{LSO(660)}</div>')
+def mostrador():      # frente de 200 x 90 cm
+    return art(2000, 900, tex(15) + f'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:120px">{MK(380)}{LSO(1050)}</div>')
 
 
 CSS = f'''<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;700&display=swap">
@@ -184,8 +185,8 @@ ARTES = [
     ('senaletica-placas-30x12cm', '02-Avisos', 300, 120, [(1200, 480, placa(n)) for n in ('Sala de reuniones', 'Dirección', 'Aula 1')]),
     ('afiche-50x70cm', '03-Material-POP', 500, 700, [(1000, 1400, afiche())]),
     ('volante-media-carta-14x21-6cm', '03-Material-POP', 140, 216, [(560, 864, volante_a()), (560, 864, volante_b())]),
-    ('hablador-de-mesa-10x15cm', '03-Material-POP', 100, 150, [(400, 600, hablador())]),
-    ('mostrador-frente-90x100cm', '03-Material-POP', 900, 1000, [(900, 1000, mostrador())]),
+    ('hablador-de-mesa-10x21cm', '03-Material-POP', 100, 210, [(400, 840, hablador())]),
+    ('mostrador-frente-200x90cm', '03-Material-POP', 2000, 900, [(2000, 900, mostrador())]),
 ]
 
 
@@ -240,7 +241,7 @@ def person(x, bottom, hpx, c='#6b7690'):
 
 A = {n: (p[0][0], p[0][1], p[0][2]) for n, _, _, _, p in ARTES}
 RI, RE, RD = A['pendon-roll-up-institucional-85x200cm'], A['pendon-roll-up-empresas-85x200cm'], A['pendon-roll-up-educacion-85x200cm']
-BK, FA, MO, AF, HA = A['backing-300x225cm'], A['aviso-fachada-300x70cm'], A['mostrador-frente-90x100cm'], A['afiche-50x70cm'], A['hablador-de-mesa-10x15cm']
+BK, FA, MO, AF, HA = A['backing-300x225cm'], A['aviso-fachada-300x70cm'], A['mostrador-frente-200x90cm'], A['afiche-50x70cm'], A['hablador-de-mesa-10x21cm']
 PL = ARTES[7][4]; VO = ARTES[9][4]
 
 
@@ -292,7 +293,20 @@ def scenes():
         print('img', name, im.size, os.path.getsize(os.path.join(IMG, name + '.jpg')) // 1024, 'KB')
 
 
+def pngs():
+    """Cada arte (y cada página) en PNG, para montarlo sobre fotografías."""
+    os.makedirs(os.path.join(HERE, 'art'), exist_ok=True)
+    for name, folder, mw, mh, pages in ARTES:
+        for i, (w, h, html) in enumerate(pages):
+            k = min(3.0, 2400 / max(w, h)); tag = name + (f'-{i + 1}' if len(pages) > 1 else '')
+            src = os.path.join(HERE, 'work', tag + '.html'); png = os.path.join(HERE, 'art', tag + '.png')
+            bg = 'transparent' if 'bandera' in name else '#fff'
+            open(src, 'w').write(f'<!doctype html><meta charset="utf-8">{CSS}<body style="background:{bg};width:{w}px;height:{h}px;overflow:hidden">{html}')
+            chrome([f'--window-size={w},{h + 200}', f'--force-device-scale-factor={k}', '--default-background-color=00000000', f'--screenshot={png}', 'file://' + src])
+            im = Image.open(png).crop((0, 0, int(w * k), int(h * k))); im.save(png); print('png', tag, im.size)
+
+
 if __name__ == '__main__':
     os.makedirs(os.path.join(HERE, 'work'), exist_ok=True); os.makedirs(IMG, exist_ok=True)
-    if 'solo-maquetas' not in sys.argv: pdfs()
-    scenes()
+    if 'pngs' in sys.argv: pngs(); sys.exit()
+    pdfs()

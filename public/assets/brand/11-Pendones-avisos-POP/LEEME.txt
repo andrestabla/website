@@ -17,8 +17,11 @@ Doce artes en PDF vectorial, a tamaño real (escala 1:1), listos para enviar al 
 03-Material-POP
   afiche-50x70cm.pdf                          Plantilla de afiche para charlas y talleres.
   volante-media-carta-14x21-6cm.pdf           Volante a dos caras (dos páginas: frente y respaldo).
-  hablador-de-mesa-10x15cm.pdf                Hablador de mesa con código QR a algoritmot.com.
-  mostrador-frente-90x100cm.pdf               Frente del mostrador de feria.
+  hablador-de-mesa-10x21cm.pdf                Hablador para exhibidor de acrílico vertical, con código QR a algoritmot.com.
+  mostrador-frente-200x90cm.pdf               Frente del mostrador de feria.
+
+04-Maquetas
+  maqueta-*.jpg                               Cada arte montado sobre la fotografía de su soporte. Ver LICENCIAS.txt.
 
 ANTES DE IMPRIMIR
 - Los textos de los pendones, el afiche y el volante son ejemplos: ajusta titular, fecha y datos para cada evento.

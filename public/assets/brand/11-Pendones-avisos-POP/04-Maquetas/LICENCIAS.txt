@@ -1,0 +1,18 @@
+Maquetas fotográficas · los artes del kit montados sobre fotografías de soportes en blanco
+Fotografías: banco Magnific (Freepik), licencia de la cuenta · descargadas el 2026-11-17
+
+maqueta-rollup     Blank Roll Up Banner Mockup in Modern Minimalist Art Gallery Lobby        id 428771693
+                   White Roll-Up Banner Mockup in Trade Show Hall (usada dos veces)          id 428567731
+maqueta-backing    Fabric Pop Up basic unit Advertising banner media display banner          id 5191112
+maqueta-fachada    Large banner on office or storefront mockup, blank white shop sign        id 382681379
+maqueta-recepcion  Blank Wall Mockup in Modern Office Reception with Wooden Front Desk       id 429102136
+maqueta-bandera    Blank round sign board attached on wall of the building                   id 47769646
+maqueta-placas     White empty placard for business logo                                     id 9235671
+maqueta-afiche     Empty poster mockup on white brick wall with blue frame                   id 433958101
+maqueta-volante    A person's hand holding blank white paper against grey background         id 2543987
+maqueta-hablador   Menu frame standing on wood table in coffee shop                          id 5016908
+maqueta-mostrador  Blank Modern Exhibition Booth Counter Mockup, Bright Corporate Event Hall id 434555767
+maqueta-stand      La misma fotografía del mostrador, en encuadre ancho.
+
+Son referencias para el proveedor y para presentar la marca: el acabado real depende del material y de la impresión.
+Se generan con scripts/brand/componer.py y montaje.py (perspectiva y luz tomadas de cada foto).
