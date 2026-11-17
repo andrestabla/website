@@ -120,7 +120,7 @@ def phys():
 F11 = '11-Pendones-avisos-POP / '
 POP = {
     'PEND': [
-        ('Pendón enrollable', 'p-rollup', 'Eventos', 'Tres pendones: institucional, Empresas y Educación. El logotipo va arriba, a la altura de los ojos, y el contacto termina antes del casete.',
+        ('Pendón enrollable', 'p-rollup', 'Eventos', 'Tres pendones: Empresas, institucional y Educación. El logotipo va arriba, a la altura de los ojos, y el contacto termina antes del casete.',
          'Lona banner mate o polipropileno de 280 g en estructura de aluminio con maletín.', '85 × 200 cm. Los 15 cm inferiores quedan dentro del casete: allí no va texto.',
          F11 + '01-Pendones / pendon-roll-up-…-85x200cm.pdf', 'Ferias, auditorios y recepciones de eventos.'),
         ('Backing', 'p-backing', 'Eventos', 'Fondo para fotos y entrevistas con el logotipo y el símbolo en patrón alterno: la marca aparece en cualquier encuadre.',
@@ -132,13 +132,13 @@ POP = {
          'Panel de aluminio compuesto azul, letras de acrílico blanco en relieve e iluminación LED frontal cálida.', '300 × 70 cm; logotipo de 230 cm. Se escala conservando la proporción y 35 cm de aire a cada lado.',
          F11 + '02-Avisos / aviso-fachada-300x70cm.pdf', 'Entrada principal de la sede.'),
         ('Aviso de recepción', 'p-recepcion', 'Sede', 'Logotipo con eslogan en letras corpóreas sobre pared clara, detrás del mostrador.',
-         'Letras en PVC espumado de 10 mm pintado en azul de marca y símbolo en acrílico impreso, con separadores de 1 cm para que proyecten sombra.', '180 cm de ancho por 44 cm de alto, centrado a 160 cm del piso.',
+         'Letras en PVC espumado de 10 mm pintado en azul de marca y símbolo en acrílico impreso, separadas 1 cm de la pared para que proyecten sombra.', '180 cm de ancho por 44 cm de alto, centrado a 160 cm del piso.',
          F11 + '02-Avisos / aviso-recepcion-plano-180cm.pdf', 'Recepción y salas de reuniones.'),
         ('Aviso bandera', 'p-bandera', 'Sede', 'El símbolo solo, en un aviso redondo de doble cara, perpendicular a la fachada.',
          'Caja de luz redonda de doble cara en acrílico, con aro y brazo en azul oscuro.', '60 cm de diámetro, a la altura que permita la norma local de publicidad exterior.',
          F11 + '02-Avisos / aviso-bandera-60cm.pdf', 'Ubicar la sede desde la calle.'),
-        ('Señalética', 'p-placas', 'Interiores', 'Placas azules con filete dorado, el símbolo, el nombre del espacio y su inicial en binario.',
-         'Acrílico azul de 3 mm con vinilo de corte blanco y cian, o impresión UV. Se fijan con cinta doble faz o dilatadores.', '30 × 12 cm, a 150 cm del piso, del lado de la manija.',
+        ('Señalética', 'p-placas', 'Interiores', 'Placa azul con filete dorado, el símbolo, el nombre del espacio y su inicial en binario, fijada con separadores metálicos.',
+         'Acrílico de 5 mm con impresión UV por el reverso, fijado con cuatro separadores de acero.', '30 × 12 cm, a 150 cm del piso, del lado de la manija.',
          F11 + '02-Avisos / senaletica-placas-30x12cm.pdf', 'Puertas de salas, oficinas y aulas.'),
     ],
     'MAT': [
@@ -149,11 +149,11 @@ POP = {
          'Propalcote de 150 g, cuatro tintas por ambas caras.', '14 × 21,6 cm.',
          F11 + '03-Material-POP / volante-media-carta-14x21-6cm.pdf', 'Ferias, visitas comerciales y kits de evento.'),
         ('Hablador de mesa', 'p-hablador', 'Punto de contacto', 'Una invitación a conversar y un código QR que lleva al sitio.',
-         'Propalcote de 300 g plegado en tienda, o inserto en un exhibidor de acrílico.', '10 × 15 cm por cara.',
-         F11 + '03-Material-POP / hablador-de-mesa-10x15cm.pdf', 'Mesas de reunión, mostradores y stands.'),
-        ('Mostrador', 'p-mostrador', 'Stand', 'Frente del mostrador portátil con el símbolo y el logotipo con eslogan.',
-         'Vinilo adhesivo con laminado mate sobre el mostrador, o lona con velcro.', '90 × 100 cm.',
-         F11 + '03-Material-POP / mostrador-frente-90x100cm.pdf', 'Stands de feria y puntos de registro.'),
+         'Propalcote de 200 g inserto en un exhibidor de acrílico vertical.', '10 × 21 cm.',
+         F11 + '03-Material-POP / hablador-de-mesa-10x21cm.pdf', 'Mesas de reunión, mostradores y stands.'),
+        ('Mostrador', 'p-mostrador', 'Stand', 'Frente del mostrador de feria con el símbolo y el logotipo con eslogan sobre azul de marca.',
+         'Vinilo adhesivo con laminado mate sobre el frente del mostrador, o panel impreso encajado en el marco.', '200 × 90 cm; se ajusta al ancho del mueble conservando la proporción del logotipo.',
+         F11 + '03-Material-POP / mostrador-frente-200x90cm.pdf', 'Stands de feria y puntos de registro.'),
     ],
 }
 
