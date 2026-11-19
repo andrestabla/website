@@ -14,9 +14,10 @@
 import { guard, lbSessionState } from '../_lib/lb-auth.js'
 import { accessCookie, hasAccess } from '../_lib/lb-access.js'
 import { renderResourceHtml } from '../_lib/lb-render-any.js'
+import { renderMediaHtml } from '../_lib/lb-render-media.js'
 import { codeForm, servePackage, shell } from '../_lib/lb-serve-package.js'
 import { lbResources, loadResource, loadResourceByPublicId } from '../_lib/lb-store.js'
-import { packageAt } from '../_lib/lb-delivery.js'
+import { mediaAt, packageAt } from '../_lib/lb-delivery.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -62,7 +63,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // ?v=N abre una versión entregada anterior, solo para leerla.
       const askedVersion = Number(req.query?.v) || null
       const previewAt = await packageAt(loaded, askedVersion)
-      if (askedVersion && !previewAt) return shell('Versión no encontrada', 'Esa versión del paquete no existe.', 404, res)
+      // Un medio entregado no es un paquete ni es el guion: se reproduce.
+      const previewMedia = previewAt ? null : await mediaAt(loaded, askedVersion)
+      if (askedVersion && !previewAt && !previewMedia) {
+        return shell('Versión no encontrada', 'Esa versión del paquete no existe.', 404, res)
+      }
+      if (previewMedia) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        res.setHeader('Cache-Control', 'no-store')
+        return res.status(200).send(renderMediaHtml({
+          meta: {
+            title: loaded.resource.title,
+            subtitle: loaded.resource.subtitle,
+            course: loaded.resource.course,
+            unit: loaded.resource.unit,
+            workspaceName: loaded.workspace?.name || '',
+          },
+          final: loaded.final!,
+          directives: loaded.directives,
+          mode: 'preview',
+          version: { numero: previewMedia.version, viva: previewMedia.live },
+        }))
+      }
       if (previewAt) {
         const edit = !!req.query?.edit && previewAt.live
         const base = `/api/learning/view?preview=${encodeURIComponent(previewId)}${edit ? '&edit=1' : ''}${previewAt.live ? '' : `&v=${previewAt.version}`}&path=`
@@ -131,6 +153,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // El enlace público entrega siempre la versión viva.
     const publicAt = await packageAt(loaded)
+    // Si lo que se entrega es un archivo reproducible, el enlace lo reproduce:
+    // enseñar el guion de un video a quien abre su enlace es enseñarle las
+    // tripas en vez de la pieza.
+    if (!publicAt) {
+      const publicMedia = await mediaAt(loaded)
+      if (publicMedia) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8')
+        res.setHeader('Cache-Control', resource.shareMode === 'CODE'
+          ? 'no-store' : 'public, max-age=120, stale-while-revalidate=600')
+        return res.status(200).send(renderMediaHtml({
+          meta: {
+            title: resource.title,
+            subtitle: resource.subtitle,
+            course: resource.course,
+            unit: resource.unit,
+            workspaceName: workspace?.name || '',
+          },
+          final: loaded.final!,
+          directives,
+          mode: 'public',
+        }))
+      }
+    }
     if (publicAt) {
       return servePackage({
         res,
