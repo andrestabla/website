@@ -15,6 +15,8 @@ import { parseAnchor } from '../../src/learning/lib/comments.js'
 import { anchorTargetsFor, servesOriginal } from '../../src/learning/lib/content.js'
 import { liveVersion } from '../_lib/lb-delivery.js'
 import { can } from '../../src/learning/lib/roles.js'
+import { LB_DOC_STAGE_LABEL, stageOfAnchor } from '../../src/learning/lib/stages.js'
+import { stageDocAt } from '../_lib/lb-stages.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -67,6 +69,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         comments: rows.map((row: any) => ({
           id: row.id,
           anchor: row.anchor,
+          /** TEXTO | GUION si el hilo es del documento de una etapa; null si es del recurso. */
+          stage: stageOfAnchor(row.anchor),
           anchorLabel: row.anchorLabel,
           parentId: row.parentId,
           authorId: row.authorId,
@@ -97,7 +101,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!content_) return res.status(400).json({ ok: false, error: 'El comentario está vacío' })
 
       const parentId = text(body.parentId, 40)
-      let anchor = parseAnchor(body.anchor).key
+      // El documento de una etapa es una pieza comentable más, con su propia ancla.
+      const stage = stageOfAnchor(body.anchor)
+      let anchor = stage ? String(body.anchor) : parseAnchor(body.anchor).key
 
       if (parentId) {
         // Una respuesta hereda el ancla del hilo: no se comenta en dos sitios.
@@ -113,17 +119,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Un comentario dice sobre qué versión del paquete se hizo; una respuesta, la de su hilo.
       const parentRow = parentId ? await lbComments().findUnique({ where: { id: parentId }, select: { version: true } }) : null
+      const stageDoc = stage && !parentId ? await stageDocAt(resourceId, stage) : null
+      if (stage && !parentId && !stageDoc) {
+        return res.status(400).json({ ok: false, error: `Este recurso todavía no tiene ${LB_DOC_STAGE_LABEL[stage].toLowerCase()}` })
+      }
       const version = parentId
         ? parentRow?.version ?? null
+        : stageDoc ? stageDoc.version
         : servesOriginal(resource.kind, content, loaded.final) ? liveVersion(resource) : null
+      const stageOfThread = stageOfAnchor(anchor)
       const created = await lbComments().create({
         data: {
           resourceId,
           version,
           anchor,
-          anchorLabel:
-            anchorTargetsFor(resource.kind, content, directives.instructional.lessonLabel)
-              .find((target) => target.anchor === anchor)?.label || 'Pieza eliminada',
+          anchorLabel: stageOfThread
+            ? LB_DOC_STAGE_LABEL[stageOfThread]
+            : anchorTargetsFor(resource.kind, content, directives.instructional.lessonLabel)
+                .find((target) => target.anchor === anchor)?.label || 'Pieza eliminada',
           parentId: parentId || null,
           authorId: me,
           body: content_,

@@ -214,6 +214,9 @@ const REVIEW_SCRIPT = `
     return '';
   }
   function currentSlide(){
+    // Un guion por pantallas las muestra todas a la vez, cada una con su rótulo
+    // de avance dibujado: ahí «la pantalla en que se está» no significa nada.
+    if (window.__lbNoSlide) return '';
     var now = Date.now();
     if (now - slideCache.at < 250) return slideCache.value;
     var value = '';

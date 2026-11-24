@@ -77,6 +77,10 @@
     "api/learning/export.ts": {
       "memory": 1024,
       "maxDuration": 30
+    },
+    "api/learning/stages.ts": {
+      "memory": 1024,
+      "maxDuration": 60
     }
   },
   "headers": [

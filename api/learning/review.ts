@@ -14,6 +14,11 @@
  * Lo que el revisor ve de la conversación son los hilos de la revisión
  * externa y lo que el equipo le responda en ellos. Los hilos internos del
  * equipo y de los auditores no salen de aquí.
+ *
+ * El enlace del recurso lleva siempre a la pieza final. El texto plano y el
+ * guion tienen cada uno el suyo (LbStage.reviewToken): misma página, misma
+ * forma de señalar, pero lo que se abre es el documento de esa etapa y sus
+ * hilos no se mezclan con los de la pieza.
  */
 import { appendToBody, servePackage, shell } from '../_lib/lb-serve-package.js'
 import { lbSessionState, roleInWorkspace } from '../_lib/lb-auth.js'
@@ -26,6 +31,8 @@ import { lbComments, lbResources, loadResource, usersByIds } from '../_lib/lb-st
 import { parseAnchor } from '../../src/learning/lib/comments.js'
 import { anchorTargetsFor, familyOf } from '../../src/learning/lib/content.js'
 import { describeTarget, sanitizeTarget } from '../../src/learning/lib/review.js'
+import { lbStageDocs, lbStages, stageDocAt, stagePage } from '../_lib/lb-stages.js'
+import { LB_DOC_STAGE_LABEL, isDocStage, stageAnchor, stageOfAnchor, type LbDocStage } from '../../src/learning/lib/stages.js'
 
 type VercelRequest = any
 type VercelResponse = any
@@ -61,22 +68,49 @@ async function sessionReviewer(req: VercelRequest, workspaceId: string): Promise
  * la de su sesión de Learning Builder, que se deja también en la cookie para
  * que la pieza y sus archivos la reconozcan.
  */
-async function whoReviews(req: VercelRequest, res: VercelResponse, resource: any): Promise<{ reviewer: LbReviewer | null; viaSession: boolean }> {
-  const fromCookie = readReviewer(req, resource.publicId, resource.reviewToken)
+async function whoReviews(req: VercelRequest, res: VercelResponse, resource: any, scope: Scope): Promise<{ reviewer: LbReviewer | null; viaSession: boolean }> {
+  const fromCookie = readReviewer(req, scope.id, scope.token)
   if (fromCookie) return { reviewer: fromCookie, viaSession: false }
   const fromSession = await sessionReviewer(req, resource.workspaceId)
-  if (fromSession) res.setHeader('Set-Cookie', reviewerCookie(resource.publicId, resource.reviewToken, fromSession))
+  if (fromSession) res.setHeader('Set-Cookie', reviewerCookie(scope.id, scope.token, fromSession))
   return { reviewer: fromSession, viaSession: !!fromSession }
 }
 
+/** La etapa a la que lleva el enlace; null cuando es el del recurso, es decir, la pieza final. */
+type StageCtx = { stage: LbDocStage; row: any } | null
+
+/**
+ * A qué está atada la identidad del revisor. Cada enlace tiene la suya: quien
+ * se identificó para revisar el guion no queda identificado en la pieza final,
+ * y rotar un enlace no cierra la sesión de los demás.
+ */
+type Scope = { id: string; token: string }
+
+function scopeOf(resource: any, stage: StageCtx): Scope {
+  return stage
+    ? { id: `${resource.publicId}${stage.stage}`, token: stage.row.reviewToken }
+    : { id: resource.publicId, token: resource.reviewToken }
+}
+
 /** El recurso detrás de un token, solo si su revisión está abierta. */
-async function byToken(token: string) {
+async function byToken(req: VercelRequest, token: string) {
   if (!token || token.length < 16) return null
   const found = await lbResources().findUnique({ where: { reviewToken: token }, select: { id: true } })
-  if (!found) return null
-  const loaded = await loadResource(found.id)
-  if (!loaded || !loaded.resource.reviewEnabled || loaded.resource.status === 'ARCHIVED') return null
-  return loaded
+  if (found) {
+    const loaded = await loadResource(found.id)
+    if (!loaded || !loaded.resource.reviewEnabled || loaded.resource.status === 'ARCHIVED') return null
+    return { ...loaded, stage: null as StageCtx }
+  }
+
+  // No es el enlace de un recurso: puede ser el del texto plano o el del guion.
+  const row = await lbStages().findUnique({ where: { reviewToken: token } }).catch(() => null)
+  if (!row || !isDocStage(row.stage)) return null
+  const loaded = await loadResource(row.resourceId)
+  if (!loaded || loaded.resource.status === 'ARCHIVED') return null
+  // Sin publicar, el enlace solo le abre al equipo del workspace, que así
+  // comenta el documento por dentro antes de enseñárselo a nadie.
+  if (!row.published && !(await sessionReviewer(req, loaded.resource.workspaceId))) return null
+  return { ...loaded, stage: { stage: row.stage, row } as StageCtx }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -97,16 +131,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 /** La pieza tal como la ve el estudiante, con la capa de revisión encima. */
 async function frame(req: VercelRequest, res: VercelResponse) {
   const token = String(req.query?.token || '')
-  const loaded = await byToken(token)
+  const loaded = await byToken(req, token)
   if (!loaded) return shell('Revisión cerrada', 'Este enlace de revisión ya no está activo.', 404, res)
-  const { resource, workspace, directives, content } = loaded
+  const { resource, workspace, directives, content, stage } = loaded
 
-  if (!(await whoReviews(req, res, resource)).reviewer) {
+  if (!(await whoReviews(req, res, resource, scopeOf(resource, stage))).reviewer) {
     return shell('Identifícate primero', 'Abre el enlace de revisión e indica tu nombre y correo.', 401, res)
   }
 
   res.setHeader('X-Frame-Options', 'SAMEORIGIN')
   res.setHeader('Cache-Control', 'private, no-store')
+
+  // El enlace de una etapa abre su documento, en la versión pedida o en la vigente.
+  if (stage) {
+    const liveDoc = await stageDocAt(resource.id, stage.stage)
+    const doc = Number(req.query?.v) ? await stageDocAt(resource.id, stage.stage, Number(req.query?.v)) : liveDoc
+    if (!doc || !liveDoc) return shell('Versión no encontrada', 'Esa versión del documento no existe.', 404, res)
+    const page = await stagePage({
+      workspace,
+      doc,
+      stage: stage.stage,
+      title: resource.title,
+      live: doc.version === liveDoc.version,
+      extra: `<script>window.__lbNoSlide=true</script>${reviewLayer('')}`,
+    })
+    if (page === null) return shell('Documento incompleto', 'La lectura de este documento ya no está en el almacenamiento.', 404, res)
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    return res.status(200).send(page)
+  }
 
   // ?v=N revisa una versión entregada anterior: se ve con sus comentarios, sin añadir más.
   const askedVersion = Number(req.query?.v) || null
@@ -148,25 +200,31 @@ async function frame(req: VercelRequest, res: VercelResponse) {
 async function api(req: VercelRequest, res: VercelResponse) {
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body ?? {})
   const op = String(body.op || '')
-  const loaded = await byToken(text(body.token, 80))
+  const loaded = await byToken(req, text(body.token, 80))
   if (!loaded) return res.status(404).json({ ok: false, error: 'Este enlace de revisión ya no está activo' })
-  const { resource, workspace, content, directives } = loaded
+  const { resource, workspace, content, directives, stage } = loaded
+  const scope = scopeOf(resource, stage)
   // Identificarse o salir no miran la sesión: son justo para cambiar de identidad.
   const { reviewer, viaSession } = op === 'identify' || op === 'leave'
-    ? { reviewer: readReviewer(req, resource.publicId, resource.reviewToken), viaSession: false }
-    : await whoReviews(req, res, resource)
+    ? { reviewer: readReviewer(req, scope.id, scope.token), viaSession: false }
+    : await whoReviews(req, res, resource, scope)
 
   if (op === 'open') {
-    // Las versiones entregadas, para que quien revisa pueda volver a las anteriores.
-    const versions = await lbDeliveries().findMany({
-      where: { resourceId: resource.id },
+    // Las versiones —del paquete entregado o del documento de la etapa—, para
+    // que quien revisa pueda volver a las anteriores.
+    const versions = await (stage ? lbStageDocs() : lbDeliveries()).findMany({
+      where: stage ? { resourceId: resource.id, stage: stage.stage } : { resourceId: resource.id },
       orderBy: { version: 'desc' },
       select: { version: true, notes: true, createdAt: true },
     })
+    const liveNow = stage ? versions[0]?.version || 1 : liveVersion(resource)
     return res.status(200).json({
-      live: liveVersion(resource),
-      versions: versions.map((row: any) => ({ ...row, live: row.version === liveVersion(resource) })),
+      live: liveNow,
+      versions: versions.map((row: any) => ({ ...row, live: row.version === liveNow })),
       ok: true,
+      /** TEXTO | GUION cuando el enlace es el de una etapa; null si es el de la pieza final. */
+      stage: stage?.stage || null,
+      stageLabel: stage ? LB_DOC_STAGE_LABEL[stage.stage] : null,
       resource: {
         title: resource.title,
         subtitle: resource.subtitle,
@@ -191,12 +249,12 @@ async function api(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ ok: false, error: 'Necesitamos tu autorización para tratar estos datos' })
     }
     const next: LbReviewer = { name, email, org }
-    res.setHeader('Set-Cookie', reviewerCookie(resource.publicId, resource.reviewToken, next))
+    res.setHeader('Set-Cookie', reviewerCookie(scope.id, scope.token, next))
     return res.status(200).json({ ok: true, reviewer: next })
   }
 
   if (op === 'leave') {
-    res.setHeader('Set-Cookie', clearReviewerCookie(resource.publicId))
+    res.setHeader('Set-Cookie', clearReviewerCookie(scope.id))
     return res.status(200).json({ ok: true })
   }
 
@@ -205,8 +263,14 @@ async function api(req: VercelRequest, res: VercelResponse) {
 
   if (op === 'list') {
     // Solo los hilos abiertos desde la revisión externa, con sus respuestas.
+    // Cada enlace ve los suyos: los del guion no aparecen en la pieza final, ni al revés.
     const roots = await lbComments().findMany({
-      where: { resourceId, parentId: null, guestEmail: { not: null } },
+      where: {
+        resourceId,
+        parentId: null,
+        guestEmail: { not: null },
+        ...(stage ? { anchor: stageAnchor(stage.stage) } : { NOT: { anchor: { startsWith: 'stage:' } } }),
+      },
       orderBy: { createdAt: 'asc' },
     })
     const replies = roots.length
@@ -250,9 +314,11 @@ async function api(req: VercelRequest, res: VercelResponse) {
     if (recent >= 12) return res.status(429).json({ ok: false, error: 'Vas muy rápido: espera un momento' })
 
     // Se comenta sobre la versión vigente; las anteriores quedan como registro.
-    const live = liveVersion(resource)
+    const stageDoc = stage ? await stageDocAt(resourceId, stage.stage) : null
+    if (stage && !stageDoc) return res.status(400).json({ ok: false, error: 'Este documento ya no está disponible' })
+    const live = stageDoc ? stageDoc.version : liveVersion(resource)
     const viewing = Number(body.version) || null
-    const hasPackage = !!(await packageAt(loaded))
+    const hasPackage = stage ? true : !!(await packageAt(loaded))
     if (hasPackage && viewing && viewing !== live) {
       return res.status(400).json({ ok: false, error: `Estás viendo la V${viewing}; los comentarios nuevos van sobre la V${live}, la vigente` })
     }
@@ -260,7 +326,8 @@ async function api(req: VercelRequest, res: VercelResponse) {
     const parentId = text(body.parentId, 40)
     if (parentId) {
       const parent = await lbComments().findUnique({ where: { id: parentId } })
-      if (!parent || parent.resourceId !== resourceId || parent.parentId || !parent.guestEmail) {
+      if (!parent || parent.resourceId !== resourceId || parent.parentId || !parent.guestEmail
+        || stageOfAnchor(parent.anchor) !== (stage?.stage ?? null)) {
         return res.status(404).json({ ok: false, error: 'El hilo ya no existe' })
       }
       const created = await lbComments().create({
@@ -280,6 +347,26 @@ async function api(req: VercelRequest, res: VercelResponse) {
     }
 
     const target = sanitizeTarget(body.target)
+
+    // Sobre el documento de una etapa: el ancla es la etapa, y el objetivo dice dónde.
+    if (stage) {
+      const label = LB_DOC_STAGE_LABEL[stage.stage]
+      const created = await lbComments().create({
+        data: {
+          resourceId,
+          anchor: stageAnchor(stage.stage),
+          anchorLabel: target ? `${label} · ${describeTarget(target)}`.slice(0, 300) : label,
+          target: target ?? undefined,
+          version: live,
+          body: content_,
+          guestName: reviewer.name,
+          guestEmail: reviewer.email,
+          guestOrg: reviewer.org || null,
+        },
+      })
+      return res.status(200).json({ ok: true, id: created.id })
+    }
+
     const targets = anchorTargetsFor(resource.kind, content, directives.instructional.lessonLabel)
 
     // El ancla agrupa el hilo en el panel del equipo. Se toma la que trae el
@@ -314,7 +401,7 @@ async function api(req: VercelRequest, res: VercelResponse) {
 
   const commentId = text(body.commentId, 40)
   const comment = commentId ? await lbComments().findUnique({ where: { id: commentId } }) : null
-  if (!comment || comment.resourceId !== resourceId) {
+  if (!comment || comment.resourceId !== resourceId || stageOfAnchor(comment.anchor) !== (stage?.stage ?? null)) {
     return res.status(404).json({ ok: false, error: 'Comentario no encontrado' })
   }
   // El revisor solo toca lo suyo, y lo suyo es lo que escribió con su correo.

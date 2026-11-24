@@ -10,6 +10,7 @@ import type { LbPodcastContent } from './podcast.js'
 import type { LbCapability, LbRole } from './roles.js'
 import type { LbResourceKind, LbShareMode, LbStatus } from './resources.js'
 import type { LbReviewTarget } from './review.js'
+import type { LbDocStage, LbStageState } from './stages.js'
 
 export type WorkspaceRow = {
   id: string
@@ -156,9 +157,17 @@ export type ProbeRow = {
   detail?: string
 }
 
+/** Las etapas 1 y 2 de un recurso y cuántos hilos tiene cada versión de su documento. */
+export type StagesPayload = {
+  stages: LbStageState[]
+  comments: Array<{ stage: LbDocStage; version: number | null; status: 'OPEN' | 'RESOLVED'; count: number }>
+}
+
 export type CommentRow = {
   id: string
   anchor: string
+  /** TEXTO | GUION si el hilo es del documento de una etapa; null si es del recurso. */
+  stage?: LbDocStage | null
   anchorLabel: string | null
   parentId: string | null
   authorId: string | null
@@ -363,6 +372,25 @@ export const learningApi = {
     }> => post('/api/learning/import', { op: 'ingest', resourceId, uploadId, parts, fileName, ...options }),
     clear: (resourceId: string): Promise<{ content: LbMirrorContent | null; final: LbFinal | null }> =>
       post('/api/learning/import', { op: 'clear', resourceId }),
+  },
+  /**
+   * Etapas 1 y 2: el texto plano y el guion, como documentos que se suben, se
+   * versionan, se publican por su propio enlace y se comentan. El archivo sube
+   * por trozos con `importPkg.begin` y `importPkg.part`, y aquí se convierte.
+   */
+  stages: {
+    list: (resourceId: string): Promise<StagesPayload> =>
+      post('/api/learning/stages', { op: 'list', resourceId }),
+    ingest: (resourceId: string, stage: LbDocStage, uploadId: string, parts: number, fileName: string, notes?: string): Promise<StagesPayload> =>
+      post('/api/learning/stages', { op: 'ingest', resourceId, stage, uploadId, parts, fileName, notes }),
+    publish: (resourceId: string, stage: LbDocStage, published: boolean, rotate = false): Promise<StagesPayload> =>
+      post('/api/learning/stages', { op: 'publish', resourceId, stage, published, rotate }),
+    remove: (resourceId: string, stage: LbDocStage, version: number): Promise<StagesPayload> =>
+      post('/api/learning/stages', { op: 'delete', resourceId, stage, version }),
+    previewUrl: (resourceId: string, stage: LbDocStage, version?: number) =>
+      `/api/learning/stages?preview=${encodeURIComponent(resourceId)}&stage=${stage}${version ? `&v=${version}` : ''}`,
+    downloadUrl: (resourceId: string, stage: LbDocStage, version?: number) =>
+      `/api/learning/stages?download=${encodeURIComponent(resourceId)}&stage=${stage}${version ? `&v=${version}` : ''}`,
   },
   /** Con version, abre esa versión entregada en lugar de la vigente. */
   previewUrl: (resourceId: string, version?: number) =>
