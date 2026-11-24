@@ -610,7 +610,7 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
             )}
 
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-3">
-              {visibleRoots.length === 0 && !pick && (stateFilter || listVersion) && (
+              {visibleRoots.length === 0 && !pick && !!(stateFilter || listVersion) && (
                 <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-[13px] text-slate-400">
                   Ningún hilo coincide con el filtro.
                 </div>
