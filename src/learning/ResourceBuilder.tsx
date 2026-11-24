@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import type { LbIssue } from './lib/blocks'
-import { aiWritesFor, familyOf, servesOriginal, validateResourceContent, type LbResourceContent } from './lib/content'
+import { aiWritesFor, deliveryIssues, familyOf, servesOriginal, validateResourceContent, type LbResourceContent } from './lib/content'
 import type { LbFinal } from './lib/final'
 import type { LbInteractiveContent } from './lib/interactive'
 import type { LbMirrorContent } from './lib/mirror'
@@ -154,6 +154,9 @@ export function ResourceBuilder() {
       setReviewToken(payload.reviewToken ?? null)
       const ready = kindSpec(payload.resource.kind)?.available !== false
       if (!ready) setTab('ficha')
+      // Un recurso ya producido se abre por lo producido: su pieza, lista para
+      // verla y retocarla, y no por el editor de bloques que quedó detrás.
+      else if (can(payload.role, 'resource.edit') && payload.resource.final && familyOf(payload.resource.kind) !== 'mirror') setTab('final')
       else if (!can(payload.role, 'resource.edit')) setTab(can(payload.role, 'comment.view') ? 'comentarios' : 'vista')
       if (can(payload.role, 'sources.manage')) {
         const sourcesPayload = await learningApi.sources.list(payload.resource.id)
@@ -264,6 +267,17 @@ export function ResourceBuilder() {
   }, [resourceComments])
 
   const errors = useMemo(() => issues.filter((issue) => issue.level === 'error'), [issues])
+  /**
+   * Lo que de verdad impide entregar. Cuando el recurso entrega su pieza
+   * original, lo que le falte al editor de bloques no la detiene: se sigue
+   * viendo en Revisión, pero no se anuncia en la cabecera ni frena la descarga.
+   */
+  const blocking = useMemo(
+    () => (resource && directives && content
+      ? deliveryIssues(resource.kind, content, final, directives).filter((issue) => issue.level === 'error')
+      : []),
+    [resource, directives, content, final]
+  )
   const warnings = useMemo(() => issues.filter((issue) => issue.level === 'warning'), [issues])
   const published = resource?.status === 'PUBLISHED'
   const publicUrl = resource ? `${window.location.origin}${learningApi.publicUrl(resource.publicId)}` : ''
@@ -443,7 +457,7 @@ export function ResourceBuilder() {
   // bloques —que no les corresponde— se muestra su ficha y se dice qué falta.
   const kindReady = spec.available
   // El asistente escribe guiones de bloques; en los demás formatos todavía no ayuda.
-  const onEditorStage = tab !== 'texto' && tab !== 'documento' && tab !== 'vista' && tab !== 'comentarios' && tab !== 'entrega'
+  const onEditorStage = tab === 'guion' || tab === 'revision' || (tab === 'final' && !final)
   // El asistente escribe en el editor: en las demás etapas no tiene qué hacer.
   const showChat = editable && kindReady && onEditorStage && aiWritesFor(resource.kind) && (desktop ? layout !== 'panel' : mobilePane === 'chat')
   const showPanel = !showChat || (desktop ? layout !== 'chat' : mobilePane === 'panel')
@@ -463,14 +477,17 @@ export function ResourceBuilder() {
     guion: showsDoc('GUION') ? [T('documento', 'Guion', FileText)] : [],
     producido: !kindReady
       ? [T('ficha', 'Ficha', FileText)]
-      : editable
-      ? [
-          T('guion', 'Editor en línea', PenLine),
-          // La pieza importada no tiene pestaña aparte: su editor ya ES el paquete.
-          ...(familyOf(resource.kind) !== 'mirror' ? [T('final', 'Pieza final', Package)] : []),
-          T('revision', 'Revisión', ShieldCheck),
-        ]
-      : [],
+      : !editable
+      ? []
+      // La pieza importada no tiene pestaña aparte: su editor ya ES el paquete.
+      : familyOf(resource.kind) === 'mirror'
+      ? [T('guion', 'Recurso producido', Package), T('revision', 'Revisión', ShieldCheck)]
+      // Con la pieza ya producida, lo primero es ella: se ve y se retoca sobre
+      // el original. El editor de bloques queda al lado, como versión de trabajo.
+      : final
+      ? [T('final', 'Recurso producido', Package), T('guion', 'Versión por bloques', PenLine), T('revision', 'Revisión', ShieldCheck)]
+      // Sin pieza todavía, el recurso es lo que se arma en el editor en línea.
+      : [T('guion', 'Editor en línea', PenLine), T('final', 'Adjuntar la pieza producida', Package), T('revision', 'Revisión', ShieldCheck)],
     entregado: [
       ...(kindReady ? [T('vista', 'Vista previa', Eye)] : []),
       ...(maySeeComments ? [T('comentarios', 'Comentarios', MessageSquare)] : []),
@@ -563,12 +580,12 @@ export function ResourceBuilder() {
             {saving === 'saving' ? 'Guardando…' : saving === 'saved' ? 'Guardado' : `Editado ${timeAgo(resource.updatedAt)}`}
           </span>
         )}
-        {editable && errors.length > 0 && (
+        {editable && blocking.length > 0 && (
           <button
             onClick={() => { setTab('revision'); setMobilePane('panel') }}
             className="hidden shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-[11px] font-semibold text-rose-700 md:inline-flex"
           >
-            <AlertTriangle size={12} /> {errors.length} por corregir
+            <AlertTriangle size={12} /> {blocking.length} por corregir
           </button>
         )}
 
@@ -1056,7 +1073,7 @@ export function ResourceBuilder() {
                         <>
                           <ExportCard
                             enabled
-                            blocked={errors.length > 0}
+                            blocked={blocking.length > 0}
                             href={learningApi.exportUrl(resource.id, 'media')}
                             icon={<FileVideo size={18} />}
                             title={final.media?.contentType.startsWith('audio/') ? 'Audio entregado' : 'Video entregado'}
@@ -1066,7 +1083,7 @@ export function ResourceBuilder() {
                           <ExportCard
                             enabled={!!final.media?.captionsUrl}
                             disabledReason="Esta versión no tiene pista de subtítulos"
-                            blocked={errors.length > 0}
+                            blocked={blocking.length > 0}
                             href={learningApi.exportUrl(resource.id, 'captions')}
                             icon={<Download size={18} />}
                             title="Subtítulos WebVTT"
@@ -1079,7 +1096,7 @@ export function ResourceBuilder() {
                       <ExportCard
                         enabled={directives.exports.scorm}
                         disabledReason="Las directivas no habilitan SCORM"
-                        blocked={errors.length > 0}
+                        blocked={blocking.length > 0}
                         href={learningApi.exportUrl(resource.id, 'scorm')}
                         icon={<Package size={18} />}
                         title="Paquete SCORM 1.2"
@@ -1089,7 +1106,7 @@ export function ResourceBuilder() {
                       <ExportCard
                         enabled={directives.exports.html}
                         disabledReason="Las directivas no habilitan la descarga HTML"
-                        blocked={errors.length > 0}
+                        blocked={blocking.length > 0}
                         href={learningApi.exportUrl(resource.id, 'html')}
                         icon={<Download size={18} />}
                         title={familyOf(resource.kind) === 'mirror' ? 'Sitio en ZIP' : 'HTML autocontenido'}
@@ -1104,7 +1121,7 @@ export function ResourceBuilder() {
                       )}
                       <ExportCard
                         enabled
-                        blocked={errors.length > 0}
+                        blocked={blocking.length > 0}
                         href={learningApi.exportUrl(resource.id, 'json')}
                         icon={<FileText size={18} />}
                         title="Guion en JSON"
