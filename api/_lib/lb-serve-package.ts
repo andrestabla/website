@@ -5,7 +5,7 @@
  * las dos sirven la misma pieza, y la revisión solo le suma su capa encima.
  */
 import { injectMirrorLayer } from './lb-mirror-html.js'
-import { RISE_DATA_PATH, RISE_SANDBOX_DIR, isRiseLessonPath, parseRise, riseLessonId, riseLessons } from './lb-rise.js'
+import { RISE_DATA_PATH, RISE_SANDBOX_DIR, isRiseLessonPath, parseRise, riseLessonDocument, riseLessonId } from './lb-rise.js'
 import { lbFiles } from './lb-store.js'
 import { readStored } from './lb-storage.js'
 import { safePath, type LbPackage } from '../../src/learning/lib/final.js'
@@ -116,17 +116,22 @@ export async function servePackage(options: {
     // la pinta, o se quedaría sin tipografías.
     const raw = await fetchFile(RISE_DATA_PATH)
     const data = raw ? parseRise(raw) : null
-    const lesson = data ? riseLessons(data).find((row) => row.id === riseLessonId(wanted)) : null
-    if (!lesson?.html) {
+    const lessonDocument = data ? riseLessonDocument(data, riseLessonId(wanted)) : null
+    if (!lessonDocument) {
       return shell('Lección no encontrada', 'Esa lección ya no está en el paquete.', 404, res)
     }
-    original = lesson.html
+    original = lessonDocument
     baseHref = `${packageRoot}${RISE_SANDBOX_DIR}`
   } else {
     original = await fetchFile(wanted)
     if (original === null) {
       return shell('Paquete incompleto', 'Ese archivo ya no está en el almacenamiento.', 404, res)
     }
+    // Un Rise exportado con «solo dentro de un LMS» se niega a arrancar fuera
+    // de un campus y deja un aviso en inglés en lugar del curso. Aquí no hay
+    // campus: se le sirve el arranque con esa exigencia apagada. El paquete
+    // que se descarga para subir al LMS conserva su ajuste original.
+    original = original.replace(/("loadOnlyInLms"\s*:\s*)true/, '$1false')
     // El <base> es la carpeta de ESTA página, para que sus rutas relativas
     // resuelvan igual que resolvían dentro del paquete original.
     const dir = wanted.includes('/') ? `${wanted.slice(0, wanted.lastIndexOf('/'))}/` : ''

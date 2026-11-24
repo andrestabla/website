@@ -19,6 +19,7 @@
  */
 
 import type { LbPatch } from '../../src/learning/lib/final.js'
+import { applyNativeEdits, isNativeLesson, nativeLessonPage } from './lb-rise-native.js'
 
 /** Dónde vive el contenido de un Rise dentro del paquete. */
 export const RISE_DATA_PATH = 'scormcontent/runtime-data.js'
@@ -82,6 +83,18 @@ function htmlHolder(lesson: any): { holder: any; index: number } | null {
   return null
 }
 
+/**
+ * El documento que se abre para retocar una lección: el suyo, si la lección es
+ * un bloque HTML; o la página de trabajo con sus textos, si está hecha con los
+ * bloques del propio Rise (lb-rise-native.ts). null si la lección no existe.
+ */
+export function riseLessonDocument(data: RiseData, lessonId: string): string | null {
+  const lesson = (data.course?.lessons || []).find((row: any) => String(row?.id || '') === lessonId)
+  if (!lesson) return null
+  if (isNativeLesson(lesson)) return nativeLessonPage(data.course, lessonId)
+  return htmlHolder(lesson)?.holder?.srcdoc ?? null
+}
+
 export function riseLessons(data: RiseData): RiseLesson[] {
   return (data.course?.lessons || []).map((lesson: any) => ({
     id: String(lesson?.id || ''),
@@ -123,9 +136,25 @@ export function riseWithEdits(
   patches: Record<string, LbPatch[]>,
   inject: (html: string, pagePatches: LbPatch[]) => string
 ): RiseData {
+  // Las lecciones hechas con bloques de Rise no llevan documento donde meter
+  // un script: sus correcciones se escriben en los propios datos. Como parte de
+  // ese texto vive fuera de la lección (las tarjetas, en course.mondrian), se
+  // trabaja sobre una copia del curso entero y el original no se toca.
+  const natives = (data.course?.lessons || []).filter(
+    (lesson: any) => patches[riseLessonPath(String(lesson?.id || ''))]?.length && isNativeLesson(lesson)
+  )
+  if (natives.length) {
+    const course = structuredClone(data.course)
+    for (const lesson of natives) {
+      const id = String(lesson.id)
+      applyNativeEdits(course, id, patches[riseLessonPath(id)])
+    }
+    data = { ...data, course }
+  }
+
   const lessons = (data.course?.lessons || []).map((lesson: any) => {
     const pagePatches = patches[riseLessonPath(String(lesson?.id || ''))]
-    if (!pagePatches?.length) return lesson
+    if (!pagePatches?.length || isNativeLesson(lesson)) return lesson
     const found = htmlHolder(lesson)
     if (!found) return lesson
 
