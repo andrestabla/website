@@ -212,9 +212,9 @@ function linkRewriter(viewBase: string, packageRoot: string, baseHref: string): 
 const EDITOR_BRIDGE = `
 (function(){
   var textos = lbTextNodes(), imagenes = lbImages(), bloques = lbBlocks();
-  // Hay piezas en las que solo se corrigen textos (las lecciones hechas con
-  // bloques de Rise): ahí no se ofrece cambiar imágenes ni mover bloques.
-  if (window.__lbSoloTexto) { imagenes = []; bloques = []; }
+  // Las lecciones hechas con bloques de Rise traen sus propios mandos para
+  // mover y quitar bloques: ahí no se ofrece la barra de insertar HTML.
+  if (window.__lbRiseNativo) bloques = [];
 
   function lbAntes(a, b){
     return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
@@ -293,6 +293,14 @@ const EDITOR_BRIDGE = `
     avisar({ type: 'text', at: Number(span.getAttribute('data-lb-t')), value: (span.textContent || '').trim() });
   });
 
+  // Las propiedades —un color, un tamaño, el orden de los bloques— van en
+  // controles que la propia pieza numera con data-lb-p.
+  document.addEventListener('change', function(event){
+    var control = event.target && event.target.closest ? event.target.closest('[data-lb-p]') : null;
+    if (!control) return;
+    avisar({ type: 'prop', at: Number(control.getAttribute('data-lb-p')), value: String(control.value) });
+  });
+
   document.addEventListener('click', function(event){
     var target = event.target;
     if (!target || !target.closest) return;
@@ -369,7 +377,8 @@ const EDITOR_BRIDGE = `
 
   avisar({
     type: 'ready', textos: textos.length, imagenes: imagenes.length,
-    bloques: bloques.length, secciones: secciones
+    bloques: bloques.length, secciones: secciones,
+    propiedades: document.querySelectorAll('[data-lb-p]').length
   });
 })();
 `

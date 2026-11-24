@@ -46,8 +46,15 @@ export type LbPatch =
   | { op: 'insert'; at: number; where: 'before' | 'after'; html: string }
   /** Quitar el bloque número `at`. */
   | { op: 'remove'; at: number }
+  /**
+   * Dar otro valor a la propiedad número `at`: un color, un tamaño, el orden
+   * de los bloques. Solo existe en las piezas que las declaran —las lecciones
+   * de un Rise hecho con sus propios bloques (api/_lib/lb-rise-native.ts)—;
+   * en las demás no hay propiedad que numerar y el retoque no hace nada.
+   */
+  | { op: 'prop'; at: number; value: string }
 
-export const LB_PATCH_OPS = ['text', 'image', 'insert', 'remove'] as const
+export const LB_PATCH_OPS = ['text', 'image', 'insert', 'remove', 'prop'] as const
 
 /**
  * Lo que hace falta para servir un paquete: por dónde se entra, qué páginas
@@ -131,6 +138,11 @@ function sanitizePatch(value: unknown): LbPatch | null {
     }
     case 'remove':
       return { op: 'remove', at }
+    case 'prop': {
+      const value = str(raw.value, 4000).trim()
+      // Colores, números y listas de posiciones: nada que pueda llevar marcado.
+      return /^[#0-9a-zA-Z.,]{1,4000}$/.test(value) ? { op: 'prop', at, value } : null
+    }
     default:
       return null
   }

@@ -12,7 +12,8 @@
  * cuando el paquete no traía ninguno.
  */
 import { injectEditsOnly, injectMirrorLayer, isHtmlPath } from './lb-mirror-html.js'
-import { RISE_DATA_PATH, encodeRise, parseRise, riseWithEdits } from './lb-rise.js'
+import { RISE_DATA_PATH, encodeRise, isRiseLessonPath, parseRise, riseWithEdits } from './lb-rise.js'
+import { nativeReplacedAssets } from './lb-rise-native.js'
 import { createZip, type ZipEntry } from './lb-zip.js'
 import { safeFileName, scormIdentifier } from './lb-scorm.js'
 import { escapeHtml } from '../../src/learning/lib/render-ova.js'
@@ -98,6 +99,21 @@ export async function buildMirrorPackage(options: {
         patches: pkg.patches[file.path] || [],
       }),
     })
+  }
+
+  // Las imágenes cambiadas en un Rise nativo no estaban en el paquete: sus
+  // datos ya las nombran, así que tienen que viajar dentro con ese nombre.
+  const present = new Set(entries.map((entry) => entry.path))
+  for (const [page, patches] of Object.entries(pkg.patches)) {
+    if (!isRiseLessonPath(page)) continue
+    for (const asset of nativeReplacedAssets(patches)) {
+      const key = bucket.keyFor(asset.url)
+      if (!key || present.has(asset.path)) continue
+      try {
+        entries.push({ path: asset.path, data: await bucket.get(key) })
+        present.add(asset.path)
+      } catch { /* si la imagen ya no está, el paquete sale sin ella en vez de no salir */ }
+    }
   }
 
   if (format === 'scorm' && !hasManifest) {

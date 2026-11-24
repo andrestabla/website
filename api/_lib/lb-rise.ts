@@ -88,10 +88,10 @@ function htmlHolder(lesson: any): { holder: any; index: number } | null {
  * un bloque HTML; o la página de trabajo con sus textos, si está hecha con los
  * bloques del propio Rise (lb-rise-native.ts). null si la lección no existe.
  */
-export function riseLessonDocument(data: RiseData, lessonId: string): string | null {
+export function riseLessonDocument(data: RiseData, lessonId: string, patches: LbPatch[] = []): string | null {
   const lesson = (data.course?.lessons || []).find((row: any) => String(row?.id || '') === lessonId)
   if (!lesson) return null
-  if (isNativeLesson(lesson)) return nativeLessonPage(data.course, lessonId)
+  if (isNativeLesson(lesson)) return nativeLessonPage(data.course, lessonId, patches)
   return htmlHolder(lesson)?.holder?.srcdoc ?? null
 }
 

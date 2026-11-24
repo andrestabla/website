@@ -42,7 +42,10 @@ type Incoming =
   | {
       source: 'lb-mirror'; type: 'ready'
       textos: number; imagenes: number; bloques: number; secciones?: Seccion[]
+      /** Controles de propiedad (color, tamaño, orden) que la pieza declara. */
+      propiedades?: number
     }
+  | { source: 'lb-mirror'; type: 'prop'; at: number; value: string }
   | { source: 'lb-mirror'; type: 'text'; at: number; value: string }
   | { source: 'lb-mirror'; type: 'image'; at: number; src: string; alt: string }
   | { source: 'lb-mirror'; type: 'add-before' | 'add-after' | 'remove'; at: number }
@@ -69,6 +72,8 @@ function porSeccion(patches: LbPatch[], secciones: Seccion[]): number[] {
     block: secciones.map((row) => row.b),
   }
   for (const row of patches) {
+    // Las propiedades no cuelgan de una sección del documento.
+    if (row.op === 'prop') continue
     const starts = row.op === 'text' ? inicios.text : row.op === 'image' ? inicios.image : inicios.block
     let cual = 0
     for (let s = 0; s < starts.length; s += 1) {
@@ -145,7 +150,7 @@ export function PackagePanel({
   const [page, setPage] = useState(pkg?.pages[0]?.path || '')
   const [uploading, setUploading] = useState('')
   const [error, setError] = useState('')
-  const [counts, setCounts] = useState<{ textos: number; imagenes: number; bloques: number } | null>(null)
+  const [counts, setCounts] = useState<{ textos: number; imagenes: number; bloques: number; propiedades: number } | null>(null)
   /** Las divisiones de la página abierta y en cuál está puesta la vista. */
   const [secciones, setSecciones] = useState<Seccion[]>([])
   const [seccion, setSeccion] = useState(0)
@@ -191,7 +196,7 @@ export function PackagePanel({
 
       switch (data.type) {
         case 'ready':
-          setCounts({ textos: data.textos, imagenes: data.imagenes, bloques: data.bloques })
+          setCounts({ textos: data.textos, imagenes: data.imagenes, bloques: data.bloques, propiedades: data.propiedades || 0 })
           setSecciones(data.secciones?.length ? data.secciones : [])
           return
         case 'at':
@@ -202,6 +207,11 @@ export function PackagePanel({
           return
         case 'image':
           setAsking({ kind: 'image', at: data.at, src: data.src, alt: data.alt })
+          return
+        case 'prop':
+          // Un color, un tamaño o el orden de los bloques: el control ya lo
+          // muestra, así que no hace falta recargar la pieza.
+          patch({ op: 'prop', at: data.at, value: data.value })
           return
         case 'add-before':
           setAsking({ kind: 'add', at: data.at, where: 'before' })
@@ -445,7 +455,8 @@ export function PackagePanel({
           )}
           {counts && (
             <span className="text-slate-400">
-              {counts.textos} textos · {counts.imagenes} imágenes · {counts.bloques} bloques
+              {counts.textos} textos · {counts.imagenes} imágenes ·{' '}
+              {counts.propiedades ? `${counts.propiedades} propiedades` : `${counts.bloques} bloques`}
             </span>
           )}
           <div className="flex-1" />
@@ -473,9 +484,9 @@ export function PackagePanel({
         </div>
 
         <p className="border-b border-slate-100 bg-amber-50/60 px-3 py-1.5 text-[11.5px] text-amber-800">
-          Pulsa un texto para reescribirlo o una imagen para cambiarla; en cada bloque, la barra de la
-          esquina añade encima, añade debajo o lo quita. La diagramación y los estilos son los del
-          original y no se tocan.
+          {counts?.propiedades
+            ? 'Lección hecha con bloques de Rise: pulsa un texto para reescribirlo o una imagen para cambiarla; cada bloque trae sus colores, sus tamaños y los botones para subirlo, bajarlo o quitarlo. Cómo queda se ve en la vista previa.'
+            : 'Pulsa un texto para reescribirlo o una imagen para cambiarla; en cada bloque, la barra de la esquina añade encima, añade debajo o lo quita. La diagramación y los estilos son los del original y no se tocan.'}
         </p>
 
         <iframe

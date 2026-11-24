@@ -116,7 +116,7 @@ export async function servePackage(options: {
     // la pinta, o se quedaría sin tipografías.
     const raw = await fetchFile(RISE_DATA_PATH)
     const data = raw ? parseRise(raw) : null
-    const lessonDocument = data ? riseLessonDocument(data, riseLessonId(wanted)) : null
+    const lessonDocument = data ? riseLessonDocument(data, riseLessonId(wanted), pkg.patches[wanted] || []) : null
     if (!lessonDocument) {
       return shell('Lección no encontrada', 'Esa lección ya no está en el paquete.', 404, res)
     }

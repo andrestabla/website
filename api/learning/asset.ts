@@ -26,7 +26,8 @@ import { reviewOpen } from '../_lib/lb-review.js'
 import { injectEditsOnly } from '../_lib/lb-mirror-html.js'
 import { RISE_DATA_PATH, encodeRise, parseRise, riseWithEdits } from '../_lib/lb-rise.js'
 import { lbFiles, loadResourceByPublicId } from '../_lib/lb-store.js'
-import { readStored } from '../_lib/lb-storage.js'
+import { readStored, workspaceBucket } from '../_lib/lb-storage.js'
+import { replacedAssetUrl } from '../_lib/lb-rise-native.js'
 import { packageAt, splitVersionPath } from '../_lib/lb-delivery.js'
 import { safePath } from '../../src/learning/lib/final.js'
 
@@ -106,7 +107,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const file = await lbFiles().findUnique({
       where: { resourceId_version_path: { resourceId: resource.id, version: at.version, path: wanted } },
     })
-    if (!file?.url) return res.status(404).send('Ese archivo no está en el paquete')
+    if (!file?.url) {
+      // Una imagen cambiada en un Rise nativo no es un archivo del paquete: su
+      // nombre dice de dónde sale. Solo se sigue si sale del almacenamiento de
+      // este workspace, para que el nombre no sirva de puente a cualquier parte.
+      const replaced = replacedAssetUrl(wanted)
+      if (replaced) {
+        const bucket = await workspaceBucket(loaded.workspace).catch(() => null)
+        if (bucket?.keyFor(replaced)) {
+          res.setHeader('Cache-Control', open ? `public, max-age=60, s-maxage=${EDGE_SECONDS}` : 'private, no-store')
+          return res.redirect(302, replaced)
+        }
+      }
+      return res.status(404).send('Ese archivo no está en el paquete')
+    }
 
     // Los pesados no pasan por aquí: el navegador los pide al almacenamiento.
     // Los datos de un Rise son la excepción: por grandes que sean, hay que

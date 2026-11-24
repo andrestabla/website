@@ -25,15 +25,117 @@
  * en la anotación N. Y por eso la página no lleva ni una palabra propia —los
  * rótulos son CSS—: cualquier texto de más correría la cuenta.
  *
- * Solo se retocan textos. Añadir o quitar bloques y cambiar imágenes en un
- * Rise nativo se hace en Rise.
+ * Además de los textos, el mismo recorrido anota otras dos cosas, cada una
+ * con su propia numeración:
+ *
+ *   · las **imágenes** (la de un bloque, su fondo, los íconos de una tarjeta),
+ *     que van a la página como <img> y se cambian con el retoque `image`;
+ *   · las **propiedades** (color de fondo y márgenes de un bloque, los colores
+ *     y tamaños de letra de una tarjeta, el color del tema, y el orden de los
+ *     bloques de la lección), que van como controles y se cambian con `prop`.
+ *
+ * Las tres numeraciones se calculan siempre sobre los datos originales: lo
+ * retocado se muestra encima —el valor del control, la imagen nueva— sin
+ * mover nada de sitio. Por lo mismo, mover o quitar un bloque no cambia el
+ * orden del documento: se pinta con CSS y se aplica al final, cuando ya está
+ * escrito todo lo demás.
+ *
+ * Lo que no se hace aquí es crear tipos de bloque que el paquete no traiga ni
+ * recomponer por dentro una tarjeta: eso es del editor de Rise.
  */
 import type { LbPatch } from '../../src/learning/lib/final.js'
 
 /** Un texto de la lección: dónde se lee y cómo se escribe. */
 type Leaf = { read: () => string; write: (value: string) => void }
 
-type Walk = { html: string; leaves: Leaf[] }
+/** Una propiedad: además, qué valores admite. */
+type Prop = Leaf & { accept: (value: string) => boolean }
+
+type Walk = { html: string; leaves: Leaf[]; images: Leaf[]; props: Prop[] }
+
+const HEX = /^#[0-9a-f]{6}$/i
+
+function attr(value: string): string {
+  return esc(value).replace(/"/g, '&quot;')
+}
+
+/** «#abc» y «#AABBCC» son el mismo color; lo demás (variables del tema, rgba) no se toca. */
+function hexOf(value: unknown): string {
+  if (typeof value !== 'string') return ''
+  const raw = value.trim().toLowerCase()
+  if (HEX.test(raw)) return raw
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(raw)
+  return short ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}` : ''
+}
+
+// ── Imágenes ─────────────────────────────────────────────────────────────────
+
+/**
+ * Una imagen cambiada no reescribe ningún archivo del paquete: el dato pasa a
+ * nombrar un archivo nuevo cuyo nombre lleva dentro de dónde sale. Quien sirve
+ * el paquete (asset.ts) y quien lo empaqueta (lb-mirror-package.ts) lo
+ * reconocen por el prefijo y van a buscarlo.
+ */
+const REPLACED = /^lb~([A-Za-z0-9_-]+)\.([a-z0-9]{2,5})$/
+
+export function replacedAssetName(url: string): string {
+  const ext = (/\.([a-z0-9]{2,5})(?:[?#]|$)/i.exec(url)?.[1] || 'png').toLowerCase()
+  return `lb~${Buffer.from(url, 'utf8').toString('base64url')}.${ext}`
+}
+
+/** La URL que hay detrás de un nombre de imagen cambiada, o '' si no lo es. */
+export function replacedAssetUrl(name: string): string {
+  const match = REPLACED.exec(name.split('/').pop() || '')
+  if (!match) return ''
+  try {
+    const url = Buffer.from(match[1], 'base64url').toString('utf8')
+    return /^https:\/\//i.test(url) ? url : ''
+  } catch {
+    return ''
+  }
+}
+
+function image(out: Walk, label: string, read: () => string, write: (name: string) => void): void {
+  if (!read()) return
+  const index = out.images.length
+  out.images.push({ read, write })
+  out.html += `<figure class="rb-fig" data-rb="${attr(label)}"><img src="@@I${index}@@" alt="" loading="lazy"></figure>`
+}
+
+/** La imagen de un bloque clásico: `media.image` de un elemento o del fondo. */
+function classicImage(out: Walk, label: string, media: any): void {
+  const img = media?.image
+  if (!img || typeof img !== 'object') return
+  const current = () => String((img.useCrushedKey && img.crushedKey) || img.crushedKey || img.originalUrl || '').split('/').pop() || ''
+  image(out, label, current, (name) => {
+    img.key = name
+    img.crushedKey = name
+    img.originalUrl = name
+    img.useCrushedKey = true
+  })
+}
+
+// ── Propiedades ──────────────────────────────────────────────────────────────
+
+function control(out: Walk, label: string, type: 'color' | 'number', prop: Prop, extra = ''): void {
+  const index = out.props.length
+  out.props.push(prop)
+  out.html += `<label class="rb-c" data-n="${attr(label)}"><input type="${type}" data-lb-p="${index}" value="@@P${index}@@"${extra}></label>`
+}
+
+function colorControl(out: Walk, label: string, read: () => string, write: (value: string) => void, extra = ''): void {
+  if (!hexOf(read())) return
+  control(out, label, 'color', { read: () => hexOf(read()), write, accept: (value) => HEX.test(value) }, extra)
+}
+
+function numberControl(out: Walk, label: string, holder: any, key: string, min: number, max: number): void {
+  if (typeof holder?.[key] !== 'number') return
+  control(out, label, 'number', {
+    read: () => String(holder[key]),
+    write: (value) => { holder[key] = Number(value) },
+    accept: (value) => /^\d{1,3}(\.\d{1,2})?$/.test(value) && Number(value) >= min && Number(value) <= max,
+  }, ` min="${min}" max="${max}"`)
+}
 
 function esc(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -152,6 +254,7 @@ function classic(value: any, out: Walk, depth = 0): void {
     return
   }
   for (const key of Object.keys(value)) {
+    if (key === 'media') { classicImage(out, 'Imagen', value.media); continue }
     if (SKIP.test(key)) continue
     const field = value[key]
     if (typeof field === 'string') {
@@ -205,13 +308,64 @@ function mondrian(course: any, block: any, out: Walk): void {
       .filter((item) => item.parentId === parentId)
       .sort((a, b) => (Number(position(a).y) || 0) - (Number(position(b).y) || 0) || (Number(position(a).x) || 0) - (Number(position(b).x) || 0) || String(a.id).localeCompare(String(b.id)))
 
+  /** Las marcas y nodos de un documento TipTap que llevan color o tamaño. */
+  const styled = (node: any, found: any[]) => {
+    if (!node || typeof node !== 'object') return found
+    if (node.attrs && typeof node.attrs === 'object') found.push(node.attrs)
+    for (const mark of Array.isArray(node.marks) ? node.marks : []) if (mark?.attrs) found.push(mark.attrs)
+    for (const child of Array.isArray(node.content) ? node.content : []) styled(child, found)
+    return found
+  }
+
+  // La paleta de la tarjeta: cada color distinto, una sola vez, con todos los
+  // sitios donde aparece. Cambiarlo los cambia todos, que es lo que se quiere
+  // al decir «este azul, más oscuro».
+  const palette = new Map<string, Array<(value: string) => void>>()
+  const note = (holder: any, key: string) => {
+    const color = hexOf(holder?.[key])
+    if (!color) return
+    palette.set(color, [...(palette.get(color) || []), (value) => { holder[key] = value }])
+  }
+  for (const item of items) {
+    for (const state of Object.values(item.states || {}) as any[]) {
+      if (!state || typeof state !== 'object') continue
+      if (state.fill) {
+        note(state.fill, 'color')
+        for (const stop of Array.isArray(state.fill.stops) ? state.fill.stops : []) note(stop, 'color')
+      }
+      if (state.border?.applied) note(state.border, 'color')
+      if (state.text?.json) for (const attrs of styled(state.text.json, [])) note(attrs, 'color')
+    }
+  }
+  if (palette.size) {
+    out.html += '<div class="rb-paleta" data-rb="Colores de la tarjeta">'
+    for (const [color, writers] of palette) {
+      colorControl(out, color, () => color, (value) => { for (const write of writers) write(value) })
+    }
+    out.html += '</div>'
+  }
+
   const seen = new Set<string>()
   const visit = (item: any, depth: number) => {
     if (depth > 12 || seen.has(item.id)) return
     seen.add(item.id)
     for (const state of Object.values(item.states || {}) as any[]) {
+      const assetId = state?.fill?.assetId
+      const asset = assetId ? item.assets?.[assetId] : null
+      if (asset && typeof asset.path === 'string') {
+        image(out, 'Imagen o ícono', () => String(asset.path || ''), (name) => { asset.path = name; asset.name = name })
+      }
       if (state?.text?.json) {
         out.html += '<div class="rb-item">'
+        // El tamaño de letra del elemento: uno, para todos sus tramos.
+        const sized = styled(state.text.json, []).filter((attrs) => typeof attrs.textSize === 'number')
+        if (sized.length) {
+          control(out, 'Tamaño', 'number', {
+            read: () => String(sized[0].textSize),
+            write: (value) => { for (const attrs of sized) attrs.textSize = Number(value) },
+            accept: (value) => /^\d{1,3}$/.test(value) && Number(value) >= 6 && Number(value) <= 200,
+          }, ' min="6" max="200"')
+        }
         tiptap(state.text.json, out)
         out.html += '</div>'
       }
@@ -229,75 +383,229 @@ const BLOCK_LABEL: Record<string, string> = {
   custom: 'Tarjeta', html: 'Bloque HTML incrustado · se edita en Rise', statement: 'Enunciado', flashcards: 'Tarjetas',
 }
 
-/** El recorrido único: pinta la página de trabajo y anota cada texto. */
+/** El recorrido único: pinta la página de trabajo y anota cada texto, imagen y propiedad. */
 function walk(course: any, lesson: any): Walk {
-  const out: Walk = { html: '', leaves: [] }
+  const out: Walk = { html: '', leaves: [], images: [], props: [] }
+  const blocks: any[] = Array.isArray(lesson?.items) ? lesson.items : []
+
+  // La propiedad 0 de toda lección: en qué orden van sus bloques, por su
+  // posición original. Un bloque que no está en la lista está quitado.
+  const original = blocks.map((_block, index) => index).join(',')
+  out.props.push({
+    read: () => original,
+    write: (value) => { lesson.items = value.split(',').map((index) => blocks[Number(index)]) },
+    accept: (value) => {
+      const picked = value.split(',')
+      return picked.every((index) => /^\d{1,4}$/.test(index) && Number(index) < blocks.length) && new Set(picked).size === picked.length
+    },
+  })
+  out.html += '<input type="hidden" data-rb-orden data-lb-p="0" value="@@P0@@">'
+
   out.html += '<header class="rb-titulo">'
   plain(lesson, 'title', out, 'h1')
-  out.html += '</header>'
-  for (const block of Array.isArray(lesson?.items) ? lesson.items : []) {
-    const before = out.html.length
-    const leaves = out.leaves.length
+  if (course && typeof course === 'object') {
+    out.html += '<div class="rb-barra">'
+    colorControl(out, 'Color del tema (todo el curso)', () => String(course.theme?.colorAccent || course.color || ''), (value) => {
+      course.color = value
+      if (course.theme && typeof course.theme === 'object') course.theme.colorAccent = value
+    })
+    out.html += '</div>'
+  }
+  out.html += '</header><div class="rb-lista">'
+
+  for (const block of blocks) {
     const label = `${BLOCK_LABEL[block?.type] || 'Bloque'}${block?.variant && block.type !== 'html' && block.type !== 'custom' ? ` · ${block.variant}` : ''}`
-    out.html += `<section class="rb" data-rb="${esc(label).replace(/"/g, '&quot;')}">`
+    out.html += `<section class="rb" data-rb="${attr(label)}"><div class="rb-barra">`
+    const settings = block?.settings && typeof block.settings === 'object' ? block.settings : null
+    if (settings) {
+      colorControl(out, 'Fondo', () => String(settings.backgroundColor || ''), (value) => { settings.backgroundColor = value; settings.backgroundType = 'COLOR' }, ' data-rb-fondo')
+      numberControl(out, 'Margen arriba', settings, 'paddingTop', 0, 60)
+      numberControl(out, 'Margen abajo', settings, 'paddingBottom', 0, 60)
+    }
+    out.html +=
+      '<span class="rb-mover">' +
+      '<button type="button" data-rb-do="subir" aria-label="Subir el bloque"></button>' +
+      '<button type="button" data-rb-do="bajar" aria-label="Bajar el bloque"></button>' +
+      '<button type="button" data-rb-do="quitar" aria-label="Quitar o restaurar el bloque"></button>' +
+      '</span></div>'
+    classicImage(out, 'Fondo del bloque', block?.background?.media)
     if (block?.type === 'custom' && block.blockumentId) mondrian(course, block, out)
     else if (block?.type !== 'html') classic(block?.items, out)
     out.html += '</section>'
-    // Un bloque sin texto (un espaciador, un video) no ocupa sitio en la página,
-    // salvo el HTML incrustado, que conviene que se vea que está y no se toca.
-    if (out.leaves.length === leaves && block?.type !== 'html') out.html = out.html.slice(0, before)
   }
+  out.html += '</div>'
   return out
 }
 
 const PAGE_CSS = `
 body{margin:0;padding:28px 16px 96px;background:#f1f5f9;color:#0f172a;font:16px/1.6 system-ui,-apple-system,'Segoe UI',sans-serif}
-main{max-width:820px;margin:0 auto}
-main::before{content:'Lección hecha con bloques de Rise · aquí se corrigen sus textos; el diseño, las imágenes y la estructura se ven en la pieza publicada y se cambian en Rise.';
+main{max-width:860px;margin:0 auto}
+main::before{content:'Lección hecha con bloques de Rise · aquí se corrigen sus textos, imágenes, colores, tamaños y el orden de sus bloques. Cómo queda se ve en la vista previa.';
   display:block;margin:0 0 18px;padding:10px 14px;border-radius:10px;background:#fef3c7;color:#78350f;font:500 13px/1.45 system-ui,sans-serif}
-.rb-titulo h1{margin:0 0 18px;font-size:26px;line-height:1.25}
-.rb{position:relative;margin:0 0 14px;padding:30px 20px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:12px}
-.rb::before{content:attr(data-rb);position:absolute;left:14px;top:9px;font:800 10px/1 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8}
+.rb-titulo h1{margin:0 0 10px;font-size:26px;line-height:1.25}
+.rb-titulo{margin:0 0 18px}
+.rb-lista{display:flex;flex-direction:column;gap:14px}
+.rb{position:relative;padding:12px 20px 14px;background:#fff;border:1px solid #e2e8f0;border-left:6px solid var(--fondo,#e2e8f0);border-radius:12px}
+.rb-fuera{opacity:.45;background:repeating-linear-gradient(135deg,#fff,#fff 10px,#f8fafc 10px,#f8fafc 20px)}
+.rb-fuera::after{content:'Quitado · no se entrega';position:absolute;right:16px;bottom:8px;font:800 10px/1 system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#b91c1c}
+.rb-barra{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 10px;min-height:26px}
+.rb::before{content:attr(data-rb);display:block;margin:0 0 6px;font:800 10px/1 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8}
+.rb-c{display:inline-flex;align-items:center;gap:5px;font:600 11.5px/1 system-ui,sans-serif;color:#64748b}
+.rb-c::before{content:attr(data-n)}
+.rb-c input[type=color]{width:26px;height:22px;padding:0;border:1px solid #cbd5e1;border-radius:5px;background:#fff;cursor:pointer}
+.rb-c input[type=number]{width:58px;padding:3px 5px;border:1px solid #cbd5e1;border-radius:5px;font:600 12px/1 system-ui,sans-serif;color:#0f172a}
+.rb-paleta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 10px;padding:8px 10px;border-radius:8px;background:#f8fafc}
+.rb-paleta::before{content:attr(data-rb);flex-basis:100%;font:800 9.5px/1 system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8}
+.rb-paleta .rb-c::before{font-family:ui-monospace,monospace;font-weight:500}
+.rb-mover{margin-left:auto;display:inline-flex;gap:4px}
+.rb-mover button{all:unset;cursor:pointer;display:grid;place-items:center;height:24px;min-width:24px;padding:0 6px;border:1px solid #cbd5e1;border-radius:6px;font:700 12px/1 system-ui,sans-serif;color:#475569;background:#fff}
+.rb-mover button:hover{background:#eef2ff;border-color:#6366f1;color:#3730a3}
+.rb-mover [data-rb-do=subir]::before{content:'↑'}
+.rb-mover [data-rb-do=bajar]::before{content:'↓'}
+.rb-mover [data-rb-do=quitar]::before{content:'Quitar'}
+.rb-fuera .rb-mover [data-rb-do=quitar]::before{content:'Restaurar'}
+.rb-fig{display:inline-block;margin:0 10px 10px 0;padding:6px;border:1px dashed #cbd5e1;border-radius:8px;background:#f8fafc;vertical-align:top}
+.rb-fig::before{content:attr(data-rb);display:block;margin:0 0 4px;font:700 9.5px/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8}
+.rb-fig img{display:block;max-width:220px;max-height:130px;min-width:32px;min-height:24px;object-fit:contain;cursor:pointer;
+  background:repeating-conic-gradient(#cbd5e1 0 25%,#e2e8f0 0 50%) 0 0/14px 14px}
+.rb-item{position:relative}
+.rb-item>.rb-c{float:right;margin:0 0 4px 10px}
 .rb-item+.rb-item{margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0}
 .rb p,.rb h1,.rb h2,.rb h3,.rb h4,.rb h5,.rb h6,.rb ul,.rb ol{margin:0 0 .5em}
 .rb h1{font-size:22px}.rb h2{font-size:19px}.rb h3{font-size:17px}.rb h4,.rb h5,.rb h6{font-size:16px}
 .rb>:last-child,.rb-item>:last-child,.rb-rico>:last-child{margin-bottom:0}
 `
 
-/** La página de trabajo de una lección nativa, o null si la lección no existe. */
-export function nativeLessonPage(course: any, lessonId: string): string | null {
-  const lesson = (course?.lessons || []).find((row: any) => String(row?.id || '') === lessonId)
-  if (!lesson) return null
-  const { html } = walk(course, lesson)
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
-<style>${PAGE_CSS}</style>
-<script>window.__lbSoloTexto = true;</script>
-</head><body><main>${html}</main></body></html>`
-}
+/**
+ * Lo poco que la página hace por su cuenta: pintar el orden de los bloques y
+ * los quitados según diga la propiedad de orden, y cambiarla al pulsar los
+ * botones. No mueve ningún elemento de sitio —solo estilos—, porque el orden
+ * del documento es el que numera los textos.
+ */
+const PAGE_SCRIPT = `
+(function(){
+  var orden = document.querySelector('[data-rb-orden]');
+  var bloques = Array.prototype.slice.call(document.querySelectorAll('section.rb'));
+  if (!orden) return;
+  function leer(){ return orden.value.split(',').filter(function(v){ return v !== ''; }).map(Number); }
+  function pintar(){
+    var lista = leer();
+    bloques.forEach(function(el, i){
+      var k = lista.indexOf(i);
+      el.style.order = k < 0 ? 9999 : k;
+      el.classList.toggle('rb-fuera', k < 0);
+    });
+  }
+  function fondos(){
+    Array.prototype.slice.call(document.querySelectorAll('[data-rb-fondo]')).forEach(function(c){
+      var s = c.closest('section.rb'); if (s) s.style.setProperty('--fondo', c.value);
+    });
+  }
+  document.addEventListener('click', function(event){
+    var boton = event.target && event.target.closest ? event.target.closest('[data-rb-do]') : null;
+    if (!boton) return;
+    event.preventDefault();
+    var i = bloques.indexOf(boton.closest('section.rb')), lista = leer(), k = lista.indexOf(i);
+    var que = boton.getAttribute('data-rb-do');
+    if (que === 'quitar') {
+      if (k >= 0) { if (lista.length < 2) return; lista.splice(k, 1); }
+      else {
+        var donde = lista.length;
+        for (var j = 0; j < lista.length; j++) { if (lista[j] > i) { donde = j; break; } }
+        lista.splice(donde, 0, i);
+      }
+    } else if (k >= 0) {
+      var n = k + (que === 'subir' ? -1 : 1);
+      if (n < 0 || n >= lista.length) return;
+      lista[k] = lista[n]; lista[n] = i;
+    } else return;
+    orden.value = lista.join(',');
+    pintar();
+    orden.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  document.addEventListener('input', function(event){
+    if (event.target && event.target.hasAttribute && event.target.hasAttribute('data-rb-fondo')) fondos();
+  });
+  pintar(); fondos();
+})();
+`
 
-/** Los textos de la lección en el orden de la página; para comprobar la cuenta. */
-export function nativeLessonTexts(course: any, lessonId: string): string[] {
-  const lesson = (course?.lessons || []).find((row: any) => String(row?.id || '') === lessonId)
-  return lesson ? walk(course, lesson).leaves.map((leaf) => leaf.read()) : []
+function lessonOf(course: any, lessonId: string): any {
+  return (course?.lessons || []).find((row: any) => String(row?.id || '') === lessonId) || null
 }
 
 /**
- * Escribe las correcciones de texto en los datos del curso. `course` se
- * modifica: quien llama pasa una copia. Devuelve cuántas se aplicaron.
+ * La página de trabajo de una lección nativa, o null si la lección no existe.
+ * Se pinta desde los datos originales; los retoques de imagen y de propiedad
+ * solo cambian lo que cada control enseña.
+ */
+export function nativeLessonPage(course: any, lessonId: string, patches: LbPatch[] = []): string | null {
+  const lesson = lessonOf(course, lessonId)
+  if (!lesson) return null
+  const { html, images, props } = walk(course, lesson)
+  const newImage = new Map<number, string>()
+  const newProp = new Map<number, string>()
+  for (const patch of patches) {
+    if (patch.op === 'image') newImage.set(patch.at, patch.url)
+    if (patch.op === 'prop' && props[patch.at]?.accept(patch.value)) newProp.set(patch.at, patch.value)
+  }
+  // Las rutas relativas salen del marco en que Rise pinta sus bloques HTML
+  // (scormcontent/lib/sandbox/), que es la base con la que se sirve la lección.
+  const body = html
+    .replace(/@@I(\d+)@@/g, (_m, n) => attr(newImage.get(Number(n)) || `../../assets/${encodeURIComponent(images[Number(n)].read())}`))
+    .replace(/@@P(\d+)@@/g, (_m, n) => attr(newProp.get(Number(n)) ?? props[Number(n)].read()))
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
+<style>${PAGE_CSS}</style>
+<script>window.__lbRiseNativo = true;</script>
+</head><body><main>${body}</main><script>${PAGE_SCRIPT}</script></body></html>`
+}
+
+/** Lo que el recorrido anota de una lección, en su orden; para comprobar las cuentas. */
+export function nativeLessonIndex(course: any, lessonId: string): { texts: string[]; images: string[]; props: string[] } {
+  const lesson = lessonOf(course, lessonId)
+  if (!lesson) return { texts: [], images: [], props: [] }
+  const found = walk(course, lesson)
+  return {
+    texts: found.leaves.map((leaf) => leaf.read()),
+    images: found.images.map((leaf) => leaf.read()),
+    props: found.props.map((leaf) => leaf.read()),
+  }
+}
+
+/**
+ * Escribe los retoques en los datos del curso. `course` se modifica: quien
+ * llama pasa una copia. Devuelve cuántos se aplicaron.
  */
 export function applyNativeEdits(course: any, lessonId: string, patches: LbPatch[]): number {
-  const lesson = (course?.lessons || []).find((row: any) => String(row?.id || '') === lessonId)
+  const lesson = lessonOf(course, lessonId)
   if (!lesson) return 0
-  // Las posiciones son las de la lección sin corregir: se anotan todas antes de escribir.
-  const { leaves } = walk(course, lesson)
+  // Las posiciones son las de la lección sin retocar: se anota todo antes de escribir.
+  const { leaves, images, props } = walk(course, lesson)
   let applied = 0
+  let order: string | null = null
   for (const patch of patches) {
-    if (patch.op !== 'text') continue
-    const leaf = leaves[patch.at]
-    if (!leaf) continue
-    leaf.write(patch.value)
-    applied += 1
+    if (patch.op === 'text' && leaves[patch.at]) { leaves[patch.at].write(patch.value); applied += 1 }
+    if (patch.op === 'image' && images[patch.at] && /^https:\/\//i.test(patch.url)) {
+      images[patch.at].write(replacedAssetName(patch.url))
+      applied += 1
+    }
+    if (patch.op === 'prop' && props[patch.at]?.accept(patch.value)) {
+      // El orden cambia la lista de bloques: va el último, con todo lo demás ya escrito.
+      if (patch.at === 0) order = patch.value
+      else { props[patch.at].write(patch.value); applied += 1 }
+    }
   }
+  if (order !== null) { props[0].write(order); applied += 1 }
   return applied
+}
+
+/** Los archivos de imagen nuevos que nombran los retoques de una lección: ruta en el paquete y de dónde sale. */
+export function nativeReplacedAssets(patches: LbPatch[]): Array<{ path: string; url: string }> {
+  const found: Array<{ path: string; url: string }> = []
+  for (const patch of patches) {
+    if (patch.op !== 'image' || !/^https:\/\//i.test(patch.url)) continue
+    found.push({ path: `scormcontent/assets/${replacedAssetName(patch.url)}`, url: patch.url })
+  }
+  return found
 }
