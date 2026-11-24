@@ -18,7 +18,12 @@
  * aquí. Los estilos y las plantillas se siguen hasta donde hace falta para
  * que un documento hecho a mano también salga bien.
  */
-import { DOMParser } from '@xmldom/xmldom'
+// Se importa el analizador por su archivo y no por la raíz del paquete: los
+// tipos de la raíz traen `/// <reference lib="dom" />`, que mete la librería
+// DOM en la compilación del API y cambia el tipo de `fetch` para todo lo demás.
+import xmldom from '@xmldom/xmldom/lib/dom-parser.js'
+
+const { DOMParser } = xmldom as { DOMParser: new (options?: unknown) => { parseFromString(xml: string, type: string): any } }
 import { unzip } from './lb-unzip.js'
 
 export type OfficeImage = { name: string; bytes: Buffer; contentType: string }
