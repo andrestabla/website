@@ -1069,6 +1069,8 @@ model LbResource {
   files     LbResourceFile[]
   comments  LbComment[]
   deliveries LbDelivery[]
+  stages    LbStage[]
+  stageDocs LbStageDoc[]
 
   @@index([workspaceId, updatedAt(sort: Desc)])
   @@index([workspaceId, kind, updatedAt(sort: Desc)])
@@ -1167,6 +1169,62 @@ model LbDelivery {
   resource LbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 
   @@unique([resourceId, version])
+}
+
+/// Estado de una etapa de producción de un recurso (TEXTO | GUION): si su
+/// documento está publicado y con qué enlace se revisa. Las etapas 3 y 4 —el
+/// recurso producido y el entregado— no pasan por aquí: son el editor y la
+/// pieza final de siempre.
+model LbStage {
+  id          String    @id @default(cuid())
+  resourceId  String
+  /// TEXTO | GUION
+  stage       String
+  /// Publicada: su enlace abre para quien lo reciba, sin sesión.
+  published   Boolean   @default(false)
+  /// Token del enlace /revision/:token de esta etapa; se rota para revocarlo.
+  reviewToken String    @unique
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  resource LbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, stage])
+}
+
+/// Una versión del documento de una etapa (V1, V2…). Se guarda el original
+/// —el .docx o el .pptx— y su lectura en HTML, que es lo que se publica y
+/// sobre lo que se comenta. La vigente es la de número más alto.
+model LbStageDoc {
+  id          String   @id @default(cuid())
+  resourceId  String
+  /// TEXTO | GUION
+  stage       String
+  version     Int
+  fileName    String
+  /// docx | pptx
+  format      String   @default("docx")
+  bytes       Int      @default(0)
+  /// El archivo original en el almacenamiento.
+  fileUrl     String
+  /// Su lectura en HTML (un fragmento; la página se arma al servirlo).
+  htmlUrl     String
+  /// Diapositivas del .pptx o apartados del .docx.
+  units       Int      @default(0)
+  images      Int      @default(0)
+  /// Claves en el bucket de todo lo que subió esta versión, para poder borrarla.
+  keys        Json     @default("[]")
+  /// Lo que no se pudo convertir, dicho sin adornos.
+  warnings    Json     @default("[]")
+  /// Qué cambió respecto a la anterior.
+  notes       String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  resource LbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, stage, version])
 }
 
 /// Fuente de datos abiertos que la IA puede consultar al escribir contenidos.

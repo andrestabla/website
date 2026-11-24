@@ -29,7 +29,7 @@ import crypto from 'node:crypto'
 import { denied, guard, requireModule } from '../_lib/lb-auth.js'
 import { LbZipError, ingestMedia, ingestPackage } from '../_lib/lb-import.js'
 import { lbFiles, lbResources, loadResource, snapshot } from '../_lib/lb-store.js'
-import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
+import { resourceFolder, uploadPartKey, workspaceBucket } from '../_lib/lb-storage.js'
 import { lbDeliveries, pkgPrefix } from '../_lib/lb-delivery.js'
 import { familyOf } from '../../src/learning/lib/content.js'
 import { sanitizeMirror, type LbMirrorContent } from '../../src/learning/lib/mirror.js'
@@ -40,10 +40,6 @@ type VercelResponse = any
 /** Lo que cabe recomponer en memoria dentro de una función sin apurarla. */
 const MAX_PACKAGE_BYTES = 60 * 1024 * 1024
 const MAX_PARTS = 40
-
-function staging(folder: string, uploadId: string): string {
-  return `${folder}/.subiendo/${uploadId}`
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -96,11 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       if (!base64) return res.status(400).json({ ok: false, error: 'Trozo vacío' })
       const chunk = Buffer.from(base64, 'base64')
-      await bucket.put(
-        `${staging(folder, uploadId)}/${String(index).padStart(3, '0')}`,
-        chunk,
-        'application/octet-stream'
-      )
+      await bucket.put(uploadPartKey(folder, uploadId, index), chunk, 'application/octet-stream')
       return res.status(200).json({ ok: true, index, bytes: chunk.length })
     }
 
@@ -143,13 +135,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const chunks: Buffer[] = []
     for (let index = 0; index < parts; index += 1) {
-      chunks.push(await bucket.get(`${staging(folder, uploadId)}/${String(index).padStart(3, '0')}`))
+      chunks.push(await bucket.get(uploadPartKey(folder, uploadId, index)))
     }
     const archive = Buffer.concat(chunks)
     // Los trozos ya no hacen falta; si el borrado falla no es grave, pero
     // dejarlos costaría almacenamiento en cada intento.
     void bucket
-      .remove(Array.from({ length: parts }, (_, i) => `${staging(folder, uploadId)}/${String(i).padStart(3, '0')}`))
+      .remove(Array.from({ length: parts }, (_, i) => uploadPartKey(folder, uploadId, i)))
       .catch(() => undefined)
 
     const mode = body.mode === 'version' ? 'version' : 'replace'

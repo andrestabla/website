@@ -13,7 +13,7 @@ import {
   ArrowLeft, Sparkles, Loader2, ExternalLink, Copy, CheckCircle2, Globe, EyeOff, FileText, Eye,
   Trash2, MoreVertical, CopyPlus, Archive, Paperclip, X, Package, Download, ShieldCheck, AlertTriangle, FileVideo,
   PanelLeft, PanelRight, MessageSquare, RotateCcw, History, Check, Lock, Code2, RefreshCw,
-  MessageSquarePlus,
+  MessageSquarePlus, PenLine,
 } from 'lucide-react'
 import { useDialogs } from '../cotizador/ui/dialogs'
 import type { LbIssue } from './lib/blocks'
@@ -43,9 +43,16 @@ import { RouteEditor } from './editor/RouteEditor'
 import { SceneEditor } from './editor/SceneEditor'
 import { VideoEditor } from './editor/VideoEditor'
 import { CommentsPanel } from './CommentsPanel'
-import type { CommentRow } from './lib/api'
+import type { CommentRow, StagesPayload } from './lib/api'
+import { StagePanel } from './editor/StagePanel'
+import { LB_STAGE_KEYS, LB_STAGE_SPECS, stageOfAnchor, type LbDocStage, type LbStageKey } from './lib/stages'
 
-type Tab = 'guion' | 'final' | 'ficha' | 'vista' | 'comentarios' | 'revision' | 'entrega'
+/**
+ * 'texto' y 'documento' son las etapas 1 y 2 (el texto plano y el guion, como
+ * documentos). 'guion' es el editor en línea: conserva el nombre de cuando el
+ * guion se escribía aquí, pero en pantalla ya es el «Recurso producido».
+ */
+type Tab = 'texto' | 'documento' | 'guion' | 'final' | 'ficha' | 'vista' | 'comentarios' | 'revision' | 'entrega'
 type Layout = 'both' | 'chat' | 'panel'
 
 const LAYOUT_KEY = 'learning:layout'
@@ -93,6 +100,8 @@ export function ResourceBuilder() {
   const [shareCode, setShareCode] = useState<string | null>(null)
   const [reviewToken, setReviewToken] = useState<string | null>(null)
   const [comments, setComments] = useState<CommentRow[]>([])
+  /** Etapas 1 y 2: el texto plano y el guion, con sus versiones. */
+  const [stages, setStages] = useState<StagesPayload | null>(null)
   const [focusAnchor, setFocusAnchor] = useState('')
 
   const [loading, setLoading] = useState(true)
@@ -151,6 +160,8 @@ export function ResourceBuilder() {
         setSources(sourcesPayload.sources || [])
       }
       if (can(payload.role, 'comment.view')) await loadComments(payload.resource.id)
+      // Las etapas de documento son accesorias al abrir: si fallan, el builder sigue.
+      learningApi.stages.list(payload.resource.id).then(setStages).catch(() => setStages(null))
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -228,14 +239,21 @@ export function ResourceBuilder() {
     await save(content)
   }, [content, save])
 
-  const openThreads = useMemo(
-    () => comments.filter((comment) => !comment.parentId && comment.status === 'OPEN').length,
+  // Los hilos del texto plano y del guion se leen en su etapa; los demás son
+  // del recurso producido y entregado, y van a la pestaña de comentarios.
+  const resourceComments = useMemo(() => comments.filter((comment) => !stageOfAnchor(comment.anchor)), [comments])
+  const stageComments = useCallback(
+    (stage: LbDocStage) => comments.filter((comment) => stageOfAnchor(comment.anchor) === stage),
     [comments]
+  )
+  const openThreads = useMemo(
+    () => resourceComments.filter((comment) => !comment.parentId && comment.status === 'OPEN').length,
+    [resourceComments]
   )
   /** Cuántos hilos tiene cada pieza, para pintar el globo junto al bloque. */
   const commentsByAnchor = useMemo(() => {
     const map = new Map<string, { total: number; open: number }>()
-    for (const comment of comments) {
+    for (const comment of resourceComments) {
       if (comment.parentId) continue
       const entry = map.get(comment.anchor) || { total: 0, open: 0 }
       entry.total += 1
@@ -243,7 +261,7 @@ export function ResourceBuilder() {
       map.set(comment.anchor, entry)
     }
     return map
-  }, [comments])
+  }, [resourceComments])
 
   const errors = useMemo(() => issues.filter((issue) => issue.level === 'error'), [issues])
   const warnings = useMemo(() => issues.filter((issue) => issue.level === 'warning'), [issues])
@@ -425,7 +443,9 @@ export function ResourceBuilder() {
   // bloques —que no les corresponde— se muestra su ficha y se dice qué falta.
   const kindReady = spec.available
   // El asistente escribe guiones de bloques; en los demás formatos todavía no ayuda.
-  const showChat = editable && kindReady && aiWritesFor(resource.kind) && (desktop ? layout !== 'panel' : mobilePane === 'chat')
+  const onEditorStage = tab !== 'texto' && tab !== 'documento' && tab !== 'vista' && tab !== 'comentarios' && tab !== 'entrega'
+  // El asistente escribe en el editor: en las demás etapas no tiene qué hacer.
+  const showChat = editable && kindReady && onEditorStage && aiWritesFor(resource.kind) && (desktop ? layout !== 'panel' : mobilePane === 'chat')
   const showPanel = !showChat || (desktop ? layout !== 'chat' : mobilePane === 'panel')
   const toggleColumn = (column: 'chat' | 'panel') => {
     setLayout((prev) => {
@@ -433,26 +453,62 @@ export function ResourceBuilder() {
       return 'both'
     })
   }
-  const tabs: Array<[Tab, string, any]> = !kindReady
-    ? [
-        ['ficha', 'Ficha', FileText],
-        ...(maySeeComments ? ([['comentarios', 'Comentarios', MessageSquare]] as Array<[Tab, string, any]>) : []),
-      ]
-    : editable
-    ? [
-        ['guion', 'Guion', FileText],
-        // La pieza importada no tiene pestaña aparte: su guion ya ES el paquete.
-        ...(familyOf(resource.kind) !== 'mirror'
-          ? ([['final', 'Pieza final', Package]] as Array<[Tab, string, any]>)
-          : []),
-        ['vista', 'Vista previa', Eye],
-        ...(maySeeComments ? ([['comentarios', 'Comentarios', MessageSquare]] as Array<[Tab, string, any]>) : []),
-        ['revision', 'Revisión', ShieldCheck],
-        ['entrega', 'Entrega', Package],
-      ]
-    : maySeeComments
-    ? [['comentarios', 'Comentarios', MessageSquare], ['vista', 'Vista previa', Eye]]
-    : [['vista', 'Vista previa', Eye]]
+  // ── Las cuatro etapas y las pestañas de cada una ──
+  const stageState = (stage: LbDocStage) => stages?.stages.find((row) => row.stage === stage)
+  // El invitado solo ve el documento de una etapa cuando se publicó.
+  const showsDoc = (stage: LbDocStage) => role !== 'GUEST' || (stageState(stage)?.docs.length || 0) > 0
+  const T = (key: Tab, label: string, icon: any): [Tab, string, any] => [key, label, icon]
+  const stageTabs: Record<LbStageKey, Array<[Tab, string, any]>> = {
+    texto: showsDoc('TEXTO') ? [T('texto', 'Texto plano', FileText)] : [],
+    guion: showsDoc('GUION') ? [T('documento', 'Guion', FileText)] : [],
+    producido: !kindReady
+      ? [T('ficha', 'Ficha', FileText)]
+      : editable
+      ? [
+          T('guion', 'Editor en línea', PenLine),
+          // La pieza importada no tiene pestaña aparte: su editor ya ES el paquete.
+          ...(familyOf(resource.kind) !== 'mirror' ? [T('final', 'Pieza final', Package)] : []),
+          T('revision', 'Revisión', ShieldCheck),
+        ]
+      : [],
+    entregado: [
+      ...(kindReady ? [T('vista', 'Vista previa', Eye)] : []),
+      ...(maySeeComments ? [T('comentarios', 'Comentarios', MessageSquare)] : []),
+      ...(kindReady && editable ? [T('entrega', 'Entrega', Package)] : []),
+    ],
+  }
+  const currentStage: LbStageKey = LB_STAGE_KEYS.find((key) => stageTabs[key].some(([value]) => value === tab)) || 'producido'
+  const tabs = stageTabs[currentStage]
+  const openTab = (key: Tab) => {
+    setTab(key)
+    if (key === 'entrega') void loadVersions()
+    if (key === 'vista') void flush()
+  }
+  const openStage = (key: LbStageKey) => {
+    const own = stageTabs[key]
+    const first = (key === 'entregado' && own.find(([value]) => value === 'entrega')) || own[0]
+    if (first) openTab(first[0])
+  }
+  /** Lo que dice cada etapa de sí misma en la barra: en qué va. */
+  const stageStatus = (key: LbStageKey): { text: string; tone: 'done' | 'live' | 'idle'; open: number } => {
+    const spec = LB_STAGE_SPECS[key]
+    if (spec.doc) {
+      const state = stageState(spec.doc)
+      const version = state?.docs[0]?.version
+      const open = stageComments(spec.doc).filter((comment) => !comment.parentId && comment.status === 'OPEN').length
+      if (!version) return { text: spec.optional ? 'Opcional · sin documento' : 'Sin documento', tone: 'idle', open }
+      return { text: `V${version}${state?.published ? ' · publicado' : ''}`, tone: state?.published ? 'live' : 'done', open }
+    }
+    if (key === 'producido') {
+      return final ? { text: 'Con pieza final', tone: 'done', open: 0 } : { text: 'En edición', tone: 'idle', open: 0 }
+    }
+    const delivered = servesOriginal(resource.kind, content, final)
+    return {
+      text: `${LB_STATUS_LABEL[resource.status]}${delivered && resource.packageVersion ? ` · V${resource.packageVersion}` : ''}`,
+      tone: published ? 'live' : delivered ? 'done' : 'idle',
+      open: openThreads,
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -530,7 +586,7 @@ export function ResourceBuilder() {
             <button
               onClick={() => toggleColumn('panel')}
               className={`grid h-7 w-7 place-items-center rounded-md ${layout !== 'chat' ? 'bg-slate-100 text-slate-700' : 'text-slate-300 hover:text-slate-600'}`}
-              aria-label="Guion"
+              aria-label="Recurso"
             >
               <PanelRight size={15} />
             </button>
@@ -604,9 +660,52 @@ export function ResourceBuilder() {
         </div>
       )}
 
+      {/*
+        El proceso de producción del recurso, de izquierda a derecha. Cada
+        etapa dice en qué va; al pulsarla se abre lo suyo.
+      */}
+      <nav aria-label="Etapas de producción" className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-slate-200 bg-white px-3 py-2">
+        {LB_STAGE_KEYS.filter((key) => stageTabs[key].length > 0).map((key) => {
+          const spec = LB_STAGE_SPECS[key]
+          const status = stageStatus(key)
+          const active = key === currentStage
+          return (
+            <button
+              key={key}
+              onClick={() => openStage(key)}
+              aria-current={active ? 'step' : undefined}
+              title={spec.hint}
+              className={`flex min-w-[132px] flex-1 items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition ${
+                active ? 'border-indigo-500 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+              }`}
+            >
+              <span
+                className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[12px] font-black ${
+                  active ? 'bg-indigo-600 text-white'
+                    : status.tone === 'live' ? 'bg-emerald-100 text-emerald-700'
+                    : status.tone === 'done' ? 'bg-slate-200 text-slate-700'
+                    : 'border border-dashed border-slate-300 text-slate-400'
+                }`}
+              >
+                {spec.n}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className={`block truncate text-[13px] font-bold ${active ? 'text-indigo-900' : 'text-slate-700'}`}>{spec.label}</span>
+                <span className={`block truncate text-[11px] ${status.tone === 'live' ? 'font-semibold text-emerald-700' : 'text-slate-400'}`}>{status.text}</span>
+              </span>
+              {status.open > 0 && (
+                <span className="shrink-0 rounded-full bg-amber-100 px-1.5 text-[10.5px] font-bold text-amber-700" title="Hilos de comentarios abiertos">
+                  {status.open}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </nav>
+
       {!desktop && editable && (
         <div className="flex shrink-0 gap-1 border-b border-slate-200 bg-white px-3 py-1.5" role="tablist">
-          {([['chat', 'Asistente', MessageSquare], ['panel', 'Guion', FileText]] as const).map(([key, label, Icon]) => (
+          {([['chat', 'Asistente', MessageSquare], ['panel', 'Recurso', FileText]] as const).map(([key, label, Icon]) => (
             <button
               key={key}
               role="tab"
@@ -740,11 +839,11 @@ export function ResourceBuilder() {
 
         {showPanel && (
           <section className="flex min-w-0 flex-col">
-            <div className="flex shrink-0 items-center gap-1 border-b border-slate-200 bg-white px-3 py-1.5">
+            <div className={`shrink-0 items-center gap-1 border-b border-slate-200 bg-white px-3 py-1.5 ${tabs.length > 1 ? 'flex' : 'hidden'}`}>
               {tabs.map(([key, label, Icon]) => (
                 <button
                   key={key}
-                  onClick={() => { setTab(key); if (key === 'entrega') void loadVersions(); if (key === 'vista') void flush() }}
+                  onClick={() => openTab(key)}
                   className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition ${
                     tab === key ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100'
                   }`}
@@ -761,6 +860,24 @@ export function ResourceBuilder() {
             </div>
 
             <div className="min-h-0 flex-1">
+              {(tab === 'texto' || tab === 'documento') && (() => {
+                const spec = LB_STAGE_SPECS[tab === 'texto' ? 'texto' : 'guion']
+                const stage = spec.doc as LbDocStage
+                return (
+                  <StagePanel
+                    key={stage}
+                    resourceId={resource.id}
+                    spec={spec}
+                    state={stageState(stage)}
+                    role={role}
+                    comments={stageComments(stage)}
+                    onStages={setStages}
+                    reloadComments={reloadComments}
+                    archived={resource.status === 'ARCHIVED'}
+                  />
+                )
+              })()}
+
               {tab === 'ficha' && (
                 <div className="mx-auto max-w-3xl space-y-4 p-5">
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -862,7 +979,7 @@ export function ResourceBuilder() {
                   content={content}
                   directives={directives}
                   role={role}
-                  comments={comments}
+                  comments={resourceComments}
                   reload={reloadComments}
                   focusAnchor={focusAnchor}
                 />

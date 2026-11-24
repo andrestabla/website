@@ -16,6 +16,7 @@ import {
 } from '../_lib/lb-store.js'
 import { resourceFolder, workspaceBucket } from '../_lib/lb-storage.js'
 import { lbDeliveries, liveVersion, pkgPrefix } from '../_lib/lb-delivery.js'
+import { lbStageDocs, removeStageFiles } from '../_lib/lb-stages.js'
 import {
   deliveryIssues, sanitizeResourceContent, scaffoldResourceContent, validateResourceContent,
 } from '../../src/learning/lib/content.js'
@@ -63,6 +64,11 @@ async function purgeResource(resource: any, workspace: any): Promise<{ orphans: 
       orphans = files.length
     }
   }
+  // Los documentos de las etapas 1 y 2, con sus imágenes. Si falla, no impide el borrado.
+  try {
+    const docs = await lbStageDocs().findMany({ where: { resourceId: resource.id }, select: { keys: true } })
+    if (docs.length) await removeStageFiles(await workspaceBucket(workspace), docs)
+  } catch { /* quedan en el almacenamiento; el registro se borra igual */ }
   await lbResources().delete({ where: { id: resource.id } })
   return { orphans }
 }
@@ -441,7 +447,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
       const counts = await lbComments().groupBy({
         by: ['version', 'status'],
-        where: { resourceId, parentId: null },
+        // Los hilos del texto plano y del guion llevan su propia numeración de versiones.
+        where: { resourceId, parentId: null, NOT: { anchor: { startsWith: 'stage:' } } },
         _count: { _all: true },
       })
       const tally = (version: number, status: string) =>

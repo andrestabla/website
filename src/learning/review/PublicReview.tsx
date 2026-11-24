@@ -46,6 +46,8 @@ type Info = {
   kind: string
   status: string
   workspaceName: string
+  /** «Texto plano» o «Guion» cuando el enlace es el de una etapa; si no, es la pieza final. */
+  stageLabel?: string | null
 }
 
 /** Versiones entregadas del paquete (V1, V2…); vacío si el recurso no tiene paquete. */
@@ -84,7 +86,7 @@ export default function PublicReview() {
     call(token, 'open')
       .then((payload) => {
         if (!alive) return
-        setInfo(payload.resource)
+        setInfo({ ...payload.resource, stageLabel: payload.stageLabel || null })
         setReviewer(payload.reviewer)
         setViaSession(!!payload.viaSession)
         setVersions({ live: payload.live || 1, list: payload.versions || [] })
@@ -95,7 +97,7 @@ export default function PublicReview() {
   }, [token])
 
   useEffect(() => {
-    if (info) document.title = `Revisión · ${info.title}`
+    if (info) document.title = `Revisión${info.stageLabel ? ` del ${info.stageLabel.toLowerCase()}` : ''} · ${info.title}`
   }, [info])
 
   if (loading) {
@@ -139,11 +141,11 @@ function Identify({ token, info, onDone }: { token: string; info: Info; onDone: 
   return (
     <div className="grid min-h-screen place-items-center bg-slate-100 px-4 py-10">
       <form onSubmit={submit} className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-        <div className="text-[11px] font-black uppercase tracking-[0.16em] text-indigo-600">Revisión · {info.workspaceName}</div>
+        <div className="text-[11px] font-black uppercase tracking-[0.16em] text-indigo-600">Revisión{info.stageLabel ? ` · ${info.stageLabel}` : ''} · {info.workspaceName}</div>
         <h1 className="mt-2 text-[22px] font-bold leading-tight text-slate-900">{info.title}</h1>
         {info.subtitle && <p className="mt-1 text-[14px] text-slate-500">{info.subtitle}</p>}
         <p className="mt-4 text-[14px] leading-relaxed text-slate-600">
-          Te invitaron a revisar este recurso. Indica quién eres para que el equipo sepa de quién es cada comentario.
+          Te invitaron a revisar {info.stageLabel ? `el ${info.stageLabel.toLowerCase()} de este recurso` : 'este recurso'}. Indica quién eres para que el equipo sepa de quién es cada comentario.
         </p>
 
         <label className="mt-5 block text-[13px] font-semibold text-slate-700">
@@ -431,7 +433,7 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
     <div className="flex h-[100dvh] flex-col bg-slate-100">
       <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-200 bg-white px-4 py-2.5">
         <div className="min-w-0 flex-1">
-          <div className="text-[10.5px] font-black uppercase tracking-[0.16em] text-indigo-600">Revisión · {info.workspaceName}</div>
+          <div className="text-[10.5px] font-black uppercase tracking-[0.16em] text-indigo-600">Revisión{info.stageLabel ? ` · ${info.stageLabel}` : ''} · {info.workspaceName}</div>
           <div className="truncate text-[15px] font-bold text-slate-900">{info.title}</div>
         </div>
         {versions.list.length > 0 && (
@@ -520,7 +522,7 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
                 <div className="flex items-start gap-2">
                   {pick.target ? <Crosshair size={14} className="mt-0.5 shrink-0 text-indigo-600" /> : <MessageSquare size={14} className="mt-0.5 shrink-0 text-indigo-600" />}
                   <div className="min-w-0 flex-1 text-[12.5px]">
-                    <div className="font-bold text-indigo-900">{pick.target ? describeTarget(pick.target) : 'Comentario general sobre el recurso'}</div>
+                    <div className="font-bold text-indigo-900">{pick.target ? describeTarget(pick.target) : `Comentario general sobre ${info.stageLabel ? `el ${info.stageLabel.toLowerCase()}` : 'el recurso'}`}</div>
                     {pick.target?.section && <div className="truncate text-indigo-700/80">en «{pick.target.section}»</div>}
                   </div>
                   <button onClick={() => setPick(null)} className="text-indigo-400 hover:text-indigo-700" aria-label="Descartar"><X size={15} /></button>
@@ -608,7 +610,7 @@ function Workspace({ token, info, versions, reviewer, viaSession, onLeave }: {
             )}
 
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden p-3">
-              {visibleRoots.length === 0 && !pick && (stateFilter || listVersion) && (
+              {visibleRoots.length === 0 && !pick && !!(stateFilter || listVersion) && (
                 <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-[13px] text-slate-400">
                   Ningún hilo coincide con el filtro.
                 </div>

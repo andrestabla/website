@@ -99,6 +99,15 @@ export function resourceFolder(workspaceCode: string, resourceCode: string): str
   return `learning/${safe(workspaceCode)}/${safe(resourceCode)}`
 }
 
+/**
+ * Dónde espera cada trozo de una subida en curso. Lo comparten la importación
+ * de paquetes y la de documentos de etapa: los trozos suben por el mismo sitio
+ * y cada quien los recompone al final.
+ */
+export function uploadPartKey(folder: string, uploadId: string, index: number): string {
+  return `${folder}/.subiendo/${uploadId}/${String(index).padStart(3, '0')}`
+}
+
 /** Respuestas del almacenamiento que conviene volver a pedir: saturación o falla pasajera. */
 const RETRYABLE = new Set([429, 500, 502, 503, 504])
 
