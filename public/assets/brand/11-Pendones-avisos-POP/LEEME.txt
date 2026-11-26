@@ -8,6 +8,8 @@ Doce artes en PDF vectorial, a tamaño real (escala 1:1), listos para enviar al 
   pendon-roll-up-educacion-85x200cm.pdf       Pendón de la línea Educación, con código QR a algoritmot.com/educacion.
   backing-300x225cm.pdf                       Fondo para fotos y entrevistas, con el logotipo y el símbolo en patrón.
 
+  *.ai                                        Los cuatro pendones también en .ai (mismo arte y mismo tamaño que el PDF).
+
 02-Avisos
   aviso-fachada-300x70cm.pdf                  Panel de fachada con el logotipo sin eslogan.
   aviso-recepcion-plano-180cm.pdf             Plano con medidas del logotipo en letras corpóreas para la recepción.
@@ -34,5 +36,16 @@ ANTES DE IMPRIMIR
   (Space Grotesk, Inter y JetBrains Mono).
 - Acabado mate en todas las piezas.
 - Los códigos QR se generaron con las direcciones del sitio; pruébalos con el teléfono sobre la prueba impresa.
+
+PENDONES EN .AI
+- Son .ai compatibles con PDF: Illustrator los abre de forma nativa, a tamaño real, y todo es vectorial.
+- El logotipo, el símbolo y los códigos QR van en trazados. Los demás textos son texto vivo con las fuentes
+  incrustadas: para reescribirlos hay que tener instaladas Space Grotesk, Inter y JetBrains Mono (gratuitas,
+  de Google Fonts); sin ellas, Illustrator pide sustituirlas o convertir el texto a contornos.
+- No traen capas con nombre ni muestras guardadas, y el color está en RGB.
+- Códigos QR comprobados el 26/11/2026 leyéndolos desde los archivos finales:
+    Empresas   https://www.algoritmot.com/empresas
+    Educación  https://www.algoritmot.com/educacion
+  Las dos direcciones responden. El pendón institucional no lleva código QR.
 
 Las reglas de uso y las maquetas están en el capítulo 13 del manual de marca (00-Manual-de-marca).
